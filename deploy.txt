@@ -1,0 +1,74 @@
+# SkillLoop: DigitalOcean One-Click Docker Deployment Guide
+
+Follow these exact steps to get your platform live on DigitalOcean.
+
+## Step 1: Create a DigitalOcean Droplet
+1. Go to your DigitalOcean account.
+2. Click "Create" → "Droplets".
+3. Choose **Marketplace** and search for **"Docker"** (Ubuntu 22.04 with Docker pre-installed).
+4. Choose a plan (at least 2GB RAM / 1 CPU recommended for Postgres + Celery).
+5. Choose your region (e.g., Bangalore or NYC).
+6. Select "SSH Key" for login (recommended).
+6. Click "Create Droplet".
+
+## Step 2: Access Your Server
+1. Copy your Droplet's IP address.
+2. Connect via SSH:
+   ```bash
+   ssh root@your_droplet_ip
+   ```
+
+## Step 3: Clone Your Code
+Run these commands on the server:
+```bash
+git clone https://github.com/kriyespro/sd-rankjee2026.git
+cd sd-rankjee2026
+```
+
+## Step 4: Configure Environment Variables
+You MUST create a `.env` file to store your production secrets:
+```bash
+nano .env
+```
+Copy and paste this into the file (update with your real values):
+```env
+DEBUG=0
+SECRET_KEY=yoursupersecretkeyhere123!
+DATABASE_URL=postgres://postgres:postgres@db:5432/skillloop_db
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+ALLOWED_HOSTS=your_droplet_ip,your_domain.com
+```
+(Press `Ctrl+O`, `Enter`, `Ctrl+X` to save and exit nano).
+
+## Step 5: Start the One-Click Deployment
+Run the script I created for you:
+```bash
+sh docker-deploy.sh
+```
+This script will:
+- Build the optimized Docker containers.
+- Setup the Postgres database.
+- Run migrations and collect static files automatically.
+- Start the app on port 8000.
+
+## Step 6: Access Your App
+Visit: `http://your_droplet_ip:8000`
+
+---
+
+## (Optional) Step 7: Adding a Custom Domain & SSL
+If you want to use `https://yourdomain.com`:
+1. Use Nginx Proxy Manager or a simple Nginx config.
+2. Install Certbot for SSL:
+   ```bash
+   sudo apt install certbot python3-certbot-nginx
+   sudo certbot --nginx -d yourdomain.com
+   ```
+3. Update your `ALLOWED_HOSTS` in the `.env` file to include your domain.
+4. Run `sh docker-deploy.sh` again to apply.
+
+## (Optional) Backup & Maintenance
+- **Postgres Backups**: Your database data is stored in the `postgres_data` Docker volume.
+- **Logs**: To see real-time logs: `docker compose logs -f`
+- **Updates**: To update your app, just `git pull` and run `sh docker-deploy.sh` again.

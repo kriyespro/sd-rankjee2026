@@ -1,128 +1,120 @@
 {% extends "base.jinja" %}
 {% block title %}Freelance Earnings - SkillLoop{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 py-8 md:py-12">
-    <!-- Header Area -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6 border-b border-slate-200 pb-6">
-        <div>
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-4">
-                <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Marketplace Live
-            </div>
-            <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Freelance Board</h2>
-            <p class="text-slate-500 mt-2 font-medium max-w-xl">Apply your verified skills to real-world tasks. Submit proof of your work and get paid directly to your wallet.</p>
+<div class="max-w-4xl mx-auto px-4 py-8 md:py-12">
+    <!-- Header Area: Referral Focus -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-8 bg-indigo-600 p-8 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
+        <div class="relative z-10 text-center md:text-left">
+            <h2 class="text-3xl md:text-4xl font-black tracking-tight leading-tight">Refer & Earn 💰</h2>
+            <p class="text-indigo-100 mt-2 font-medium max-w-sm">Help your friends master new skills. Get ₹50 for every verified registration!</p>
         </div>
         
-        <div class="flex-shrink-0 bg-white border border-slate-200 shadow-sm rounded-2xl p-5 min-w-[200px] flex flex-col justify-center">
-            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5"><span class="bg-emerald-100 text-emerald-600 p-1 rounded">💰</span> Total Earned</p>
-            <p class="text-4xl font-black text-emerald-500 tracking-tight leading-none">₹{{ total_earned }}</p>
+        <div class="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 min-w-[200px] text-center shadow-lg">
+            <p class="text-[10px] text-indigo-200 font-bold uppercase tracking-widest mb-1">Total Rewards Earned</p>
+            <p class="text-4xl font-black text-white tracking-tight">₹{{ total_earned }}</p>
         </div>
+        
+        <!-- Decorative blob -->
+        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
     
-    {% if tasks %}
-    <div class="grid grid-cols-1 divide-y divide-slate-100 bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        {% for task in tasks %}
-        {% set is_locked = task.required_skill and task.required_skill.id not in passed_skill_ids %}
-        
-        <div class="p-6 md:p-8 hover:bg-slate-50 transition-colors group relative {{ 'grayscale-[40%] bg-slate-50/50' if is_locked else '' }}">
-            <div class="flex flex-col md:flex-row gap-6 items-start justify-between">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Referral Link Area -->
+        <div class="lg:col-span-2 space-y-8">
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 md:p-8">
+                <h3 class="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                    <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">🔗</span>
+                    Your Personal Invite Link
+                </h3>
                 
-                <!-- Main Task Info -->
-                <div class="flex-grow max-w-2xl">
-                    <div class="flex items-center gap-3 mb-2 flex-wrap">
-                        <h3 class="text-xl font-bold text-slate-900 leading-tight">
-                            {% if is_locked %}
-                                <span class="mr-1 text-slate-400 cursor-not-allowed" title="Locked">🔒</span>
-                            {% endif %}
-                            {{ task.title }}
-                        </h3>
-                        {% if task.auto_approve_domain %}
-                        <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wide">
-                            <svg class="w-3 h-3 mix-blend-multiply" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            Verify: {{ task.auto_approve_domain }}
-                        </span>
-                        {% endif %}
+                <div x-data="{ copied: false, link: '{{ referral_link }}' }" class="space-y-4">
+                    <div class="relative group">
+                        <input type="text" x-model="link" readonly
+                               class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 pr-32 font-mono text-sm text-slate-600 focus:outline-none focus:border-indigo-300 transition-all select-all">
+                        <button @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition active:scale-95 flex items-center gap-2">
+                            <span x-text="copied ? 'Copied!' : 'Copy Link'"></span>
+                        </button>
                     </div>
-                    
-                    <p class="text-slate-600 text-sm leading-relaxed mb-4">{{ task.description }}</p>
-                    
-                    <div class="flex items-center gap-4 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                        <span class="flex items-center gap-1.5">
-                            <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                            Requires: <span class="{{ 'text-indigo-600' if not is_locked else 'text-rose-500' }}">{{ task.required_skill.name if task.required_skill else 'General' }}</span>
-                        </span>
-                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">Share this link via WhatsApp, Email, or Social Media</p>
                 </div>
+            </div>
 
-                <!-- Action & Reward -->
-                <div class="flex flex-col items-start md:items-end flex-shrink-0 min-w-[200px] gap-4 w-full md:w-auto">
-                    <div class="text-left md:text-right w-full">
-                        <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Fixed Reward</p>
-                        <p class="text-2xl font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-lg inline-block shadow-sm">₹{{ task.reward_amount }}</p>
-                    </div>
-
-                    <div class="w-full">
-                    {% if is_locked %}
-                        <a href="{{ url('assessment:take_test', task.required_skill.id) }}" class="flex items-center justify-center w-full gap-2 text-sm font-bold bg-slate-200 text-slate-600 hover:text-white hover:bg-slate-800 py-2.5 px-4 rounded-xl transition-all shadow-sm">
-                            Unlock Skill &rarr;
-                        </a>
-                    {% elif task.id in submitted_ids %}
-                        <span class="flex items-center justify-center w-full gap-2 text-sm font-bold text-indigo-500 bg-indigo-50 border border-indigo-200 py-2.5 px-4 rounded-xl cursor-default shadow-sm">
-                            ✓ Under Review
-                        </span>
-                    {% else %}
-                        <div x-data="{ open: false }" class="relative w-full">
-                            <button @click="open = !open"
-                                class="w-full bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold tracking-wide hover:bg-indigo-700 transition shadow-sm focus:ring-4 focus:ring-indigo-100 flex items-center justify-center gap-2">
-                                Apply Now
-                            </button>
-                            
-                            <div x-show="open" x-cloak 
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 translate-y-2"
-                                 x-transition:enter-end="opacity-100 translate-y-0"
-                                 @click.away="open = false"
-                                 class="absolute right-0 top-12 mt-2 w-[calc(100vw-2rem)] md:w-80 bg-white border border-slate-200 shadow-xl rounded-xl z-20 p-5 text-left origin-top-right">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h4 class="font-black text-slate-900 border-b border-slate-100 pb-2 flex-grow">Submit Task Proof</h4>
-                                    <button @click="open = false" type="button" class="text-slate-400 hover:text-rose-500 font-bold px-2 py-1 transition-colors">&times;</button>
-                                </div>
-                                <form method="post" action="{{ url('core:submit_task', task.id) }}" class="space-y-4">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Proof URL (Required)</label>
-                                        <input type="url" name="proof_url" placeholder="https://" required
-                                            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none bg-slate-50 focus:bg-white text-slate-900">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Submission Notes</label>
-                                        <textarea name="proof_text" rows="2" placeholder="Describe your work..."
-                                            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none resize-none bg-slate-50 focus:bg-white text-slate-900"></textarea>
-                                    </div>
-                                    <button type="submit"
-                                        class="w-full bg-slate-900 text-white py-2.5 rounded-lg text-sm font-bold hover:bg-black transition shadow-sm focus:ring-4 focus:ring-slate-200 flex items-center justify-center gap-2">
-                                        Send for Approval &rarr;
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    {% endif %}
-                    </div>
+            <!-- Referral List Table -->
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-black text-slate-900">Your Referrals</h3>
+                    <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{{ referral_count }} Joined</span>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            <tr>
+                                <th class="px-6 py-4">User</th>
+                                <th class="px-6 py-4">Status</th>
+                                <th class="px-6 py-4">Joined On</th>
+                                <th class="px-6 py-4 text-right">Commission</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-sm">
+                            {% for ref in referrals %}
+                            <tr class="hover:bg-slate-50/50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="font-bold text-slate-900">{{ ref.username }}</div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide {{ 'bg-emerald-50 text-emerald-600 border border-emerald-100' if ref.is_active else 'bg-amber-50 text-amber-600 border border-amber-100' }}">
+                                        {{ 'Verified' if ref.is_active else 'Pending' }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-500 font-medium">
+                                    {{ ref.date_joined.strftime('%d %b, %Y') }}
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <span class="font-bold text-emerald-600">+₹50</span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-12 text-center">
+                                    <div class="text-3xl mb-3">🤝</div>
+                                    <p class="text-slate-400 font-medium italic">No referrals yet. Start sharing to earn!</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-12 lg:p-20 text-center flex flex-col items-center">
-        <div class="w-20 h-20 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
-            💼
+
+        <!-- Sidebar: Stats/Rules -->
+        <div class="space-y-6">
+            <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl">
+                <h4 class="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">How it works</h4>
+                <ul class="space-y-4">
+                    <li class="flex gap-4">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                        <p class="text-xs leading-relaxed text-slate-200">Share your invite link with friends who want to learn tech & exams.</p>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                        <p class="text-xs leading-relaxed text-slate-200">Wait for them to sign up and verify their email/account.</p>
+                    </li>
+                    <li class="flex gap-4">
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                        <p class="text-xs leading-relaxed text-slate-200">Instantly receive <span class="text-indigo-400 font-bold">₹50 credits</span> in your wallet for every lead.</p>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center">
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">Network Strength</p>
+                <p class="text-4xl font-black text-indigo-600 mb-1 tracking-tight">{{ referral_count }}</p>
+                <p class="text-xs font-bold text-indigo-400 italic">Friends Invited</p>
+            </div>
         </div>
-        <h3 class="text-2xl font-black text-slate-900 mb-3 tracking-tight">No tasks unlocked yet.</h3>
-        <p class="text-sm font-medium text-slate-500 mb-8 max-w-sm leading-relaxed">Complete assessments and earn badges to unlock exclusive freelance earning opportunities here.</p>
-        <a href="{{ url('assessment:index') }}" class="inline-flex bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold text-sm tracking-wide hover:bg-indigo-700 transition shadow-sm focus:ring-4 focus:ring-indigo-100">
-            Go to Assessments &rarr;
-        </a>
     </div>
-    {% endif %}
 </div>
 {% endblock %}

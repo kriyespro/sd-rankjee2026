@@ -13,23 +13,22 @@ def home(request):
 
 @login_required
 def earnings(request):
-    passed_skill_ids = set(UserAttempt.objects.filter(
-        user=request.user, passed=True
-    ).values_list('skill_id', flat=True))
-    all_tasks = EarningTask.objects.filter(
-        is_active=True
-    ).select_related('required_skill')
-    submitted_task_ids = UserTaskSubmission.objects.filter(
-        user=request.user
-    ).values_list('task_id', flat=True)
-    total_earned = request.user.wallet_balance
-    submissions = UserTaskSubmission.objects.filter(user=request.user).select_related('task').order_by('-submitted_at')
+    user = request.user
+    referrals = user.referrals.all().order_by('-date_joined')
+    referral_count = referrals.count()
+    
+    # Referral link construction
+    scheme = 'https' if request.is_secure() else 'http'
+    site_domain = request.get_host()
+    referral_link = f"{scheme}://{site_domain}/users/signup/?ref={user.referral_code}"
+    
+    total_earned = user.wallet_balance
+    
     return render(request, 'core/earnings.jinja', {
-        'tasks': all_tasks,
-        'passed_skill_ids': passed_skill_ids,
-        'submitted_ids': list(submitted_task_ids),
+        'referrals': referrals,
+        'referral_count': referral_count,
+        'referral_link': referral_link,
         'total_earned': total_earned,
-        'submissions': submissions,
     })
 
 
