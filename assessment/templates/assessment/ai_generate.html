@@ -1,0 +1,46 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post" action="">
+        {% csrf_token %}
+        <fieldset class="module aligned">
+            <h2>Generate MCQs with OpenRouter AI</h2>
+            <p>This tool will automatically select a free OpenRouter model, generate questions, and save them to the selected skill.</p>
+            
+            <div class="form-row">
+                <div>
+                    <label class="required" for="id_skill">Target Skill:</label>
+                    <select name="skill" id="id_skill" required>
+                        <option value="">---------</option>
+                        {% for skill in skills %}
+                        <option value="{{ skill.id }}">{{ skill.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label class="required" for="id_topic">Specific Topic / Concept:</label>
+                    <input type="text" name="topic" id="id_topic" value="" class="vTextField" maxlength="100" required placeholder="e.g. On-page SEO">
+                    <div class="help">The AI will generate questions specifically about this concept.</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div>
+                    <label class="required" for="id_count">Number of Questions:</label>
+                    <input type="number" name="count" id="id_count" value="5" class="vIntegerField" min="1" max="20" required>
+                </div>
+            </div>
+        </fieldset>
+        
+        <div class="submit-row">
+            <input type="submit" value="Generate via AI" class="default" name="_save">
+            <a href="{% url 'admin:assessment_question_changelist' %}" class="button cancel-link">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

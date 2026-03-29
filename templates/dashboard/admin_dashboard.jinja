@@ -1,0 +1,284 @@
+{% extends "base.jinja" %}
+{% block title %}Command Centre - SkillLoop Admin{% endblock %}
+
+{% block content %}
+<div class="flex min-h-[calc(100vh-3.5rem)] bg-slate-50">
+    
+    {# Admin Sidebar #}
+    <aside class="w-64 bg-slate-900 text-slate-300 flex-shrink-0 hidden lg:flex flex-col border-r border-slate-800">
+        <div class="p-6 border-b border-slate-800/50">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Management</h2>
+            <nav class="flex flex-col gap-1">
+                <a href="{{ url('dashboard:index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold transition-all shadow-lg shadow-indigo-900/20">
+                    <span class="text-lg">📊</span> Overview
+                </a>
+                <a href="/sd/users/customuser/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-lg">👥</span> Users
+                </a>
+                <a href="/sd/assessment/skill/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-lg">🎯</span> Skills
+                </a>
+                <a href="/sd/assessment/question/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-lg">📝</span> Questions
+                </a>
+                <a href="/sd/learning/conceptvideo/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-lg">📺</span> Videos
+                </a>
+                <a href="/sd/core/earningtask/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-lg">💰</span> Tasks
+                </a>
+            </nav>
+        </div>
+        
+        <div class="p-6 mt-auto">
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">System Mode</p>
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-slate-100">Live Production</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    {# Main Content #}
+    <main class="flex-grow p-4 lg:p-8 overflow-y-auto">
+        
+        {# Top Bar #}
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Command Centre</h1>
+                <p class="text-slate-500 font-medium">Platform-wide operations & health at a glance.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/sd/" class="bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg hover:bg-slate-50 transition shadow-sm flex items-center gap-2">
+                    <span>Advanced Admin</span>
+                    <span class="text-xs opacity-50">/sd/</span>
+                </a>
+                <div class="h-10 w-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold">
+                    {{ request.user.username[0]|upper }}
+                </div>
+            </div>
+        </div>
+
+        {# Core Metrics Grid #}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+            <!-- Payouts -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-emerald-300 transition-all">
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">💰</div>
+                <div>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Total Payouts</p>
+                    <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(total_payouts) }}</p>
+                </div>
+            </div>
+            <!-- Users -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-indigo-300 transition-all">
+                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">👥</div>
+                <div>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Growth</p>
+                    <p class="text-2xl font-black text-slate-900">{{ total_users }} Users</p>
+                </div>
+            </div>
+            <!-- Approvals -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-rose-300 transition-all">
+                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">⚖️</div>
+                <div>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Pending Tasks</p>
+                    <p class="text-2xl font-black text-slate-900 {% if pending_count > 0 %}text-rose-600{% endif %}">{{ pending_count }} Actions</p>
+                </div>
+            </div>
+            <!-- Engagement -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-amber-300 transition-all">
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">⭐</div>
+                <div>
+                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Total XP</p>
+                    <p class="text-2xl font-black text-slate-900">{{ total_xp_platform }} Points</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            
+            {# Left Column: Actionable Tables #}
+            <div class="xl:col-span-2 flex flex-col gap-6">
+                
+                {# Pending Approvals #}
+                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
+                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h3 class="font-black text-slate-900 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                            Tasks Awaiting Review
+                        </h3>
+                        <span class="bg-rose-100 text-rose-700 text-[10px] uppercase font-black px-2 py-1 rounded-md">{{ pending_count }} Pending</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b">
+                                <tr>
+                                    <th class="px-6 py-3">User</th>
+                                    <th class="px-6 py-3">Task</th>
+                                    <th class="px-6 py-3">Proof</th>
+                                    <th class="px-6 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for sub in pending_submissions %}
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-slate-800 text-sm">{{ sub.user.username }}</div>
+                                        <div class="text-[10px] text-slate-400">{{ sub.submitted_at.strftime('%H:%M · %d %b') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-indigo-600 text-xs">{{ sub.task.title }}</div>
+                                        <div class="text-[10px] text-slate-500">Reward: ₹{{ sub.task.reward_amount }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {% if sub.proof_url %}
+                                        <a href="{{ sub.proof_url }}" target="_blank" class="text-indigo-500 hover:text-indigo-700 text-xs font-bold underline flex items-center gap-1">
+                                            View Proof 🔗
+                                        </a>
+                                        {% else %}
+                                        <span class="text-slate-400 text-xs">No URL</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <form action="{{ url('core:admin_reject', sub.id) }}" method="POST" class="inline">
+                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                                <button type="submit" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all" title="Reject">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </button>
+                                            </form>
+                                            <form action="{{ url('core:admin_approve', sub.id) }}" method="POST" class="inline">
+                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                                <button type="submit" class="bg-emerald-500 text-white p-1.5 rounded-lg hover:bg-emerald-600 transition-all shadow-md shadow-emerald-100" title="Approve">
+                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="4" class="px-6 py-20 text-center">
+                                        <div class="text-4xl mb-3 opacity-20">✅</div>
+                                        <p class="text-slate-400 font-bold">Inbox zero! No tasks awaiting review.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                {# Content Overview Sidebar logic for grid items #}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Latest Content</h3>
+                            <a href="/sd/learning/conceptvideo/" class="text-[10px] font-black text-indigo-500">Manage</a>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            {% for v in recent_videos %}
+                            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs ring-2 ring-white">V</div>
+                                <div class="flex-grow min-w-0">
+                                    <p class="text-xs font-bold text-slate-800 truncate">{{ v.title }}</p>
+                                    <p class="text-[10px] text-slate-500">{{ v.skill.name }}</p>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                     </div>
+                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Newest Members</h3>
+                            <a href="/sd/users/customuser/" class="text-[10px] font-black text-indigo-500">View All</a>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            {% for u in recent_users %}
+                            <div class="flex items-center gap-3 group">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 group-hover:border-emerald-300 transition-colors">
+                                    {{ u.username[0]|upper }}
+                                </div>
+                                <div class="flex-grow">
+                                    <p class="text-xs font-bold text-slate-800">{{ u.username }}</p>
+                                    <p class="text-[9px] text-slate-400 uppercase font-black uppercase tracking-tighter">{{ u.date_joined.strftime('%d %b %Y') }}</p>
+                                </div>
+                                <span class="text-[9px] font-black bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">NEW</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                     </div>
+                </div>
+            </div>
+
+            {# Right Column: Quick Actions & Monitoring #}
+            <aside class="flex flex-col gap-6">
+                
+                {# Quick Command Centre #}
+                <div class="bg-white rounded-2xl border border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.1)] p-6">
+                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest mb-4">Quick Command</h3>
+                    <div class="flex flex-col gap-3">
+                        <a href="/sd/assessment/question/add/" class="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-100 hover:bg-white hover:shadow-lg hover:shadow-indigo-500/10 transition-all group">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">➕</span>
+                                <span class="text-xs font-black text-indigo-900">Add New Question</span>
+                            </div>
+                            <span class="text-indigo-300 group-hover:translate-x-1 transition-transform">→</span>
+                        </a>
+                        <a href="/sd/learning/conceptvideo/add/" class="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-100 hover:bg-white hover:shadow-lg hover:shadow-purple-500/10 transition-all group">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">🎬</span>
+                                <span class="text-xs font-black text-purple-900">Upload Concept Video</span>
+                            </div>
+                            <span class="text-purple-300 group-hover:translate-x-1 transition-transform">→</span>
+                        </a>
+                        <a href="/sd/core/earningtask/add/" class="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-500/10 transition-all group">
+                            <div class="flex items-center gap-3">
+                                <span class="text-lg">💵</span>
+                                <span class="text-xs font-black text-emerald-900">Post Earning Task</span>
+                            </div>
+                            <span class="text-emerald-300 group-hover:translate-x-1 transition-transform">→</span>
+                        </a>
+                    </div>
+                </div>
+
+                {# Platform Health #}
+                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl shadow-slate-200">
+                    <h3 class="font-black text-white/50 uppercase text-[10px] tracking-widest mb-4">Core Infrastructure</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-end">
+                            <div class="text-xs font-bold text-slate-400">Database</div>
+                            <div class="text-xs font-black text-emerald-400 flex items-center gap-1.5 leading-none">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Optimal
+                            </div>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-full w-[88%]"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-end mt-6">
+                            <div class="text-xs font-bold text-slate-400">Content Density</div>
+                            <div class="text-xs font-black text-indigo-300">{{ total_questions + total_videos }} Assets</div>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-indigo-500 h-full w-[65%]"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center">
+                        <div class="flex -space-x-2">
+                             <div class="w-6 h-6 rounded-full bg-indigo-500 border border-slate-900 flex items-center justify-center text-[8px] font-black">A</div>
+                             <div class="w-6 h-6 rounded-full bg-indigo-700 border border-slate-900 flex items-center justify-center text-[8px] font-black">S</div>
+                             <div class="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[8px] font-black">+{{ total_users - 2 }}</div>
+                        </div>
+                        <p class="text-[9px] font-bold text-slate-500 italic">Antigravity V1.0 Core</p>
+                    </div>
+                </div>
+
+            </aside>
+        </div>
+    </main>
+</div>
+{% endblock %}

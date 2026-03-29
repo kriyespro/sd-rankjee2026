@@ -1,0 +1,19 @@
+# Test Credentials
+
+## Admin User
+- Username: admin
+- Email: admin@example.com
+- Password: AdminPassword123!
+- Role: Superuser (Access to /sd/)
+
+## Standard User 1
+- Username: testuser1
+- Email: testuser1@example.com
+- Password: TestUserPassword123!
+- Role: Student/Earner
+
+## Standard User 2
+- Username: testuser2
+- Email: testuser2@example.com
+- Password: TestUserPassword123!
+- Role: Student/Earner

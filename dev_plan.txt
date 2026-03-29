@@ -1,0 +1,64 @@
+# SkillLoop - Development Plan (Phase-wise)
+
+## Phase 1: MVP (Months 0-3) - Validation & Core Loop ✅ DONE
+
+### 1. Project Setup
+- [x] Initialize Python 3.12 Virtual Environment
+- [x] Install Django 5, Jinja2, psycopg2, python-dotenv
+- [x] Configure `settings.py`:
+  - [x] Primary: Jinja2, Secondary: Django Templates (for `/sd/` admin)
+  - [x] DB config (SQLite for DEV, PostgreSQL for PROD)
+  - [x] Static files & Templates directory setup
+- [x] Create `durga.py` dev script (clear cache, runserver)
+- [x] Create base semantic layout (`base.jinja`) with Tailwind, Alpine, HTMX via CDN
+- [x] Set up Modular Apps: `core`, `users`, `dashboard`, `assessment`, `learning`
+
+### 2. User System & URLs
+- [x] Move default Django admin to `/sd/`
+- [x] Set up Custom Dashboard at `/admin/`
+- [x] Implement Custom User Model in `users` app
+- [x] Signup/Login flows using HTMX
+
+### 3. Test Engine & Core Loop
+- [x] `assessment` app: Models for Question, Skill, Tags
+- [x] MCQ-based diagnostic test view
+- [x] Weak Area Engine logic
+
+### 4. Micro Learning Module
+- [x] `learning` app: Models for Videos, Content, Questions
+- [x] Rule-based weak area to content mapping
+
+### 5. Retest Engine
+- [x] Concept retest flow
+- [x] Retest lock logic (score > 80% to unlock)
+
+### 6. Earnings & UI
+- [x] Basic dashboard UI using Tailwind+Alpine (progress %, weak skills)
+- [x] Simple earning tasks submission system
+- [x] Custom Django admin for uploading skills/questions/videos
+
+### 7. Seed Data
+- [x] Digital Marketing skill with 10 MCQ questions
+- [x] 4 learning videos mapped to concept tags
+- [x] 3 earning tasks seeded
+
+## Phase 2: Growth (Months 3-9) - Retention & Automation
+- [x] Leaderboard & XP gamification system
+- [x] Daily streak & notification reminders
+- [x] AI Personalization (difficulty, sequencing)
+- [x] Auto Task Marketplace (auto-approve based on URL)
+- [x] Skill Paths System (Beginner → Pro → Earner)
+- [x] Referral system implementation (Bonus feature)
+- [x] Background tasks (Celery + Redis)
+
+## Phase 3: Monetization & Scale (Months 9-18)
+- [ ] Premium Plans & Paywalls
+- [ ] Certification Engine (PDF certificate on passing)
+- [ ] Company Hiring Portal
+- [ ] Platform Commission logic
+
+## Phase 4: Domination (18+ Months)
+- [ ] AI Mentor Chat
+- [ ] Real Freelance Marketplace
+- [ ] Mobile App (React Native/Flutter)
+- [ ] Regional Expansion (Hindi + local languages)

@@ -1,0 +1,84 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | RankJEE Admin{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">RankJEE Control Centre</a></h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary: #000000;
+        --secondary: #2d0000;
+        --header-bg: #000000;
+        --header-color: #ffffff;
+        --header-link-color: #ff4d4d;
+        --branding-color: #ffffff;
+        --link-color: #ff4d4d;
+        --link-hover-color: #ff0000;
+        --link-selected-color: #ff4d4d;
+        --button-bg: #8b0000;
+        --button-hover-bg: #4d0000;
+        --default-button-bg: #333333;
+        --default-button-hover-bg: #111111;
+        --close-button-bg: #888;
+        --close-button-hover-bg: #444;
+        --delete-button-bg: #ba2121;
+        --delete-button-hover-bg: #a41515;
+        --object-tools-bg: #8b0000;
+        --object-tools-hover-bg: #4d0000;
+        --breadcrumbs-bg: #1a1a1a;
+        --breadcrumbs-link-color: #ff4d4d;
+        --breadcrumbs-fg: #eee;
+        --accent: #8b0000;
+    }
+
+    #header {
+        background: var(--header-bg);
+        color: var(--header-color);
+        border-bottom: 3px solid var(--accent);
+    }
+
+    #header a:link, #header a:visited {
+        color: var(--header-link-color);
+    }
+
+    div.breadcrumbs {
+        background: var(--breadcrumbs-bg);
+        color: var(--breadcrumbs-fg);
+        border-bottom: 1px solid var(--accent);
+    }
+
+    .module h2, .module caption, .inline-group h2 {
+        background: var(--accent);
+        color: white;
+    }
+
+    .button, input[type=submit], input[type=button], .submit-row input, a.button {
+        background: var(--button-bg);
+    }
+
+    .button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover, a.button:hover {
+        background: var(--button-hover-bg);
+    }
+
+    .button.default, input[type=submit].default {
+        background: #000000;
+        border: 1px solid var(--accent);
+    }
+
+    .button.default:hover, input[type=submit].default:hover {
+        background: var(--accent);
+    }
+    
+    #content h1 {
+        color: #333;
+        border-bottom: 2px solid var(--accent);
+        display: inline-block;
+        padding-bottom: 5px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}

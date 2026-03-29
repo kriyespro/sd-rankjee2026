@@ -1,0 +1,121 @@
+{% extends "base.jinja" %}
+{% block title %}My Profile - SkillLoop{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Profile Header -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div class="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-4xl font-black">
+                {{ user.username[0].upper() }}
+            </div>
+            <div class="flex-1">
+                <h1 class="text-3xl font-extrabold">{{ user.username }}</h1>
+                <p class="text-white/70 mt-1">{{ user.email }}</p>
+                <p class="text-white/70 text-sm mt-1">Member since {{ user.date_joined.strftime('%B %Y') }}</p>
+            </div>
+            <div class="flex gap-6 text-center">
+                <div>
+                    <p class="text-3xl font-black text-yellow-300">🔥 {{ user.streak_days }}</p>
+                    <p class="text-white/70 text-sm">Day Streak</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-black text-green-300">₹{{ total_earned }}</p>
+                    <p class="text-white/70 text-sm">Total Earned</p>
+                </div>
+                <div>
+                    <p class="text-3xl font-black">{{ user.xp_points }}</p>
+                    <p class="text-white/70 text-sm">XP Points</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test History -->
+    <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-2xl font-bold mb-5">Test History</h2>
+        {% if attempts %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-gray-500 border-b">
+                        <th class="pb-3 font-semibold">Skill</th>
+                        <th class="pb-3 font-semibold">Score</th>
+                        <th class="pb-3 font-semibold">Status</th>
+                        <th class="pb-3 font-semibold">Weak Areas</th>
+                        <th class="pb-3 font-semibold">Date</th>
+                        <th class="pb-3 font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y">
+                {% for attempt in attempts %}
+                <tr class="hover:bg-gray-50">
+                    <td class="py-4 font-semibold text-gray-900">{{ attempt.skill.name }}</td>
+                    <td class="py-4">
+                        <span class="font-bold text-lg {% if attempt.passed %}text-green-600{% else %}text-red-500{% endif %}">
+                            {{ attempt.score }}%
+                        </span>
+                    </td>
+                    <td class="py-4">
+                        {% if attempt.passed %}
+                        <span class="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full">PASSED ✓</span>
+                        {% else %}
+                        <span class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-full">FAILED</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-4 text-gray-500 text-xs">
+                        {% if attempt.weak_concepts %}
+                            {{ attempt.weak_concepts | join(', ') }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="py-4 text-gray-400 text-xs">{{ attempt.attempt_date.strftime('%d %b %Y') }}</td>
+                    <td class="py-4">
+                        <a href="{{ url('assessment:take_test', attempt.skill.id) }}"
+                           class="text-indigo-600 text-xs font-semibold hover:underline">Retest</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-400">
+            <p>No tests taken yet.</p>
+            <a href="{{ url('assessment:index') }}" class="mt-2 inline-block text-indigo-600 font-semibold hover:underline text-sm">Take your first test →</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Badges Section #}
+    <div class="bg-white rounded-2xl shadow p-6 mt-6">
+        <h2 class="text-2xl font-bold mb-4">🏅 My Badges</h2>
+        {% if user_badges %}
+        <div class="flex flex-wrap gap-3">
+            {% for ub in user_badges %}
+            <div class="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+                <span class="text-2xl">{{ ub.badge.icon }}</span>
+                <div>
+                    <p class="font-bold text-sm text-indigo-800">{{ ub.badge.title }}</p>
+                    <p class="text-xs text-gray-500">{{ ub.badge.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-6 text-gray-400">
+            <p class="text-4xl mb-2">🏅</p>
+            <p class="text-sm">No badges yet. Take tests & complete tasks to earn them!</p>
+        </div>
+        {% endif %}
+    </div>
+
+    {# Referral Card #}
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mt-6">
+        <h2 class="text-lg font-bold mb-1">🤝 Your Referral Code</h2>
+        <p class="text-indigo-100 text-sm mb-3">Share and earn +₹50 & +20 XP for each new signup!</p>
+        <code class="bg-white/20 px-4 py-2 rounded-lg font-mono font-bold text-xl tracking-widest">{{ user.referral_code }}</code>
+    </div>
+
+</div>
+{% endblock %}

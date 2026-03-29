@@ -1,0 +1,37 @@
+# Development Progress Tracker
+
+## Current Phase: Phase 2 (Growth)
+
+### Pending - Phase 2
+- None
+
+### In Progress
+- None
+
+### Completed - Phase 2 (Growth) Web Features ✅
+- Leaderboard & XP points display
+- Gamification badges (first test, first earn, referral, streaks)
+- Wallet balance tracking independent of XP
+- Referral system (code generation and tracking)
+- Notification / daily reminder system
+- Auto-approve task marketplace (domain matching)
+- AI Personalization (difficulty, sequencing)
+- Skill Paths System (Beginner → Pro → Earner)
+- Background tasks (Celery + Redis)
+
+### Completed - Phase 1 (MVP) ✅
+- Analyzed durga.txt, created dev_plan.txt, test_user.txt
+- Initialized Django 5 + Jinja2 + Tailwind + Alpine.js + HTMX project
+- All modular apps: `core`, `users`, `dashboard`, `assessment`, `learning`
+- CustomUser model (with streak_days, xp_points, last_active_date)
+- User auth: Login, Signup (Jinja2-compatible form rendering)
+- Daily login streak counter + profile page with test history
+- Assessment engine: Skills, Questions (MCQ), UserAttempt model
+- 10-question Digital Marketing test with results + weak area detection
+- Retest lock logic (score >= 80% to pass)
+- Micro-learning: Videos mapped to weak concept tags
+- Earning tasks: Submission with proof, admin approval
+- Custom Django Admin at /sd/ for all models
+- Premium landing page redesign (gradient hero, how-it-works, stats bar, CTA)
+- Seed data: 10 MCQ questions + 4 videos + 3 earning tasks
+- dev_plan.txt updated with all Phase 1 complete

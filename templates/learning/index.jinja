@@ -1,0 +1,75 @@
+{% extends "base.jinja" %}
+{% block title %}Micro Learning - SkillLoop{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h2 class="text-3xl font-bold mb-2">Your Learning Plan</h2>
+    {% if current_skill %}
+    <p class="text-gray-500 mb-6">Learning: <strong>{{ current_skill.name }}</strong>. Watch the lessons below then take the test!</p>
+    <div class="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex justify-between items-center">
+        <div>
+            <h3 class="font-bold text-indigo-900">Ready to test your knowledge?</h3>
+            <p class="text-sm text-indigo-700">Pass this topic with 80% to move to the next lesson.</p>
+        </div>
+        <a href="{{ url('assessment:take_test', current_skill.id) }}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Take Assessment &rarr;</a>
+    </div>
+    {% else %}
+    <p class="text-gray-500 mb-6">Explore all available lessons or take a diagnostic test.</p>
+    {% endif %}
+
+    {% if videos %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for video in videos %}
+        <div class="bg-white rounded-xl shadow hover:shadow-md transition p-5">
+            <span class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded uppercase">{{ video.concept_tag }}</span>
+            <h3 class="text-lg font-bold mt-3 mb-2">{{ video.title }}</h3>
+            <div class="relative w-full overflow-hidden rounded-lg group" style="padding-top: 56.25%" x-data="{ playing: false }">
+                <!-- Thumbnail Layer -->
+                <div x-show="!playing" class="absolute inset-0 cursor-pointer" @click="playing = true">
+                    <img src="{{ video.get_thumbnail_url() }}" 
+                         alt="{{ video.title }}" 
+                         class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
+                    
+                    <!-- Gradient Overlay -->
+                    <div class="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
+                    
+                    <!-- Play Button -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="bg-indigo-600/90 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-all duration-300">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Layer -->
+                <template x-if="playing">
+                    <iframe
+                        class="absolute inset-0 w-full h-full rounded-lg"
+                        src="{{ video.get_embed_url() }}"
+                        title="{{ video.title }}"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </template>
+            </div>
+            <div class="flex justify-between items-center mt-3">
+                <p class="text-gray-400 text-xs">~{{ video.duration_seconds // 60 }} min</p>
+            </div>
+            {% if video.skill %}
+            <a href="{{ url('assessment:take_test', video.skill.id) }}" class="mt-4 block text-center bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 hover:shadow-lg transition-all">
+                Retest &rarr;
+            </a>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
+        <p>No learning content available yet. Take a test first!</p>
+        <a href="{{ url('assessment:index') }}" class="mt-4 inline-block text-indigo-600 font-semibold hover:underline">Take a Diagnostic Test</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

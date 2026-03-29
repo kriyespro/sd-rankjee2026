@@ -1,0 +1,125 @@
+{% extends "base.jinja" %}
+{% block title %}{{ skill.name }} Test - SkillLoop{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto py-8 px-4" x-data="{ 
+    currentQ: 0, 
+    total: {{ questions|length }},
+    answers: {},
+    isComplete() { return Object.keys(this.answers).length === this.total },
+   
+    next() { if(this.currentQ < this.total - 1) this.currentQ++ },
+    prev() { if(this.currentQ > 0) this.currentQ-- },
+    jump(index) { this.currentQ = index }
+}">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ skill.name }} Test</h2>
+            <p class="text-slate-500 text-sm font-medium mt-1">Focus on one question at a time.</p>
+        </div>
+        <div class="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-4 py-2 text-sm font-bold shadow-sm">
+            Progress <span x-text="Object.keys(answers).length"></span> / <span x-text="total"></span>
+        </div>
+    </div>
+
+    <form method="post" action="{{ url('assessment:submit_test', skill.id) }}" id="testForm" class="flex flex-col md:flex-row gap-6">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="set_id" value="{{ current_set.id if current_set else '' }}">
+        
+        <!-- Sidebar Navigation Grid (Compact) -->
+        <div class="md:w-64 flex-shrink-0 order-2 md:order-1">
+            <div class="bg-white border text-center border-slate-200 rounded-xl shadow-sm p-4 sticky top-20">
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Question Navigator</p>
+                <div class="grid grid-cols-5 gap-2">
+                    {% for q in questions %}
+                    <template x-if="true"> <!-- Ensure alpine parses properly within jinja list -->
+                        <button type="button" @click="jump({{ loop.index0 }})"
+                            class="h-10 rounded-md font-bold text-xs flex items-center justify-center transition-all border outline-none"
+                            :class="{
+                                'bg-indigo-600 border-indigo-600 text-white shadow-md scale-105 z-10': currentQ === {{ loop.index0 }},
+                                'bg-emerald-50 border-emerald-200 text-emerald-700': currentQ !== {{ loop.index0 }} && answers['{{ q.id }}'],
+                                'bg-white border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600': currentQ !== {{ loop.index0 }} && !answers['{{ q.id }}']
+                            }">
+                            {{ loop.index }}
+                        </button>
+                    </template>
+                    {% endfor %}
+                </div>
+                
+                <div class="mt-6 pt-6 border-t border-slate-100">
+                    <button type="submit" 
+                        class="w-full py-3 rounded-lg font-bold text-sm transition-all text-white shadow-sm"
+                        :class="isComplete() ? 'bg-slate-900 hover:bg-black shadow-slate-900/20' : 'bg-slate-300 cursor-not-allowed'"
+                        :disabled="!isComplete()">
+                        Submit Final Test
+                    </button>
+                    <p class="text-[10px] text-slate-400 font-semibold mt-2 px-2" x-show="!isComplete()">You must answer all questions before submitting.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Question Area -->
+        <div class="flex-grow order-1 md:order-2 space-y-4">
+            {% for q in questions %}
+            <div x-show="currentQ === {{ loop.index0 }}" x-transition.opacity.duration.300ms class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 sm:p-8 min-h-[360px] flex flex-col">
+                <div class="flex justify-between items-start mb-6">
+                    <span class="inline-flex items-center justify-center bg-slate-100 text-slate-500 font-bold text-xs h-6 w-6 rounded-full shrink-0">
+                        {{ loop.index }}
+                    </span>
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded shadow-sm">{{ q.concept_tag }} • {{ q.difficulty }}</span>
+                </div>
+                
+                <h3 class="text-xl font-bold text-slate-800 leading-snug mb-8">{{ q.text }}</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-auto">
+                    {% for opt, label in [('A', q.option_a), ('B', q.option_b), ('C', q.option_c), ('D', q.option_d)] %}
+                    <label class="group relative flex items-center p-4 cursor-pointer rounded-lg border-2 transition-all"
+                           :class="answers['{{ q.id }}'] === '{{ opt }}' ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-100 bg-white hover:border-indigo-200 hover:bg-slate-50'">
+                        <input type="radio" 
+                               name="q_{{ q.id }}" 
+                               value="{{ opt }}" 
+                               class="sr-only"
+                               @change="answers['{{ q.id }}'] = '{{ opt }}'">
+                        
+                        <!-- Custom Radio Circle -->
+                        <div class="w-5 h-5 rounded-full border-2 mr-3 flex flex-shrink-0 items-center justify-center transition-colors"
+                             :class="answers['{{ q.id }}'] === '{{ opt }}' ? 'border-indigo-600' : 'border-slate-300 group-hover:border-indigo-400'">
+                            <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 scale-0 transition-transform"
+                                 :class="answers['{{ q.id }}'] === '{{ opt }}' ? 'scale-100' : ''"></div>
+                        </div>
+                        
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-slate-400 mb-0.5">Option {{ opt }}</span>
+                            <span class="font-medium text-sm text-slate-700 group-hover:text-slate-900 transition-colors">{{ label }}</span>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Progression Controls -->
+            <div class="flex justify-between items-center bg-white border border-slate-200 rounded-xl shadow-sm p-4">
+                <button type="button" @click="prev()" 
+                    class="px-5 py-2 rounded-lg text-sm font-bold transition-colors"
+                    :class="currentQ === 0 ? 'text-slate-300 cursor-not-allowed' : 'text-slate-600 bg-slate-100 hover:bg-slate-200 hover:text-slate-900'"
+                    :disabled="currentQ === 0">
+                    &larr; Previous
+                </button>
+                <button type="button" @click="next()" 
+                    class="px-5 py-2 rounded-lg text-sm font-bold transition-colors"
+                    :class="currentQ === total - 1 ? 'text-slate-300 cursor-not-allowed hidden' : 'text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm'"
+                    x-show="currentQ < total - 1">
+                    Next Question &rarr;
+                </button>
+                <button type="submit" 
+                    class="px-6 py-2 rounded-lg text-sm font-bold transition-all text-white shadow-sm"
+                    :class="isComplete() ? 'bg-slate-900 hover:bg-black shadow-slate-900/20' : 'bg-slate-300 cursor-not-allowed'"
+                    x-show="currentQ === total - 1"
+                    :disabled="!isComplete()">
+                    Submit Answers
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

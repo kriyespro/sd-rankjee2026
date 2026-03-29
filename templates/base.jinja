@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SkillLoop - Earn While You Learn{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            colors: {
+              primary: '#4f46e5',
+              'primary-dark': '#4338ca',
+              slate: { 50: '#f8fafc', 900: '#0f172a' }
+            }
+          }
+        }
+      }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+        /* Smooth, modern scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <nav class="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-14">
+            <a href="{{ url('core:home') }}" class="flex items-center gap-2 group">
+                <span class="text-xl font-black text-indigo-600 tracking-tight group-hover:text-indigo-700 transition">Skill</span><span class="text-xl font-black text-slate-900 tracking-tight">Loop</span>
+            </a>
+            <div class="hidden sm:flex items-center gap-5 text-sm font-semibold text-slate-600">
+                <a href="{{ url('assessment:index') }}" class="hover:text-indigo-600 transition-colors">Tests</a>
+                <a href="{{ url('learning:index') }}" class="hover:text-indigo-600 transition-colors">Learn</a>
+                <a href="{{ url('core:earnings') }}" class="hover:text-indigo-600 transition-colors">Earn</a>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if request.user.is_authenticated %}
+                    <form action="{{ url('dashboard:recharge') }}" method="POST" class="hidden md:block m-0">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <button type="submit" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-[11px] font-black px-4 py-1.5 rounded-full hover:from-indigo-700 hover:to-violet-700 transition-all shadow-md shadow-indigo-100 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-1.5 border border-indigo-400/20">
+                            RECHARGE <span class="bg-white/20 rounded-full w-4 h-4 flex items-center justify-center text-[10px]">⚡</span>
+                        </button>
+                    </form>
+                    <a href="{{ url('dashboard:index') }}" class="text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors">Dashboard</a>
+                    <form action="{{ url('users:logout') }}" method="post" class="inline m-0">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <button type="submit" class="text-sm font-bold bg-white border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">Log Out</button>
+                    </form>
+                {% else %}
+                    <a href="{{ url('users:login') }}" class="text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors px-2">Log In</a>
+                    <a href="{{ url('users:signup') }}" class="text-sm font-bold bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-200 hover:shadow-md">Sign Up</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        {% if messages %}
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                {% for message in messages %}
+                <div class="p-3 rounded-lg mb-4 text-sm font-bold shadow-sm flex items-center gap-2 {% if message.tags == 'error' %}bg-red-50 text-red-700 border border-red-100{% else %}bg-indigo-50 text-indigo-700 border border-indigo-100{% endif %}">
+                    {% if message.tags == 'error' %}
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {% else %}
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-white border-t border-slate-200/60 py-5 text-center text-xs font-semibold text-slate-400 mt-auto">
+        &copy; 2026 SkillLoop · Focus on Execution
+    </footer>
+</body>
+</html>

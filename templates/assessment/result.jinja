@@ -1,0 +1,46 @@
+{% extends "base.jinja" %}
+{% block title %}Test Result - SkillLoop{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto text-center">
+    <div class="bg-white rounded-2xl shadow-lg p-10 mt-6">
+        {% if passed %}
+            <div class="text-6xl mb-4">🏆</div>
+            <h2 class="text-3xl font-extrabold text-green-600">You Passed!</h2>
+            <p class="text-gray-500 mt-2">You scored <span class="font-bold text-green-600">{{ score }}%</span> on <strong>{{ current_set.name if current_set else skill.name }}</strong>.</p>
+            {% if next_set %}
+                <p class="mt-4 text-gray-600">Level up! You are ready for the next set.</p>
+            {% else %}
+                <p class="mt-4 text-gray-600">Mastery Complete! You have finished all sets for this topic.</p>
+            {% endif %}
+            
+            <div class="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
+                {% if next_set %}
+                    <a href="{{ url('assessment:take_test', skill.id) }}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition transform hover:-translate-y-0.5">🚀 Start Next: {{ next_set.name }}</a>
+                {% elif next_skill %}
+                    <a href="{{ url('learning:index') }}?skill={{ next_skill.id }}" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition transform hover:-translate-y-0.5">🚀 Start Next Topic: {{ next_skill.name }}</a>
+                {% endif %}
+                <a href="{{ url('dashboard:index') }}" class="bg-white border-2 border-slate-200 text-slate-700 px-8 py-3 rounded-lg font-bold hover:bg-slate-50 transition">Go to Dashboard</a>
+            </div>
+        {% else %}
+            <div class="text-6xl mb-4">📚</div>
+            <h2 class="text-3xl font-extrabold text-indigo-700">Keep Learning!</h2>
+            <p class="text-gray-500 mt-2">You scored <span class="font-bold text-red-500">{{ score }}%</span> — you need <strong>80%</strong> to pass.</p>
+            {% if weak_concepts %}
+            <div class="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                <h3 class="font-semibold text-red-700 mb-2">Your Weak Areas</h3>
+                <ul class="list-disc list-inside text-red-600 space-y-1">
+                    {% for concept in weak_concepts %}
+                    <li>{{ concept }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+            <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ url('learning:index') }}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Study Weak Areas</a>
+                <a href="{{ url('assessment:take_test', skill.id) }}" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition">Retry Test</a>
+            </div>
+        {% endif %}
+        <p class="mt-6 text-sm text-gray-400">{{ correct }}/{{ total }} correct</p>
+    </div>
+</div>
+{% endblock %}

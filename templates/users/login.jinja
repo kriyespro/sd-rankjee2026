@@ -1,0 +1,46 @@
+{% extends "base.jinja" %}
+{% block title %}Log In - SkillLoop{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto mt-16 mb-24 px-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8">
+        <div class="text-center mb-8">
+            <div class="text-4xl mb-3 drop-shadow-sm">🔐</div>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Welcome Back</h2>
+            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to continue your learning</p>
+        </div>
+        <form method="post" action="{{ url('users:login') }}">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <div class="space-y-4 flex flex-col">
+                {% for field in form %}
+                <div class="flex flex-col">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">{{ field.label }}</label>
+                    <input type="{{ field.field.widget.input_type }}"
+                           name="{{ field.html_name }}"
+                           id="{{ field.id_for_label }}"
+                           class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-slate-50 focus:bg-white text-sm"
+                           {% if field.value() %}value="{{ field.value() }}"{% endif %}>
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                        <p class="text-rose-500 text-xs font-semibold mt-1">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% if form.non_field_errors() %}
+                <div class="bg-rose-50 border border-rose-200 rounded-lg p-3">
+                    {% for error in form.non_field_errors() %}
+                    <p class="text-rose-600 text-sm font-bold">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            <button type="submit" class="w-full mt-8 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition-colors shadow-sm focus:ring-4 focus:ring-indigo-100">
+                Log In &rarr;
+            </button>
+        </form>
+    </div>
+    <p class="mt-8 text-center text-sm font-medium text-slate-500">Don't have an account?
+        <a href="{{ url('users:signup') }}" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">Sign up free</a>
+    </p>
+</div>
+{% endblock %}
