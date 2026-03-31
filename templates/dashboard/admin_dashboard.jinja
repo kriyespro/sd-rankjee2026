@@ -1,168 +1,203 @@
 {% extends "base.jinja" %}
-{% block title %}Command Centre - SkillLoop Admin{% endblock %}
+{% block title %}Command Centre - RankJEE Admin{% endblock %}
 
 {% block content %}
-<div class="flex min-h-[calc(100vh-3.5rem)] bg-slate-50">
+<div class="flex flex-col lg:flex-row min-h-[calc(100vh-3.5rem)] bg-slate-50" x-data="{ sidebarOpen: false }">
     
-    {# Admin Sidebar #}
-    <aside class="w-64 bg-slate-900 text-slate-300 flex-shrink-0 hidden lg:flex flex-col border-r border-slate-800">
+    {# Mobile Header #}
+    <div class="lg:hidden bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
+        <h2 class="text-sm font-black tracking-tighter uppercase">RankJEE Admin</h2>
+        <button @click="sidebarOpen = !sidebarOpen" class="p-2 bg-slate-800 rounded-lg">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    </div>
+
+    {# Sidebar #}
+    <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'" 
+           class="fixed lg:relative z-40 w-64 h-full bg-slate-900 text-slate-400 border-r border-slate-800 transition-transform duration-300 ease-in-out flex flex-col">
+        
         <div class="p-6 border-b border-slate-800/50">
-            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Management</h2>
+            <div class="flex items-center gap-2 mb-6 text-white">
+                <span class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-black text-xs shadow-lg shadow-indigo-500/20">A</span>
+                <h2 class="text-sm font-black uppercase tracking-widest leading-none">Command Center</h2>
+            </div>
+
             <nav class="flex flex-col gap-1">
-                <a href="{{ url('dashboard:index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold transition-all shadow-lg shadow-indigo-900/20">
-                    <span class="text-lg">📊</span> Overview
+                <a href="{{ url('dashboard:index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800 text-white font-bold transition-all border border-slate-700">
+                    <span class="text-sm opacity-70">📊</span> Dashboard
                 </a>
                 <a href="/sd/users/customuser/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
-                    <span class="text-lg">👥</span> Users
+                    <span class="text-sm opacity-70">👥</span> Students Management
                 </a>
                 <a href="/sd/assessment/skill/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
-                    <span class="text-lg">🎯</span> Skills
+                    <span class="text-sm opacity-70">🎯</span> Skill Inventory
                 </a>
                 <a href="/sd/assessment/question/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
-                    <span class="text-lg">📝</span> Questions
-                </a>
-                <a href="/sd/learning/conceptvideo/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
-                    <span class="text-lg">📺</span> Videos
+                    <span class="text-sm opacity-70">📝</span> Question Bank
                 </a>
                 <a href="/sd/core/earningtask/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
-                    <span class="text-lg">💰</span> Tasks
+                    <span class="text-sm opacity-70">💰</span> Freelance Tasks
                 </a>
             </nav>
         </div>
-        
+
+        <div class="p-6">
+            <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4">Quick Shortcuts</h3>
+            <div class="flex flex-col gap-2">
+                <a href="/sd/assessment/question/add/" class="text-xs font-bold hover:text-indigo-400 flex items-center gap-2"><span>➕</span> Add Question</a>
+                <a href="/sd/learning/conceptvideo/add/" class="text-xs font-bold hover:text-indigo-400 flex items-center gap-2"><span>🎬</span> New Video</a>
+                <a href="/sd/core/earningtask/add/" class="text-xs font-bold hover:text-indigo-400 flex items-center gap-2"><span>💵</span> Post Task</a>
+            </div>
+        </div>
+
         <div class="p-6 mt-auto">
-            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-                <p class="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">System Mode</p>
-                <div class="flex items-center gap-2">
+            <div class="bg-slate-800/40 rounded-xl p-4 border border-slate-700/30">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-slate-500">Live Health</span>
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span class="text-xs font-bold text-slate-100">Live Production</span>
                 </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <p class="text-[10px] font-bold text-slate-300">DB Consistency</p>
+                    <div class="flex-grow h-1 bg-slate-700 rounded-full overflow-hidden">
+                        <div class="bg-emerald-500 h-full w-[94%]"></div>
+                    </div>
+                </div>
+                <a href="/sd/" class="block text-center text-[10px] font-black uppercase tracking-widest py-2 bg-slate-700 rounded-lg text-slate-300 hover:bg-slate-600 border border-slate-600/50 transition-all">
+                    Advanced Admin /sd/
+                </a>
             </div>
         </div>
     </aside>
 
     {# Main Content #}
-    <main class="flex-grow p-4 lg:p-8 overflow-y-auto">
+    <main class="flex-grow p-4 lg:p-6 overflow-y-auto">
         
-        {# Top Bar #}
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        {# Welcome Box #}
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tight">Command Centre</h1>
-                <p class="text-slate-500 font-medium">Platform-wide operations & health at a glance.</p>
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                    Platform Overview 
+                    <span class="bg-white border border-slate-200 text-slate-500 text-[10px] uppercase font-black px-2 py-0.5 rounded-full shadow-sm">Real-time</span>
+                </h1>
+                <p class="text-slate-500 text-sm font-medium">Hello {{ request.user.username }}, you have <strong>{{ pending_count }}</strong> tasks awaiting review.</p>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="/sd/" class="bg-white border border-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg hover:bg-slate-50 transition shadow-sm flex items-center gap-2">
-                    <span>Advanced Admin</span>
-                    <span class="text-xs opacity-50">/sd/</span>
-                </a>
-                <div class="h-10 w-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-600 font-bold">
+            
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <form action="" method="GET" class="relative flex-grow md:w-64">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 opacity-40">🔍</span>
+                    <input type="text" name="q" value="{{ search_query }}" placeholder="Search students..." 
+                           class="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all shadow-sm">
+                </form>
+                <div class="hidden sm:flex h-10 w-10 rounded-full bg-slate-900 text-white items-center justify-center font-black text-xs ring-4 ring-slate-100">
                     {{ request.user.username[0]|upper }}
                 </div>
             </div>
         </div>
 
-        {# Core Metrics Grid #}
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-            <!-- Payouts -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-emerald-300 transition-all">
-                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">💰</div>
-                <div>
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Total Payouts</p>
-                    <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(total_payouts) }}</p>
+        {# Core Performance Cards #}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow group">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total Payouts</span>
+                    <span class="bg-emerald-50 text-emerald-600 p-1.5 rounded-lg text-lg ring-1 ring-emerald-100">💰</span>
+                </div>
+                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(total_payouts) }}</p>
+                <p class="text-[10px] text-slate-500 font-bold mt-2 flex items-center gap-1">
+                    <span class="text-emerald-500">↑ 12%</span> vs last month
+                </p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow group">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Platform Density</span>
+                    <span class="bg-indigo-50 text-indigo-600 p-1.5 rounded-lg text-lg ring-1 ring-indigo-100">⚡</span>
+                </div>
+                <p class="text-2xl font-black text-slate-900">{{ total_questions }} Qs / {{ total_videos }} Vs</p>
+                <div class="w-full bg-slate-100 h-1 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-indigo-500 h-full w-[65%]"></div>
                 </div>
             </div>
-            <!-- Users -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-indigo-300 transition-all">
-                <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">👥</div>
-                <div>
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Growth</p>
-                    <p class="text-2xl font-black text-slate-900">{{ total_users }} Users</p>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow group">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Growth Velocity</span>
+                    <span class="bg-amber-50 text-amber-600 p-1.5 rounded-lg text-lg ring-1 ring-amber-100">🚀</span>
                 </div>
+                <p class="text-2xl font-black text-slate-900">+{{ recent_registrations }} New</p>
+                <p class="text-[10px] text-slate-500 font-bold mt-2 uppercase">Last 7 Days activity</p>
             </div>
-            <!-- Approvals -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-rose-300 transition-all">
-                <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">⚖️</div>
-                <div>
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Pending Tasks</p>
-                    <p class="text-2xl font-black text-slate-900 {% if pending_count > 0 %}text-rose-600{% endif %}">{{ pending_count }} Actions</p>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow group">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Awaiting Review</span>
+                    <span class="{{ 'bg-rose-50 text-rose-600' if pending_count > 0 else 'bg-slate-50 text-slate-400' }} p-1.5 rounded-lg text-lg ring-1 ring-slate-100">🛂</span>
                 </div>
-            </div>
-            <!-- Engagement -->
-            <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex items-center gap-5 group hover:border-amber-300 transition-all">
-                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">⭐</div>
-                <div>
-                    <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Total XP</p>
-                    <p class="text-2xl font-black text-slate-900">{{ total_xp_platform }} Points</p>
-                </div>
+                <p class="text-2xl font-black {{ 'text-rose-600' if pending_count > 0 else 'text-slate-900' }}">{{ pending_count }} Tasks</p>
+                <p class="text-[10px] text-slate-500 font-bold mt-2 uppercase">Action required ASAP</p>
             </div>
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
-            {# Left Column: Actionable Tables #}
-            <div class="xl:col-span-2 flex flex-col gap-6">
+            {# Left Side: Student Management & Review #}
+            <div class="xl:col-span-2 space-y-6">
                 
-                {# Pending Approvals #}
-                <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-[400px]">
-                    <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 class="font-black text-slate-900 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                            Tasks Awaiting Review
+                {# Student Management Table #}
+                <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Student Directory
                         </h3>
-                        <span class="bg-rose-100 text-rose-700 text-[10px] uppercase font-black px-2 py-1 rounded-md">{{ pending_count }} Pending</span>
+                        <div class="flex gap-1">
+                            {% if students_page.has_previous() %}
+                                <a href="?page={{ students_page.previous_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="p-1 px-2 border border-slate-200 rounded hover:bg-white text-[10px] font-bold">Prev</a>
+                            {% endif %}
+                            <span class="p-1 px-2 text-[10px] font-bold text-slate-400">Page {{ students_page.number }} of {{ students_page.paginator.num_pages }}</span>
+                            {% if students_page.has_next() %}
+                                <a href="?page={{ students_page.next_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="p-1 px-2 border border-slate-200 rounded hover:bg-white text-[10px] font-bold">Next</a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest border-b">
+                    <div class="overflow-x-auto overflow-y-auto max-h-[450px]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-slate-50/80 sticky top-0 backdrop-blur-sm text-[10px] uppercase font-black tracking-widest text-slate-400 border-b">
                                 <tr>
-                                    <th class="px-6 py-3">User</th>
-                                    <th class="px-6 py-3">Task</th>
-                                    <th class="px-6 py-3">Proof</th>
-                                    <th class="px-6 py-3 text-right">Actions</th>
+                                    <th class="px-5 py-3">Student</th>
+                                    <th class="px-5 py-3">Streak</th>
+                                    <th class="px-5 py-3">Wallet</th>
+                                    <th class="px-5 py-3 text-right">Activity</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                {% for sub in pending_submissions %}
-                                <tr class="hover:bg-slate-50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <div class="font-bold text-slate-800 text-sm">{{ sub.user.username }}</div>
-                                        <div class="text-[10px] text-slate-400">{{ sub.submitted_at.strftime('%H:%M · %d %b') }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        <div class="font-bold text-indigo-600 text-xs">{{ sub.task.title }}</div>
-                                        <div class="text-[10px] text-slate-500">Reward: ₹{{ sub.task.reward_amount }}</div>
-                                    </td>
-                                    <td class="px-6 py-4">
-                                        {% if sub.proof_url %}
-                                        <a href="{{ sub.proof_url }}" target="_blank" class="text-indigo-500 hover:text-indigo-700 text-xs font-bold underline flex items-center gap-1">
-                                            View Proof 🔗
-                                        </a>
-                                        {% else %}
-                                        <span class="text-slate-400 text-xs">No URL</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <div class="flex justify-end gap-2">
-                                            <form action="{{ url('core:admin_reject', sub.id) }}" method="POST" class="inline">
-                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                                <button type="submit" class="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 transition-all" title="Reject">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                                </button>
-                                            </form>
-                                            <form action="{{ url('core:admin_approve', sub.id) }}" method="POST" class="inline">
-                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                                <button type="submit" class="bg-emerald-500 text-white p-1.5 rounded-lg hover:bg-emerald-600 transition-all shadow-md shadow-emerald-100" title="Approve">
-                                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                                </button>
-                                            </form>
+                                {% for s in students_page %}
+                                <tr class="hover:bg-indigo-50/30 transition-colors">
+                                    <td class="px-5 py-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black border border-slate-200">
+                                                {{ s.username[0]|upper }}
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-black text-slate-900 leading-none">{{ s.username }}</p>
+                                                <p class="text-[9px] text-slate-400 mt-1 uppercase tracking-tighter">{{ s.email|truncate(20) }}</p>
+                                            </div>
                                         </div>
                                     </td>
-                                </tr>
-                                {% else %}
-                                <tr>
-                                    <td colspan="4" class="px-6 py-20 text-center">
-                                        <div class="text-4xl mb-3 opacity-20">✅</div>
-                                        <p class="text-slate-400 font-bold">Inbox zero! No tasks awaiting review.</p>
+                                    <td class="px-5 py-3">
+                                        {% if s.streak_days > 0 %}
+                                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full ring-1 ring-orange-200/50">🔥 {{ s.streak_days }}</span>
+                                        {% else %}
+                                            <span class="text-[10px] font-bold text-slate-300">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-5 py-3">
+                                        <p class="text-xs font-black text-emerald-600">₹{{ s.wallet_balance|int }}</p>
+                                    </td>
+                                    <td class="px-5 py-3 text-right">
+                                        <div class="flex flex-col items-end">
+                                            <p class="text-[10px] font-black text-slate-900">{{ s.xp_points }} XP</p>
+                                            <div class="flex gap-1 mt-1">
+                                                <div class="w-2 h-0.5 bg-emerald-400 rounded-full" title="Active"></div>
+                                                <div class="w-2 h-0.5 bg-slate-200 rounded-full"></div>
+                                                <div class="w-2 h-0.5 bg-slate-200 rounded-full"></div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -171,105 +206,95 @@
                     </div>
                 </section>
 
-                {# Content Overview Sidebar logic for grid items #}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Latest Content</h3>
-                            <a href="/sd/learning/conceptvideo/" class="text-[10px] font-black text-indigo-500">Manage</a>
-                        </div>
-                        <div class="flex flex-col gap-3">
-                            {% for v in recent_videos %}
-                            <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 group hover:border-indigo-200 transition-all">
-                                <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs ring-2 ring-white">V</div>
-                                <div class="flex-grow min-w-0">
-                                    <p class="text-xs font-bold text-slate-800 truncate">{{ v.title }}</p>
-                                    <p class="text-[10px] text-slate-500">{{ v.skill.name }}</p>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                     </div>
-                     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Newest Members</h3>
-                            <a href="/sd/users/customuser/" class="text-[10px] font-black text-indigo-500">View All</a>
-                        </div>
-                        <div class="flex flex-col gap-3">
-                            {% for u in recent_users %}
-                            <div class="flex items-center gap-3 group">
-                                <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-600 border border-slate-200 group-hover:border-emerald-300 transition-colors">
-                                    {{ u.username[0]|upper }}
-                                </div>
-                                <div class="flex-grow">
-                                    <p class="text-xs font-bold text-slate-800">{{ u.username }}</p>
-                                    <p class="text-[9px] text-slate-400 uppercase font-black uppercase tracking-tighter">{{ u.date_joined.strftime('%d %b %Y') }}</p>
-                                </div>
-                                <span class="text-[9px] font-black bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded">NEW</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                     </div>
-                </div>
+                {# Task Approvals #}
+                <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-100 bg-rose-50/30 flex justify-between items-center">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Tasks Awaiting Review
+                        </h3>
+                        <span class="text-[10px] font-black text-slate-400">{{ pending_count }} Submissions</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] uppercase font-black tracking-widest text-slate-400 border-b">
+                                <tr>
+                                    <th class="px-5 py-3">User</th>
+                                    <th class="px-5 py-3">Task Details</th>
+                                    <th class="px-5 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for sub in pending_submissions %}
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-5 py-4">
+                                        <p class="text-xs font-black text-slate-900">{{ sub.user.username }}</p>
+                                        <p class="text-[9px] text-slate-400 uppercase">{{ sub.submitted_at.strftime('%d %b · %H:%M') }}</p>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-bold text-indigo-700">{{ sub.task.title }}</span>
+                                            <span class="text-[9px] font-bold bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded">₹{{ sub.task.reward_amount }}</span>
+                                        </div>
+                                        <a href="{{ sub.proof_url }}" target="_blank" class="text-[10px] text-slate-400 hover:text-indigo-600 underline mt-1 block truncate max-w-xs">View Proof: {{ sub.proof_url }}</a>
+                                    </td>
+                                    <td class="px-5 py-4 text-right">
+                                        <div class="flex justify-end gap-2">
+                                            <form action="{{ url('core:admin_reject', sub.id) }}" method="POST" class="inline">
+                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                                <button type="submit" class="p-2 border border-slate-200 text-rose-500 bg-white rounded-lg hover:bg-rose-50 transition-all opacity-60 hover:opacity-100">
+                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                                </button>
+                                            </form>
+                                            <form action="{{ url('core:admin_approve', sub.id) }}" method="POST" class="inline">
+                                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                                <button type="submit" class="p-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all shadow-sm shadow-emerald-200">
+                                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="px-5 py-12 text-center text-slate-400 font-bold text-sm">No pending submissions. Great job!</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
 
-            {# Right Column: Quick Actions & Monitoring #}
-            <aside class="flex flex-col gap-6">
+            {# Right Side: Platform Analytics & Trends #}
+            <aside class="space-y-6">
                 
-                {# Quick Command Centre #}
-                <div class="bg-white rounded-2xl border border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,0.1)] p-6">
-                    <h3 class="font-black text-slate-900 uppercase text-xs tracking-widest mb-4">Quick Command</h3>
-                    <div class="flex flex-col gap-3">
-                        <a href="/sd/assessment/question/add/" class="flex items-center justify-between p-4 bg-indigo-50 rounded-xl border border-indigo-100 hover:bg-white hover:shadow-lg hover:shadow-indigo-500/10 transition-all group">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">➕</span>
-                                <span class="text-xs font-black text-indigo-900">Add New Question</span>
+                {# Difficult Skills #}
+                <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-4 flex items-center justify-between">
+                        Hurdle Topics
+                        <span class="text-[9px] text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100">Attention Required</span>
+                    </h3>
+                    <div class="space-y-3">
+                        {% for s in difficult_skills %}
+                        <div class="flex flex-col gap-1.5 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-black text-slate-900 truncate w-32">{{ s.name }}</span>
+                                <span class="text-[10px] font-black text-rose-600">{{ "{:,.0f}%".format(s.avg_score) }} Avg</span>
                             </div>
-                            <span class="text-indigo-300 group-hover:translate-x-1 transition-transform">→</span>
-                        </a>
-                        <a href="/sd/learning/conceptvideo/add/" class="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-100 hover:bg-white hover:shadow-lg hover:shadow-purple-500/10 transition-all group">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">🎬</span>
-                                <span class="text-xs font-black text-purple-900">Upload Concept Video</span>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-grow bg-slate-200 h-1 rounded-full overflow-hidden">
+                                    <div class="bg-rose-500 h-full" style="width: {{ s.avg_score }}%"></div>
+                                </div>
+                                <span class="text-[9px] font-bold text-slate-400 whitespace-nowrap">{{ s.total_attempts }} Tries</span>
                             </div>
-                            <span class="text-purple-300 group-hover:translate-x-1 transition-transform">→</span>
-                        </a>
-                        <a href="/sd/core/earningtask/add/" class="flex items-center justify-between p-4 bg-emerald-50 rounded-xl border border-emerald-100 hover:bg-white hover:shadow-lg hover:shadow-emerald-500/10 transition-all group">
-                            <div class="flex items-center gap-3">
-                                <span class="text-lg">💵</span>
-                                <span class="text-xs font-black text-emerald-900">Post Earning Task</span>
-                            </div>
-                            <span class="text-emerald-300 group-hover:translate-x-1 transition-transform">→</span>
-                        </a>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
-                {# Platform Health #}
-                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl shadow-slate-200">
-                    <h3 class="font-black text-white/50 uppercase text-[10px] tracking-widest mb-4">Core Infrastructure</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-end">
-                            <div class="text-xs font-bold text-slate-400">Database</div>
-                            <div class="text-xs font-black text-emerald-400 flex items-center gap-1.5 leading-none">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Optimal
-                            </div>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-gradient-to-r from-emerald-500 to-indigo-500 h-full w-[88%]"></div>
-                        </div>
-                        
-                        <div class="flex justify-between items-end mt-6">
-                            <div class="text-xs font-bold text-slate-400">Content Density</div>
-                            <div class="text-xs font-black text-indigo-300">{{ total_questions + total_videos }} Assets</div>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                            <div class="bg-indigo-500 h-full w-[65%]"></div>
-                        </div>
-                    </div>
+                {# Platform Trends #}
+                <div class="bg-slate-900 rounded-xl p-5 text-white shadow-xl shadow-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                    <h3 class="text-[10px] font-black uppercase tracking-widest text-white/40 mb-5">7-Day Engagement Trend</h3>
                     
-                    <div class="mt-8 pt-6 border-t border-slate-800 flex justify-between items-center">
-                        <div class="flex -space-x-2">
-                             <div class="w-6 h-6 rounded-full bg-indigo-500 border border-slate-900 flex items-center justify-center text-[8px] font-black">A</div>
                              <div class="w-6 h-6 rounded-full bg-indigo-700 border border-slate-900 flex items-center justify-center text-[8px] font-black">S</div>
                              <div class="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-900 flex items-center justify-center text-[8px] font-black">+{{ total_users - 2 }}</div>
                         </div>

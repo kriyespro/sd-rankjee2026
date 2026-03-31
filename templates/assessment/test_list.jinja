@@ -1,69 +1,113 @@
 {% extends "base.jinja" %}
-{% block title %}Skill Tests - SkillLoop{% endblock %}
+{% block title %}Skill Catalog - SkillLoop{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <h2 class="text-3xl font-bold mb-6">Diagnostic Tests</h2>
+<div class="max-w-6xl mx-auto px-4 py-8 md:py-12 pb-24 md:pb-12">
+    <!-- Header Section -->
+    <div class="mb-8 md:mb-12 border-b border-slate-200 pb-6 md:pb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div class="max-w-xl">
+            <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Diagnostic Catalog</h2>
+            <p class="text-slate-500 text-sm md:text-base font-medium">Verify your skills across multiple domains. Our AI-driven assessments identify your gaps so you can learn 10x faster.</p>
+        </div>
+        
+        <!-- Scrollable Mobile Filters -->
+        <div class="w-full md:w-auto overflow-x-auto no-scrollbar -mx-4 px-4 py-1">
+            <div class="flex items-center gap-3 bg-white p-1 md:p-1.5 rounded-2xl border border-slate-200 shadow-sm min-w-max">
+                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-3">Filter:</span>
+                <button class="px-4 py-2 bg-indigo-600 text-white text-[10px] font-bold rounded-xl shadow-lg shadow-indigo-100 transition-all">All Skills</button>
+                <button class="px-4 py-2 text-slate-500 hover:text-indigo-600 text-[10px] font-bold transition-colors">Popular</button>
+                <button class="px-4 py-2 text-slate-500 hover:text-indigo-600 text-[10px] font-bold transition-colors">New</button>
+                <button class="px-4 py-2 text-slate-500 hover:text-indigo-600 text-[10px] font-bold transition-colors mr-2">Verified</button>
+            </div>
+        </div>
+    </div>
+
     {% if paths %}
         {% for path in paths %}
-            <div class="mt-8 mb-4 border-b pb-2">
-                <h3 class="text-2xl font-bold flex items-center gap-2">
-                    <span class="bg-indigo-100 text-indigo-800 text-sm py-1 px-3 rounded-full">Level {{ path.level_order }}</span>
-                    {{ path.name }}
-                </h3>
-                {% if path.description %}
-                    <p class="text-gray-500 mt-2">{{ path.description }}</p>
-                {% endif %}
-            </div>
-            
-            <div class="space-y-4">
-            {% for skill in path.skills.filter(is_active=True) %}
-                <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between border-l-4 border-indigo-500">
+            <div class="mb-12 md:mb-16">
+                <div class="flex items-center gap-4 mb-6 md:mb-8">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black text-lg md:text-xl shadow-xl shadow-indigo-100">
+                        {{ path.level_order }}
+                    </div>
                     <div>
-                        <h4 class="text-xl font-semibold">{{ skill.name }}</h4>
-                        <p class="text-gray-500 text-sm mt-1">{{ skill.description }}</p>
-                        {% if skill.id in attempted_ids %}
-                            <span class="mt-2 inline-block text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded">Already Attempted</span>
+                        <h3 class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">{{ path.name }}</h3>
+                        {% if path.description %}
+                            <p class="text-slate-500 text-xs md:text-sm font-medium">{{ path.description }}</p>
                         {% endif %}
                     </div>
-                    <a href="{{ url('assessment:take_test', skill.id) }}"
-                       class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
-                       {% if skill.id in attempted_ids %}Retest{% else %}Take Test{% endif %}
-                    </a>
                 </div>
-            {% else %}
-                <p class="text-gray-400 italic">No skills in this path yet.</p>
-            {% endfor %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
+                {% for skill in path.skills.filter(is_active=True) %}
+                    <div class="group bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 p-5 md:p-8 flex flex-col hover:border-indigo-300 hover:shadow-2xl hover:shadow-indigo-100 transition-all duration-300 relative overflow-hidden">
+                        <!-- Background glow -->
+                        <div class="absolute -right-10 -top-10 w-24 h-24 bg-indigo-50 rounded-full blur-3xl opacity-0 md:group-hover:opacity-100 transition-opacity"></div>
+                        
+                        <div class="relative z-10 flex-grow">
+                            <div class="flex justify-between items-start mb-4 md:mb-6">
+                                <div class="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl flex items-center justify-center text-xl md:text-2xl group-hover:scale-110 transition-transform shadow-inner">
+                                    {% if 'Marketing' in skill.name %}🚀{% elif 'SSC' in skill.name or 'Rail' in skill.name %}🏛️{% elif 'Bank' in skill.name %}💰{% else %}🧠{% endif %}
+                                </div>
+                                {% if skill.id in attempted_ids %}
+                                    <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 border border-emerald-100 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                        Verified
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                                        New
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <h4 class="text-lg md:text-xl font-black text-slate-900 mb-2 leading-tight group-hover:text-indigo-600 transition-colors">{{ skill.name }}</h4>
+                            <p class="text-slate-500 text-xs md:text-sm font-medium mb-4 md:mb-6 line-clamp-2 leading-relaxed">{{ skill.description }}</p>
+                            
+                            <div class="flex items-center gap-4 mb-6 md:mb-8">
+                                <div class="flex-grow">
+                                    <div class="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                        <span>Mastery Level</span>
+                                        <span class="text-indigo-600">Advanced</span>
+                                    </div>
+                                    <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                        <div class="h-full bg-indigo-500 rounded-full" style="width: 75%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="{{ url('assessment:take_test', skill.id) }}"
+                           class="relative z-10 w-full bg-slate-900 text-white text-center py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg hover:shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2">
+                           {% if skill.id in attempted_ids %}Retake Exam{% else %}Unlock Test <span class="bg-white/20 px-2 py-0.5 rounded ml-1">₹10</span>{% endif %}
+                        </a>
+                    </div>
+                {% endfor %}
+                </div>
             </div>
         {% endfor %}
     {% endif %}
 
     {% if unassigned_skills %}
-        <div class="mt-10 mb-4 border-b pb-2">
-            <h3 class="text-xl font-bold text-gray-700">Other Skills</h3>
+        <div class="mb-6 flex items-center gap-4">
+            <h3 class="text-lg md:text-2xl font-black text-slate-400 tracking-tight">Other Assessments</h3>
+            <div class="h-px bg-slate-100 flex-grow"></div>
         </div>
-        <div class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
         {% for skill in unassigned_skills %}
-            <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between">
-                <div>
-                    <h4 class="text-xl font-semibold">{{ skill.name }}</h4>
-                    <p class="text-gray-500 text-sm mt-1">{{ skill.description }}</p>
-                    {% if skill.id in attempted_ids %}
-                        <span class="mt-2 inline-block text-xs font-semibold bg-green-100 text-green-700 px-2 py-1 rounded">Already Attempted</span>
-                    {% endif %}
-                </div>
+            <div class="bg-white rounded-2xl border border-slate-200 p-5 flex flex-col hover:border-slate-300 transition-all shadow-sm">
+                <h4 class="text-base md:text-lg font-black text-slate-900 mb-1 leading-tight">{{ skill.name }}</h4>
+                <p class="text-slate-500 text-[10px] md:text-[11px] font-medium mb-4 line-clamp-1 truncate">{{ skill.description }}</p>
                 <a href="{{ url('assessment:take_test', skill.id) }}"
-                   class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-indigo-700 transition shadow">
-                   {% if skill.id in attempted_ids %}Retest{% else %}Take Test{% endif %}
+                   class="w-full bg-slate-50 text-slate-600 text-center py-3 rounded-xl font-black text-[9px] md:text-[10px] uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+                   Take Test
                 </a>
             </div>
         {% endfor %}
         </div>
     {% endif %}
-
-    {% if not paths and not unassigned_skills %}
-        <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500 mt-6">
-            <p>No tests available yet. Check back soon!</p>
-        </div>
-    {% endif %}
 </div>
+
+<style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+</style>
 {% endblock %}

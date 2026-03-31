@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+import uuid
 
 class SkillPath(models.Model):
     name = models.CharField(max_length=100)
@@ -106,6 +107,7 @@ class Question(models.Model):
     question_set = models.ForeignKey(QuestionSet, on_delete=models.SET_NULL, null=True, blank=True, related_name='questions')
     text = models.TextField()
     concept_tag = models.CharField(max_length=50) # e.g. "SEO", "Facebook Ads"
+    explanation = models.TextField(blank=True, help_text="Explanation of the correct answer shown upon failing")
     difficulty = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='EASY')
     
     option_a = models.CharField(max_length=200)
@@ -122,6 +124,7 @@ class UserAttempt(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
+    time_taken_seconds = models.IntegerField(default=0)
     passed = models.BooleanField(default=False) # >80% to pass
     weak_concepts = models.JSONField(default=list) # List of failed concept tags
     attempt_date = models.DateTimeField(auto_now_add=True)
@@ -133,8 +136,48 @@ class UserSetAttempt(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     question_set = models.ForeignKey(QuestionSet, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
+    time_taken_seconds = models.IntegerField(default=0)
     passed = models.BooleanField(default=False)
     attempt_date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user.username} - {self.question_set.name} - {self.score}%"
+
+class DailyJackpot(models.Model):
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='jackpots')
+    scheduled_time = models.DateTimeField(help_text="Time when the jackpot quiz goes live (e.g. 9:00 PM)")
+    prize_pool = models.DecimalField(max_digits=10, decimal_places=2, default=500.00)
+    is_active = models.BooleanField(default=True)
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scheduled_time']
+
+    def __str__(self):
+        return f"Jackpot: {self.skill.name} @ {self.scheduled_time.strftime('%Y-%m-%d %H:%M')}"
+
+class JackpotWinner(models.Model):
+    jackpot = models.ForeignKey(DailyJackpot, on_delete=models.CASCADE, related_name='winners')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rank = models.PositiveIntegerField()
+    score = models.IntegerField()
+    time_taken_seconds = models.IntegerField()
+    award_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['rank']
+        unique_together = ('jackpot', 'user')
+
+    def __str__(self):
+        return f"#{self.rank} - {self.user.username} (₹{self.award_amount})"
+
+class Certificate(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='certificates')
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    certificate_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Certificate: {self.user.username} - {self.skill.name}"

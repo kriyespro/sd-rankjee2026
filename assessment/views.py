@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import SkillPath, Skill, Question, UserAttempt, QuestionSet, UserSetAttempt
+from django.utils import timezone
+from django.db import transaction
+from .models import SkillPath, Skill, Question, UserAttempt, QuestionSet, UserSetAttempt, DailyJackpot, JackpotWinner
 from users.gamification import on_test_submitted
-
 
 @login_required
 def test_index(request):
@@ -14,6 +15,83 @@ def test_index(request):
         'unassigned_skills': unassigned_skills,
         'attempted_ids': list(attempts),
     })
+
+@login_required
+def jackpot_lobby(request):
+    now = timezone.now()
+    # Find the nearest active jackpot (current or future)
+    jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
+    
+    if not jackpot:
+        return render(request, 'assessment/jackpot_lobby.jinja', {'no_jackpot': True})
+
+    # AUTO-SETTLE: If jackpot was scheduled more than 1 hour ago and not completed, settle it
+    if now > (jackpot.scheduled_time + timezone.timedelta(hours=1)) and not jackpot.is_completed:
+        settle_jackpot(jackpot)
+        return redirect('assessment:jackpot_lobby')
+
+    is_live = now >= jackpot.scheduled_time
+    time_to_go = (jackpot.scheduled_time - now).total_seconds() if not is_live else 0
+    
+    # Check if user already participated
+    already_played = JackpotWinner.objects.filter(jackpot=jackpot, user=request.user).exists()
+    
+    # Get previous winners for social proof
+    last_jackpot = DailyJackpot.objects.filter(is_completed=True).order_by('-scheduled_time').first()
+    recent_winners = last_jackpot.winners.all()[:10] if last_jackpot else []
+
+    return render(request, 'assessment/jackpot_lobby.jinja', {
+        'jackpot': jackpot,
+        'is_live': is_live,
+        'time_to_go': int(time_to_go),
+        'already_played': already_played,
+        'recent_winners': recent_winners,
+    })
+
+def settle_jackpot(jackpot):
+    """
+    Ranks top 10 participants for a jackpot based on Score (primary) and Time (secondary).
+    Awards money from the prize pool.
+    """
+    with transaction.atomic():
+        attempts = UserAttempt.objects.filter(
+            skill=jackpot.skill,
+            attempt_date__gte=jackpot.scheduled_time,
+            attempt_date__lte=jackpot.scheduled_time + timezone.timedelta(hours=1)
+        ).order_by('-score', 'attempt_date')
+
+        prizes = [150, 100, 75, 50, 25, 20, 20, 20, 20, 20]
+        winners_count = 0
+        seen_users = set()
+        
+        for attempt in attempts:
+            if attempt.user.id in seen_users: continue
+            if winners_count >= 10: break
+            
+            seen_users.add(attempt.user.id)
+            prize = prizes[winners_count]
+            
+            JackpotWinner.objects.create(
+                jackpot=jackpot,
+                user=attempt.user,
+                rank=winners_count + 1,
+                score=attempt.score,
+                time_taken_seconds=300,
+                award_amount=prize
+            )
+            
+            user = attempt.user
+            user.wallet_balance += prize
+            user.save(update_fields=['wallet_balance'])
+            winners_count += 1
+            
+        jackpot.is_completed = True
+        jackpot.save(update_fields=['is_completed'])
+
+@login_required
+def submit_test(request, skill_id):
+    if request.method != 'POST':
+        return redirect('assessment:index')
 
 
 import random
@@ -120,16 +198,33 @@ def submit_test(request, skill_id):
     if f'test_set_id_{skill.id}' in request.session: 
         del request.session[f'test_set_id_{skill.id}']
 
+    time_taken_seconds = 0
+    try:
+        time_taken_seconds = int(request.POST.get('time_taken_seconds', 0))
+    except (ValueError, TypeError):
+        pass
+
     total = questions.count()
     correct = 0
     weak_concepts = []
+    submitted_answers = []
+    
     for q in questions:
         answer = request.POST.get(f'q_{q.id}')
+        is_correct = False
         if answer and answer.upper() == q.correct_option:
             correct += 1
+            is_correct = True
         else:
             if q.concept_tag not in weak_concepts:
                 weak_concepts.append(q.concept_tag)
+                
+        submitted_answers.append({
+            'question': q,
+            'user_answer': answer,
+            'is_correct': is_correct
+        })
+        
     score = int((correct / total) * 100) if total > 0 else 0
     passed = score >= 80
 
@@ -138,6 +233,7 @@ def submit_test(request, skill_id):
         user=request.user,
         skill=skill,
         score=score,
+        time_taken_seconds=time_taken_seconds,
         passed=passed,
         weak_concepts=weak_concepts,
     )
@@ -146,6 +242,7 @@ def submit_test(request, skill_id):
             user=request.user,
             question_set=current_set,
             score=score,
+            time_taken_seconds=time_taken_seconds,
             passed=passed,
         )
 
@@ -161,6 +258,18 @@ def submit_test(request, skill_id):
         
         if not next_set:
             next_skill = skill.get_next_skill()
+            
+            # Certificate Issuance: If they passed the LAST set, they master a skill
+            from .models import Certificate
+            cert, created = Certificate.objects.get_or_create(user=request.user, skill=skill)
+            if created:
+                # Send notification
+                from users.models import Notification
+                Notification.objects.create(
+                    user=request.user,
+                    message=f"🏆 Certificate Earned! You've mastered {skill.name}.",
+                    link=f"/assessment/certificate/{cert.certificate_id}/view/"
+                )
 
     return render(request, 'assessment/result.jinja', {
         'skill': skill,
@@ -172,4 +281,28 @@ def submit_test(request, skill_id):
         'weak_concepts': weak_concepts,
         'correct': correct,
         'total': total,
+        'submitted_answers': submitted_answers,
+        'time_taken_seconds': time_taken_seconds,
     })
+
+from django.http import FileResponse
+from .utils import generate_certificate_pdf
+from .models import Certificate
+
+@login_required
+def view_certificate(request, certificate_id):
+    cert = get_object_or_404(Certificate, certificate_id=certificate_id, user=request.user)
+    return render(request, 'assessment/certificate_view.jinja', {'cert': cert})
+
+@login_required
+def download_certificate(request, certificate_id):
+    cert = get_object_or_404(Certificate, certificate_id=certificate_id, user=request.user)
+    
+    # Premium Gate: Check if user is premium to download PDF
+    if not request.user.is_premium:
+        from django.contrib import messages
+        messages.warning(request, "Premium Subscription required to download PDF certificates. Upgrade now!")
+        return redirect('payments:plans')
+
+    buffer = generate_certificate_pdf(request.user, cert.skill, cert.certificate_id)
+    return FileResponse(buffer, as_attachment=True, filename=f"Certificate_{cert.skill.name.replace(' ', '_')}.pdf")

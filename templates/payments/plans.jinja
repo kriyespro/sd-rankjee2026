@@ -1,0 +1,123 @@
+{% extends "base.jinja" %}
+
+{% block title %}Pricing Plans - SkillLoop{% endblock %}
+
+{% block content %}
+<div class="py-12 bg-gray-50 min-h-screen" x-data="{ billing: 'monthly' }">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center">
+            <h2 class="text-base font-semibold text-indigo-600 tracking-wide uppercase">Pricing</h2>
+            <p class="mt-1 text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
+                Ready to level up your career?
+            </p>
+            <p class="max-w-xl mt-5 mx-auto text-xl text-gray-500">
+                Choose the plan that's right for you and get unlimited access to all courses, tests, and premium features.
+            </p>
+        </div>
+
+        <div class="mt-12 flex justify-center">
+            <div class="relative bg-white rounded-lg p-0.5 flex sm:mt-8">
+                <button type="button" @click="billing = 'monthly'" :class="{ 'bg-white shadow-sm text-gray-900': billing === 'monthly', 'text-gray-500': billing !== 'monthly' }" class="relative py-2 px-6 border-transparent rounded-md text-sm font-medium whitespace-nowrap focus:outline-none focus:z-10 sm:w-auto sm:px-8">
+                    Monthly
+                </button>
+                <button type="button" @click="billing = 'annual'" :class="{ 'bg-white shadow-sm text-gray-900': billing === 'annual', 'text-gray-500': billing !== 'annual' }" class="ml-0.5 relative py-2 px-6 border-transparent rounded-md text-sm font-medium whitespace-nowrap focus:outline-none focus:z-10 sm:w-auto sm:px-8">
+                    Annual <span class="ml-1 text-xs text-green-500 font-bold">(-33%)</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-12 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
+            {% for plan in plans %}
+            <div class="relative p-8 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1" x-show="billing === '{% if plan.duration_days > 30 %}annual{% else %}monthly{% endif %}'">
+                <div class="flex-1">
+                    <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
+                    {% if plan.duration_days > 30 %}
+                    <p class="absolute top-0 py-1.5 px-4 bg-indigo-500 text-white text-xs font-semibold uppercase tracking-wide rounded-full transform -translate-y-1/2">
+                        Best Value
+                    </p>
+                    {% endif %}
+                    <p class="mt-4 flex items-baseline text-gray-900">
+                        <span class="text-5xl font-extrabold tracking-tight">₹{{ plan.price|int }}</span>
+                        <span class="ml-1 text-xl font-semibold">/{% if plan.duration_days > 30 %}year{% else %}month{% endif %}</span>
+                    </p>
+                    <p class="mt-6 text-gray-500">{{ plan.description }}</p>
+
+                    <ul role="list" class="mt-6 space-y-4">
+                        {% for feature in plan.features %}
+                        <li class="flex">
+                            <svg class="flex-shrink-0 w-6 h-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span class="ml-3 text-gray-600">{{ feature }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <button 
+                    @click="initiatePayment({{ plan.id }})"
+                    class="mt-8 block w-full py-3 px-6 border border-transparent rounded-md text-center font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
+                >
+                    Get Started
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Razorpay Checkout Script -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+async function initiatePayment(planId) {
+    // 1. Create order on server
+    const response = await fetch(`/payments/order/${planId}/`);
+    const data = await response.json();
+    
+    if (data.error) {
+        alert("Payment error: " + data.error);
+        return;
+    }
+    
+    // 2. Open Razorpay Interface
+    const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: "INR",
+        name: "SkillLoop Pro",
+        description: data.description,
+        order_id: data.order_id,
+        handler: async function (response) {
+            // 3. Verify on server
+            const verifyResp = await fetch('/payments/verify/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'razorpay_payment_id': response.razorpay_payment_id,
+                    'razorpay_order_id': response.razorpay_order_id,
+                    'razorpay_signature': response.razorpay_signature
+                })
+            });
+            const verifyData = await verifyResp.json();
+            if (verifyData.status === 'success') {
+                window.location.href = '/dashboard/?paid=true';
+            } else {
+                alert("Payment verification failed");
+            }
+        },
+        prefill: {
+            name: data.user_name,
+            email: data.user_email
+        },
+        theme: {
+            color: "#4F46E5"
+        }
+    };
+    
+    const rzp1 = new Razorpay(options);
+    rzp1.open();
+}
+</script>
+{% endblock %}

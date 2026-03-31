@@ -62,7 +62,7 @@ def on_task_approved(user, task):
     """Call when a task submission is auto-approved or manually approved."""
     from core.models import UserTaskSubmission
     user.add_xp(XP_TASK_APPROVED)
-    user.add_wallet(task.reward_amount)
+    user.add_wallet(task.reward_amount, transaction_type='EARN_TASK', reference_id=str(task.id))
 
     approved_count = UserTaskSubmission.objects.filter(user=user, status='APPROVED').count()
     if approved_count == 1:
@@ -78,7 +78,7 @@ def on_task_approved(user, task):
 def on_referral_signup(new_user, referrer):
     """Call from signup when a referral_code is used."""
     referrer.add_xp(XP_REFERRAL)
-    referrer.add_wallet(50)  # ₹50 referral bonus
+    referrer.add_wallet(50, transaction_type='EARN_REFERRAL', reference_id=str(new_user.id))  # ₹50 referral bonus
     _try_award_badge(referrer, 'REFERRAL')
     send_notification(
         referrer,

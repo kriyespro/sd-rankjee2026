@@ -1,0 +1,803 @@
+  ================================================================================
+  SkillLoop (SD-RankJEE2026) — CTO STRATEGIC ARCHITECTURAL PLAN
+  Written: 2026-03-30 | Role: Bootstrap Startup CTO / System Architect
+  Think: "Ship fast, stay lean, don't over-engineer, kill every blocker."
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 0: CRITICAL BUGS — FIX BEFORE ANYTHING ELSE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BUG-001 [BLOCKER] → ImportError in dashboard/views.py
+  File: dashboard/views.py — Line 2
+  Error: "cannot import name 'login_range' from django.contrib.auth.decorators"
+  Found in: check_err.log
+  Fix: Change to "from django.contrib.auth.decorators import login_required"
+  Impact: THE ENTIRE DASHBOARD IS BROKEN. Site won't load at /admin/
+  Priority: IMMEDIATE — Fix this FIRST before everything
+
+BUG-002 [HIGH] → Signal firing double gamification on approval
+  File: core/signals.py — submission_approved_signal
+  Problem: Signal fires on_task_approved() on every save(). But core/views.py
+           admin_approve_submission() ALSO calls on_task_approved() directly.
+           If admin approves from Django admin (/sd/), both fire.
+           Result: User wallet gets DOUBLE credited. Money is added twice.
+  Fix: Remove direct call in views.py OR add an "already_gamified" boolean
+       field to UserTaskSubmission model, check it before awarding.
+  Priority: HIGH — money integrity issue, abusable
+
+BUG-003 [MEDIUM] → Wallet deducted even if test session was already active
+  File: assessment/views.py — take_test() Lines 126-142
+  Problem: session_key tracks payment per skill. If user opens two tabs of 
+           the same test, both deduct wallet separately.
+  Fix: Add server-side test_session model or use atomic check in the DB.
+
+BUG-004 [MEDIUM] → streak_tasks.py send_reminder_email — placeholder only
+  File: users/tasks.py — Line 26-31
+  Problem: No actual email logic. If Celery triggers this, nothing happens.
+           But more importantly, no EMAIL backend is configured in settings.py.
+  Fix: Either wire up Django email backend (Gmail SMTP / SendGrid) or 
+       remove the task from Celery beat schedule to avoid confusion.
+
+BUG-005 [LOW] → TIME_ZONE set to UTC, not IST
+  File: config/settings.py — Line 141
+  Problem: TIME_ZONE = 'UTC'. India operates on IST (UTC+5:30). 
+           DailyJackpot scheduled_time will be confusing for admins who 
+           set "9:00 PM" but it fires at 3:30 AM IST.
+  Fix: TIME_ZONE = 'Asia/Kolkata' and USE_TZ = True (keep as-is).
+       This alone will fix all scheduling confusion.
+
+BUG-006 [LOW] → SECRET_KEY is hardcoded, exposed in code
+  File: config/settings.py — Line 24
+  Problem: Secret key is committed to git. Anyone who gets code gets your key.
+  Fix: Move to .env file with python-dotenv (already installed!).
+       Add .env to .gitignore. Make settings.py read from os.environ.
+
+BUG-007 [LOW] → ALLOWED_HOSTS is empty even for non-DEBUG
+  File: config/settings.py — Line 29
+  Problem: ALLOWED_HOSTS = []. Won't work in production at all.
+  Fix: Read from environment variable. 
+       ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 1: CURRENT ARCHITECTURE REVIEW — WHAT WE HAVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+APPS:
+  core/        → EarningTask, UserTaskSubmission, home, earnings, ad watching
+  users/       → CustomUser, Badge, UserBadge, Notification, gamification engine
+  assessment/  → SkillPath, Skill, QuestionSet, Question, UserAttempt,
+                  UserSetAttempt, DailyJackpot, JackpotWinner
+  learning/    → ConceptVideo (YouTube integration, thumbnail handling)
+  dashboard/   → Student dashboard, Admin dashboard views
+  config/      → Django settings, Jinja2 env, Celery, URLs
+
+KEY MODELS HEALTH CHECK:
+  ✅ CustomUser — good, has XP, wallet, streak, referral
+  ✅ SkillPath → Skill → QuestionSet → Question — clean hierarchy
+  ✅ UserAttempt / UserSetAttempt — good, tracks granular progress
+  ✅ EarningTask + UserTaskSubmission — simple, clean
+  ✅ DailyJackpot + JackpotWinner — good structure, auto-settle logic exists
+  ✅ ConceptVideo — good YouTube parsing logic
+  ⚠️  No Payment/Transaction model — wallet operations have no history!
+  ⚠️  No UserProfile model (bio, state, mobile) — needed for state leaderboards
+  ⚠️  No ContentExplanation model — no "why was the answer X?" feature
+  ⚠️  No PremiumPlan / Subscription model — Phase 3 is blocked
+
+WHAT'S WORKING WELL:
+  + The Test-Teach-Retest loop is solid and well-designed
+  + Gamification (XP, badges, streaks, wallet) is implemented correctly
+  + SkillPath progression (unlock by passing sets) is smart
+  + Referral system is functional and has good UX copy
+  + DailyJackpot model is designed well with auto-settle
+  + Celery + Redis is wired up (just needs fixing)
+  + Separate admin (/sd/) and custom dashboard (/admin/) is correct pattern
+  + WhiteNoise, gunicorn, dj-database-url all ready for production
+  + Docker + docker-compose is present (great for deployment)
+
+WHAT'S MISSING OR WEAK:
+  - No email system at all (critical for re-engagement)
+  - No wallet transaction history (financial risk, can't debug issues)
+  - No rate limiting on test submissions or wallet claims
+  - No analytics/event tracking (how do you know what users do?)
+  - No question explanation/hint system (learning quality is low)
+  - No WhatsApp share button (mentioned in more_features.txt, not built)
+  - No state/district-wise leaderboard (mentioned in more_features.txt)
+  - No PDF certificate generation
+  - No payment gateway (how do users WITHDRAW earnings? Huge gap)
+  - No content management for admins via the custom dashboard
+  - Dashboard admin view does too much in one view (N+1 query risk)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 2: ARCHITECTURE GAPS — SYSTEM ARCHITECT PERSPECTIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GAP-001: NO WALLET TRANSACTION LOG (Critical for a fintech-adjacent product)
+  Current: wallet_balance is a single number. Changes are made with add_wallet()
+           and direct subtraction in views. No history of what happened.
+  Risk: User disputes ("I earned ₹150 but where did it go?"), debugging 
+        becomes impossible, fraud detection is impossible.
+  Solution:
+    New Model: WalletTransaction
+      - user (FK)
+      - amount (Decimal, can be negative for deductions)
+      - transaction_type (EARN_TASK / EARN_REFERRAL / EARN_DAILY /
+                          EARN_JACKPOT / DEDUCT_TEST / DEDUCT_WITHDRAW /
+                          CREDIT_ADMIN / CREDIT_SIGNUP)
+      - reference_id (nullable, points to submission/jackpot/etc)
+      - created_at
+    Add "Transaction History" tab to profile page and admin dashboard.
+
+GAP-002: NO EMAIL / COMMUNICATION SYSTEM
+  Current: Email is literally a TODO comment in tasks.py.
+  Risk: Can't re-engage churned users. No OTP for login. No receipts.
+  Solution (Lean Bootstrap Approach):
+    1. Configure Django email backend with Gmail SMTP (free, instant)
+    2. Use Celery task for async sends (already have Celery!)
+    3. Build 3 email templates (welcome, daily reminder, payout notification)
+    4. Use django.core.mail.send_mail() from within tasks
+    Note: No paid email service needed yet. Gmail handles 500/day free.
+
+GAP-003: NO WITHDRAWAL / PAYOUT SYSTEM
+  Current: Users earn money in a "wallet" but CANNOT withdraw it anywhere.
+  This is a CRITICAL trust issue. Users will churn when they realize there
+  is no way to get their money out. This is the #1 reason EdTech earning
+  platforms fail in India.
+  Solution (Phase 3.1 — URGENT):
+    New Model: WithdrawalRequest
+      - user (FK)
+      - amount (Decimal)
+      - upi_id (string — UPI is universal in India, e.g. user@paytm)
+      - status (PENDING / PROCESSED / REJECTED)
+      - requested_at, processed_at
+      - admin_note (for rejection reason)
+    Min withdrawal: ₹100 to prevent micro-transactions.
+    Admin dashboard: "Pending Withdrawals" section, mark as processed.
+    Email notification on status change.
+    Start with MANUAL payouts (admin does UPI transfer, marks processed).
+    Scale to RazorpayX / Cashfree payout API later.
+
+GAP-004: NO RATE LIMITING / ANTI-ABUSE LAYER
+  Current: The ad reward system is protected by a 30-second session check.
+           Test cost is deducted via session. Both are bypassable.
+  Issues:
+    - User can clear cookies, get 3 free trials again
+    - Ad reward: No server-side cooldown, only session
+    - Task submission: Same user can submit same task once (get_or_create) — 
+      good, but no limit on total submissions per day
+  Solution:
+    - Add server-side cooldown for ads: Last ad claim timestamp in DB, not session
+    - Add `trial_tests_used` field to track total trials ever given, not just left
+    - Add Django-ratelimit or simple timestamp fields on key actions
+
+GAP-005: PERFORMANCE — N+1 QUERIES IN DASHBOARD
+  Current: dashboard/views.py student view runs:
+    - UserAttempt queries (multiple)
+    - UserSetAttempt queries
+    - For each skill in the path: sets + passed_sets (N queries for N skills)
+    - Leaderboard query
+    - Badge query
+    → Easily 20-50 DB queries per page load for active users.
+  Solution:
+    - Use select_related() and prefetch_related() on all queryset chains
+    - Cache the leaderboard with Django's cache framework (5-minute TTL)
+    - Cache user's learning path state (invalidate on test submission)
+    - Add django-debug-toolbar in dev to measure query count
+
+GAP-006: NO QUESTION EXPLANATIONS (Learning Quality Gap)
+  Current: After a test, user sees their score and weak concepts, but NO
+           explanation of why the correct answer is correct.
+  This is the biggest learning quality gap. Without explanation, the app
+  is just a quiz app, not a learning platform.
+  Solution:
+    Add to Question model:
+      - explanation = models.TextField(blank=True)
+      - solution_video = FK to ConceptVideo (optional)
+    Show in result page: For each wrong answer, show explanation.
+    Show option: "Learn why → link to relevant video"
+    This is the TRUE test-teach-retest loop.
+
+GAP-007: NO MOBILE RESPONSIVENESS VERIFICATION
+  Current: Tailwind CSS is used but no mobile testing is documented.
+  The Indian market is 95% mobile-first. The dashboard is a 3-column layout 
+  (large screen biased).
+  Required: Verify these pages work on 375px (iPhone SE) viewport:
+    - Home page
+    - Take test page (10 MCQ questions, all options visible without scroll)
+    - Dashboard index
+    - Earnings page
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 3: PHASE 3 FEATURE ROADMAP — PRIORITIZED BY BUSINESS IMPACT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIORITY FRAMEWORK (Think like a bootstrap CTO):
+  "If this feature was live, would it make 1 user pay, stay, or invite someone?"
+  → P0 = Critical / Monetization
+  → P1 = Retention / Core Experience  
+  → P2 = Growth / Virality
+  → P3 = Nice to Have / Delight
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-01 [P0] — UPI Withdrawal System
+─────────────────────────────────────────────────────────────────────────────
+  Why: Users earning money with no exit = zero trust = massive churn.
+       This is THE single most important missing feature.
+  What to build:
+    1. WithdrawalRequest model (described in GAP-003 above)
+    2. "Withdraw Money" page in /earnings/ — requires UPI ID input
+    3. Minimum ₹100 requirement (to batch payouts)
+    4. Admin sees pending withdrawal table in /admin/ dashboard
+    5. Admin marks as DONE → user gets notification
+  Tech: Start manual (admin does UPI transfer). No gateway needed yet.
+  Time Estimate: 1-2 days to build the flow.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-02 [P0] — Wallet Transaction History
+─────────────────────────────────────────────────────────────────────────────
+  Why: Financial transparency = trust. Users need to see EVERY ₹ movement.
+  What to build:
+    1. WalletTransaction model
+    2. Wire into ALL wallet-touching code:
+       - Signup ₹50 credit
+       - Daily login ₹1 credit
+       - Task approval credit
+       - Referral ₹50 credit
+       - Jackpot prize credit
+       - Test ₹10 deduction
+       - Withdrawal deduction
+    3. "My Wallet" page: balance + last 20 transactions
+  Time Estimate: 1 day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-03 [P0] — Question Explanation System
+─────────────────────────────────────────────────────────────────────────────
+  Why: Without explanations, this is just a quiz app. The learning loop is broken.
+       "Test → Learn WHY → Retest" — the MIDDLE part is not working.
+  What to build:
+    1. Add `explanation` TextField to Question model
+    2. Migrate (non-breaking, blank=True)
+    3. Update assessment/admin.py to show explanation field inline
+    4. Update result.jinja page: loop through questions, show 
+       "Your Answer: B | Correct: D" and display explanation below.
+    5. Add "Concept Link" — if wrong, show button "Watch micro-lesson →"
+       linking to a ConceptVideo with matching concept_tag.
+  Time Estimate: 3-4 hours.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-04 [P1] — WhatsApp Share / Viral Referral Button
+─────────────────────────────────────────────────────────────────────────────
+  Why: India's #1 social network is WhatsApp. Current copy-code UX is boring.
+       One click to share via WhatsApp = 5x referral conversion rate.
+  What to build:
+    In earnings.jinja and dashboard/index.jinja referral widget:
+    <a href="https://wa.me/?text=Bhai%20check%20this%20out!%20Main%20SkillLoop%20
+    pe%20paisa%20kama%20raha%20hoon...%20Join%20karo%3A%20[REFERRAL_URL]"
+       target="_blank" class="whatsapp-btn">
+      📲 Share on WhatsApp
+    </a>
+    Build a pre-written message in Hinglish (Hindi+English mix).
+    Also add Telegram share button.
+  Time Estimate: 30 minutes. Highest ROI feature possible.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-05 [P1] — Email Notification System (Django Email)
+─────────────────────────────────────────────────────────────────────────────
+  Why: Can't re-engage users without email. Streak breaks = user gone.
+  What to build:
+    1. Configure EMAIL_BACKEND in settings.py (Gmail SMTP via .env)
+    2. Build email templates (HTML) in templates/email/:
+       - welcome.html (triggered on signup)
+       - streak_break.html (triggered when streak resets in Celery task)
+       - task_approved.html (triggered on task approval)
+       - withdrawal_update.html
+    3. Celery task: send_streak_reminder_email()
+       Schedule: Daily at 8:00 PM IST for users whose last_active_date
+       is NOT today.
+  IMPORTANT: Use Celery's check_and_reset_streaks task (already exists)
+             and add email send inside it.
+  Time Estimate: 1 day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-06 [P1] — State-Wise Leaderboard
+─────────────────────────────────────────────────────────────────────────────
+  Why: Competing against "all of India" feels impossible. Against UP/Bihar
+       toppers feels achievable. Peer motivation = retention.
+  What to build:
+    1. Add `state` (CharField, choices = list of Indian states) to CustomUser
+    2. Add state selector on signup AND profile edit page
+    3. Leaderboard page: toggle between "All India" and "My State"
+    4. URL: /leaderboard/?filter=state
+    5. Dashboard mini-leaderboard widget: show "Your State Rank" separately
+  Time Estimate: 1 day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-07 [P1] — Speed Analytics on Result Page
+─────────────────────────────────────────────────────────────────────────────
+  Why: Indian competitive exam users are obsessed with speed (SSC, Banking).
+       Showing "you took 45 sec per question, toppers average 18 sec" 
+       creates competitive motivation and repeat usage.
+  What to build:
+    1. Add `time_taken_seconds` to UserAttempt and UserSetAttempt models
+    2. In take_test.jinja: Start a timer (Alpine.js) when test begins,
+       submit the value in hidden form field
+    3. In result.jinja: Show "You: X sec/question | Avg Topper: Y sec"
+    4. Calculate platform-wide average score for the skill,
+       display "Your Score vs Platform Average"
+  Time Estimate: 1 day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-08 [P1] — PDF Certificate System
+─────────────────────────────────────────────────────────────────────────────
+  Why: Certificates = social proof = LinkedIn shares = viral growth.
+       Every JEE/NEET student wants a certificate they can share.
+  What to build:
+    1. Install: pip install reportlab OR weasyprint
+    2. Certificate triggers when: user passes ALL sets of a Skill
+    3. Certificate model: user, skill, issued_date, certificate_id (UUID)
+    4. View: /certificate/<uuid>/ → renders HTML certificate (shareable URL)
+    5. Download: /certificate/<uuid>/download/ → returns PDF
+    6. Certificate page: user's name, skill name, date, platform logo
+    7. LinkedIn share button on certificate page
+  Template: Use Jinja2 to render a nice A4 certificate with branding.
+  Time Estimate: 1-2 days.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-09 [P2] — Premium Subscription / Paywall
+─────────────────────────────────────────────────────────────────────────────
+  Why: This is the primary revenue model. Must be built for Phase 3.
+  Current monetization: test costs ₹10 after 3 free trials.
+  Problem: This is confusing for users. Better model = freemium subscription.
+  
+  Proposed Pricing (Bootstrap friendly):
+    Free Tier:
+      - 3 free skill tests per month
+      - Access to all videos
+      - Basic earning tasks
+      - Community leaderboard
+    
+    Pro Plan (₹99/month or ₹799/year):
+      - Unlimited tests
+      - Priority task access (higher reward tasks)
+      - PDF certificates
+      - Speed analytics
+      - Remove ads
+  
+  What to build:
+    1. SubscriptionPlan model (Free, Pro, Annual)
+    2. UserSubscription model (user, plan, start_date, end_date, is_active)
+    3. Integrate Razorpay (Indian payment gateway, sign up free)
+    4. Subscription-aware views: check user.subscription.is_active
+    5. Upgrade page /plans/ with comparison table
+  Time Estimate: 3-4 days (with Razorpay integration).
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-10 [P2] — Admin Content Management Dashboard
+─────────────────────────────────────────────────────────────────────────────
+  Why: Currently, all content (questions, skills, videos, tasks) must be 
+       managed through the Django Admin at /sd/ — which is not user-friendly
+       for non-technical team members. The custom /admin/ dashboard has NO
+       content management capabilities.
+  What to build:
+    In custom dashboard (/admin/), add tabs for:
+    - "Question Bank" → CRUD for questions with bulk CSV upload
+    - "Skills Manager" → create/edit skills and paths, reorder drag-drop
+    - "Video Library" → paste YouTube link, auto-detect thumbnail, tag concept
+    - "Tasks Board" → create/edit earning tasks, toggle active/inactive
+    - "Content Stats" → questions per skill, videos per concept, coverage gaps
+  Time Estimate: 2-3 days.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-11 [P2] — Bulk Question Import (CSV/Excel)
+─────────────────────────────────────────────────────────────────────────────
+  Why: Scaling question bank manually is a bottleneck. To cover multiple 
+       skills (JEE Physics, Chemistry, Math etc.), you need 100s of questions.
+       Manual entry via Django admin is unscalable.
+  What to build:
+    1. Create a CSV template: skill, difficulty, text, option_a, b, c, d, 
+                               correct_option, concept_tag, explanation
+    2. Admin upload view (file field) → parse with Python csv module
+    3. Validation with error reporting ("Row 14: missing correct_option")
+    4. Preview modal before final import
+    5. Bonus: Auto-partition questions into sets after import
+  Time Estimate: 1 day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-12 [P2] — AI Question Generator (GPT Integration)
+─────────────────────────────────────────────────────────────────────────────
+  Why: Content is the bottleneck. AI can generate 100 MCQs for a topic
+       in 30 seconds with OpenAI API. Cost: ~$0.01 per 10 questions.
+  What to build:
+    1. Admin-only page: "Generate Questions with AI"
+    2. Inputs: Topic (text), Difficulty (Easy/Medium/Hard), Count (5-20)
+    3. Under the hood: Call OpenAI API with structured prompt
+    4. Parse response → preview table → Admin approves/edits → save to DB
+    5. Never publish AI questions without human review (quality gate)
+  Tech: openai Python SDK (pip install openai)
+  Cost: Ultra-cheap for bootstrap stage. ₹50 = 5000 questions.
+  Time Estimate: 1 day (prompt engineering included).
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-13 [P2] — Hindi / Hinglish UI Support
+─────────────────────────────────────────────────────────────────────────────
+  Why: 500M+ Hindi speakers in India. Most competitive exam aspirants 
+       (SSC, UPSC, Railways) are Hindi-medium students. English barrier 
+       is the #1 drop-off reason for Tier 2/3 city users.
+  What to build (Lean version, not full i18n):
+    1. Add language toggle button in navbar (EN / HI)
+    2. Store preference in user session / profile field
+    3. Create Hindi translations for key UI strings in a simple dict/JSON:
+       home page, test UI, result page labels
+    4. Jinja2 macro: {{ t('START_TEST') }} → returns Hindi or English
+    5. Add Hindi `explanation` field to questions (optional, if Hindi teacher exists)
+  Time Estimate: 2-3 days for partial Hindi UI.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-14 [P3] — "Revision Bites" (Offline-friendly Text Summaries)
+─────────────────────────────────────────────────────────────────────────────
+  Why: Rural India has poor internet. 200KB text > 5MB video for these users.
+  What to build:
+    Add `text_summary` TextField to ConceptVideo (or create new RevisionBite model)
+    Allow admin to write a 200-word plain-English summary per concept.
+    Show "Read Instead" button below video that toggles to text view.
+    Progressive enhancement: Video for good internet, text for slow internet.
+  Time Estimate: Half day.
+
+─────────────────────────────────────────────────────────────────────────────
+FEATURE-15 [P3] — Company Hiring Portal (Phase 4 Preview)
+─────────────────────────────────────────────────────────────────────────────
+  Why: B2B revenue is the highest-margin revenue in EdTech. Companies pay 
+       ₹5,000-₹50,000 per verified hire. If SkillLoop has 10,000 verified 
+       learners, companies want to recruit them.
+  What to build (just the data model now, build UI in Phase 4):
+    1. PublicProfile model (opt-in) — links to user, shows test scores, badges
+    2. Public URL: /u/username/ — student can share with employers
+    3. CompanyInquiry model — companies submit hiring interest from profile page
+    4. "Get Hired" badge on leaderboard for top performers
+  Time Estimate (Phase 4): 3-4 days.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 4: CONTENT & DATA STRATEGY — WHAT TO SEED FIRST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CURRENT STATE:
+  - 1 skill area (Digital Marketing)
+  - ~10 questions (from seed script)
+  - 4 learning videos
+  - 3 earning tasks
+
+MINIMUM VIABLE CONTENT FOR LAUNCH:
+  Target: 3 complete skill paths, each with 30+ questions, 5+ videos each.
+  
+  Skill Path 1: Digital Marketing (Already exists, expand to 30 questions)
+    Concepts: SEO, Facebook Ads, Google Ads, Email Marketing, Analytics
+    Tasks: Share affiliate link, Write a product review, Create an ad creative
+  
+  Skill Path 2: Freelancing Basics
+    Concepts: Fiverr profile, Upwork proposals, Client communication, 
+              Portfolio creation, Pricing strategy
+    Tasks: Create a Fiverr/Upwork profile, First proposal, 
+           Share portfolio link
+  
+  Skill Path 3: JEE/NEET Foundation (if targeting exam students)
+    Concepts: Based on NCERT Class 11-12 chapters
+    Or pivot to: Excel/Data Entry → appeals to job seekers
+  
+CONTENT QUALITY RULES:
+  1. Every question MUST have an explanation (no blank explanations)
+  2. Every concept MUST have at least 1 video
+  3. Every skill MUST have at least 10 easy + 10 medium + 5 hard questions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 5: INFRASTRUCTURE HARDENING — BEFORE GOING TO 1000 USERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+INFRA-001: Environment Configuration
+  Create .env file:
+    SECRET_KEY=<generate with python -c "import secrets; print(secrets.token_hex(32))">
+    DEBUG=True
+    DATABASE_URL=sqlite:///db.sqlite3
+    ALLOWED_HOSTS=localhost,127.0.0.1
+    EMAIL_HOST=smtp.gmail.com
+    EMAIL_PORT=587
+    EMAIL_HOST_USER=your@gmail.com
+    EMAIL_HOST_PASSWORD=<app password>
+    REDIS_URL=redis://localhost:6379/0
+  Update settings.py to load from .env with python-dotenv
+
+INFRA-002: Caching Strategy
+  Add to settings.py:
+    CACHES = {
+      "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://localhost:6379/1"),
+      }
+    }
+  Cache targets:
+    - Leaderboard data (5 min TTL) 
+    - Skill list and paths (1 hour TTL, invalidate on admin change)
+    - User XP rank (1 min TTL)
+
+INFRA-003: WhiteNoise is Already Configured
+  Good. Keep it. It serves static files from Django in production without Nginx.
+  One quick win: Run `python manage.py collectstatic` as part of startup.
+
+INFRA-004: Logging
+  Add to settings.py:
+    LOGGING = {
+      "version": 1,
+      "handlers": {
+        "file": {
+          "class": "logging.FileHandler",
+          "filename": "app.log",
+        }
+      },
+      "loggers": {
+        "django": {"handlers": ["file"], "level": "WARNING"}
+      }
+    }
+  Log every wallet transaction, every approval, every jackpot settlement.
+
+INFRA-005: Deployment Checklist (Before Going Live)
+  1. ✅ Gunicorn — present in requirements.txt
+  2. ✅ WhiteNoise — present and configured
+  3. ✅ Docker + docker-compose — present
+  4. ✅ dj-database-url — present
+  5. ❌ .env file — MISSING, create it
+  6. ❌ SECRET_KEY from env — MISSING, hardcoded
+  7. ❌ ALLOWED_HOSTS from env — MISSING
+  8. ❌ Email backend — MISSING, not configured
+  9. ❌ Celery beat schedule — not verified (tasks exist but schedule unclear)
+  10. ❌ Database migrations — verify all migrations applied
+  11. ❌ Collect static — not automated in entrypoint.sh (check entrypoint.sh)
+
+INFRA-006: Consider Adding django-axes (Brute Force Protection)
+  Users have passwords. Without brute force protection, accounts can be 
+  compromised. django-axes locks account after N failed login attempts.
+  Install: pip install django-axes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 6: EXECUTION PRIORITY — WHAT TO BUILD NEXT (ORDERED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SPRINT 1 — FIX THE FOUNDATION (1-2 days, DO NOW):
+  ✅ [1] Fix BUG-001: login_range → login_required (5 minutes)
+  ✅ [2] Fix BUG-002: Double gamification on approval (30 min)
+  ✅ [3] Fix BUG-005: TIME_ZONE = 'Asia/Kolkata' (5 minutes)
+  ✅ [4] Fix BUG-006: Move SECRET_KEY to .env (30 min)
+  ✅ [5] Fix BUG-007: ALLOWED_HOSTS from env (10 min)
+  GOAL: Server runs cleanly, no import errors, config is production-safe.
+
+SPRINT 2 — TRUST & TRANSACTIONS (2-3 days):
+  ✅ [1] FEATURE-02: WalletTransaction model + history page
+  ✅ [2] FEATURE-01: WithdrawalRequest model + UPI withdrawal flow
+  ✅ [3] Wire WalletTransaction into all wallet operations
+  GOAL: Users can see every penny movement and request withdrawal.
+
+SPRINT 3 — LEARNING QUALITY (1-2 days):
+  ✅ [1] FEATURE-03: Add explanation field to Question + show in result page
+  ✅ [2] "Watch micro-lesson" link for wrong concepts in results
+  ✅ [3] FEATURE-07: Time tracking in tests + speed analytics
+  GOAL: The Test-Teach-Retest loop is actually complete end-to-end.
+
+SPRINT 4 — GROWTH ENGINES (2-3 days):
+  ✅ [1] FEATURE-04: WhatsApp share button (30 mins — highest ROI sprint item)
+  ✅ [2] FEATURE-06: State/district filter on leaderboard
+  ✅ [3] FEATURE-05: Email system with streak reminder
+  GOAL: Viral loop activated. Users invite people. Retention improved.
+
+SPRINT 5 — CONTENT SCALE (COMPLETED ✅):
+  ✅ [1] FEATURE-11: Custom Management Command for Bulk JSON import
+  ✅ [2] FEATURE-12: High-Quality Content Generation (1,000 MCQs total)
+  ✅ [3] Expand question bank to 10 skill paths (Marketing, AI, Exams, etc.)
+  ✅ [4] Automatic Skill Partitioning logic integrated with imports
+  GOAL: 1,000 high-quality questions live. Total questions: 1000.
+
+
+SPRINT 6 — MONETIZATION (3-4 days):
+  [1] FEATURE-09: Premium subscription with Razorpay
+  [2] FEATURE-08: PDF certificates for skill completion
+  [3] /plans/ page with clear pricing table
+  GOAL: First ₹ of revenue. Platform is self-sustaining.
+
+SPRINT 7 — POLISH & SCALE (ongoing):
+  [1] FEATURE-10: Admin content management in custom dashboard
+  [2] FEATURE-13: Hinglish UI toggle
+  [3] INFRA: Caching, logging, rate limiting
+  [4] FEATURE-15: Public profile + hiring portal (data model only)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 7: CTO-LEVEL STRATEGIC OBSERVATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OBSERVATION-01: THE BUSINESS MODEL CLARITY PROBLEM
+  Right now, SkillLoop tries to be:
+    (a) A learning platform (videos, tests)
+    (b) A gig marketplace (earning tasks)
+    (c) A gamification platform (XP, badges)
+    (d) An ad-revenue platform (watch ads → earn)
+  
+  This is NOT a problem — multi-sided platforms work. BUT:
+  The earning promise ("earn ₹500/month") must be REAL and DELIVERABLE.
+  Currently: There's a "watch ads" feature that gives ₹0.50 per view with
+             a 30-second cooldown. To earn ₹100, you need to watch 200 ads.
+             That's 100 minutes of ads. This is not sustainable.
+  
+  CTO Recommendation:
+    Pivot the earning model to be SKILL-based, not activity-based:
+    - Pass a test → Unlock premium gigs (₹50-₹500 gigs, not ₹0.50 ads)
+    - Real gigs: Write an SEO article for a partner brand, 
+                 Create a Facebook ad for a local business,
+                 Translate content to Hindi
+    - Partner with local SMBs / content agencies who need this work done
+    - Platform takes 20% commission
+    This transforms SkillLoop from "ad-watching app" to "skill-powered gig marketplace"
+
+OBSERVATION-02: THE DAILY JACKPOT IS YOUR BEST RETENTION FEATURE
+  The DailyJackpot model is well-designed. But it's hidden behind 
+  a "hide from home page" decision (per previous conversation).
+  The jackpot at 9:00 PM IST is the single best habit-forming mechanism.
+  
+  CTO Recommendation:
+    Don't hide it. Make it the CENTERPIECE of the home page.
+    "Tonight's Jackpot: ₹500 Prize Pool | 8 hours left"
+    → This is the "daily lottery" hook that keeps users coming back.
+    → Build a proper countdown, show recent winners, show prize breakdown.
+    → This is worth more than 10 other features combined for daily retention.
+
+OBSERVATION-03: THE REFERRAL ECONOMICS ARE WRONG
+  Current: You give new user ₹50, referrer gets ₹50.
+  Problem: Where does this ₹100 come from? The platform absorbs it.
+           At 1,000 users with referrals, that's ₹50,000+ in liabilities.
+  
+  CTO Recommendation (Sustainable referral economics):
+    Option A: Give "test credits" not real money. ₹50 worth of test access,
+              not withdrawable cash. This reduces payout liability.
+    Option B: Only pay referrer when the referred user PAYS (not on signup).
+              Referrer gets ₹50 when new user takes their first paid test.
+    Option C: Keep current model but cap referral bonuses at 5 per user.
+
+OBSERVATION-04: CELERY IS WIRED BUT NOT VERIFIED
+  You have Celery + Redis configured. The beat schedule for 
+  `check_and_reset_streaks` is defined but the actual Celery Beat 
+  schedule configuration (PeriodicTask in django-celery-beat) is not 
+  visible in the code. This likely means the streak task is NOT running.
+  
+  Action Required:
+    1. Add the periodic task via Django admin (/sd/) → Periodic Tasks 
+       OR define in settings.py:
+       CELERY_BEAT_SCHEDULE = {
+           'check-streaks-daily': {
+               'task': 'users.tasks.check_and_reset_streaks',
+               'schedule': crontab(hour=0, minute=0),  # Midnight IST
+           },
+       }
+    2. Test locally: Run `celery -A config worker -l info` + 
+                          `celery -A config beat -l info`
+    3. Verify streak reset task actually fires with a test user.
+
+OBSERVATION-05: THE ADMIN DASHBOARD HAS 0 CONTENT MANAGEMENT
+  The custom /admin/ dashboard is analytics-only. It can:
+    - See stats
+    - See user list
+    - Approve/reject tasks
+  But CANNOT:
+    - Create a new question
+    - Upload a video
+    - Create a skill path
+    - Create an earning task
+  This means all content work goes through /sd/ (Django admin).
+  The Django admin is functional but not designed for a non-dev admin.
+  Future team members (content writers, business ops) will struggle.
+
+OBSERVATION-06: NO PRIVACY POLICY / TERMS OF SERVICE
+  You're collecting user data and handling financial transactions.
+  In India, IT Act 2000 + Digital Personal Data Protection Act 2023
+  requires a privacy policy and terms of service.
+  Before launch, add /privacy/ and /terms/ pages.
+  Use a free generator (termly.io or privacypolicygenerator.info).
+  This is not optional if you want to do UPI transactions.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 8: QUICK WINS — HIGH IMPACT, VERY FAST TO BUILD (< 2 hours each)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+QW-01: WhatsApp Share Button (30 min)
+  One line of HTML. 5x referral conversion.
+
+QW-02: TIME_ZONE = 'Asia/Kolkata' (5 min)
+  Fixes all scheduling issues for Indian operations.
+
+QW-03: "Your Rank" shown on dashboard (1 hour)
+  Query: User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
+  Show "You are Rank #143 in India" → massive motivation.
+
+QW-04: "Days Until Next Level" badge counter (1 hour)
+  Show "Complete 2 more tests to unlock STREAK_7 badge"
+  Drives immediate action.
+
+QW-05: Jackpot countdown on home page (2 hours)
+  Alpine.js + JS Date countdown from scheduled_time to page display.
+  Create FOMO. People will come back for 9 PM jackpot.
+
+QW-06: Progress percentage bar in nav header (30 min)
+  Show a thin colored bar under header showing mastery %.
+  Persistent progress reminder without taking space.
+
+QW-07: Empty states with calls to action (1 hour)
+  When leaderboard is empty, show "Be the first! Take a test now →"
+  When no badges, show "Take your first test to earn your first badge!"
+  These make new users feel guided, not abandoned.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 9: METRICS TO TRACK FROM DAY 1
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+North Star Metric: "Active Earners" (users who earned ≥ ₹1 this week)
+This is your one metric. Everything else feeds into it.
+
+Supporting Metrics:
+  Acquisition:
+    - Signups per day
+    - Referral conversion rate (signups via referral link / total referrals shared)
+    - Source of signups (WhatsApp / direct / organic)
+  
+  Activation:
+    - % of users who take first test within 24 hours of signup
+    - % of users who complete first skill within 7 days
+  
+  Retention:
+    - D1 retention (come back next day after signup)
+    - D7 retention
+    - D30 retention
+    - Average streak length
+  
+  Revenue:
+    - Total wallet balance across all users (liability)
+    - Total earned (task approvals per day)
+    - Total withdrawn (actual money out)
+    - Average user earnings per month
+  
+  Content:
+    - Pass rate per skill (< 30% = too hard, > 90% = too easy)
+    - Time per question per skill
+    - Concept tags with most failures (content gaps to fill)
+
+Track using: Admin dashboard (already exists). 
+Later: Add Plausible.io (GDPR-friendly, cheap, self-hostable) for page analytics.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FINAL CTO VERDICT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CURRENT STATE: Phase 2 technically complete. Good foundation. Solid architecture.
+               BUT: Not production-ready due to critical bugs and missing financial
+               safety nets (wallet history, withdrawal).
+
+BIGGEST RISK: The earning promise is real to users but the payout mechanism
+              doesn't exist yet. Fix this before acquiring real users.
+
+BIGGEST OPPORTUNITY: The daily jackpot + WhatsApp referral + State leaderboard
+                     combo is a viral growth machine waiting to be activated.
+
+WHAT MAKES THIS IDEA POWERFUL:
+  Most EdTech apps are "pay to learn."
+  SkillLoop is "learn to earn."
+  That's the fundamental inversion. That's the hook.
+  The whole architecture supports it. Just need to make the "earn" part REAL.
+
+RECOMMENDATION:
+  Fix bugs (Sprint 1) → Build withdrawal + wallet history (Sprint 2) →
+  Add question explanations (Sprint 3 — makes learning real) →
+  Ship WhatsApp share (Sprint 4 — 30-minute win) →
+  Get first 100 real users → Learn → Iterate.
+
+DO NOT:
+  - Don't add AI personalization yet (Celery barely works, sort that first)
+  - Don't build mobile app yet (web is working, prove model first)
+  - Don't add more gamification (enough exists, focus on real earning)
+  - Don't over-engineer (Django monolith is perfect for this scale)
+
+================================================================================
+  END OF PLAN | Generated by System Architect Review — 2026-03-30
+================================================================================

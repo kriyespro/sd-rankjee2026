@@ -5,6 +5,8 @@
     currentQ: 0, 
     total: {{ questions|length }},
     answers: {},
+    timeTaken: 0,
+    init() { setInterval(() => { this.timeTaken++ }, 1000) },
     isComplete() { return Object.keys(this.answers).length === this.total },
    
     next() { if(this.currentQ < this.total - 1) this.currentQ++ },
@@ -24,6 +26,7 @@
     <form method="post" action="{{ url('assessment:submit_test', skill.id) }}" id="testForm" class="flex flex-col md:flex-row gap-6">
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         <input type="hidden" name="set_id" value="{{ current_set.id if current_set else '' }}">
+        <input type="hidden" name="time_taken_seconds" :value="timeTaken">
         
         <!-- Sidebar Navigation Grid (Compact) -->
         <div class="md:w-64 flex-shrink-0 order-2 md:order-1">

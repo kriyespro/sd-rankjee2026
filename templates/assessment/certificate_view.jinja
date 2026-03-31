@@ -1,0 +1,79 @@
+{% extends "base.jinja" %}
+
+{% block title %}Certificate - {{ cert.skill.name }}{% endblock %}
+
+{% block content %}
+<div class="py-12 bg-gray-100 min-h-screen">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow-2xl rounded-lg overflow-hidden">
+            <!-- Certificate Preview Header -->
+            <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center text-white">
+                <div class="flex items-center space-x-2">
+                    <span class="text-2xl font-bold">SkillLoop</span>
+                    <span class="text-indigo-100 px-2 py-0.5 rounded border border-indigo-400 text-xs uppercase">Verified</span>
+                </div>
+                <div class="flex space-x-2">
+                    <a href="{{ url('assessment:download_certificate', certificate_id=cert.certificate_id) }}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-indigo-600 bg-white hover:bg-indigo-50 focus:outline-none transition-colors">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download PDF
+                    </a>
+                </div>
+            </div>
+
+            <!-- Certificate Mockup Visual -->
+            <div class="p-8 sm:p-16 text-center border-b border-gray-100 relative">
+                <!-- Watermark -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                    <span class="text-9xl font-bold uppercase -rotate-45">SkillLoop</span>
+                </div>
+                
+                <h2 class="text-indigo-600 text-lg font-semibold tracking-widest uppercase mb-4">Certificate of Completion</h2>
+                <p class="text-gray-500 font-medium mb-8">This is to certify that</p>
+                
+                <h1 class="text-5xl sm:text-6xl font-serif font-bold text-gray-900 mb-8 underline decoration-indigo-200 underline-offset-8">
+                    {{ request.user.first_name }} {{ request.user.last_name if request.user.last_name else request.user.username }}
+                </h1>
+                
+                <p class="text-gray-500 font-medium mb-4">has successfully mastered the skill of</p>
+                <h3 class="text-3xl font-bold text-indigo-900 uppercase tracking-tight mb-12">{{ cert.skill.name }}</h3>
+                
+                <div class="grid grid-cols-2 gap-8 mt-16">
+                    <div class="border-t pt-2 border-gray-200">
+                        <p class="font-bold text-gray-900">{{ cert.issued_at.strftime('%B %d, %Y') }}</p>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Date Issued</p>
+                    </div>
+                    <div class="border-t pt-2 border-gray-200">
+                        <p class="font-mono text-xs text-gray-900 break-all">{{ cert.certificate_id }}</p>
+                        <p class="text-xs text-gray-400 uppercase tracking-wider">Certificate ID</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Share Section -->
+            <div class="px-8 py-6 bg-gray-50 flex flex-col sm:flex-row items-center justify-between">
+                <div class="text-sm text-gray-500 mb-4 sm:mb-0">
+                    <p>Share your achievement with your network!</p>
+                </div>
+                <div class="flex space-x-4">
+                    <button class="bg-[#0077b5] text-white px-4 py-2 rounded flex items-center text-sm font-medium hover:bg-opacity-90">
+                        <svg class="w-4 h-4 mr-2 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.761 0 5-2.239 5-5v-14c0-2.761-2.239-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        Share on LinkedIn
+                    </button>
+                    <button class="bg-[#25D366] text-white px-4 py-2 rounded flex items-center text-sm font-medium hover:bg-opacity-90">
+                        <svg class="w-4 h-4 mr-2 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.588-5.946 0-6.533 5.32-11.854 11.858-11.854 3.176 0 6.161 1.237 8.406 3.484 2.245 2.248 3.481 5.234 3.481 8.41 0 6.533-5.321 11.857-11.859 11.857-2.007 0-3.974-.51-5.713-1.479l-6.112 1.601zm3.823-3.842l.344.204c1.479.878 3.321 1.343 5.21 1.343 5.753 0 10.422-4.673 10.435-10.428 0-2.793-1.087-5.419-3.057-7.391-1.97-1.971-4.593-3.061-7.387-3.061-5.765 0-10.45 4.685-10.45 10.44 0 1.981.543 3.916 1.573 5.644l.233.393-1.011 3.691 3.73-.979zM16.512 14.1c-.268-.133-1.581-.781-1.826-.871-.246-.09-.425-.133-.603.133-.179.268-.716.903-.871 1.071-.157.171-.313.193-.58.06-.268-.133-1.134-.417-2.16-1.332-.799-.711-1.337-1.591-1.493-1.858-.157-.268-.017-.413.118-.546.121-.12.268-.313.403-.468.135-.157.179-.268.268-.445.09-.179.046-.334-.021-.468-.067-.133-.603-1.455-.826-1.986-.217-.518-.456-.445-.626-.454-.158-.008-.34-.008-.523-.008-.184 0-.482.067-.734.334-.252.268-.962.94-1.962 2.301-1 1.36-1.517 2.661-1.517 4.544 0 2.621 1.905 5.158 2.174 5.514.267.356 3.748 5.723 9.079 8.016.921.396 2.053.642 3.013.746.852.091 1.62-.008 2.238-.1 1-.151 1.581-.662 1.826-1.285.246-.623.246-1.161.179-1.272-.067-.111-.246-.179-.514-.313z"/></svg>
+                        WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <a href="{{ url('assessment:index') }}" class="text-indigo-600 font-medium hover:text-indigo-500">
+                &larr; Back to Skills
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

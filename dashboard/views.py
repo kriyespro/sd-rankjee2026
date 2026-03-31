@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import Sum, Q, Count, Avg
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import timedelta
 from assessment.models import UserAttempt, Question, Skill, UserSetAttempt
 from core.models import UserTaskSubmission
 from learning.models import ConceptVideo
@@ -15,12 +18,39 @@ User = get_user_model()
 def index(request):
     if request.user.is_superuser or request.user.is_staff:
         # App-wide Admin Dashboard Stats
-        total_users = User.objects.count()
+        total_users_count = User.objects.count()
         total_questions = Question.objects.count()
         total_videos = ConceptVideo.objects.count()
         total_skills = Skill.objects.filter(is_active=True).count()
-        recent_users = User.objects.order_by('-date_joined')[:5]
-        recent_videos = ConceptVideo.objects.order_by('-id')[:5]
+        
+        # User Search & Pagination
+        search_query = request.GET.get('q', '').strip()
+        users_queryset = User.objects.all().order_by('-date_joined')
+        if search_query:
+            users_queryset = users_queryset.filter(
+                Q(username__icontains=search_query) | Q(email__icontains=search_query)
+            )
+        
+        paginator = Paginator(users_queryset, 10) # 10 students per page
+        page_number = request.GET.get('page', 1)
+        students_page = paginator.get_page(page_number)
+        
+        # Performance Analytics
+        # Get pass rates per skill (top 5 difficult vs top 5 easiest)
+        skill_stats = Skill.objects.filter(is_active=True).annotate(
+            total_attempts=Count('userattempt'),
+            pass_count=Count('userattempt', filter=Q(userattempt__passed=True)),
+            avg_score=Avg('userattempt__score')
+        ).filter(total_attempts__gt=0)
+        
+        difficult_skills = skill_stats.order_by('avg_score')[:5]
+        easiest_skills = skill_stats.order_by('-avg_score')[:5]
+        
+        # Platform Activity (Last 7 days)
+        last_7_days = timezone.now() - timedelta(days=7)
+        recent_attempts_count = UserAttempt.objects.filter(attempt_date__gte=last_7_days).count()
+        recent_submissions_count = UserTaskSubmission.objects.filter(submitted_at__gte=last_7_days).count()
+        recent_registrations_count = User.objects.filter(date_joined__gte=last_7_days).count()
         
         # New analytics
         pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').order_by('-submitted_at')
@@ -30,23 +60,25 @@ def index(request):
             total=Sum('task__reward_amount')
         )['total'] or 0
         
-        active_tasks_count = Skill.objects.filter(is_active=True).count() # Earning tasks linked to skills
-        
         # Calculate total XP across platform to show engagement
         total_xp_platform = User.objects.aggregate(Sum('xp_points'))['xp_points__sum'] or 0
 
         return render(request, 'dashboard/admin_dashboard.jinja', {
-            'total_users': total_users,
+            'total_users': total_users_count,
             'total_questions': total_questions,
             'total_videos': total_videos,
             'total_skills': total_skills,
-            'recent_users': recent_users,
-            'recent_videos': recent_videos,
+            'students_page': students_page,
+            'search_query': search_query,
+            'difficult_skills': difficult_skills,
+            'easiest_skills': easiest_skills,
+            'recent_attempts': recent_attempts_count,
+            'recent_submissions': recent_submissions_count,
+            'recent_registrations': recent_registrations_count,
             'total_xp_platform': total_xp_platform,
-            'pending_submissions': pending_submissions[:10],
+            'pending_submissions': pending_submissions[:5],
             'pending_count': pending_count,
             'total_payouts': total_payouts,
-            'active_tasks_count': active_tasks_count,
         })
 
     # Normal User Dashboard
@@ -110,6 +142,8 @@ def index(request):
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
 
+    user_certificates = request.user.certificates.select_related('skill').order_by('-issued_at')
+
     return render(request, 'dashboard/index.jinja', {
         'user': request.user,
         'progress': progress,
@@ -118,6 +152,7 @@ def index(request):
         'latest_attempt': latest_attempt,
         'streak_days': request.user.streak_days,
         'user_badges': user_badges,
+        'user_certificates': user_certificates, # Added
         'unread_notifications': unread_notifications,
         'learning_path': learning_path,
         'all_paths': all_paths,
@@ -128,15 +163,31 @@ def index(request):
 
 @login_required
 def leaderboard(request):
-    users = User.objects.order_by('-xp_points')[:20]
+    filter_state = request.GET.get('filter')
+    if filter_state == 'state' and request.user.state:
+        users_qs = User.objects.filter(state=request.user.state).order_by('-xp_points')
+        title_suffix = f"({request.user.get_state_display()})"
+    else:
+        users_qs = User.objects.order_by('-xp_points')
+        title_suffix = "(All India)"
+        
+    users = users_qs[:20]
     user_rank = None
-    for idx, u in enumerate(users, start=1):
-        if u.pk == request.user.pk:
-            user_rank = idx
-            break
+    # We enumerate the entire queryset efficiently using iterator if large, 
+    # but since it's a small app, this is fine for now as per bootstrap plan.
+    # A true rank query would use `filter(xp_points__gt=request.user.xp_points).count() + 1`
+    
+    # Calculate exact rank efficiently
+    if filter_state == 'state' and request.user.state:
+        user_rank = User.objects.filter(state=request.user.state, xp_points__gt=request.user.xp_points).count() + 1
+    else:
+        user_rank = User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
+
     return render(request, 'dashboard/leaderboard.jinja', {
         'users': users,
         'user_rank': user_rank,
+        'filter_state': filter_state,
+        'title_suffix': title_suffix,
     })
 
 
@@ -157,7 +208,7 @@ def mark_notification_read(request, note_id):
 @login_required
 def recharge_wallet(request):
     if request.method == 'POST':
-        request.user.add_wallet(100)
+        request.user.add_wallet(100, transaction_type='CREDIT_ADMIN', reference_id='recharge')
         from users.gamification import send_notification
         send_notification(request.user, '⚡ Wallet successfully recharged with ₹100 test credits!')
     return redirect('dashboard:index')

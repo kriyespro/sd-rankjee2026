@@ -29,7 +29,7 @@ def _update_streak(user):
     user.save(update_fields=['streak_days', 'last_active_date'])
     
     if reward_daily:
-        user.add_wallet(1)
+        user.add_wallet(1, transaction_type='EARN_DAILY')
         from .gamification import send_notification
         send_notification(user, '🪙 +₹1 daily login reward added to your wallet!')
         on_streak_login(user)
@@ -43,7 +43,7 @@ def signup_view(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            user.add_wallet(50)  # Give new user ₹50 free credit on signup
+            user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
             
             # Handle referral code
             ref_code = request.POST.get('referral_code', '').strip().upper()

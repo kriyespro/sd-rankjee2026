@@ -1,172 +1,173 @@
 {% extends "base.jinja" %}
+{% block title %}Master Your Skills, Unlock Your Future - SkillLoop{% endblock %}
+
 {% block extra_head %}
 <style>
-.hero-gradient {
-    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
-}
-.glass-effect {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.card-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.card-hover:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 24px -8px rgba(99, 102, 241, 0.15);
-}
-.text-gradient {
-    background: linear-gradient(100deg, #a5b4fc, #d8b4fe);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
+    .jackpot-gradient {
+        background: radial-gradient(circle at top right, #4f46e5, #7c3aed, #020617);
+    }
+    .text-gradient {
+        background: linear-gradient(to right, #818cf8, #c084fc, #fb7185);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .bento-card {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .bento-card:hover {
+        transform: translateY(-5px) scale(1.01);
+        border-color: rgba(99, 102, 241, 0.4);
+        box-shadow: 0 20px 40px -20px rgba(79, 70, 229, 0.4);
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-gradient text-white pt-20 pb-16 px-4 relative overflow-hidden">
-    <!-- Decorative background elements -->
-    <div class="absolute inset-0 z-0">
-        <div class="absolute -top-[10%] -right-[5%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[100px]"></div>
-        <div class="absolute -bottom-[10%] -left-[5%] w-[40%] h-[40%] rounded-full bg-purple-500/10 blur-[100px]"></div>
-        <div class="absolute top-[20%] left-[20%] w-2 h-2 rounded-full bg-indigo-400/50 animate-ping"></div>
+<section class="jackpot-gradient text-white pt-20 pb-16 px-4 relative overflow-hidden">
+    <!-- Animated shapes -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+        <div class="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-indigo-600/20 blur-[120px] animate-pulse"></div>
+        <div class="absolute top-[20%] -left-[10%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/10 blur-[100px]"></div>
     </div>
 
-    <div class="max-w-5xl mx-auto items-center text-center relative z-10">
-        <div class="inline-flex items-center gap-2 glass-effect rounded-full px-4 py-1.5 text-xs font-semibold mb-6 shadow-sm">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span class="tracking-wide text-indigo-100/90 uppercase">Live: 10,000+ Skills Mastered</span>
+    <div class="max-w-6xl mx-auto text-center relative z-10 px-4">
+        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-5 py-2 text-[10px] font-black uppercase tracking-[0.2em] mb-10 text-indigo-200 shadow-2xl">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+            Intelligence at Scale
         </div>
         
-        <h1 class="text-5xl sm:text-6xl font-black leading-[1.1] mb-5 tracking-tight text-white drop-shadow-sm">
-            Master the rules.<br>
-            <span class="text-gradient">Break the limits.</span>
+        <h1 class="text-6xl md:text-9xl font-black leading-[0.85] mb-8 tracking-tighter">
+            Skill up. <br>
+            <span class="text-gradient">Stand out.</span>
         </h1>
         
-        <p class="text-lg sm:text-xl text-indigo-100/70 max-w-2xl mx-auto mb-8 font-medium leading-relaxed">
-            The next-generation platform for targeted learning. Discover your weak spots automatically, learn efficiently, and earn direct rewards.
+        <p class="text-lg md:text-2xl text-slate-300 max-w-3xl mx-auto mb-10 font-medium leading-relaxed">
+            Eliminate your weak spots with AI-driven diagnostics. <br class="hidden md:block"> Earn direct cash rewards for every milestone.
         </p>
         
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ url('users:signup') }}"
-               class="bg-white text-slate-900 font-bold px-8 py-3.5 rounded-xl hover:bg-slate-50 transition-all shadow-[0_4px_20px_rgba(255,255,255,0.15)] ring-1 ring-white/30 text-sm">
-                Start Your Journey ✨
-            </a>
-            <a href="{{ url('users:login') }}"
-               class="glass-effect text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-white/10 transition-all text-sm">
-                Member Login
-            </a>
-        </div>
-    </div>
-</section>
-
-<!-- How It Works -->
-<section class="py-16 bg-slate-50 relative border-b border-slate-200/50">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="text-center mb-12">
-            <span class="text-indigo-600 font-extrabold tracking-widest text-xs uppercase block mb-1">Methodology</span>
-            <h2 class="text-3xl font-black text-slate-900 tracking-tight">The Perfect Learning Loop</h2>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {% for step in [
-                ('1', 'Diagnose', 'Take AI-powered MCQ tests to map your knowledge gaps.', 'text-blue-600', 'bg-blue-50/50 border-blue-100'),
-                ('2', 'Learn', 'Watch 5-minute video lessons curated for your weak concepts.', 'text-purple-600', 'bg-purple-50/50 border-purple-100'),
-                ('3', 'Master', 'Retest on your weak areas. Score 80%+ to unlock mastery badges.', 'text-indigo-600', 'bg-indigo-50/50 border-indigo-100'),
-                ('4', 'Earn', 'Apply your verified skills on real-world tasks and earn direct payouts.', 'text-emerald-600', 'bg-emerald-50/50 border-emerald-100'),
-            ] %}
-            <div class="card-hover bg-white border border-slate-200/60 rounded-2xl p-6 relative overflow-hidden group">
-                <div class="absolute -right-3 -top-3 text-7xl font-black text-slate-50 opacity-60 group-hover:scale-105 transition-transform duration-500">{{ step[0] }}</div>
-                <div class="relative z-10 flex flex-col h-full">
-                    <div class="w-12 h-12 {{ step[4] }} {{ step[3] }} border rounded-xl flex items-center justify-center font-black mb-4 shadow-sm">
-                        {{ step[0] }}
-                    </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">{{ step[1] }}</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed border-t border-slate-100 pt-2 mt-auto">{{ step[2] }}</p>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</section>
-
-<!-- Stats Banner -->
-<section class="py-12 bg-indigo-900 text-white relative border-y border-indigo-800/50">
-    <div class="max-w-5xl mx-auto px-4 relative z-10 text-center">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-indigo-800/80">
-            <div class="pt-4 md:pt-0">
-                <p class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 to-teal-300 mb-1">₹5K+</p>
-                <p class="text-indigo-200/80 font-bold text-xs tracking-widest uppercase">Top Earner</p>
-            </div>
-            <div class="pt-4 md:pt-0">
-                <p class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-indigo-300 mb-1">80%</p>
-                <p class="text-indigo-200/80 font-bold text-xs tracking-widest uppercase">Pass Required</p>
-            </div>
-            <div class="pt-4 md:pt-0">
-                <p class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 to-pink-300 mb-1">24h</p>
-                <p class="text-indigo-200/80 font-bold text-xs tracking-widest uppercase">Avg Payout Time</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Trending Topics -->
-<section class="py-16 bg-white">
-    <div class="max-w-6xl mx-auto px-4">
-        <div class="flex justify-between items-end mb-8 border-b border-slate-100 pb-4">
-            <div>
-                <span class="text-indigo-600 font-extrabold tracking-widest text-xs uppercase block mb-1">Premium Topics</span>
-                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Available Skill Paths</h2>
-            </div>
-            <a href="{{ url('assessment:index') }}" class="text-indigo-600 font-bold text-sm flex items-center gap-1 hover:text-indigo-800 group">
-                All Paths <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
-            </a>
-        </div>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {% for skill in [
-                ('🚀', 'Digital Marketing', 'SEO, SMM, Copy', true),
-                ('🏛️', 'SSC Exams', 'CGL, CHSL, MTS', true),
-                ('💰', 'Banking', 'IBPS, SBI PO', true),
-                ('🚆', 'Railway', 'RRB NTPC, Group D', true),
-            ] %}
-            <div class="group border border-slate-200 rounded-2xl p-5 card-hover flex flex-col text-left">
-                <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-xl mb-4 group-hover:scale-110 shadow-sm transition-transform">
-                    {{ skill[0] }}
-                </div>
-                <h3 class="font-bold text-slate-900 mb-1">{{ skill[1] }}</h3>
-                <p class="text-slate-500 text-xs mb-4 flex-grow">{{ skill[2] }}</p>
-                
-                {% if skill[3] %}
-                <a href="{{ url('assessment:index') }}" class="w-full text-center bg-indigo-50/50 text-indigo-700 text-xs font-bold py-2 rounded-lg hover:bg-indigo-600 hover:text-white border border-indigo-100 hover:border-indigo-600 transition-all">
-                    Start Path
+        <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-4 rounded-[2.5rem] max-w-fit mx-auto shadow-2xl">
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                <a href="{{ url('users:signup') }}"
+                   class="w-full sm:w-auto bg-white text-slate-900 font-black px-12 py-5 rounded-2xl hover:bg-slate-100 transition-all shadow-2xl shadow-white/10 text-sm tracking-wide active:scale-95 uppercase">
+                    Get Started Free
                 </a>
-                {% else %}
-                <span class="w-full text-center bg-slate-50 text-slate-400 text-xs font-bold py-2 rounded-lg border border-slate-200 cursor-not-allowed">
-                    Coming Soon
-                </span>
-                {% endif %}
+                <a href="{{ url('core:watch_ads') }}"
+                   class="w-full sm:w-auto bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-black px-12 py-5 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all text-sm tracking-wide active:scale-95 uppercase">
+                    Watch & Earn ₹
+                </a>
             </div>
-            {% endfor %}
+        </div>
+
+        <!-- Jackpot feature hidden as requested -->
+        {% if false %}
+        <div class="max-w-xl mx-auto mt-16 relative group opacity-50">
+           ...
+        </div>
+        {% endif %}
+
+        <!-- Trusted by sub-row -->
+        <div class="flex flex-col items-center gap-6 opacity-30">
+            <p class="text-[9px] md:text-[10px] font-black text-white/50 uppercase tracking-[0.3em]">RELIABLE & SECURE PAYMENT PARTNERS</p>
+            <div class="flex flex-wrap justify-center gap-8 md:gap-12 items-center grayscale">
+                <span class="text-xl md:text-2xl font-black text-white tracking-widest">VISA</span>
+                <span class="text-xl md:text-2xl font-black text-white tracking-widest">STRIPE</span>
+                <span class="text-xl md:text-2xl font-black text-white tracking-widest">RAZORPAY</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Trust Section -->
+<div class="bg-indigo-900/10 backdrop-blur-md border-y border-indigo-100/10 py-6 md:py-8">
+    <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
+        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">APPLE</span>
+        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">GOOGLE</span>
+        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">STRIPE</span>
+        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter text-indigo-400">RAZORPAY</span>
+    </div>
+</div>
+
+<!-- Bento Grid Features -->
+<section class="py-16 md:py-24 bg-slate-50">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="text-center mb-12 md:mb-16 px-4">
+            <h2 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">Engineering your success.</h2>
+            <p class="text-slate-500 text-sm md:text-base font-medium max-w-xl mx-auto">We've automated the learning process so you can focus on mastering high-value skills.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto">
+            <!-- Big Feature: Diagnose -->
+            <div class="md:col-span-2 bento-card bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between overflow-hidden relative shadow-sm min-h-[300px] md:min-h-0">
+                <div class="relative z-10">
+                    <span class="text-indigo-600 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">01. Intelligent Diagnosis</span>
+                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4 max-w-xs">AI-Powered Skill Gap Analysis.</h3>
+                    <p class="text-slate-500 text-xs md:text-sm max-w-xs leading-relaxed">Our system identifies your specific weaknesses across 500+ topics instantly.</p>
+                </div>
+                <div class="absolute bottom-[-5%] right-[-5%] w-[60%] h-[60%] bg-indigo-50 rounded-tl-[3rem] p-6 border-l border-t border-indigo-100/50 shadow-inner hidden md:block">
+                    <div class="space-y-4">
+                        <div class="h-4 w-full bg-indigo-200/50 rounded-full animate-pulse"></div>
+                        <div class="h-4 w-[80%] bg-indigo-200/30 rounded-full"></div>
+                        <div class="h-10 w-full bg-white border border-indigo-100 rounded-xl flex items-center px-4 gap-3">
+                            <span class="text-[10px] text-indigo-500 font-black">Score: 82%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Square: Learn -->
+            <div class="bento-card bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between text-white shadow-xl min-h-[250px] md:min-h-0">
+                <div>
+                    <span class="text-indigo-400 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">02. Micro-Learning</span>
+                    <h3 class="text-xl md:text-2xl font-black mb-3 md:mb-4">5-Min Turbo Lessons.</h3>
+                    <p class="text-slate-400 text-[11px] md:text-xs leading-relaxed">No fluff. Only the concepts you failed in the diagnostic test.</p>
+                </div>
+                <div class="w-12 h-12 md:w-16 md:h-16 bg-indigo-600 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-lg shadow-indigo-500/20">📚</div>
+            </div>
+
+            <!-- Square: Master -->
+            <div class="bento-card bg-indigo-600 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between text-white shadow-xl min-h-[250px] md:min-h-0">
+                <div>
+                    <span class="text-indigo-200 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">03. Certification</span>
+                    <h3 class="text-xl md:text-2xl font-black mb-3 md:mb-4">Mastery Badges.</h3>
+                    <p class="text-indigo-100 text-[11px] md:text-xs leading-relaxed">Score 80%+ on your weak areas to unlock verified credentials.</p>
+                </div>
+                <div class="w-12 h-12 md:w-16 md:h-16 bg-white/20 backdrop-blur-md rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl">🏆</div>
+            </div>
+
+            <!-- Wide Row: Earn -->
+            <div class="md:col-span-2 bento-card bg-emerald-500 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between text-white shadow-xl overflow-hidden relative min-h-[300px] md:min-h-0">
+                <div class="relative z-10 md:max-w-md w-full">
+                    <span class="text-emerald-100 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">04. Monetization</span>
+                    <h3 class="text-2xl md:text-3xl font-black mb-3 md:mb-4">Direct Task Rewards.</h3>
+                    <p class="text-emerald-50 text-[13px] md:text-sm leading-relaxed mb-6 md:mb-0">Access the task marketplace once your skills are verified. Get paid for your expertise.</p>
+                </div>
+                <div class="relative z-10 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 w-full md:w-auto">
+                    <p class="text-[9px] font-black uppercase mb-1">CASH EARNED</p>
+                    <p class="text-3xl md:text-4xl font-black tracking-tighter">₹5,240.00</p>
+                </div>
+                <!-- Abstract coins -->
+                <div class="absolute right-[-20px] top-[-20px] text-7xl md:text-9xl opacity-10 rotate-12">💰</div>
+            </div>
         </div>
     </div>
 </section>
 
 <!-- Final CTA -->
-<section class="py-16 bg-slate-900 text-center px-4">
-    <div class="max-w-2xl mx-auto">
-        <h2 class="text-4xl font-black text-white mb-4 tracking-tight">Stop Scrolling. <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Start Earning.</span></h2>
-        <p class="text-sm text-slate-400 mb-8 font-medium">Join the fastest growing community turning knowledge into direct financial rewards.</p>
-        <a href="{{ url('users:signup') }}"
-           class="bg-white text-slate-900 text-sm font-bold px-8 py-3 rounded-lg hover:bg-indigo-50 transition-colors shadow-lg">
-            Create Free Account
-        </a>
+<section class="py-32 bg-slate-950 text-center px-4 relative overflow-hidden">
+    <div class="max-w-3xl mx-auto relative z-10">
+        <h2 class="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-tight">Master the platform. <br> <span class="text-indigo-500">Master your life.</span></h2>
+        <p class="text-slate-400 text-lg mb-12 font-medium">Join thousands of students who have optimized their learning path and started earning from home.</p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{{ url('users:signup') }}"
+               class="bg-indigo-600 text-white font-black px-12 py-5 rounded-2xl hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30">
+                START NOW &rarr;
+            </a>
+        </div>
     </div>
+    
+    <!-- Decorative light beam -->
+    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[50%] bg-indigo-600/10 blur-[150px] rounded-t-full"></div>
 </section>
 {% endblock %}
