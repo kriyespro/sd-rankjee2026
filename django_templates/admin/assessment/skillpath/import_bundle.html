@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Import <code>rankjee_full.json</code></h1>
+<p>Reads the file from the project root (same folder as <code>manage.py</code>). After you <strong>git pull</strong>, the file must exist on the server.</p>
+<ul>
+  <li><strong>Path:</strong> {{ bundle_path }}</li>
+  <li><strong>File found:</strong> {% if bundle_exists %}<span style="color:green">yes</span>{% else %}<span style="color:#b91c1c">no — add the file and refresh</span>{% endif %}</li>
+</ul>
+<p>This replaces questions for every skill in the bundle and re-partitions sets. <strong>Superuser only.</strong></p>
+<form method="post">
+  {% csrf_token %}
+  <input type="submit" name="import" value="Run import now" class="default" {% if not bundle_exists %}disabled{% endif %}>
+</form>
+<p style="margin-top:2em"><a href="{% url 'admin:assessment_skillpath_changelist' %}">&larr; Back to Skill paths</a></p>
+{% endblock %}

@@ -3,7 +3,7 @@ Seed script: creates Digital Marketing skill, 10 questions, 3 videos, and 3 earn
 Usage: python seed_data.py
 """
 import os, django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rankjee.settings')
 django.setup()
 
 from assessment.models import Skill, Question

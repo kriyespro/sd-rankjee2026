@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
-# Make entrypoint script executable
+# Bind-mount `.:/app` in docker-compose overwrites /app at runtime; host entrypoint.sh may
+# not be +x, which causes "exec: permission denied". Invoke via sh (no execute bit required).
 RUN chmod +x /app/entrypoint.sh
 
-# Run entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]

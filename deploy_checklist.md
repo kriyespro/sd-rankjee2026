@@ -130,6 +130,17 @@ After HTTPS works, set `SITE_BASE_URL=https://yourdomain.com` and ensure `ALLOWE
 
 You can use **Managed PostgreSQL** instead of the `db` service: create a cluster in DO, set `DATABASE_URL` in `.env` to the provided connection string, and remove or stop the `db` service from `docker-compose.yml` (advanced; keep backups and private networking in mind).
 
+### Troubleshooting: `exec: "/app/entrypoint.sh": permission denied`
+
+Compose mounts your project directory over `/app`, so the **host** `entrypoint.sh` is used. If it is not marked executable (common after `git clone` on Linux), direct `exec` fails. The Dockerfile runs the script with **`/bin/sh /app/entrypoint.sh`** so this should not happen after a **rebuild**:
+
+```bash
+docker compose build --no-cache web celery celery-beat
+./docker-deploy.sh
+```
+
+Alternatively on the server: `chmod +x entrypoint.sh` then `docker compose up -d`.
+
 ### App Platform note
 
 **DigitalOcean App Platform** can run Dockerfiles, but this project expects **Postgres + Redis + Celery + Celery Beat** together. The Droplet + `docker compose` approach matches the repo’s [`docker-compose.yml`](docker-compose.yml) with minimal changes. Using App Platform usually means splitting into separate components (web worker, workers, databases) and is not “one click” from this file alone.

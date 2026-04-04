@@ -1,0 +1,102 @@
+RankJee — skills, question sets, import / export
+================================================
+
+ONE-CLICK LOCAL (all JSON)
+--------------------------
+From project root:
+
+  python3 scripts/import_all_content.py
+
+Uses rankjee_full.json if present (bundle); otherwise imports batch*.json in order.
+Options: --also-batches  --batches-only  --bundle-only
+
+ONE-CLICK /sd/ ADMIN (production after git pull)
+------------------------------------------------
+1. Commit rankjee_full.json in repo (or upload to server project root).
+2. git pull on server, restart containers if needed.
+3. Log in as superuser → /sd/ → Assessment → Skill paths
+4. Button: "Import rankjee_full.json (one click)" → confirm.
+
+Direct URL: /sd/assessment/skillpath/import-rankjee-bundle/
+
+
+WHY NOTHING SHOWS ON THE DASHBOARD
+----------------------------------
+The student "Your Learning Journey" lists SKILLS that belong to a SKILL PATH and have
+QUESTIONS grouped into QUESTION SETS (10 per set, built by partition).
+
+You need:
+1) At least one SkillPath (e.g. "Digital Skills Mastery")
+2) Skills linked to that path (/sd/ or CMS)
+3) Enough questions per skill so sets exist — run partition (automatic after import)
+
+EXPORT FROM LOCAL (copy file to server or Docker)
+-------------------------------------------------
+From your project root (with venv active if local):
+
+  python manage.py export_content_bundle rankjee_content.json
+
+Export only one path (e.g. id from /sd/assessment/skillpath/):
+
+  python manage.py export_content_bundle rankjee_path4.json --path-id 4
+
+Alternative: flat list with numeric skill_ids (IDs change on another DB — prefer bundle):
+
+  python manage.py export_questions_json questions_flat.json
+
+IMPORT ON SERVER / DOCKER
+-------------------------
+Copy the JSON file to the machine, then inside the app directory:
+
+  docker compose exec web python manage.py import_content_bundle rankjee_content.json
+
+If the file is named rankjee_full.json in the project root (bind-mounted as /app in Docker), you can omit the path:
+
+  docker compose exec web python manage.py import_content_bundle
+
+Or on local:
+
+  python manage.py import_content_bundle rankjee_content.json
+
+Note: import_content_bundle REPLACES all questions for each skill in the file (safe round-trip).
+
+LEGACY JSON LIST (import_questions)
+-----------------------------------
+File must be a JSON array. Each object needs either skill_id OR skill_name (unique name):
+
+  python manage.py import_questions my_questions.json
+
+Example one row:
+{
+  "skill_name": "Digital Marketing",
+  "text": "What is SEO?",
+  "option_a": "Search Engine Optimization",
+  "option_b": "Social Email Optimization",
+  "option_c": "Site Error Output",
+  "option_d": "None",
+  "correct_option": "A",
+  "difficulty": "EASY",
+  "concept_tag": "SEO",
+  "explanation": ""
+}
+
+CSV (staff dashboard)
+---------------------
+Staff user: /admin/imports/questions/ — pick skill, upload CSV with columns:
+text, option_a, option_b, option_c, option_d, correct_option, difficulty, concept_tag, explanation
+
+Django admin /sd/
+-----------------
+Assessment → Question → Import CSV / AI generate (if configured).
+
+SEED SCRIPTS (dev)
+------------------
+  python seed_data.py
+  python manage.py seed_maths_mcqs   (if present)
+
+DJANGO FIXTURE (advanced)
+-------------------------
+  python manage.py dumpdata assessment.SkillPath assessment.Skill assessment.QuestionSet assessment.Question --indent 2 > dump.json
+  python manage.py loaddata dump.json
+
+PK clashes are common when merging into an existing DB — prefer export_content_bundle / import_content_bundle.

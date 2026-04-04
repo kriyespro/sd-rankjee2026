@@ -1,0 +1,9 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:assessment_skillpath_import_bundle' %}" class="addlink" style="background:#1e293b;color:#fff;padding:10px 14px;border-radius:4px;font-weight:bold">
+      Import rankjee_full.json (one click)
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

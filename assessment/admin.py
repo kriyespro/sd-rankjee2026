@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from django.contrib import admin, messages
+from django.core.management import call_command
 from django.shortcuts import render, redirect
 from django.urls import path
 from django.http import HttpResponse
@@ -15,6 +18,44 @@ class CsvImportForm:
 class SkillPathAdmin(admin.ModelAdmin):
     list_display = ('name', 'level_order', 'is_active')
     list_editable = ('level_order', 'is_active')
+    change_list_template = 'admin/assessment/skillpath/change_list.html'
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                'import-rankjee-bundle/',
+                self.admin_site.admin_view(self.import_rankjee_bundle),
+                name='assessment_skillpath_import_bundle',
+            ),
+        ]
+        return custom + urls
+
+    def import_rankjee_bundle(self, request):
+        bundle_path = Path(settings.BASE_DIR) / 'rankjee_full.json'
+        if request.method == 'POST':
+            if not request.user.is_superuser:
+                messages.error(request, 'Only superusers can run this import.')
+                return redirect('admin:assessment_skillpath_changelist')
+            if not bundle_path.is_file():
+                messages.error(request, f'File not found: {bundle_path}')
+                return redirect('admin:assessment_skillpath_import_bundle')
+            try:
+                call_command('import_content_bundle', str(bundle_path))
+                messages.success(request, 'Imported rankjee_full.json successfully.')
+            except Exception as e:
+                messages.error(request, f'Import failed: {e}')
+            return redirect('admin:assessment_skillpath_changelist')
+        return render(
+            request,
+            'admin/assessment/skillpath/import_bundle.html',
+            {
+                'title': 'Import rankjee_full.json',
+                'bundle_path': str(bundle_path),
+                'bundle_exists': bundle_path.is_file(),
+            },
+        )
+
 
 from django.db import models # for Case/When
 
@@ -45,14 +86,6 @@ class QuestionAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'skill', 'concept_tag', 'difficulty', 'correct_option')
     list_filter = ('skill', 'difficulty', 'concept_tag')
     change_list_template = "assessment/question_changelist.html"
-
-    def get_urls(self):
-        urls = super().get_urls()
-        custom = [
-            path('import-csv/', self.import_csv, name='assessment_question_import_csv'),
-            path('ai-generate/', self.ai_generate, name='assessment_question_ai_generate'),
-        ]
-        return custom + urls
 
     def import_csv(self, request):
         if request.method == 'POST':

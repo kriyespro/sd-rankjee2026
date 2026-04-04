@@ -33,8 +33,20 @@ class Command(BaseCommand):
         with transaction.atomic():
             for item in data:
                 try:
-                    skill_id = item.get('skill_id')
-                    skill = Skill.objects.get(id=skill_id)
+                    skill = None
+                    skill_id = item.get("skill_id")
+                    skill_name = (item.get("skill_name") or "").strip()
+                    if skill_id is not None:
+                        skill = Skill.objects.filter(id=skill_id).first()
+                    if skill is None and skill_name:
+                        skill = Skill.objects.filter(name__iexact=skill_name).first()
+                    if skill is None:
+                        self.stdout.write(
+                            self.style.WARNING(
+                                f"Skip: need valid skill_id or skill_name (got id={skill_id!r}, name={skill_name!r})."
+                            )
+                        )
+                        continue
                     
                     question = Question.objects.create(
                         skill=skill,
@@ -50,8 +62,6 @@ class Command(BaseCommand):
                     )
                     total_imported += 1
                     skills_to_partition.add(skill)
-                except Skill.DoesNotExist:
-                    self.stdout.write(self.style.WARNING(f"Skill ID {skill_id} not found, skipping question."))
                 except KeyError as e:
                     self.stdout.write(self.style.WARNING(f"Missing required field {e}, skipping question."))
                 except Exception as e:
