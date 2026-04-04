@@ -1,5 +1,5 @@
   ================================================================================
-  SkillLoop (SD-RankJEE2026) — CTO STRATEGIC ARCHITECTURAL PLAN
+  RankJee (SD-RankJee2026) — CTO STRATEGIC ARCHITECTURAL PLAN
   Written: 2026-03-30 | Role: Bootstrap Startup CTO / System Architect
   Think: "Ship fast, stay lean, don't over-engineer, kill every blocker."
 ================================================================================
@@ -40,7 +40,7 @@ BUG-004 [MEDIUM] → streak_tasks.py send_reminder_email — placeholder only
        remove the task from Celery beat schedule to avoid confusion.
 
 BUG-005 [LOW] → TIME_ZONE set to UTC, not IST
-  File: config/settings.py — Line 141
+  File: rankjee/settings.py (historically config/settings.py)
   Problem: TIME_ZONE = 'UTC'. India operates on IST (UTC+5:30). 
            DailyJackpot scheduled_time will be confusing for admins who 
            set "9:00 PM" but it fires at 3:30 AM IST.
@@ -48,13 +48,13 @@ BUG-005 [LOW] → TIME_ZONE set to UTC, not IST
        This alone will fix all scheduling confusion.
 
 BUG-006 [LOW] → SECRET_KEY is hardcoded, exposed in code
-  File: config/settings.py — Line 24
+  File: rankjee/settings.py — use env + .env (gitignored)
   Problem: Secret key is committed to git. Anyone who gets code gets your key.
   Fix: Move to .env file with python-dotenv (already installed!).
        Add .env to .gitignore. Make settings.py read from os.environ.
 
 BUG-007 [LOW] → ALLOWED_HOSTS is empty even for non-DEBUG
-  File: config/settings.py — Line 29
+  File: rankjee/settings.py — read ALLOWED_HOSTS from env
   Problem: ALLOWED_HOSTS = []. Won't work in production at all.
   Fix: Read from environment variable. 
        ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
@@ -70,7 +70,7 @@ APPS:
                   UserSetAttempt, DailyJackpot, JackpotWinner
   learning/    → ConceptVideo (YouTube integration, thumbnail handling)
   dashboard/   → Student dashboard, Admin dashboard views
-  config/      → Django settings, Jinja2 env, Celery, URLs
+  rankjee/     → Django settings, Jinja2 env, Celery, URLs
 
 KEY MODELS HEALTH CHECK:
   ✅ CustomUser — good, has XP, wallet, streak, referral
@@ -79,10 +79,10 @@ KEY MODELS HEALTH CHECK:
   ✅ EarningTask + UserTaskSubmission — simple, clean
   ✅ DailyJackpot + JackpotWinner — good structure, auto-settle logic exists
   ✅ ConceptVideo — good YouTube parsing logic
-  ⚠️  No Payment/Transaction model — wallet operations have no history!
-  ⚠️  No UserProfile model (bio, state, mobile) — needed for state leaderboards
-  ⚠️  No ContentExplanation model — no "why was the answer X?" feature
-  ⚠️  No PremiumPlan / Subscription model — Phase 3 is blocked
+  ✅ WalletTransaction + payments app (history + Razorpay / dummy checkout)
+  ✅ State on CustomUser — leaderboards
+  ✅ Question.explanation — result review
+  ✅ SubscriptionPlan / UserSubscription — Pro tier
 
 WHAT'S WORKING WELL:
   + The Test-Teach-Retest loop is solid and well-designed
@@ -95,18 +95,17 @@ WHAT'S WORKING WELL:
   + WhiteNoise, gunicorn, dj-database-url all ready for production
   + Docker + docker-compose is present (great for deployment)
 
-WHAT'S MISSING OR WEAK:
-  - No email system at all (critical for re-engagement)
-  - No wallet transaction history (financial risk, can't debug issues)
-  - No rate limiting on test submissions or wallet claims
-  - No analytics/event tracking (how do you know what users do?)
-  - No question explanation/hint system (learning quality is low)
-  - No WhatsApp share button (mentioned in more_features.txt, not built)
-  - No state/district-wise leaderboard (mentioned in more_features.txt)
-  - No PDF certificate generation
-  - No payment gateway (how do users WITHDRAW earnings? Huge gap)
-  - No content management for admins via the custom dashboard
-  - Dashboard admin view does too much in one view (N+1 query risk)
+RESIDUAL RISKS / BACKLOG (post-MVP — see Section 10 Phase 4):
+  - Production email deliverability (SMTP creds, HTML templates optional)
+  - Trial abuse: clearing session/cookies vs server-side trial accounting (GAP-004)
+  - Product analytics (Plausible etc.) not wired
+  - Full Hindi copy across all pages (nav toggle is partial FEATURE-13)
+  - Dashboard N+1 / prefetch opportunities on learning path loop (GAP-005)
+  - django-axes brute-force protection (INFRA-006) not installed
+  Note: Wallet history, withdrawals, Razorpay/dummy Pro, explanations, WhatsApp,
+  state leaderboard, PDF certs (premium), /sd/ content links from Command Centre,
+  privacy/terms drafts, and light rate limits are shipped — Sections 2–3 describe
+  historical gap analysis; Section 6 + verification = what was built.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   SECTION 2: ARCHITECTURE GAPS — SYSTEM ARCHITECT PERSPECTIVE
@@ -271,7 +270,7 @@ FEATURE-04 [P1] — WhatsApp Share / Viral Referral Button
        One click to share via WhatsApp = 5x referral conversion rate.
   What to build:
     In earnings.jinja and dashboard/index.jinja referral widget:
-    <a href="https://wa.me/?text=Bhai%20check%20this%20out!%20Main%20SkillLoop%20
+    <a href="https://wa.me/?text=Bhai%20check%20this%20out!%20Main%20RankJee%20
     pe%20paisa%20kama%20raha%20hoon...%20Join%20karo%3A%20[REFERRAL_URL]"
        target="_blank" class="whatsapp-btn">
       📲 Share on WhatsApp
@@ -447,7 +446,7 @@ FEATURE-14 [P3] — "Revision Bites" (Offline-friendly Text Summaries)
 FEATURE-15 [P3] — Company Hiring Portal (Phase 4 Preview)
 ─────────────────────────────────────────────────────────────────────────────
   Why: B2B revenue is the highest-margin revenue in EdTech. Companies pay 
-       ₹5,000-₹50,000 per verified hire. If SkillLoop has 10,000 verified 
+       ₹5,000-₹50,000 per verified hire. If RankJee has 10,000 verified 
        learners, companies want to recruit them.
   What to build (just the data model now, build UI in Phase 4):
     1. PublicProfile model (opt-in) — links to user, shows test scores, badges
@@ -543,13 +542,13 @@ INFRA-005: Deployment Checklist (Before Going Live)
   2. ✅ WhiteNoise — present and configured
   3. ✅ Docker + docker-compose — present
   4. ✅ dj-database-url — present
-  5. ❌ .env file — MISSING, create it
-  6. ❌ SECRET_KEY from env — MISSING, hardcoded
-  7. ❌ ALLOWED_HOSTS from env — MISSING
-  8. ❌ Email backend — MISSING, not configured
-  9. ❌ Celery beat schedule — not verified (tasks exist but schedule unclear)
-  10. ❌ Database migrations — verify all migrations applied
-  11. ❌ Collect static — not automated in entrypoint.sh (check entrypoint.sh)
+  5. ⚠️ .env — local only (gitignored); create on server with real secrets
+  6. ✅ SECRET_KEY — from env (rankjee/settings.py + dotenv)
+  7. ✅ ALLOWED_HOSTS — from env
+  8. ✅ Email backend — SMTP from env (credentials required in prod)
+  9. ✅ Celery beat — rankjee/celery.py beat_schedule (streaks 00:05 IST); use `celery -A rankjee beat`
+  10. ✅ Migrations — apply on deploy (`migrate`)
+  11. ⚠️ collectstatic — run in CI/deploy (see docker/entrypoint if present)
 
 INFRA-006: Consider Adding django-axes (Brute Force Protection)
   Users have passwords. Without brute force protection, accounts can be 
@@ -594,24 +593,24 @@ SPRINT 5 — CONTENT SCALE (COMPLETED ✅):
   GOAL: 1,000 high-quality questions live. Total questions: 1000.
 
 
-SPRINT 6 — MONETIZATION (3-4 days):
-  [1] FEATURE-09: Premium subscription with Razorpay
-  [2] FEATURE-08: PDF certificates for skill completion
-  [3] /plans/ page with clear pricing table
+SPRINT 6 — MONETIZATION (3-4 days): ✅ DONE (2026-04)
+  ✅ [1] FEATURE-09: Premium subscription with Razorpay (+ dummy checkout in DEBUG)
+  ✅ [2] FEATURE-08: PDF certificates for skill completion (premium-gated download)
+  ✅ [3] /payments/plans/ pricing + checkout
   GOAL: First ₹ of revenue. Platform is self-sustaining.
 
-SPRINT 7 — POLISH & SCALE (ongoing):
-  [1] FEATURE-10: Admin content management in custom dashboard
-  [2] FEATURE-13: Hinglish UI toggle
-  [3] INFRA: Caching, logging, rate limiting
-  [4] FEATURE-15: Public profile + hiring portal (data model only)
+SPRINT 7 — POLISH & SCALE: ✅ MVP DONE (2026-04) — full CMS/i18n deferred
+  ✅ [1] FEATURE-10: Custom /admin/ Command Centre → deep links to /sd/ (paths, jackpot, questions, tasks, videos)
+  ✅ [2] FEATURE-13: EN | HI session toggle + nav labels (users/context_processors.py)
+  ✅ [3] INFRA: LocMem/Redis cache (USE_REDIS_CACHE), file+console LOGGING, leaderboard cache TTL, ad-claim DB cooldown, recharge throttle
+  ✅ [4] FEATURE-15: PublicProfile + CompanyInquiry models, /users/u/<slug>/ + inquiry form, privacy/terms pages
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   SECTION 7: CTO-LEVEL STRATEGIC OBSERVATIONS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 OBSERVATION-01: THE BUSINESS MODEL CLARITY PROBLEM
-  Right now, SkillLoop tries to be:
+  Right now, RankJee tries to be:
     (a) A learning platform (videos, tests)
     (b) A gig marketplace (earning tasks)
     (c) A gamification platform (XP, badges)
@@ -631,7 +630,7 @@ OBSERVATION-01: THE BUSINESS MODEL CLARITY PROBLEM
                  Translate content to Hindi
     - Partner with local SMBs / content agencies who need this work done
     - Platform takes 20% commission
-    This transforms SkillLoop from "ad-watching app" to "skill-powered gig marketplace"
+    This transforms RankJee from "ad-watching app" to "skill-powered gig marketplace"
 
 OBSERVATION-02: THE DAILY JACKPOT IS YOUR BEST RETENTION FEATURE
   The DailyJackpot model is well-designed. But it's hidden behind 
@@ -664,43 +663,25 @@ OBSERVATION-04: CELERY IS WIRED BUT NOT VERIFIED
   visible in the code. This likely means the streak task is NOT running.
   
   Action Required:
-    1. Add the periodic task via Django admin (/sd/) → Periodic Tasks 
-       OR define in settings.py:
-       CELERY_BEAT_SCHEDULE = {
-           'check-streaks-daily': {
-               'task': 'users.tasks.check_and_reset_streaks',
-               'schedule': crontab(hour=0, minute=0),  # Midnight IST
-           },
-       }
-    2. Test locally: Run `celery -A config worker -l info` + 
-                          `celery -A config beat -l info`
-    3. Verify streak reset task actually fires with a test user.
+    1. ✅ rankjee/celery.py defines beat_schedule (check_and_reset_streaks @ 00:05 IST).
+    2. Test locally: `celery -A rankjee worker -l info` and `celery -A rankjee beat -l info`
+    3. Optional: add duplicate PeriodicTask in /sd/ only if you switch to DatabaseScheduler.
 
-OBSERVATION-05: THE ADMIN DASHBOARD HAS 0 CONTENT MANAGEMENT
-  The custom /admin/ dashboard is analytics-only. It can:
-    - See stats
-    - See user list
-    - Approve/reject tasks
-  But CANNOT:
-    - Create a new question
-    - Upload a video
-    - Create a skill path
-    - Create an earning task
-  This means all content work goes through /sd/ (Django admin).
-  The Django admin is functional but not designed for a non-dev admin.
-  Future team members (content writers, business ops) will struggle.
+OBSERVATION-05: CUSTOM /admin/ vs CONTENT MANAGEMENT (updated)
+  The student-facing "Command Centre" at /admin/ (staff) is analytics + task
+  approval + deep links to /sd/ for questions, skills, paths, jackpot, videos,
+  tasks — not embedded CRUD in Jinja. All create/edit still happens in Django
+  admin (/sd/). Non-technical ops may prefer a future in-dashboard CMS (Phase 4).
 
-OBSERVATION-06: NO PRIVACY POLICY / TERMS OF SERVICE
-  You're collecting user data and handling financial transactions.
-  In India, IT Act 2000 + Digital Personal Data Protection Act 2023
-  requires a privacy policy and terms of service.
-  Before launch, add /privacy/ and /terms/ pages.
-  Use a free generator (termly.io or privacypolicygenerator.info).
-  This is not optional if you want to do UPI transactions.
+OBSERVATION-06: PRIVACY / TERMS (updated)
+  Draft pages exist: /privacy/ and /terms/ (core URLs + Jinja stubs).
+  Before real UPI volume or ads: replace with counsel-reviewed Privacy Policy and
+  Terms aligned with DPDP 2023 + platform practices (generators: termly.io, etc.).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   SECTION 8: QUICK WINS — HIGH IMPACT, VERY FAST TO BUILD (< 2 hours each)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Status: QW-01, QW-02, QW-03, QW-05 shipped in MVP; QW-07 partial (leaderboard empty state).
 
 QW-01: WhatsApp Share Button (30 min)
   One line of HTML. 5x referral conversion.
@@ -767,22 +748,52 @@ Track using: Admin dashboard (already exists).
 Later: Add Plausible.io (GDPR-friendly, cheap, self-hostable) for page analytics.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  SECTION 10: PHASE 4 BACKLOG — NOT IN MVP CLOSURE (prioritize after traction)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  From Section 3 (P2/P3 and beyond):
+  - FEATURE-10 (full): In-dashboard CRUD for questions, videos, paths, tasks (not only /sd/ links)
+  - FEATURE-11: Bulk question CSV/Excel import UI + validation report + preview
+  - FEATURE-12: AI MCQ generator admin flow (OpenAI) with human approval gate
+  - FEATURE-13 (full): Hindi/Hinglish across all key pages (not nav-only)
+  - FEATURE-14: Revision bites — text_summary on ConceptVideo or RevisionBite model + UI toggle
+  - FEATURE-15 (full): Employer portal UI, verified hire flows, “Get Hired” badge rules
+
+  From Section 2 gaps (residual):
+  - GAP-004: Server-side trial accounting (e.g. trial_tests_used) immune to cookie/session reset
+  - GAP-005: prefetch_related / select_related on student dashboard path loop; optional cache invalidation
+  - GAP-006 (optional): Question.solution_video FK to ConceptVideo
+  - GAP-007: Documented mobile QA at 375px (home, take_test, dashboard, earnings)
+
+  From Section 5 / 8 / 9:
+  - INFRA-006: django-axes (or equivalent) for login brute-force protection
+  - FEATURE-05 depth: HTML email templates under templates/email/ + welcome / payout emails
+  - Plausible.io (or similar) product analytics
+  - Section 8 quick wins still open: QW-04 (badge progress hint), QW-06 (nav mastery bar),
+    QW-07 badge empty state copy on profile/dashboard if not done
+
+  Strategic (Section 7 observations):
+  - Referral economics adjustment (credits vs cash, cap, pay-on-first-paid-test)
+  - Jackpot as permanent home hero (now enabled; tune copy and prize breakdown over time)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   FINAL CTO VERDICT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-CURRENT STATE: Phase 2 technically complete. Good foundation. Solid architecture.
-               BUT: Not production-ready due to critical bugs and missing financial
-               safety nets (wallet history, withdrawal).
+CURRENT STATE: Phase 3 MVP aligned with this plan — bugs addressed, wallet history,
+               withdrawals, Pro checkout (Razorpay + dummy dev), legal stubs (/privacy, /terms),
+               infra baseline (logging, cache, beat schedule). Production still requires real
+               .env, SMTP, Redis (optional cache), and counsel-reviewed legal copy.
 
-BIGGEST RISK: The earning promise is real to users but the payout mechanism
-              doesn't exist yet. Fix this before acquiring real users.
+BIGGEST RISK: Operating payouts and subscriptions without verified legal + tax + KYC process.
+              Replace draft Privacy/Terms before scaling paid users.
 
 BIGGEST OPPORTUNITY: The daily jackpot + WhatsApp referral + State leaderboard
                      combo is a viral growth machine waiting to be activated.
 
 WHAT MAKES THIS IDEA POWERFUL:
   Most EdTech apps are "pay to learn."
-  SkillLoop is "learn to earn."
+  RankJee is "learn to earn."
   That's the fundamental inversion. That's the hook.
   The whole architecture supports it. Just need to make the "earn" part REAL.
 
@@ -797,6 +808,43 @@ DO NOT:
   - Don't build mobile app yet (web is working, prove model first)
   - Don't add more gamification (enough exists, focus on real earning)
   - Don't over-engineer (Django monolith is perfect for this scale)
+
+================================================================================
+  VERIFICATION AUDIT — 2026-04-01 (code vs plan) · CLOSED 2026-04-01 PHASE MVP
+================================================================================
+  Project package: rankjee/ (replaces former config/ paths in Section 0).
+
+  TODO STATUS (✅ done / ⬜ pending):
+  ✅ Sprint 1: critical bugs + prod-safe settings
+  ✅ Sprint 2: wallet ledger + withdrawals + wiring
+  ✅ Sprint 3: explanations + teach loop + time tracking
+  ✅ Sprint 4: WhatsApp share + state leaderboard + streak emails
+  ✅ Sprint 5: import commands + content scaling (seed/import)
+  ✅ Sprint 6: Razorpay Pro checkout (dummy mode) + plans page + premium PDF gate
+  ✅ Sprint 7: command centre links + EN/HI toggle (partial) + cache/logging + hiring profile + privacy/terms
+  ✅ Quick wins shipped: QW-01, QW-02, QW-03, QW-05 (home jackpot countdown), QW-07 partial
+  ✅ Security hardening: ad DB cooldown, atomic test entitlement, trial_tests_used, django-axes, throttles
+  ✅ Ops: /sd/ admins for WalletTransaction + WithdrawalRequest; Command Centre pending withdrawals table
+  ⬜ Phase 4 backlog (Section 10): full CMS CRUD in /admin/, full Hindi across all pages, AI generator save flow,
+     CSV import preview improvements, revision bites content authoring, employer portal expansion, analytics
+
+  SECTION 0 BUGS:
+  ✅ BUG-001 login_required
+  ✅ BUG-002 double gamification — idempotent on_task_approved; signal-only on approve
+  ✅ BUG-003 double wallet / multi-tab — SkillTestEntitlement + atomic user lock
+  ✅ BUG-004 email — SMTP + send_reminder_email wired (prod needs real SMTP creds)
+  ✅ BUG-005 TIME_ZONE — Asia/Kolkata
+  ✅ BUG-006 / BUG-007 — SECRET_KEY + ALLOWED_HOSTS from env
+
+  SPRINTS 1–7 (MVP): Shipped — wallet/withdrawal/history, explanations, WhatsApp, state LB,
+  imports/seeds, Razorpay+dummy Pro, PDF certs, /privacy + /terms, EN|HI nav, hiring profile,
+  cache+log+light rate limits, Celery beat schedule for streaks.
+  Ops + growth polish: /sd/ WalletTransaction + WithdrawalRequest admins (bulk actions),
+  Command Centre pending UPI table + sidebar links, home jackpot card + live countdown,
+  student dashboard India XP rank line, Section 10 Phase 4 backlog explicit.
+
+  DEFERRED: See SECTION 10 Phase 4 backlog (CMS, trials hardening, axes, full i18n, AI/CSV UI,
+  analytics, remaining quick wins).
 
 ================================================================================
   END OF PLAN | Generated by System Architect Review — 2026-03-30

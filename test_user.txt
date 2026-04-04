@@ -1,19 +1,22 @@
-# Test Credentials
+# RankJee Test Credentials
 
 ## Admin User
-- Username: admin
-- Email: admin@example.com
-- Password: AdminPassword123!
-- Role: Superuser (Access to /sd/)
+- **Username:** admin
+- **Email:** admin@rankjee.com
+- **Password:** RankJeeAdmin2026@
+- **Role:** Superuser
 
-## Standard User 1
-- Username: testuser1
-- Email: testuser1@example.com
-- Password: TestUserPassword123!
-- Role: Student/Earner
+## Test Student
+- **Username:** student1
+- **Email:** student1@gmail.com
+- **Password:** RankJeePass123!
+- **Role:** Student / Premium User
 
-## Standard User 2
-- Username: testuser2
-- Email: testuser2@example.com
-- Password: TestUserPassword123!
-- Role: Student/Earner
+## Referral User
+- **Username:** referrer
+- **Email:** refer@gmail.com
+- **Password:** RankJeeRefer99!
+- **Role:** Student (for referral testing)
+
+---
+*Note: These are for local testing purposes only.*

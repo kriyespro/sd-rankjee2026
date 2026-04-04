@@ -1,8 +1,21 @@
+import random
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
-from .models import SkillPath, Skill, Question, UserAttempt, QuestionSet, UserSetAttempt, DailyJackpot, JackpotWinner
+from users.models import CustomUser
+from .models import (
+    SkillPath,
+    Skill,
+    Question,
+    UserAttempt,
+    QuestionSet,
+    UserSetAttempt,
+    DailyJackpot,
+    JackpotWinner,
+    SkillTestEntitlement,
+)
 from users.gamification import on_test_submitted
 
 @login_required
@@ -80,21 +93,15 @@ def settle_jackpot(jackpot):
                 award_amount=prize
             )
             
-            user = attempt.user
-            user.wallet_balance += prize
-            user.save(update_fields=['wallet_balance'])
+            attempt.user.add_wallet(
+                prize,
+                transaction_type='EARN_JACKPOT',
+                reference_id=str(jackpot.id),
+            )
             winners_count += 1
             
         jackpot.is_completed = True
         jackpot.save(update_fields=['is_completed'])
-
-@login_required
-def submit_test(request, skill_id):
-    if request.method != 'POST':
-        return redirect('assessment:index')
-
-
-import random
 
 @login_required
 def take_test(request, skill_id):
@@ -122,24 +129,40 @@ def take_test(request, skill_id):
         messages.success(request, f"Congratulations! You've mastered all levels of {skill.name}.")
         return redirect('dashboard:index')
 
-    # Monetization: Test-Teach-Retest requires trials or wallet balance
+    # Monetization: trials or wallet; entitlement row prevents double charge (tabs / races)
     session_key = f'active_test_paid_{skill.id}'
     if not request.session.get(session_key):
-        user = request.user
-        if user.is_superuser or user.is_staff:
-            request.session[session_key] = True
-        elif user.trial_tests_left > 0:
-            user.trial_tests_left -= 1
-            user.save(update_fields=['trial_tests_left'])
-            request.session[session_key] = True
-        elif user.wallet_balance >= 10:
-            user.wallet_balance -= 10
-            user.save(update_fields=['wallet_balance'])
+        if SkillTestEntitlement.objects.filter(user_id=request.user.id, skill_id=skill.id).exists():
             request.session[session_key] = True
         else:
-            from django.contrib import messages
-            messages.error(request, "Insufficient Wallet Balance! Tests cost ₹10 after your free trials. Earn money on the Freelance Board or invite friends!")
-            return redirect('core:earnings')
+            with transaction.atomic():
+                u = CustomUser.objects.select_for_update().get(pk=request.user.pk)
+                if SkillTestEntitlement.objects.filter(user_id=u.id, skill_id=skill.id).exists():
+                    request.session[session_key] = True
+                elif u.is_superuser or u.is_staff:
+                    SkillTestEntitlement.objects.create(user=u, skill=skill)
+                    request.session[session_key] = True
+                elif getattr(u, "is_premium", False):
+                    SkillTestEntitlement.objects.create(user=u, skill=skill)
+                    request.session[session_key] = True
+                elif u.trial_tests_left > 0 and getattr(u, "trial_tests_used", 0) < 3:
+                    u.trial_tests_left -= 1
+                    u.trial_tests_used = (u.trial_tests_used or 0) + 1
+                    u.save(update_fields=['trial_tests_left', 'trial_tests_used'])
+                    SkillTestEntitlement.objects.create(user=u, skill=skill)
+                    request.session[session_key] = True
+                elif u.wallet_balance >= 10:
+                    u.add_wallet(-10, transaction_type='DEDUCT_TEST', reference_id=str(skill.id))
+                    SkillTestEntitlement.objects.create(user=u, skill=skill)
+                    request.session[session_key] = True
+                else:
+                    from django.contrib import messages
+
+                    messages.error(
+                        request,
+                        "Insufficient Wallet Balance! Tests cost ₹10 after your free trials. Earn money on the Freelance Board or invite friends!",
+                    )
+                    return redirect('core:earnings')
     
     if current_set:
         questions = list(current_set.questions.all())
@@ -185,7 +208,8 @@ def submit_test(request, skill_id):
     session_key = f'active_test_paid_{skill.id}'
     if session_key in request.session:
         del request.session[session_key]
-        
+    SkillTestEntitlement.objects.filter(user=request.user, skill=skill).delete()
+
     # Get only the questions that were actually in the test
     question_ids = request.session.get(f'test_questions_{skill.id}', [])
     if not question_ids:

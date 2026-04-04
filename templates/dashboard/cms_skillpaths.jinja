@@ -1,0 +1,33 @@
+{% extends "dashboard/cms_list_base.jinja" %}
+{% set title = "Skill paths" %}
+{% set subtitle = "Ordering controls the dashboard path tabs." %}
+{% set new_url = url('dashboard:cms_skillpath_new') %}
+{% block list_content %}
+<div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+  <table class="w-full text-left">
+    <thead class="bg-slate-50 text-[10px] uppercase font-black tracking-widest text-slate-400">
+      <tr>
+        <th class="px-5 py-3">Level</th>
+        <th class="px-5 py-3">Name</th>
+        <th class="px-5 py-3">Active</th>
+        <th class="px-5 py-3 text-right">Edit</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for it in items %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-5 py-3 text-sm font-black">{{ it.level_order }}</td>
+        <td class="px-5 py-3 text-sm font-bold text-slate-900">{{ it.name }}</td>
+        <td class="px-5 py-3 text-sm">{{ "Yes" if it.is_active else "No" }}</td>
+        <td class="px-5 py-3 text-right">
+          <a class="text-indigo-600 font-bold text-sm hover:underline" href="{{ url('dashboard:cms_skillpath_edit', it.id) }}">Edit</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="px-5 py-10 text-center text-slate-500 font-bold">No paths yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
+

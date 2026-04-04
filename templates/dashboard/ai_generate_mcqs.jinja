@@ -1,0 +1,18 @@
+{% extends "base.jinja" %}
+{% block title %}AI MCQ Generator - RankJee{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-black text-slate-900 mb-2">AI MCQ generator</h1>
+  <p class="text-sm text-slate-500 mb-6">Staff-only. This is a starter UI; wire provider keys to enable generation.</p>
+
+  {% if not key_present %}
+  <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">
+    OPENAI_API_KEY not set. Add it to your server env to enable generation.
+  </div>
+  {% else %}
+  <div class="rounded-xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-700">
+    Key detected. Next step: implement preview + save flow.
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

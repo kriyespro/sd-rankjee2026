@@ -1,23 +1,30 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# One-Click SkillLoop Docker Deployer
-echo "🚀 Starting SkillLoop One-Click Deployment..."
+echo "Starting RankJee one-command Docker deployment..."
 
-# 1. Stop existing containers
-echo "Stopping old containers..."
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Error: docker is not installed."
+  exit 1
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+  echo "Error: docker compose plugin is not available."
+  exit 1
+fi
+
+# Stop old containers (safe if not running)
 docker compose down
 
-# 2. Build and Start containers in background
-echo "Building and starting containers..."
+# Build and start all services
 docker compose up --build -d
 
-# 3. Wait for database to initialize
-echo "Waiting for database to settle..."
-sleep 5
+# Wait a bit for healthchecks/migrations
+sleep 6
 
-# 4. Check status
+echo
 docker compose ps
-
-echo "✅ Deployment Successful!"
-echo "📍 Access your app at: http://localhost:8000"
-echo "🛠 Admin at: http://localhost:8000/sd/"
+echo
+echo "Done."
+echo "App:   http://localhost:8000"
+echo "Admin: http://localhost:8000/sd/"

@@ -1,4 +1,4 @@
-Based on the Indian education landscape (Competitive exams like SSC/Banking/JEE, mobile-first usage, and "pocket money" motivation), here are some "common sense" features that would make **SkillLoop** a viral hit among Indian students:
+Based on the Indian education landscape (Competitive exams like SSC/Banking/JEE, mobile-first usage, and "pocket money" motivation), here are some "common sense" features that would make **RankJee** a viral hit among Indian students:
 
 ### 1. 🏆 Daily Scholarship "Jackpot" Quiz
 Instead of just random tests, host **one high-stakes quiz daily at a fixed time** (e.g., 9:00 PM). 

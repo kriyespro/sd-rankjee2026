@@ -1,0 +1,18 @@
+{% extends "base.jinja" %}
+{% block title %}{{ title }} - CMS{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+  <div class="flex items-center justify-between mb-6 gap-4">
+    <div>
+      <h1 class="text-3xl font-black text-slate-900">{{ title }}</h1>
+      {% if subtitle %}<p class="text-sm text-slate-500 mt-1">{{ subtitle }}</p>{% endif %}
+    </div>
+    <div class="flex items-center gap-3">
+      {% if new_url %}<a href="{{ new_url }}" class="bg-indigo-600 text-white text-xs font-black uppercase tracking-widest px-5 py-3 rounded-xl hover:bg-indigo-700">New</a>{% endif %}
+      <a href="{{ url('dashboard:cms_home') }}" class="text-sm font-bold text-indigo-600 hover:underline">CMS</a>
+    </div>
+  </div>
+  {% block list_content %}{% endblock %}
+</div>
+{% endblock %}
+

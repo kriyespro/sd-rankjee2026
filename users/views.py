@@ -1,13 +1,19 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate, logout
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone
+from django.contrib.auth.forms import AuthenticationForm
+from django.core.cache import cache
 from django.db.models import Sum
-from .forms import CustomUserCreationForm
-from .gamification import on_streak_login, on_referral_signup
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.utils.text import slugify
+
 from assessment.models import UserAttempt
 from core.models import UserTaskSubmission
+from .forms import CustomUserCreationForm
+from .gamification import on_referral_signup, on_streak_login, send_notification
+from .models import CompanyInquiry, CustomUser, PublicProfile
+from .tasks import send_welcome_email
 
 
 def _update_streak(user):
@@ -40,6 +46,10 @@ def signup_view(request):
         return redirect('dashboard:index')
     
     if request.method == 'POST':
+        ip = request.META.get('REMOTE_ADDR', 'unknown')
+        if not cache.add(f"rl:signup:{ip}", 1, 30):
+            messages.error(request, "Please wait a few seconds and try again.")
+            return redirect('users:signup')
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
@@ -48,7 +58,6 @@ def signup_view(request):
             # Handle referral code
             ref_code = request.POST.get('referral_code', '').strip().upper()
             if ref_code:
-                from .models import CustomUser
                 try:
                     referrer = CustomUser.objects.get(referral_code=ref_code)
                     if referrer != user:
@@ -59,6 +68,8 @@ def signup_view(request):
                     pass
             login(request, user)
             _update_streak(user)
+            # Async welcome email (HTML template)
+            send_welcome_email.delay(user.id)
             return redirect('dashboard:index')
     else:
         form = CustomUserCreationForm()
@@ -89,21 +100,122 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
+    default_slug = slugify(f'{request.user.username}-{request.user.pk}') or f'user-{request.user.pk}'
+    pub, _ = PublicProfile.objects.get_or_create(
+        user=request.user,
+        defaults={'slug': default_slug, 'is_public': False},
+    )
+    if request.method == 'POST' and request.POST.get('form') == 'public_profile':
+        pub.headline = (request.POST.get('headline') or '')[:200]
+        raw_slug = slugify(request.POST.get('slug', '').strip() or request.user.username)
+        if not raw_slug:
+            raw_slug = default_slug
+        candidate = raw_slug
+        n = 1
+        while PublicProfile.objects.filter(slug=candidate).exclude(pk=pub.pk).exists():
+            candidate = f'{raw_slug}-{n}'
+            n += 1
+        pub.slug = candidate
+        pub.is_public = request.POST.get('is_public') == 'on'
+        pub.save()
+        messages.success(request, 'Public hiring profile updated.')
+        return redirect('users:profile')
+
     attempts = UserAttempt.objects.filter(user=request.user).order_by('-attempt_date')
     total_earned = UserTaskSubmission.objects.filter(
         user=request.user, status='APPROVED'
     ).aggregate(total=Sum('task__reward_amount'))['total'] or 0
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
-    return render(request, 'users/profile.jinja', {
-        'attempts': attempts,
-        'total_earned': total_earned,
-        'user': request.user,
-        'user_badges': user_badges,
-    })
+    inquiries = CompanyInquiry.objects.filter(candidate=request.user).order_by('-created_at')[:10]
+    public_url = request.build_absolute_uri(f'/users/u/{pub.slug}/')
+    return render(
+        request,
+        'users/profile.jinja',
+        {
+            'attempts': attempts,
+            'total_earned': total_earned,
+            'user': request.user,
+            'user_badges': user_badges,
+            'public_profile': pub,
+            'public_profile_url': public_url,
+            'inquiries': inquiries,
+        },
+    )
+
+
+def set_ui_lang(request, lang):
+    if lang in ('hi', 'en'):
+        request.session['ui_lang'] = lang
+    nxt = request.GET.get('next') or '/'
+    if not nxt.startswith('/') or nxt.startswith('//'):
+        nxt = '/'
+    return redirect(nxt)
+
+
+def public_profile(request, slug):
+    pub = get_object_or_404(
+        PublicProfile.objects.select_related('user'),
+        slug=slug,
+        is_public=True,
+    )
+    user = pub.user
+    badges = user.badges.select_related('badge').order_by('-awarded_at')[:12]
+    attempts_total = UserAttempt.objects.filter(user=user).count()
+    passed_total = UserAttempt.objects.filter(user=user, passed=True).count()
+    return render(
+        request,
+        'users/public_profile.jinja',
+        {
+            'pub': pub,
+            'badges': badges,
+            'attempts_total': attempts_total,
+            'passed_total': passed_total,
+        },
+    )
+
+
+def company_inquiry_submit(request, slug):
+    pub = get_object_or_404(PublicProfile, slug=slug, is_public=True)
+    if request.method != 'POST':
+        return redirect('users:public_profile', slug=slug)
+    if request.POST.get('website', '').strip():
+        return redirect('users:public_profile', slug=slug)
+    ip = request.META.get('REMOTE_ADDR', 'unknown')
+    ck = f'hireinq:{ip}'
+    try:
+        n = int(cache.get(ck, 0))
+    except (TypeError, ValueError):
+        n = 0
+    if n >= 5:
+        messages.error(request, 'Too many submissions from this network. Try again later.')
+        return redirect('users:public_profile', slug=slug)
+    cache.set(ck, n + 1, 3600)
+    company_name = (request.POST.get('company_name') or '').strip()[:200]
+    contact_email = (request.POST.get('contact_email') or '').strip()[:320]
+    body = (request.POST.get('message') or '').strip()[:2000]
+    if not company_name or not contact_email or not body:
+        messages.error(request, 'Please fill company name, email, and message.')
+        return redirect('users:public_profile', slug=slug)
+    CompanyInquiry.objects.create(
+        candidate=pub.user,
+        company_name=company_name,
+        contact_email=contact_email,
+        message=body,
+    )
+    send_notification(
+        pub.user,
+        f'📋 Hiring inquiry from {company_name}',
+        link='/users/profile/',
+    )
+    messages.success(request, 'Thank you. The learner will be notified.')
+    return redirect('users:public_profile', slug=slug)
 
 @login_required
 def regenerate_referral(request):
     if request.method == 'POST':
+        if not cache.add(f"rl:refregen:{request.user.id}", 1, 10):
+            messages.warning(request, "Please wait a few seconds before regenerating again.")
+            return redirect('dashboard:index')
         import uuid
         request.user.referral_code = uuid.uuid4().hex[:8].upper()
         request.user.save(update_fields=['referral_code'])

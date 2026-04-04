@@ -1,10 +1,15 @@
 {% extends "base.jinja" %}
 
-{% block title %}Pricing Plans - SkillLoop{% endblock %}
+{% block title %}Pricing Plans - RankJee{% endblock %}
 
 {% block content %}
 <div class="py-12 bg-gray-50 min-h-screen" x-data="{ billing: 'monthly' }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {% if payment_dummy %}
+        <div class="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-900">
+            <strong>Dummy checkout</strong> — no real Razorpay keys needed in DEBUG. Click Get Started and confirm to activate Pro locally.
+        </div>
+        {% endif %}
         <div class="text-center">
             <h2 class="text-base font-semibold text-indigo-600 tracking-wide uppercase">Pricing</h2>
             <p class="mt-1 text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
@@ -54,68 +59,95 @@
                     </ul>
                 </div>
 
+                {% if request.user.is_authenticated %}
                 <button 
+                    type="button"
                     @click="initiatePayment({{ plan.id }})"
                     class="mt-8 block w-full py-3 px-6 border border-transparent rounded-md text-center font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-100"
                 >
                     Get Started
                 </button>
+                {% else %}
+                <a href="{{ url('users:login') }}?next=/payments/plans/" class="mt-8 block w-full py-3 px-6 border border-transparent rounded-md text-center font-medium bg-slate-800 text-white hover:bg-slate-900 transition-colors shadow-lg">
+                    Log in to subscribe
+                </a>
+                {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- Razorpay Checkout Script -->
+<!-- Razorpay Checkout (skipped in dummy mode) -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(function (c) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+        });
+    }
+    return v;
+}
+async function verifyOnServer(payload) {
+    const csrftoken = getCookie('csrftoken');
+    const body = new URLSearchParams(payload);
+    const verifyResp = await fetch('/payments/verify/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken || '',
+        },
+        credentials: 'same-origin',
+        body: body,
+    });
+    const verifyData = await verifyResp.json();
+    if (verifyData.status === 'success') {
+        window.location.href = '/admin/?paid=1';
+    } else {
+        alert(verifyData.error || 'Payment verification failed');
+    }
+}
 async function initiatePayment(planId) {
-    // 1. Create order on server
-    const response = await fetch(`/payments/order/${planId}/`);
+    const csrftoken = getCookie('csrftoken');
+    const response = await fetch('/payments/order/' + planId + '/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken || '' },
+        credentials: 'same-origin',
+    });
     const data = await response.json();
-    
     if (data.error) {
-        alert("Payment error: " + data.error);
+        alert('Payment error: ' + data.error);
         return;
     }
-    
-    // 2. Open Razorpay Interface
+    if (data.checkout_mode === 'dummy') {
+        if (!confirm('Simulate successful payment and activate this plan? (local dummy mode)')) return;
+        await verifyOnServer({
+            razorpay_order_id: data.order_id,
+            razorpay_payment_id: 'pay_dummy_' + Date.now(),
+            razorpay_signature: 'dummy',
+        });
+        return;
+    }
     const options = {
         key: data.key,
         amount: data.amount,
-        currency: "INR",
-        name: "SkillLoop Pro",
+        currency: 'INR',
+        name: 'RankJee Pro',
         description: data.description,
         order_id: data.order_id,
         handler: async function (response) {
-            // 3. Verify on server
-            const verifyResp = await fetch('/payments/verify/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    'razorpay_payment_id': response.razorpay_payment_id,
-                    'razorpay_order_id': response.razorpay_order_id,
-                    'razorpay_signature': response.razorpay_signature
-                })
+            await verifyOnServer({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
             });
-            const verifyData = await verifyResp.json();
-            if (verifyData.status === 'success') {
-                window.location.href = '/dashboard/?paid=true';
-            } else {
-                alert("Payment verification failed");
-            }
         },
-        prefill: {
-            name: data.user_name,
-            email: data.user_email
-        },
-        theme: {
-            color: "#4F46E5"
-        }
+        prefill: { name: data.user_name, email: data.user_email },
+        theme: { color: '#4F46E5' },
     };
-    
     const rzp1 = new Razorpay(options);
     rzp1.open();
 }

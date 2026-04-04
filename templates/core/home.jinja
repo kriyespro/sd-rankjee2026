@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}Master Your Skills, Unlock Your Future - SkillLoop{% endblock %}
+{% block title %}Master Your Skills, Unlock Your Future - RankJee{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -51,19 +51,31 @@
             <div class="flex flex-col sm:flex-row gap-4 items-center">
                 <a href="{{ url('users:signup') }}"
                    class="w-full sm:w-auto bg-white text-slate-900 font-black px-12 py-5 rounded-2xl hover:bg-slate-100 transition-all shadow-2xl shadow-white/10 text-sm tracking-wide active:scale-95 uppercase">
-                    Get Started Free
+                    {{ uil.get_started }}
                 </a>
                 <a href="{{ url('core:watch_ads') }}"
                    class="w-full sm:w-auto bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-black px-12 py-5 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all text-sm tracking-wide active:scale-95 uppercase">
-                    Watch & Earn ₹
+                    {{ uil.watch_earn }}
                 </a>
             </div>
         </div>
 
-        <!-- Jackpot feature hidden as requested -->
-        {% if false %}
-        <div class="max-w-xl mx-auto mt-16 relative group opacity-50">
-           ...
+        {% if jackpot %}
+        <div class="max-w-xl mx-auto mt-14 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-xl px-6 py-6 text-center shadow-xl">
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Tonight&apos;s jackpot</p>
+            <p class="text-2xl md:text-3xl font-black text-white">₹{{ jackpot.prize_pool|int }} <span class="text-indigo-200 text-lg font-bold">pool</span></p>
+            <p class="text-sm text-white/80 mt-1 font-semibold">{{ jackpot.skill.name }}</p>
+            {% if jackpot_time_to_go > 0 %}
+            <div class="mt-4" x-data="{ t: {{ jackpot_time_to_go }} }" x-init="setInterval(() => { if (t > 0) t-- }, 1000)">
+                <p class="text-[10px] font-black text-white/50 uppercase tracking-widest mb-1">Starts in</p>
+                <p class="text-3xl font-black text-white font-mono tracking-tight" x-text="String(Math.floor(t/3600)).padStart(2,'0') + ':' + String(Math.floor((t%3600)/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0')"></p>
+            </div>
+            {% else %}
+            <p class="mt-4 text-emerald-300 font-black text-sm uppercase tracking-widest">Live now — join before it settles</p>
+            {% endif %}
+            <a href="{{ url('assessment:jackpot_lobby') }}" class="mt-5 inline-flex items-center justify-center gap-2 bg-white text-indigo-900 font-black text-xs uppercase tracking-widest px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg">
+                {{ uil.enter_jackpot }}
+            </a>
         </div>
         {% endif %}
 

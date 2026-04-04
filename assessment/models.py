@@ -181,3 +181,19 @@ class Certificate(models.Model):
 
     def __str__(self):
         return f"Certificate: {self.user.username} - {self.skill.name}"
+
+
+class SkillTestEntitlement(models.Model):
+    """Server-side record that this user already paid (trial/wallet) for an open test for this skill."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='skill_test_entitlements')
+    skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='test_entitlements')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'skill'], name='uniq_skill_test_entitlement_user_skill'),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} → {self.skill_id}"

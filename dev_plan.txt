@@ -1,4 +1,4 @@
-# SkillLoop - Development Plan (Phase-wise)
+# RankJee - Development Plan (Phase-wise)
 
 ## Phase 1: MVP (Months 0-3) - Validation & Core Loop ✅ DONE
 

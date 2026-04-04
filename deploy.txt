@@ -1,4 +1,4 @@
-# SkillLoop: DigitalOcean One-Click Docker Deployment Guide
+# RankJee: DigitalOcean One-Click Docker Deployment Guide
 
 Follow these exact steps to get your platform live on DigitalOcean.
 
@@ -21,8 +21,8 @@ Follow these exact steps to get your platform live on DigitalOcean.
 ## Step 3: Clone Your Code
 Run these commands on the server:
 ```bash
-git clone https://github.com/kriyespro/sd-rankjee2026.git
-cd sd-rankjee2026
+git clone https://github.com/kriyespro/sd-RankJee2026.git
+cd sd-RankJee2026
 ```
 
 ## Step 4: Configure Environment Variables
@@ -34,7 +34,7 @@ Copy and paste this into the file (update with your real values):
 ```env
 DEBUG=0
 SECRET_KEY=yoursupersecretkeyhere123!
-DATABASE_URL=postgres://postgres:postgres@db:5432/skillloop_db
+DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
 ALLOWED_HOSTS=your_droplet_ip,your_domain.com

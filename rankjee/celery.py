@@ -2,9 +2,9 @@ import os
 from celery import Celery
 
 # Set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rankjee.settings')
 
-app = Celery('config')
+app = Celery('rankjee')
 
 # Using a string here means the worker doesn't have to serialize
 # the configuration object to child processes.
@@ -14,6 +14,15 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django apps.
 app.autodiscover_tasks()
+
+from celery.schedules import crontab
+
+app.conf.beat_schedule = {
+    'check-streaks-daily': {
+        'task': 'users.tasks.check_and_reset_streaks',
+        'schedule': crontab(hour=0, minute=5),
+    },
+}
 
 @app.task(bind=True)
 def debug_task(self):

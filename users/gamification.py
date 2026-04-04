@@ -60,6 +60,13 @@ def on_test_submitted(user, passed, skill=None):
 
 def on_task_approved(user, task):
     """Call when a task submission is auto-approved or manually approved."""
+    from users.models import WalletTransaction
+
+    if WalletTransaction.objects.filter(
+        user=user, transaction_type='EARN_TASK', reference_id=str(task.id)
+    ).exists():
+        return
+
     from core.models import UserTaskSubmission
     user.add_xp(XP_TASK_APPROVED)
     user.add_wallet(task.reward_amount, transaction_type='EARN_TASK', reference_id=str(task.id))

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}SkillLoop - Earn While You Learn{% endblock %}</title>
+    <title>{% block title %}RankJee - Earn While You Learn{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -78,35 +78,45 @@
     <nav class="nav-glass sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex justify-between items-center">
             <a href="{{ url('core:home') }}" class="flex items-center gap-2 md:gap-3 group">
-                <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-xl shadow-indigo-500/10 group-hover:scale-105 transition-transform">S</div>
-                <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Skill<span class="text-indigo-600">Loop</span></span>
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-xl shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
+                <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
             </a>
             
+            <div class="hidden md:flex items-center gap-3 text-[10px] font-black text-slate-400 uppercase">
+                <a href="{{ url('users:set_ui_lang', 'en') }}?next={{ request.path }}" class="{% if ui_lang != 'hi' %}text-indigo-600{% endif %} hover:text-indigo-500">EN</a>
+                <span class="text-slate-300">|</span>
+                <a href="{{ url('users:set_ui_lang', 'hi') }}?next={{ request.path }}" class="{% if ui_lang == 'hi' %}text-indigo-600{% endif %} hover:text-indigo-500">HI</a>
+            </div>
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-12 text-[12px] font-black text-slate-500 uppercase tracking-[0.25em]">
-                <a href="{{ url('assessment:index') }}" class="nav-link">Assess</a>
-                <a href="{{ url('learning:index') }}" class="nav-link">Academy</a>
-                <a href="{{ url('core:earnings') }}" class="nav-link">Rewards</a>
+                <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
             </div>
             
             <div class="flex items-center gap-4 md:gap-6">
                 {% if request.user.is_authenticated %}
                     {% if not request.user.is_premium %}
                     <a href="{{ url('payments:plans') }}" class="hidden lg:flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-4 py-2 rounded-xl shadow-lg shadow-orange-200 hover:scale-105 transition-all uppercase tracking-widest">
-                        <span>⭐ Go Pro</span>
+                        <span>{{ uil.pro }}</span>
                     </a>
                     {% endif %}
-                    <a href="{{ url('dashboard:index') }}" class="hidden md:block text-[12px] font-black text-slate-700 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">Dashboard</a>
+                    <a href="{{ url('dashboard:index') }}" class="hidden md:block text-[12px] font-black text-slate-700 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.dashboard }}</a>
                     <form action="{{ url('users:logout') }}" method="post" class="inline m-0">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <button type="submit" class="bg-slate-900 text-white text-[10px] md:text-[11px] font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 uppercase tracking-widest active:scale-95">Logout</button>
+                        <button type="submit" class="bg-slate-900 text-white text-[10px] md:text-[11px] font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 uppercase tracking-widest active:scale-95">{{ uil.logout }}</button>
                     </form>
                 {% else %}
-                    <a href="{{ url('users:login') }}" class="text-[10px] md:text-[12px] font-black text-slate-500 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">Login</a>
-                    <a href="{{ url('users:signup') }}" class="bg-indigo-600 text-white text-[10px] md:text-[11px] font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 uppercase tracking-widest active:scale-95">Join</a>
+                    <a href="{{ url('users:login') }}" class="text-[10px] md:text-[12px] font-black text-slate-500 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.login }}</a>
+                    <a href="{{ url('users:signup') }}" class="bg-indigo-600 text-white text-[10px] md:text-[11px] font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 uppercase tracking-widest active:scale-95">{{ uil.join }}</a>
                 {% endif %}
             </div>
         </div>
+        {% if nav_progress_percent is defined %}
+        <div class="h-1 bg-slate-100">
+            <div class="h-1 bg-indigo-600 transition-all" style="width: {{ nav_progress_percent }}%"></div>
+        </div>
+        {% endif %}
     </nav>
 
     <!-- Mobile Bottom Tab Bar -->
@@ -114,19 +124,19 @@
         <div class="flex justify-between items-center max-w-sm mx-auto">
             <a href="{{ url('core:home') }}" class="flex flex-col items-center gap-1 p-2 group">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
-                <span class="text-[9px] font-black uppercase tracking-widest {% if request.path == '/' %}text-indigo-600{% else %}text-slate-400{% endif %}">Home</span>
+                <span class="text-[9px] font-black uppercase tracking-widest {% if request.path == '/' %}text-indigo-600{% else %}text-slate-400{% endif %}">{{ uil.home }}</span>
             </a>
             <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-1 p-2 group">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
-                <span class="text-[9px] font-black uppercase tracking-widest {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">Test</span>
+                <span class="text-[9px] font-black uppercase tracking-widest {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">{{ uil.test }}</span>
             </a>
             <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-1 p-2 group">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
-                <span class="text-[9px] font-black uppercase tracking-widest {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">Learn</span>
+                <span class="text-[9px] font-black uppercase tracking-widest {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">{{ uil.learn }}</span>
             </a>
             <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-1 p-2 group">
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'earnings' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">💰</div>
-                <span class="text-[9px] font-black uppercase tracking-widest {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">Earn</span>
+                <span class="text-[9px] font-black uppercase tracking-widest {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-400{% endif %}">{{ uil.earn }}</span>
             </a>
         </div>
     </div>
@@ -149,8 +159,12 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-white border-t border-slate-200/60 py-5 text-center text-xs font-semibold text-slate-400 mt-auto">
-        &copy; 2026 SkillLoop · Focus on Execution
+    <footer class="bg-white border-t border-slate-200/60 py-5 text-center text-xs font-semibold text-slate-400 mt-auto space-y-2">
+        <div class="flex flex-wrap justify-center gap-4">
+            <a href="{{ url('core:privacy') }}" class="hover:text-indigo-600">Privacy</a>
+            <a href="{{ url('core:terms') }}" class="hover:text-indigo-600">Terms</a>
+        </div>
+        <p>&copy; 2026 RankJee · Focus on Execution</p>
     </footer>
 </body>
 </html>

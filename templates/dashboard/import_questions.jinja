@@ -1,0 +1,38 @@
+{% extends "base.jinja" %}
+{% block title %}Import Questions - RankJee{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-black text-slate-900 mb-2">Import questions (CSV)</h1>
+  <p class="text-sm text-slate-500 mb-6">Staff-only. Upload a CSV with columns: text, option_a..d, correct_option, difficulty, concept_tag, explanation.</p>
+
+  {% if imported %}
+  <div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">Imported {{ imported }} question(s) and repartitioned sets.</div>
+  {% endif %}
+
+  {% if errors %}
+  <div class="mb-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
+    <div class="mb-2">Import issues:</div>
+    <ul class="list-disc pl-5 space-y-1">
+      {% for e in errors %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <div>
+      <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">Skill</label>
+      <select name="skill_id" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm">
+        {% for s in skills %}
+          <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-black uppercase tracking-widest text-slate-400 mb-2">CSV file</label>
+      <input type="file" name="csv_file" accept=".csv" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm bg-slate-50">
+    </div>
+    <button type="submit" class="w-full bg-indigo-600 text-white font-black text-xs uppercase tracking-widest py-3 rounded-xl hover:bg-indigo-700">Import</button>
+  </form>
+</div>
+{% endblock %}

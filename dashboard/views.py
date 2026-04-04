@@ -1,17 +1,36 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, Q, Count, Avg
-from django.conf import settings
+from django.core.cache import cache
+from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.utils import timezone
 from datetime import timedelta
 from assessment.models import UserAttempt, Question, Skill, UserSetAttempt
+from assessment.models import SkillPath
 from core.models import UserTaskSubmission
+from core.models import EarningTask
 from learning.models import ConceptVideo
-from users.models import Notification
+from users.models import Notification, WithdrawalRequest
+from django.db import transaction
+import csv
+import io
+import os
+
+from .forms import (
+    EarningTaskForm,
+    ConceptVideoForm,
+    QuestionForm,
+    SkillForm,
+    SkillPathForm,
+)
 
 User = get_user_model()
+
+
+def _staff_only(request):
+    return request.user.is_staff or request.user.is_superuser
 
 
 @login_required
@@ -63,6 +82,11 @@ def index(request):
         # Calculate total XP across platform to show engagement
         total_xp_platform = User.objects.aggregate(Sum('xp_points'))['xp_points__sum'] or 0
 
+        pending_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').select_related(
+            'user'
+        ).order_by('-requested_at')[:10]
+        pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
+
         return render(request, 'dashboard/admin_dashboard.jinja', {
             'total_users': total_users_count,
             'total_questions': total_questions,
@@ -79,6 +103,8 @@ def index(request):
             'pending_submissions': pending_submissions[:5],
             'pending_count': pending_count,
             'total_payouts': total_payouts,
+            'pending_withdrawals': pending_withdrawals,
+            'pending_withdrawals_count': pending_withdrawals_count,
         })
 
     # Normal User Dashboard
@@ -86,6 +112,7 @@ def index(request):
         user=request.user
     ).order_by('-attempt_date').first()
 
+    attempts_count = UserAttempt.objects.filter(user=request.user).count()
     passed_count = UserAttempt.objects.filter(user=request.user, passed=True).count()
     total_attempts = UserAttempt.objects.filter(user=request.user).count()
     progress = int((passed_count / total_attempts) * 100) if total_attempts > 0 else 0
@@ -137,6 +164,16 @@ def index(request):
     total_skills = Skill.objects.filter(is_active=True).count()
     progress = int((passed_count / total_skills) * 100) if total_skills > 0 else 0
 
+    # QW-04: simple next-badge hint (streak-based + first test)
+    if attempts_count < 1:
+        next_badge_hint = "Take your first test to unlock the FIRST_TEST badge."
+    elif request.user.streak_days < 7:
+        next_badge_hint = f"Keep going: {7 - request.user.streak_days} more day(s) to unlock STREAK_7."
+    elif request.user.streak_days < 30:
+        next_badge_hint = f"Momentum: {30 - request.user.streak_days} more day(s) to unlock STREAK_30."
+    else:
+        next_badge_hint = "You’re on fire — keep collecting badges by passing new skills."
+
     latest_attempt = UserAttempt.objects.filter(user=request.user).order_by('-attempt_date').first()
     weak_areas = latest_attempt.weak_concepts if latest_attempt else []
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
@@ -144,9 +181,13 @@ def index(request):
 
     user_certificates = request.user.certificates.select_related('skill').order_by('-issued_at')
 
+    xp_rank_india = User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
+
     return render(request, 'dashboard/index.jinja', {
         'user': request.user,
         'progress': progress,
+        'nav_progress_percent': progress,
+        'xp_rank_india': xp_rank_india,
         'total_earned': total_earned,
         'weak_areas': weak_areas,
         'latest_attempt': latest_attempt,
@@ -158,20 +199,39 @@ def index(request):
         'all_paths': all_paths,
         'selected_path': selected_path,
         'top_users': top_users,
+        'next_badge_hint': next_badge_hint,
     })
 
 
 @login_required
 def leaderboard(request):
     filter_state = request.GET.get('filter')
-    if filter_state == 'state' and request.user.state:
-        users_qs = User.objects.filter(state=request.user.state).order_by('-xp_points')
-        title_suffix = f"({request.user.get_state_display()})"
+    state_key = request.user.state if (filter_state == 'state' and request.user.state) else ''
+    cache_key = f'lb:v1:{filter_state or "all"}:{state_key}'
+    ids = cache.get(cache_key)
+    if ids is None:
+        if filter_state == 'state' and request.user.state:
+            qs = User.objects.filter(state=request.user.state).order_by('-xp_points')
+            title_suffix = f"({request.user.get_state_display()})"
+        else:
+            qs = User.objects.order_by('-xp_points')
+            title_suffix = "(All India)"
+        ids = list(qs.values_list('id', flat=True)[:20])
+        cache.set(cache_key, ids, 300)
     else:
-        users_qs = User.objects.order_by('-xp_points')
-        title_suffix = "(All India)"
-        
-    users = users_qs[:20]
+        if filter_state == 'state' and request.user.state:
+            title_suffix = f"({request.user.get_state_display()})"
+        else:
+            title_suffix = "(All India)"
+
+    if not ids:
+        users = []
+    else:
+        preserved = Case(
+            *[When(pk=_id, then=pos) for pos, _id in enumerate(ids)],
+            output_field=IntegerField(),
+        )
+        users = list(User.objects.filter(pk__in=ids).order_by(preserved))
     user_rank = None
     # We enumerate the entire queryset efficiently using iterator if large, 
     # but since it's a small app, this is fine for now as per bootstrap plan.
@@ -208,7 +268,243 @@ def mark_notification_read(request, note_id):
 @login_required
 def recharge_wallet(request):
     if request.method == 'POST':
+        if not cache.add(f'recharge:{request.user.id}', 1, 15):
+            messages.warning(request, 'Please wait a few seconds between test recharges.')
+            return redirect('dashboard:index')
         request.user.add_wallet(100, transaction_type='CREDIT_ADMIN', reference_id='recharge')
         from users.gamification import send_notification
         send_notification(request.user, '⚡ Wallet successfully recharged with ₹100 test credits!')
     return redirect('dashboard:index')
+
+
+@login_required
+def import_questions_csv(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect("dashboard:index")
+
+    skills = Skill.objects.filter(is_active=True).order_by("name")
+    errors = []
+    imported = 0
+
+    if request.method == "POST":
+        skill_id = request.POST.get("skill_id")
+        f = request.FILES.get("csv_file")
+        skill = Skill.objects.filter(id=skill_id).first()
+        if not skill:
+            errors.append("Invalid skill selected.")
+        if not f:
+            errors.append("Please upload a CSV file.")
+        if not errors and skill and f:
+            try:
+                content = f.read().decode("utf-8-sig")
+                reader = csv.DictReader(io.StringIO(content))
+                required = {
+                    "text",
+                    "option_a",
+                    "option_b",
+                    "option_c",
+                    "option_d",
+                    "correct_option",
+                    "difficulty",
+                    "concept_tag",
+                    "explanation",
+                }
+                if not set(reader.fieldnames or []).issuperset(required):
+                    missing = sorted(list(required - set(reader.fieldnames or [])))
+                    errors.append("Missing columns: " + ", ".join(missing))
+                else:
+                    with transaction.atomic():
+                        for idx, row in enumerate(reader, start=2):
+                            co = (row.get("correct_option") or "").strip().upper()
+                            if co not in ("A", "B", "C", "D"):
+                                errors.append(f"Row {idx}: invalid correct_option")
+                                continue
+                            diff = (row.get("difficulty") or "EASY").strip().upper()
+                            if diff not in ("EASY", "MEDIUM", "HARD"):
+                                diff = "EASY"
+                            Question.objects.create(
+                                skill=skill,
+                                text=(row.get("text") or "").strip(),
+                                concept_tag=(row.get("concept_tag") or "").strip()[:50],
+                                explanation=(row.get("explanation") or "").strip(),
+                                difficulty=diff,
+                                option_a=(row.get("option_a") or "").strip()[:200],
+                                option_b=(row.get("option_b") or "").strip()[:200],
+                                option_c=(row.get("option_c") or "").strip()[:200],
+                                option_d=(row.get("option_d") or "").strip()[:200],
+                                correct_option=co,
+                            )
+                            imported += 1
+                    if imported:
+                        skill.partition_questions()
+            except Exception as e:
+                errors.append(str(e))
+
+    return render(
+        request,
+        "dashboard/import_questions.jinja",
+        {
+            "skills": skills,
+            "errors": errors,
+            "imported": imported,
+        },
+    )
+
+
+@login_required
+def ai_generate_mcqs(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        return redirect("dashboard:index")
+
+    key_present = bool(os.environ.get("OPENAI_API_KEY"))
+    return render(
+        request,
+        "dashboard/ai_generate_mcqs.jinja",
+        {
+            "key_present": key_present,
+        },
+    )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Phase 4 CMS: minimal CRUD for core content (staff-only)
+# ──────────────────────────────────────────────────────────────────────────────
+
+
+@login_required
+def cms_home(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    return render(request, "dashboard/cms_home.jinja")
+
+
+@login_required
+def cms_skillpaths(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    items = SkillPath.objects.order_by("level_order", "id")
+    return render(request, "dashboard/cms_skillpaths.jinja", {"items": items})
+
+
+@login_required
+def cms_skillpath_edit(request, pk=None):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    obj = SkillPath.objects.filter(pk=pk).first() if pk else None
+    if request.method == "POST":
+        form = SkillPathForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved skill path.")
+            return redirect("dashboard:cms_skillpaths")
+    else:
+        form = SkillPathForm(instance=obj)
+    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Skill Path"})
+
+
+@login_required
+def cms_skills(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    q = (request.GET.get("q") or "").strip()
+    qs = Skill.objects.select_related("path").order_by("path__level_order", "order", "id")
+    if q:
+        qs = qs.filter(name__icontains=q)
+    return render(request, "dashboard/cms_skills.jinja", {"items": qs[:200], "q": q})
+
+
+@login_required
+def cms_skill_edit(request, pk=None):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    obj = Skill.objects.filter(pk=pk).first() if pk else None
+    if request.method == "POST":
+        form = SkillForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved skill.")
+            return redirect("dashboard:cms_skills")
+    else:
+        form = SkillForm(instance=obj)
+    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Skill"})
+
+
+@login_required
+def cms_questions(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    q = (request.GET.get("q") or "").strip()
+    qs = Question.objects.select_related("skill", "question_set").order_by("-id")
+    if q:
+        qs = qs.filter(text__icontains=q)
+    return render(request, "dashboard/cms_questions.jinja", {"items": qs[:200], "q": q})
+
+
+@login_required
+def cms_question_edit(request, pk=None):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    obj = Question.objects.filter(pk=pk).first() if pk else None
+    if request.method == "POST":
+        form = QuestionForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved question.")
+            return redirect("dashboard:cms_questions")
+    else:
+        form = QuestionForm(instance=obj)
+    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Question"})
+
+
+@login_required
+def cms_videos(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    q = (request.GET.get("q") or "").strip()
+    qs = ConceptVideo.objects.select_related("skill").order_by("-id")
+    if q:
+        qs = qs.filter(title__icontains=q)
+    return render(request, "dashboard/cms_videos.jinja", {"items": qs[:200], "q": q})
+
+
+@login_required
+def cms_video_edit(request, pk=None):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    obj = ConceptVideo.objects.filter(pk=pk).first() if pk else None
+    if request.method == "POST":
+        form = ConceptVideoForm(request.POST, request.FILES, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved video.")
+            return redirect("dashboard:cms_videos")
+    else:
+        form = ConceptVideoForm(instance=obj)
+    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Video"})
+
+
+@login_required
+def cms_tasks(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    q = (request.GET.get("q") or "").strip()
+    qs = EarningTask.objects.select_related("required_skill").order_by("-id")
+    if q:
+        qs = qs.filter(title__icontains=q)
+    return render(request, "dashboard/cms_tasks.jinja", {"items": qs[:200], "q": q})
+
+
+@login_required
+def cms_task_edit(request, pk=None):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+    obj = EarningTask.objects.filter(pk=pk).first() if pk else None
+    if request.method == "POST":
+        form = EarningTaskForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Saved task.")
+            return redirect("dashboard:cms_tasks")
+    else:
+        form = EarningTaskForm(instance=obj)
+    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Earning Task"})

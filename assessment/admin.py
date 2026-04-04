@@ -155,7 +155,7 @@ Return exactly valid JSON with no markdown formatting, structured strictly as:
                     "Authorization": f"Bearer {OPENROUTER_KEY.strip()}",
                     "Content-Type": "application/json",
                     "HTTP-Referer": "http://127.0.0.1:8000/",
-                    "X-Title": "SkillLoop Local"
+                    "X-Title": "RankJee Local"
                 }
                 data = {
                     "model": selected_model,

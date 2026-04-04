@@ -19,9 +19,9 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-admin.site.site_header = "RankJEE Admin Control"
-admin.site.site_title = "RankJEE Admin"
-admin.site.index_title = "Welcome to RankJEE Control Centre"
+admin.site.site_header = "RankJee Admin Control"
+admin.site.site_title = "RankJee Admin"
+admin.site.index_title = "Welcome to RankJee Control Centre"
 
 urlpatterns = [
     path('sd/', admin.site.urls), # standard django admin

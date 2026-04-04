@@ -11,6 +11,5 @@ from users.gamification import on_task_approved
 @receiver(post_save, sender=UserTaskSubmission)
 def submission_approved_signal(sender, instance, created, **kwargs):
     if not created and instance.status == 'APPROVED':
-        # Only trigger gamification the first time it's approved
-        # We do this by checking if wallet already has credit from this task
+        # Idempotent: on_task_approved skips if EARN_TASK already logged for this task
         on_task_approved(instance.user, instance.task)

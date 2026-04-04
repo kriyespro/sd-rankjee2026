@@ -33,7 +33,7 @@ def generate_certificate_pdf(user, skill, certificate_id):
     
     # Logo / Brand
     p.setFont("Helvetica-Bold", 32)
-    p.drawCentredString(width/2, height - 120, "SkillLoop")
+    p.drawCentredString(width/2, height - 120, "RankJee")
     
     p.setFont("Helvetica", 14)
     p.drawCentredString(width/2, height - 150, "BEYOND LEARNING. TOWARDS EARNING.")

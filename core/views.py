@@ -2,13 +2,19 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.contrib import messages
+from django.core.cache import cache
 from .models import EarningTask, UserTaskSubmission
 from assessment.models import UserAttempt
-from users.gamification import on_task_approved
-
-
 from django.utils import timezone
 from assessment.models import DailyJackpot
+
+def privacy(request):
+    return render(request, 'core/privacy.jinja')
+
+
+def terms(request):
+    return render(request, 'core/terms.jinja')
+
 
 def home(request):
     now = timezone.now()
@@ -61,7 +67,7 @@ def submit_task(request, task_id):
             if task.auto_approve_domain.lower() in proof_url.lower():
                 submission.status = 'APPROVED'
                 submission.save(update_fields=['status'])
-                on_task_approved(request.user, task)
+                # Gamification runs via core.signals post_save (idempotent in on_task_approved)
     return redirect('core:earnings')
 
 
@@ -117,26 +123,28 @@ def watch_ads(request):
 @login_required
 def claim_ad_reward(request):
     if request.method == 'POST':
-        # Basic anti-abuse check: prevent claims more than once every 30 seconds
-        import time
-        last_claim = request.session.get('last_ad_claim', 0)
-        current_time = time.time()
-        
-        if current_time - last_claim < 30:
-            messages.warning(request, "Please wait for the ad to finish before claiming.")
-            return redirect('core:watch_ads')
-            
+        now = timezone.now()
+        if request.user.last_ad_claim_at:
+            elapsed = (now - request.user.last_ad_claim_at).total_seconds()
+            if elapsed < 30:
+                messages.warning(request, "Please wait for the ad to finish before claiming.")
+                return redirect('core:watch_ads')
+
         reward_amount = 0.50
         request.user.add_wallet(reward_amount, transaction_type='OTHER', reference_id='ad_watch')
-        request.session['last_ad_claim'] = current_time
+        request.user.last_ad_claim_at = now
+        request.user.save(update_fields=['last_ad_claim_at'])
         messages.success(request, f"🎉 Success! ₹{reward_amount} added to your wallet.")
-        
+
     return redirect('core:watch_ads')
 
 
 @login_required
 def request_withdrawal(request):
     if request.method == 'POST':
+        if not cache.add(f"rl:withdraw:{request.user.id}", 1, 20):
+            messages.error(request, "Please wait a few seconds before submitting again.")
+            return redirect('core:earnings')
         from users.models import WithdrawalRequest
         from decimal import Decimal
         amount_str = request.POST.get('amount', '0')

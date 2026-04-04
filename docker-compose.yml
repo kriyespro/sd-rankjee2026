@@ -4,7 +4,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=skillloop_db
+      - POSTGRES_DB=rankjee_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     healthcheck:
@@ -23,7 +23,7 @@ services:
 
   web:
     build: .
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+    command: gunicorn rankjee.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -31,7 +31,7 @@ services:
     environment:
       - DEBUG=0
       - SECRET_KEY=django-insecure-production-key-replace-me
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/skillloop_db
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
@@ -45,11 +45,11 @@ services:
 
   celery:
     build: .
-    command: celery -A config worker --loglevel=info
+    command: celery -A rankjee worker --loglevel=info
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/skillloop_db
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       db:
@@ -59,11 +59,11 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A config beat --loglevel=info
+    command: celery -A rankjee beat --loglevel=info
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/skillloop_db
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
       - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       db:

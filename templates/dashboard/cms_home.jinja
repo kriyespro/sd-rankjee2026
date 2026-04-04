@@ -1,0 +1,34 @@
+{% extends "base.jinja" %}
+{% block title %}Content CMS - RankJee{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-10">
+  <h1 class="text-3xl font-black text-slate-900 mb-6">Content CMS</h1>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <a href="{{ url('dashboard:cms_skillpaths') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Paths</p>
+      <p class="text-lg font-black text-slate-900 mt-2">Skill paths</p>
+    </a>
+    <a href="{{ url('dashboard:cms_skills') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Skills</p>
+      <p class="text-lg font-black text-slate-900 mt-2">Skills</p>
+    </a>
+    <a href="{{ url('dashboard:cms_questions') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Questions</p>
+      <p class="text-lg font-black text-slate-900 mt-2">Question bank</p>
+    </a>
+    <a href="{{ url('dashboard:cms_videos') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Videos</p>
+      <p class="text-lg font-black text-slate-900 mt-2">Concept videos</p>
+    </a>
+    <a href="{{ url('dashboard:cms_tasks') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Tasks</p>
+      <p class="text-lg font-black text-slate-900 mt-2">Earning tasks</p>
+    </a>
+    <a href="{{ url('dashboard:import_questions') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">
+      <p class="text-xs font-black uppercase tracking-widest text-slate-400">Import</p>
+      <p class="text-lg font-black text-slate-900 mt-2">CSV import</p>
+    </a>
+  </div>
+</div>
+{% endblock %}
+

@@ -92,7 +92,7 @@ print(f"Videos: {ConceptVideo.objects.count()}")
 
 # ── Earning Tasks ──────────────────────────────────────────
 tasks_data = [
-    {'title': 'Share SkillLoop on LinkedIn', 'description': 'Post about SkillLoop on your LinkedIn profile. Include a screenshot of your progress.', 'reward_amount': 50},
+    {'title': 'Share RankJee on LinkedIn', 'description': 'Post about RankJee on your LinkedIn profile. Include a screenshot of your progress.', 'reward_amount': 50},
     {'title': 'Refer a Friend', 'description': 'Get a friend to sign up using your referral link. Submit their username as proof.', 'reward_amount': 100},
     {'title': 'Write a Product Review', 'description': 'Write a 200-word review of any affiliate product and share the link.', 'reward_amount': 150},
 ]

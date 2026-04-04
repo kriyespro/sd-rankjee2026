@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}Test Result - SkillLoop{% endblock %}
+{% block title %}Test Result - RankJee{% endblock %}
 {% block content %}
 <div class="max-w-2xl mx-auto text-center">
     <div class="bg-white rounded-2xl shadow-lg p-10 mt-6">
@@ -34,7 +34,7 @@
                     <div class="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-5 shadow-sm">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] font-bold text-red-600 uppercase tracking-widest bg-red-100 px-2 py-0.5 rounded">{{ item.question.concept_tag }}</span>
-                            <a href="{{ url('learning:index') }}?skill={{ skill.id }}" class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                            <a href="{{ url('learning:index') }}?skill={{ skill.id }}&concept={{ item.question.concept_tag|urlencode }}" class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
                                 📺 Watch Lesson
                             </a>
                         </div>
@@ -79,6 +79,9 @@
             </div>
         {% endif %}
         <p class="mt-6 text-sm text-gray-400">{{ correct }}/{{ total }} correct</p>
+        {% if total > 0 and time_taken_seconds > 0 %}
+        <p class="mt-2 text-sm text-slate-500">Avg <span class="font-semibold text-slate-700">{{ '%.1f'|format(time_taken_seconds / total) }}</span> sec per question</p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -1,12 +1,12 @@
 {% extends "base.jinja" %}
-{% block title %}Command Centre - RankJEE Admin{% endblock %}
+{% block title %}Command Centre - RankJee Admin{% endblock %}
 
 {% block content %}
 <div class="flex flex-col lg:flex-row min-h-[calc(100vh-3.5rem)] bg-slate-50" x-data="{ sidebarOpen: false }">
     
     {# Mobile Header #}
     <div class="lg:hidden bg-slate-900 text-white p-4 flex justify-between items-center border-b border-slate-800">
-        <h2 class="text-sm font-black tracking-tighter uppercase">RankJEE Admin</h2>
+        <h2 class="text-sm font-black tracking-tighter uppercase">RankJee Admin</h2>
         <button @click="sidebarOpen = !sidebarOpen" class="p-2 bg-slate-800 rounded-lg">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
         </button>
@@ -26,8 +26,14 @@
                 <a href="{{ url('dashboard:index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800 text-white font-bold transition-all border border-slate-700">
                     <span class="text-sm opacity-70">📊</span> Dashboard
                 </a>
+                <a href="{{ url('dashboard:cms_home') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🧩</span> Content CMS
+                </a>
                 <a href="/sd/users/customuser/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">👥</span> Students Management
+                </a>
+                <a href="/sd/assessment/skillpath/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🛤️</span> Skill Paths
                 </a>
                 <a href="/sd/assessment/skill/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">🎯</span> Skill Inventory
@@ -35,8 +41,23 @@
                 <a href="/sd/assessment/question/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">📝</span> Question Bank
                 </a>
+                <a href="/sd/assessment/dailyjackpot/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🎰</span> Daily Jackpot
+                </a>
                 <a href="/sd/core/earningtask/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">💰</span> Freelance Tasks
+                </a>
+                <a href="/sd/users/withdrawalrequest/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🏧</span> UPI Withdrawals
+                </a>
+                <a href="/sd/users/wallettransaction/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">📒</span> Wallet ledger
+                </a>
+                <a href="{{ url('dashboard:import_questions') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">📥</span> Import Questions (CSV)
+                </a>
+                <a href="{{ url('dashboard:ai_generate_mcqs') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🤖</span> AI MCQ Generator
                 </a>
             </nav>
         </div>
@@ -79,7 +100,7 @@
                     Platform Overview 
                     <span class="bg-white border border-slate-200 text-slate-500 text-[10px] uppercase font-black px-2 py-0.5 rounded-full shadow-sm">Real-time</span>
                 </h1>
-                <p class="text-slate-500 text-sm font-medium">Hello {{ request.user.username }}, you have <strong>{{ pending_count }}</strong> tasks awaiting review.</p>
+                <p class="text-slate-500 text-sm font-medium">Hello {{ request.user.username }}, you have <strong>{{ pending_count }}</strong> tasks awaiting review{% if pending_withdrawals_count %}; <strong>{{ pending_withdrawals_count }}</strong> UPI withdrawal(s) pending{% endif %}.</p>
             </div>
             
             <div class="flex items-center gap-3 w-full md:w-auto">
@@ -260,6 +281,41 @@
                             </tbody>
                         </table>
                     </div>
+                </section>
+
+                {# Pending UPI withdrawals — process in /sd/ #}
+                <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-slate-100 bg-amber-50/40 flex justify-between items-center">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> UPI withdrawals
+                        </h3>
+                        <a href="/sd/users/withdrawalrequest/" class="text-[10px] font-black text-indigo-600 hover:underline">Open in /sd/ →</a>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-50 text-[10px] uppercase font-black tracking-widest text-slate-400 border-b">
+                                <tr>
+                                    <th class="px-5 py-3">User</th>
+                                    <th class="px-5 py-3">Amount</th>
+                                    <th class="px-5 py-3">UPI ID</th>
+                                    <th class="px-5 py-3">Requested</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                {% for w in pending_withdrawals %}
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="px-5 py-3 text-xs font-black text-slate-900">{{ w.user.username }}</td>
+                                    <td class="px-5 py-3 text-xs font-bold text-emerald-600">₹{{ w.amount }}</td>
+                                    <td class="px-5 py-3 text-[10px] font-mono text-slate-600 break-all max-w-[140px]">{{ w.upi_id }}</td>
+                                    <td class="px-5 py-3 text-[9px] text-slate-400">{{ w.requested_at.strftime('%d %b %Y · %H:%M') }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="4" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No pending withdrawals.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="px-4 py-2 text-[9px] text-slate-500 bg-slate-50 border-t border-slate-100">Mark processed or rejected using Actions in Django Admin after manual UPI transfer.</p>
                 </section>
             </div>
 

@@ -8,6 +8,7 @@ class ConceptVideo(models.Model):
     video_url = models.URLField(help_text="Paste any YouTube link (watch, youtu.be, or shorts)")
     thumbnail = models.ImageField(upload_to='thumbnails/', null=True, blank=True, help_text="Upload a custom thumbnail or leave blank for auto YouTube thumbnail")
     duration_seconds = models.IntegerField(default=60)
+    text_summary = models.TextField(blank=True, help_text="Optional text revision bite for low-bandwidth users")
 
     def get_video_id(self):
         """Extract the 11-character YouTube video ID from the URL."""

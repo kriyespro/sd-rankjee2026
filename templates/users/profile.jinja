@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}My Profile - SkillLoop{% endblock %}
+{% block title %}My Profile - RankJee{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <!-- Profile Header -->
@@ -109,6 +109,56 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- Public hiring profile (FEATURE-15) -->
+    <div class="bg-white rounded-2xl shadow p-6 mt-6 border border-slate-100">
+        <h2 class="text-xl font-bold text-slate-900 mb-2">Public hiring profile</h2>
+        <p class="text-sm text-slate-500 mb-4">Optional link for employers. Toggle off anytime.</p>
+        <form method="post" class="space-y-4">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="form" value="public_profile">
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input type="checkbox" name="is_public" {% if public_profile.is_public %}checked{% endif %} class="rounded border-slate-300 text-indigo-600">
+                Make my profile public
+            </label>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">URL slug</label>
+                <input type="text" name="slug" value="{{ public_profile.slug }}" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-mono">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 mb-1">Headline</label>
+                <input type="text" name="headline" value="{{ public_profile.headline }}" maxlength="200" placeholder="e.g. JEE aspirant · Top 5% on Physics tests" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+            </div>
+            {% if public_profile.is_public %}
+            <p class="text-xs text-emerald-700 font-semibold break-all">Live: <a href="{{ public_profile_url }}" class="underline">{{ public_profile_url }}</a></p>
+            {% endif %}
+            <button type="submit" class="bg-slate-900 text-white text-sm font-bold px-6 py-2 rounded-lg hover:bg-indigo-600">Save</button>
+        </form>
+    </div>
+
+    {% if inquiries is defined %}
+    <div class="bg-white rounded-2xl shadow p-6 mt-6 border border-slate-100">
+        <h2 class="text-xl font-bold text-slate-900 mb-3">Hiring inquiries</h2>
+        {% if inquiries %}
+        <div class="space-y-3">
+            {% for i in inquiries %}
+            <div class="border border-slate-200 rounded-xl p-4">
+                <div class="flex justify-between items-start gap-4">
+                    <div>
+                        <p class="text-sm font-black text-slate-900">{{ i.company_name }}</p>
+                        <p class="text-xs text-slate-500">{{ i.contact_email }}</p>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">{{ i.created_at.strftime('%d %b %Y') }}</p>
+                </div>
+                <p class="text-sm text-slate-600 mt-3 whitespace-pre-line">{{ i.message }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No inquiries yet. Enable your public profile to receive employer messages.</p>
+        {% endif %}
+    </div>
+    {% endif %}
 
     {# Referral Card #}
     <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white mt-6">

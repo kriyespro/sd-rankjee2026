@@ -14,14 +14,14 @@ def seed_tasks():
 
     tasks = [
         {
-            "title": "Review SkillLoop App on ProductHunt",
+            "title": "Review RankJee App on ProductHunt",
             "description": "Leave an honest 5-star review on our ProductHunt launch page and share the screenshot link.",
             "reward_amount": 100,
             "auto_approve_domain": "producthunt.com"
         },
         {
             "title": "Share Your Score on Twitter",
-            "description": "Tweet your latest test score tag @SkillLoop. Submit the tweet URL.",
+            "description": "Tweet your latest test score tag @RankJee. Submit the tweet URL.",
             "reward_amount": 50,
             "auto_approve_domain": "twitter.com"
         },

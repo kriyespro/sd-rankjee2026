@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}Dashboard - RankJEE{% endblock %}
+{% block title %}Dashboard - RankJee{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto py-6 px-4 flex flex-col gap-8">
@@ -65,6 +65,7 @@
             <div>
                 <p class="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Total XP</p>
                 <p class="text-3xl font-black text-slate-900">{{ user.xp_points }} <span class="text-sm font-bold text-slate-300">PTS</span></p>
+                <p class="text-[11px] font-black text-indigo-600 mt-2">You are Rank #{{ xp_rank_india }} in India</p>
             </div>
             <a href="{{ url('dashboard:leaderboard') }}" class="mt-4 text-[10px] font-black uppercase text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                 View Global Leaderboard 🏆
@@ -113,7 +114,15 @@
                     {% endfor %}
                 </div>
 
-                {% include "dashboard/components/progress_table.jinja" %}
+                {% if learning_path %}
+                    {% include "dashboard/components/progress_table.jinja" %}
+                {% else %}
+                    <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+                        <p class="text-sm font-black text-slate-800 mb-2">No modules available yet</p>
+                        <p class="text-xs font-bold text-slate-500 mb-5">Add skills and questions in /sd/ to build the learning path.</p>
+                        <a href="/sd/assessment/skill/add/" class="inline-block bg-indigo-600 text-white text-[10px] font-black px-6 py-3 rounded-xl uppercase tracking-widest hover:bg-indigo-700">Add a skill in /sd/</a>
+                    </div>
+                {% endif %}
 
                 <div class="mt-8 flex flex-col sm:flex-row gap-4">
                     <a href="{{ url('assessment:index') }}" class="flex-grow bg-slate-900 text-white p-5 rounded-2xl flex items-center justify-between hover:scale-[1.02] transition-transform group">
@@ -151,6 +160,14 @@
         {# Right Sidebar: Social & Progress Widgets #}
         <aside class="flex flex-col gap-6">
             
+            {% if next_badge_hint %}
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6">
+                <h3 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Next badge</h3>
+                <p class="text-sm font-black text-slate-900">{{ next_badge_hint }}</p>
+                <p class="text-[11px] text-slate-500 mt-2">Consistency wins. Stack small daily progress.</p>
+            </div>
+            {% endif %}
+
             {# Notifications Flyout (Integrated) #}
             {% if unread_notifications > 0 %}
             <a href="{{ url('dashboard:notifications') }}" class="bg-rose-50 border border-rose-200 p-4 rounded-2xl flex items-center justify-between group shadow-sm">
@@ -218,7 +235,7 @@
                             class="p-3 bg-white text-slate-900 rounded-xl hover:bg-indigo-50 transition-all font-black flex items-center justify-center" title="Copy Link">
                         📋
                     </button>
-                    <a href="https://wa.me/?text=Check%20out%20SkillLoop%20and%20earn%20%E2%82%B950!%20Sign%20up%20here:%20{{ request.scheme }}://{{ request.get_host() }}/users/signup/?ref={{ user.referral_code }}" target="_blank"
+                    <a href="https://wa.me/?text=Check%20out%20RankJee%20and%20earn%20%E2%82%B950!%20Sign%20up%20here:%20{{ request.scheme }}://{{ request.get_host() }}/users/signup/?ref={{ user.referral_code }}" target="_blank"
                        class="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center" title="Share to WhatsApp">
                         <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.128.552 4.137 1.547 5.918L.044 24l6.19-1.624A11.97 11.97 0 0012.031 24c6.646 0 12.031-5.385 12.031-12.031S18.677 0 12.031 0zm0 22.012a9.966 9.966 0 01-5.088-1.39l-3.642.955.972-3.551A9.957 9.957 0 012.04 12.03c0-5.513 4.488-10.001 10.001-10.001 5.513 0 10.001 4.488 10.001 10.001S17.544 22.012 12.031 22.012zm5.558-7.551c-.304-.152-1.802-.89-2.08-.992-.278-.102-.482-.152-.684.152-.203.303-.786.992-.963 1.194-.177.203-.355.228-.659.076-.304-.152-1.284-.473-2.448-1.51-1.164-1.037-1.95-2.315-2.127-2.618-.177-.303-.019-.467.133-.619.153-.153.304-.304.456-.456.152-.153.203-.254.304-.456.101-.203.051-.355-.025-.508-.076-.152-.684-1.65-.938-2.261-.253-.611-.508-.508-.684-.508-.178 0-.38-.025-.583-.025s-.532.076-.811.38c-.278.304-1.064 1.039-1.064 2.536 0 1.496 1.089 2.94 1.242 3.143.153.203 2.146 3.279 5.2 4.59.306.132.545.211.732.269.875.279 1.672.24 2.301.146.629-.094 1.802-.736 2.054-1.446.253-.71.253-1.318.178-1.446-.076-.127-.279-.203-.583-.355z"/></svg>
                     </a>
