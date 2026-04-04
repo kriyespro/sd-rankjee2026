@@ -1,0 +1,102 @@
+RankJee — generate / export / import (quick notes for next time)
+================================================================
+
+CONVENTION
+----------
+- Portable bundle (paths + skills + questions, no fragile DB ids): use
+  export_content_bundle / import_content_bundle.
+- Standard full export filename: rankjee_full.json (project root, same level as manage.py).
+
+
+GENERATE CONTENT (LOCAL)
+------------------------
+- Staff dashboard CMS: /admin/ (logged-in staff) — skills, paths, questions as your app exposes.
+- Django admin: /sd/ → Assessment — Skill paths, Skills, Questions; CSV import where available.
+- Legacy flat JSON array: import_questions (skill_id or skill_name per row).
+- Dev seeds: python seed_data.py, python manage.py seed_maths_mcqs (if needed).
+
+
+EXPORT (LOCAL MACHINE, FROM PROJECT ROOT)
+-----------------------------------------
+Full bundle (recommended for prod copy):
+
+  python3 manage.py export_content_bundle rankjee_full.json
+
+Single skill path only (path id from /sd/assessment/skillpath/):
+
+  python3 manage.py export_content_bundle rankjee_one_path.json --path-id 4
+
+Flat list (uses numeric skill_ids — IDs differ on another DB; prefer bundle for prod):
+
+  python3 manage.py export_questions_json questions_flat.json
+
+After export: copy rankjee_full.json to the server’s project directory (same folder as
+docker-compose.yml) if you deploy with Docker bind mount .:/app.
+
+
+IMPORT — LOCAL
+--------------
+Default file = rankjee_full.json in project root:
+
+  python3 manage.py import_content_bundle
+
+Or explicit path:
+
+  python3 manage.py import_content_bundle ./my_bundle.json
+
+import_content_bundle REPLACES all questions for each skill in the file, then re-partitions
+question sets (10 per set).
+
+
+IMPORT — DOCKER (SERVER)
+------------------------
+File must exist inside the container. With compose volume .:/app, put JSON in the host
+project root (e.g. ~/sdrankjee2026/rankjee_full.json → /app/rankjee_full.json).
+
+Check:
+
+  docker compose exec web ls -la /app/rankjee_full.json
+
+Import:
+
+  docker compose exec web python manage.py import_content_bundle
+
+Or:
+
+  docker compose exec web python manage.py import_content_bundle /app/other_bundle.json
+
+Success output includes “Using bundle file: …”, “Partitioned …”, “Imported bundle from …”.
+
+
+IMPORT — /sd/ ADMIN (SUPERUSER)
+-------------------------------
+After rankjee_full.json is on the server at project root:
+
+  /sd/ → Assessment → Skill paths → “Import rankjee_full.json” (POST).
+
+Or open: /sd/assessment/skillpath/import-rankjee-bundle/
+
+
+WHERE DATA SHOWS
+----------------
+- Staff editing & raw rows: /sd/ (Django admin) → Assessment.
+- Student “learning journey”: /admin/ dashboard — needs paths, skills, questions, and
+  partitioned sets (runs automatically after bundle import).
+
+
+GIT / DEPLOY GOTCHAS (SAVE TIME NEXT TIME)
+------------------------------------------
+- Management commands live under assessment/management/commands/ — they must be COMMITTED
+  and PUSHED or the server will show: Unknown command: 'import_content_bundle'.
+- rankjee_full.json is often large or gitignored — it does not travel by git pull unless
+  you add and push it; otherwise scp/rsync it to the server project root.
+- git pull updates bind-mounted code; usually no docker build needed for new .py commands.
+
+
+TROUBLESHOOTING
+---------------
+- Unknown command → git pull; confirm file exists:
+  ls assessment/management/commands/import_content_bundle.py
+- File not found in container → JSON not in host project dir or wrong name/path.
+- Empty bundle error → JSON has "paths": [] — re-export from a DB that has content.
+- “Nothing in admin” → use /sd/ not student /admin/ for Django admin lists.
