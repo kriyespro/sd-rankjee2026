@@ -29,12 +29,15 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     environment:
-      - DEBUG=0
-      - SECRET_KEY=django-insecure-production-key-replace-me
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # Copy .env.production.example to .env on the server; Compose loads .env for ${VAR} substitution.
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8000}
     ports:
       - "8000:8000"
     depends_on:
@@ -49,8 +52,9 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy
@@ -63,8 +67,9 @@ services:
     volumes:
       - .:/app
     environment:
-      - DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
-      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
     depends_on:
       db:
         condition: service_healthy

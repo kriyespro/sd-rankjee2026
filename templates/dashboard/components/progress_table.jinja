@@ -1,11 +1,11 @@
-<div class="overflow-hidden bg-white rounded-xl shadow-sm border border-slate-100">
-    <table class="w-full text-left border-collapse">
+<div class="overflow-x-auto rounded-xl border border-slate-100 bg-white shadow-sm">
+    <table class="w-full min-w-[720px] text-left border-collapse">
         <thead>
             <tr class="bg-slate-50 border-b border-slate-100">
-                <th class="px-5 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Module / Topic</th>
-                <th class="px-4 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                <th class="px-4 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest">Mastery</th>
-                <th class="px-5 py-4 text-[11px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                <th class="px-5 py-4 text-xs font-black text-slate-600 uppercase tracking-widest">Module / Topic</th>
+                <th class="px-4 py-4 text-xs font-black text-slate-600 uppercase tracking-widest">Status</th>
+                <th class="px-4 py-4 text-xs font-black text-slate-600 uppercase tracking-widest">Mastery</th>
+                <th class="min-w-[9rem] whitespace-nowrap px-5 py-4 text-right text-xs font-black uppercase tracking-widest text-slate-600">Action</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-slate-50">
@@ -18,21 +18,21 @@
                         </div>
                         <div class="truncate">
                             <span class="block font-black text-sm text-slate-900 tracking-tight leading-tight mb-1">{{ item.skill.name }}</span>
-                            <span class="text-[11px] font-bold text-slate-400 uppercase tracking-normal">{{ item.skill.description|truncate(50) }}</span>
+                            <span class="text-xs font-bold text-slate-600 uppercase tracking-normal">{{ item.skill.description|truncate(50) }}</span>
                         </div>
                     </div>
                 </td>
                 <td class="px-4 py-5">
                     {% if item.status == 'PASSED' %}
-                        <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-emerald-500">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-emerald-500">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Mastered
                         </span>
                     {% elif item.status == 'LOCKED' %}
-                        <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-slate-300">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-slate-300">
                             Locked
                         </span>
                     {% else %}
-                        <span class="inline-flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-amber-500">
+                        <span class="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest text-amber-500">
                             Current
                         </span>
                     {% endif %}
@@ -43,21 +43,22 @@
                             <div class="bg-indigo-600 h-full shadow-[0_0_8px_rgba(79,70,229,0.3)]" 
                                  style="width: {{ (item.passed_sets / item.total_sets * 100)|int if item.total_sets > 0 else 0 }}%"></div>
                         </div>
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                        <span class="text-xs font-black text-slate-600 uppercase tracking-wider">
                             {{ item.passed_sets }} / {{ item.total_sets }} Modules
                         </span>
                     </div>
                 </td>
-                <td class="px-5 py-5 text-right">
+                <td class="min-w-[9rem] whitespace-nowrap px-5 py-5 text-right align-middle">
+                    {# Mirror status column: PASSED / LOCKED / else (active = UNLOCKED) #}
                     {% if item.status == 'PASSED' %}
-                        <span class="text-xl">🏆</span>
-                    {% elif item.status == 'UNLOCKED' %}
-                        <a href="{{ url('assessment:take_test', item.skill.id) }}" 
-                           class="inline-block bg-indigo-600 hover:bg-slate-900 text-white text-[10px] font-black px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 transition-all uppercase tracking-widest">
+                        <span class="text-xl" title="Completed">🏆</span>
+                    {% elif item.status == 'LOCKED' %}
+                        <span class="inline-flex items-center justify-end text-xs font-black text-slate-400" title="Complete the previous module first">🔒</span>
+                    {% else %}
+                        <a href="{{ url('assessment:take_test', item.skill.id) }}"
+                           class="inline-flex items-center justify-center bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-200 transition-all hover:-translate-y-0.5 hover:bg-slate-900 hover:shadow-indigo-300 rounded-xl">
                             {% if item.passed_sets > 0 %}Resume{% else %}Start Now{% endif %}
                         </a>
-                    {% else %}
-                        <span class="text-xs text-slate-200 opacity-30">🔒</span>
                     {% endif %}
                 </td>
             </tr>

@@ -5,9 +5,9 @@ from core.models import EarningTask
 from learning.models import ConceptVideo
 
 
-BASE_INPUT_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
-BASE_TEXTAREA_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
-BASE_SELECT_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+BASE_INPUT_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+BASE_TEXTAREA_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
+BASE_SELECT_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
 
 
 class _StyledModelForm(forms.ModelForm):

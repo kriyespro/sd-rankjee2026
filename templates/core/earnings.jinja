@@ -10,7 +10,7 @@
         </div>
         
         <div class="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 min-w-[200px] text-center shadow-lg">
-            <p class="text-[10px] text-indigo-200 font-bold uppercase tracking-widest mb-1">Total Rewards Earned</p>
+            <p class="text-xs text-indigo-200 font-bold uppercase tracking-widest mb-1">Total Rewards Earned</p>
             <p class="text-4xl font-black text-white tracking-tight">₹{{ total_earned }}</p>
         </div>
         
@@ -61,7 +61,7 @@
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
                             <tr>
                                 <th class="px-6 py-4">User</th>
                                 <th class="px-6 py-4">Status</th>
@@ -76,7 +76,7 @@
                                     <div class="font-bold text-slate-900">{{ ref.username }}</div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide {{ 'bg-emerald-50 text-emerald-600 border border-emerald-100' if ref.is_active else 'bg-amber-50 text-amber-600 border border-amber-100' }}">
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide {{ 'bg-emerald-50 text-emerald-600 border border-emerald-100' if ref.is_active else 'bg-amber-50 text-amber-600 border border-amber-100' }}">
                                         {{ 'Verified' if ref.is_active else 'Pending' }}
                                     </span>
                                 </td>
@@ -108,7 +108,7 @@
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
-                        <thead class="bg-slate-50/50 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
                             <tr>
                                 <th class="px-6 py-4">Date</th>
                                 <th class="px-6 py-4">Type</th>
@@ -150,22 +150,22 @@
                 <h4 class="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">How it works</h4>
                 <ul class="space-y-4">
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">1</span>
                         <p class="text-xs leading-relaxed text-slate-200">Share your invite link with friends who want to learn tech & exams.</p>
                     </li>
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">2</span>
                         <p class="text-xs leading-relaxed text-slate-200">Wait for them to sign up and verify their email/account.</p>
                     </li>
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">3</span>
                         <p class="text-xs leading-relaxed text-slate-200">Instantly receive <span class="text-indigo-400 font-bold">₹50 credits</span> in your wallet for every lead.</p>
                     </li>
                 </ul>
             </div>
 
             <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center">
-                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1.5">Network Strength</p>
+                <p class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-1.5">Network Strength</p>
                 <p class="text-4xl font-black text-indigo-600 mb-1 tracking-tight">{{ referral_count }}</p>
                 <p class="text-xs font-bold text-indigo-400 italic">Friends Invited</p>
             </div>

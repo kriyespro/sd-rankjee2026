@@ -78,7 +78,7 @@
                                 </svg>
                                 <span class="absolute inset-0 flex items-center justify-center font-black text-xl md:text-2xl" x-text="timer"></span>
                             </div>
-                            <p class="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Wait for Reward</p>
+                            <p class="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-indigo-300">Wait for Reward</p>
                         </div>
 
                         <!-- Success UI -->
@@ -99,7 +99,7 @@
             <!-- Stats & History -->
             <div class="space-y-6">
                 <div class="bg-indigo-600 rounded-[2rem] p-8 shadow-xl shadow-indigo-600/20">
-                    <p class="text-indigo-200 text-[10px] font-black uppercase tracking-widest mb-1">Your Balance</p>
+                    <p class="text-indigo-200 text-xs font-black uppercase tracking-widest mb-1">Your Balance</p>
                     <p class="text-4xl font-black tracking-tighter mb-4">₹{{ request.user.wallet_balance }}</p>
                     <div class="h-px bg-white/10 mb-4"></div>
                     <p class="text-xs text-indigo-100 font-medium leading-relaxed">Watching ads helps keep RankJee free for everyone. Thank you for your support!</p>
@@ -112,8 +112,8 @@
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-xs">👤</div>
                             <div class="flex-grow">
-                                <p class="text-[11px] font-bold">User_{{ i }} earned ₹0.50</p>
-                                <p class="text-[9px] text-slate-500">Just now</p>
+                                <p class="text-sm font-bold">User_{{ i }} earned ₹0.50</p>
+                                <p class="text-xs text-slate-600">Just now</p>
                             </div>
                         </div>
                         {% endfor %}

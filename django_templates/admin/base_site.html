@@ -74,11 +74,92 @@
     }
     
     #content h1 {
-        color: #333;
+        color: #1e293b;
+        font-size: 1.375rem;
+        font-weight: 600;
         border-bottom: 2px solid var(--accent);
         display: inline-block;
         padding-bottom: 5px;
         margin-bottom: 20px;
+    }
+
+    /* Content area: readable base type */
+    body {
+        font-size: 15px;
+        line-height: 1.5;
+        color: #1e293b;
+    }
+
+    #content {
+        font-size: 15px;
+        line-height: 1.5;
+        color: #1e293b;
+    }
+
+    #content-main {
+        font-size: 15px;
+    }
+
+    .form-row label,
+    .aligned label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #334155;
+    }
+
+    .form-row .help,
+    .aligned .help,
+    p.help {
+        font-size: 13px;
+        line-height: 1.45;
+        color: #475569;
+    }
+
+    #content input[type="text"],
+    #content input[type="password"],
+    #content input[type="email"],
+    #content input[type="url"],
+    #content input[type="number"],
+    #content input[type="search"],
+    #content textarea,
+    #content select,
+    #content .vTextField,
+    #content .vLargeTextField,
+    #content .vURLField,
+    #content .vIntegerField {
+        font-size: 15px !important;
+        line-height: 1.45;
+        color: #0f172a;
+    }
+
+    #content textarea {
+        min-height: 6rem;
+    }
+
+    /* Changelist tables */
+    #result_list thead th {
+        font-size: 13px;
+        font-weight: 600;
+        color: #334155;
+        padding: 10px 12px;
+    }
+
+    #result_list tbody td,
+    #result_list tbody th {
+        font-size: 14px;
+        line-height: 1.45;
+        color: #1e293b;
+        padding: 10px 12px;
+        vertical-align: middle;
+    }
+
+    #changelist-filter h2 {
+        font-size: 13px;
+    }
+
+    #changelist-filter li {
+        font-size: 13px;
+        line-height: 1.4;
     }
 </style>
 {% endblock %}

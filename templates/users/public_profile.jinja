@@ -3,14 +3,14 @@
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="bg-white rounded-2xl shadow-lg border border-slate-100 p-8">
-        <p class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-2">Public learner profile</p>
+        <p class="text-xs font-black uppercase tracking-widest text-indigo-600 mb-2">Public learner profile</p>
         <h1 class="text-2xl font-black text-slate-900">{{ pub.user.username }}</h1>
         {% if pub.headline %}
         <p class="text-slate-600 mt-2">{{ pub.headline }}</p>
         {% endif %}
         <div class="flex gap-6 mt-6 text-sm">
-            <div><span class="text-slate-400 font-bold uppercase text-[10px]">Tests</span><p class="font-black text-lg">{{ attempts_total }}</p></div>
-            <div><span class="text-slate-400 font-bold uppercase text-[10px]">Passed</span><p class="font-black text-lg text-emerald-600">{{ passed_total }}</p></div>
+            <div><span class="text-slate-600 font-bold uppercase text-xs">Tests</span><p class="font-black text-lg">{{ attempts_total }}</p></div>
+            <div><span class="text-slate-600 font-bold uppercase text-xs">Passed</span><p class="font-black text-lg text-emerald-600">{{ passed_total }}</p></div>
         </div>
         {% if badges %}
         <div class="mt-8">

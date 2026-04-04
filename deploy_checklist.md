@@ -11,8 +11,10 @@ The command above will:
 - stop existing containers,
 - rebuild images,
 - start `db`, `redis`, `web`, `celery`, and `celery-beat`,
-- run migrations and collectstatic via `entrypoint.sh`,
+- run migrations and collectstatic via [`entrypoint.sh`](entrypoint.sh) (Dockerfile `ENTRYPOINT`; each service runs this before `gunicorn` / Celery),
 - print service status.
+
+`docker-compose.yml` uses `${VAR:-default}` so you can place a `.env` file next to it (copy from [`.env.production.example`](.env.production.example)) and set `SECRET_KEY`, `ALLOWED_HOSTS`, `SITE_BASE_URL`, email, Razorpay, etc. Django also calls `load_dotenv()`, so extra keys in `.env` (e.g. `EMAIL_HOST_USER`) are picked up when the project directory is mounted.
 
 ---
 
@@ -86,4 +88,49 @@ Verify:
   - `docker compose restart web celery celery-beat`
 - Stop everything:
   - `docker compose down`
+
+---
+
+## 6) DigitalOcean (Droplet + Docker) — recommended path
+
+Use a **Ubuntu 22.04/24.04 Droplet** (2 GB RAM minimum for Postgres + Redis + web + Celery; 4 GB is more comfortable).
+
+### One-time server setup
+
+1. **Create the Droplet** in the DigitalOcean control panel, add your SSH key, and note the **public IP**.
+2. **DNS:** Point your domain’s **A record** to that IP (e.g. `app.yourdomain.com` or `@`).
+3. **SSH in:** `ssh root@YOUR_DROPLET_IP`
+4. Install Docker (official convenience script or DigitalOcean’s Docker 1-click image):
+   - `apt update && apt install -y ca-certificates curl`
+   - Install Docker Engine + Compose plugin per [Docker’s Ubuntu docs](https://docs.docker.com/engine/install/ubuntu/).
+5. **Firewall:** `ufw allow OpenSSH` and `ufw allow 80` and `ufw allow 443` (if you terminate TLS on the droplet), then `ufw enable`. Do **not** expose Postgres (`5432`) publicly.
+
+### Deploy the app
+
+1. **Clone the repo** (or upload a release tarball):
+   - `git clone https://github.com/YOU/sd-rankjee2026.git && cd sd-rankjee2026`
+2. **Create `.env`** in the project root (same folder as `docker-compose.yml`):
+   - `cp .env.production.example .env`
+   - Edit `.env`: set a long random `SECRET_KEY`, `ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,YOUR_DROPLET_IP`, `SITE_BASE_URL=https://yourdomain.com`, real SMTP if you send mail, Razorpay keys (or `RAZORPAY_USE_DUMMY=1` for demos only).
+   - Keep `DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db` as in the example **when using the bundled Postgres service** in Compose.
+3. **Run the one-command deploy:**
+   - `chmod +x docker-deploy.sh && ./docker-deploy.sh`
+4. **Smoke test over HTTP:** open `http://YOUR_DROPLET_IP:8000` (or your domain if DNS points here). Student UI is at `/`, dashboard at `/admin/`, Django admin at `/sd/`.
+
+### HTTPS and port 80 (production)
+
+Gunicorn in Compose listens on **8000**. For real users you should put **HTTPS** in front:
+
+- **Option A — Caddy (simple):** Install Caddy on the host, proxy `https://yourdomain.com` → `127.0.0.1:8000`, let Caddy obtain Let’s Encrypt certificates.
+- **Option B — Nginx:** Same idea: reverse proxy to `127.0.0.1:8000`, certbot for TLS.
+
+After HTTPS works, set `SITE_BASE_URL=https://yourdomain.com` and ensure `ALLOWED_HOSTS` includes that host.
+
+### DigitalOcean managed DB (optional)
+
+You can use **Managed PostgreSQL** instead of the `db` service: create a cluster in DO, set `DATABASE_URL` in `.env` to the provided connection string, and remove or stop the `db` service from `docker-compose.yml` (advanced; keep backups and private networking in mind).
+
+### App Platform note
+
+**DigitalOcean App Platform** can run Dockerfiles, but this project expects **Postgres + Redis + Celery + Celery Beat** together. The Droplet + `docker compose` approach matches the repo’s [`docker-compose.yml`](docker-compose.yml) with minimal changes. Using App Platform usually means splitting into separate components (web worker, workers, databases) and is not “one click” from this file alone.
 
