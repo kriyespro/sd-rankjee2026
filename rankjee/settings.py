@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -121,11 +123,26 @@ if DEBUG:
     }
 else:
     import dj_database_url
+
+    _db_url = os.environ.get('DATABASE_URL', '').strip()
+    if not _db_url:
+        raise ImproperlyConfigured(
+            'DATABASE_URL is required when DEBUG=False. '
+            'Use PostgreSQL, e.g. postgres://USER:PASSWORD@HOST:5432/DBNAME'
+        )
+    _conn_max_age = int(os.environ.get('DB_CONN_MAX_AGE', '600'))
     DATABASES = {
         'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL')
+            default=_db_url,
+            conn_max_age=_conn_max_age,
         )
     }
+    _engine = DATABASES['default'].get('ENGINE', '')
+    if 'postgresql' not in _engine:
+        raise ImproperlyConfigured(
+            f'Production DATABASE_URL must use PostgreSQL (django.db.backends.postgresql). '
+            f'Got ENGINE={_engine!r}.'
+        )
 
 # Production-only Static File Configuration (WhiteNoise)
 if not DEBUG:
@@ -213,12 +230,23 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# Cache (INFRA-002): Redis when USE_REDIS_CACHE=1, else LocMem for single-process dev
-if os.environ.get('USE_REDIS_CACHE', '').lower() in ('1', 'true', 'yes'):
+# Cache: Redis in production when REDIS_URL is set (unless USE_REDIS_CACHE=0); LocMem for local dev.
+_redis_cache_url = os.environ.get('REDIS_CACHE_URL') or _redis_default.replace('/0', '/2')
+_use_redis_cache_explicit = os.environ.get('USE_REDIS_CACHE', '').lower()
+_disable_redis_cache = _use_redis_cache_explicit in ('0', 'false', 'no')
+_enable_redis_cache = (
+    not _disable_redis_cache
+    and os.environ.get('REDIS_URL')
+    and (
+        _use_redis_cache_explicit in ('1', 'true', 'yes')
+        or (not DEBUG)
+    )
+)
+if _enable_redis_cache:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': os.environ.get('REDIS_CACHE_URL', _redis_default.replace('/0', '/2')),
+            'LOCATION': _redis_cache_url,
         }
     }
 else:

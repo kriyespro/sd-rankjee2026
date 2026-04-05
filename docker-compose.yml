@@ -23,7 +23,14 @@ services:
 
   web:
     build: .
-    command: gunicorn rankjee.wsgi:application --bind 0.0.0.0:8000
+    # Multiple workers + threads for throughput; /dev/shm avoids slow worker heartbeat on Docker overlay FS
+    command: >
+      gunicorn rankjee.wsgi:application
+      --bind 0.0.0.0:8000
+      --workers ${GUNICORN_WORKERS:-3}
+      --threads ${GUNICORN_THREADS:-2}
+      --timeout 120
+      --worker-tmp-dir /dev/shm
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -34,7 +41,9 @@ services:
       - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
       - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-600}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_CACHE_URL=${REDIS_CACHE_URL:-redis://redis:6379/2}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8000}
@@ -52,9 +61,14 @@ services:
     volumes:
       - .:/app
     environment:
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
       - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-600}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8000}
     depends_on:
       db:
         condition: service_healthy
@@ -67,9 +81,14 @@ services:
     volumes:
       - .:/app
     environment:
+      - DEBUG=${DEBUG:-0}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
       - DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@db:5432/rankjee_db}
+      - DB_CONN_MAX_AGE=${DB_CONN_MAX_AGE:-600}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8000}
     depends_on:
       db:
         condition: service_healthy

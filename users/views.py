@@ -1,8 +1,11 @@
+import logging
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -14,6 +17,21 @@ from .forms import CustomUserCreationForm
 from .gamification import on_referral_signup, on_streak_login, send_notification
 from .models import CompanyInquiry, CustomUser, PublicProfile
 from .tasks import send_welcome_email
+
+logger = logging.getLogger("rankjee.signup")
+
+
+def _enqueue_welcome_email(user_id):
+    """Never fail the HTTP response if Celery/Redis is down."""
+    try:
+        send_welcome_email.delay(user_id)
+    except Exception as exc:
+        logger.warning(
+            "Welcome email task not queued (user_id=%s): %s",
+            user_id,
+            exc,
+            exc_info=True,
+        )
 
 
 def _update_streak(user):
@@ -68,8 +86,8 @@ def signup_view(request):
                     pass
             login(request, user)
             _update_streak(user)
-            # Async welcome email (HTML template)
-            send_welcome_email.delay(user.id)
+            # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
+            transaction.on_commit(lambda uid=user.id: _enqueue_welcome_email(uid))
             return redirect('dashboard:index')
     else:
         form = CustomUserCreationForm()
