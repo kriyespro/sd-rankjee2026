@@ -1,0 +1,37 @@
+http://161.97.146.14:8889/
+
+
+DEBUG=False
+SECRET_KEY=dxkWDQY5vmdru56zZFOyFojrUeVnHCJXMDs3s3prnm6Gw49aI0bCgYngR85VgzjN8NsANXNMrX5h7rU9ohKGvw
+# Include your Droplet public IP and domain (no spaces). Required when DEBUG=False or Docker sets D>
+ALLOWED_HOSTS=161.97.146.14,127.0.0.1,localhost
+
+# Database / cache (PostgreSQL required when DEBUG=False; pooled connections for performance)
+DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
+DB_CONN_MAX_AGE=600
+REDIS_URL=redis://redis:6379/0
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
+# With DEBUG=0 and REDIS_URL set, Django uses Redis cache unless USE_REDIS_CACHE=0
+USE_REDIS_CACHE=1
+REDIS_CACHE_URL=redis://redis:6379/2
+
+# Optional: tune Gunicorn (docker-compose web service)
+# GUNICORN_WORKERS=3
+# GUNICORN_THREADS=2
+
+# Email
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@example.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=your-email@example.com
+
+# Payments
+RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
+RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
+RAZORPAY_USE_DUMMY=0
+
+# App URLs
+SITE_BASE_URL=http://161.97.146.14:8889

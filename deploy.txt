@@ -1,74 +1,119 @@
-# RankJee: DigitalOcean One-Click Docker Deployment Guide
+# RankJee Deployment (IP-only, no domain)
 
-Follow these exact steps to get your platform live on DigitalOcean.
+Server IP (current): `161.97.146.14`
+Repo: `https://github.com/kriyespro/sd-rankjee2026.git`
+Branch: `main`
 
-## Step 1: Create a DigitalOcean Droplet
-1. Go to your DigitalOcean account.
-2. Click "Create" → "Droplets".
-3. Choose **Marketplace** and search for **"Docker"** (Ubuntu 22.04 with Docker pre-installed).
-4. Choose a plan (at least 2GB RAM / 1 CPU recommended for Postgres + Celery).
-5. Choose your region (e.g., Bangalore or NYC).
-6. Select "SSH Key" for login (recommended).
-6. Click "Create Droplet".
+Use this exact flow for local -> GitHub -> live server.
 
-## Step 2: Access Your Server
-1. Copy your Droplet's IP address.
-2. Connect via SSH:
-   ```bash
-   ssh root@your_droplet_ip
-   ```
-
-## Step 3: Clone Your Code
-Run these commands on the server:
+## 1) Local machine: commit and push to GitHub
 ```bash
-git clone https://github.com/kriyespro/sd-RankJee2026.git
-cd sd-RankJee2026
+cd ~/Desktop/sd-rankjee2026
+git status
+git add .
+git commit -m "Deploy: <your change summary>"
+git push origin main
 ```
 
-## Step 4: Configure Environment Variables
-You MUST create a `.env` file to store your production secrets:
+## 2) Live server: first-time setup (if repo not present)
 ```bash
+ssh root@161.97.146.14
+cd /root
+git clone https://github.com/kriyespro/sd-rankjee2026.git
+cd sd-rankjee2026
+```
+
+## 3) Live server: update code (normal deployment)
+```bash
+ssh root@161.97.146.14
+cd /root/sd-rankjee2026
+git pull origin main
+git log -1 --oneline
+```
+
+## 4) Production .env (IP-only)
+```bash
+cd /root/sd-rankjee2026
+cp -n .env.production.example .env
 nano .env
 ```
-Copy and paste this into the file (update with your real values):
+
+Use this minimum config:
 ```env
-DEBUG=0
-SECRET_KEY=yoursupersecretkeyhere123!
+DEBUG=False
+SECRET_KEY=replace-with-strong-secret
+ALLOWED_HOSTS=161.97.146.14,127.0.0.1,localhost
+
 DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
+DB_CONN_MAX_AGE=600
+
+REDIS_URL=redis://redis:6379/0
+REDIS_CACHE_URL=redis://redis:6379/2
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
-ALLOWED_HOSTS=your_droplet_ip,your_domain.com
-```
-(Press `Ctrl+O`, `Enter`, `Ctrl+X` to save and exit nano).
+USE_REDIS_CACHE=1
 
-## Step 5: Start the One-Click Deployment
-Run the script I created for you:
+SITE_BASE_URL=http://161.97.146.14:8889
+```
+
+Save in nano: `Ctrl+O`, `Enter`, `Ctrl+X`
+
+## 5) Docker deploy commands (clean deploy)
 ```bash
-sh docker-deploy.sh
+cd /root/sd-rankjee2026
+docker compose down --remove-orphans
+docker compose up -d --build
+docker compose ps
+docker compose logs web --tail=120
 ```
-This script will:
-- Build the optimized Docker containers.
-- Setup the Postgres database.
-- Run migrations and collect static files automatically.
-- Start the app on port 8000.
 
-## Step 6: Access Your App
-Visit: `http://your_droplet_ip:8000`
+## 6) If DB got corrupted during failed setup (fresh reset)
+WARNING: this removes all database data.
+```bash
+cd /root/sd-rankjee2026
+docker compose down -v --remove-orphans
+docker volume ls | awk '/sd-rankjee2026/ {print $2}' | xargs -r docker volume rm
+docker compose up -d --build
+docker compose ps
+docker compose logs web --tail=120
+```
 
----
+## 7) Create superuser + import content bundle
+```bash
+cd /root/sd-rankjee2026
+docker compose exec web python manage.py createsuperuser
+docker compose exec web ls -la /app/rankjee_full.json
+docker compose exec web python manage.py import_content_bundle
+```
 
-## (Optional) Step 7: Adding a Custom Domain & SSL
-If you want to use `https://yourdomain.com`:
-1. Use Nginx Proxy Manager or a simple Nginx config.
-2. Install Certbot for SSL:
-   ```bash
-   sudo apt install certbot python3-certbot-nginx
-   sudo certbot --nginx -d yourdomain.com
-   ```
-3. Update your `ALLOWED_HOSTS` in the `.env` file to include your domain.
-4. Run `sh docker-deploy.sh` again to apply.
+## 8) Quick health checks
+```bash
+docker compose ps
+docker compose logs web --tail=80
+curl -I http://127.0.0.1:8889
+curl -I http://161.97.146.14:8889
+```
 
-## (Optional) Backup & Maintenance
-- **Postgres Backups**: Your database data is stored in the `postgres_data` Docker volume.
-- **Logs**: To see real-time logs: `docker compose logs -f`
-- **Updates**: To update your app, just `git pull` and run `sh docker-deploy.sh` again.
+## 9) Verify settings loaded by Django
+```bash
+docker compose exec web python manage.py shell -c "from django.conf import settings; print(settings.DEBUG); print(settings.ALLOWED_HOSTS); print(settings.SITE_BASE_URL)"
+```
+
+## 10) Every future update (fast routine)
+Local:
+```bash
+cd ~/Desktop/sd-rankjee2026
+git add .
+git commit -m "Update: <what changed>"
+git push origin main
+```
+
+Server:
+```bash
+ssh root@161.97.146.14
+cd /root/sd-rankjee2026
+git pull origin main
+docker compose up -d --build
+docker compose restart web celery celery-beat
+docker compose logs web --tail=60
+```

@@ -1,0 +1,198 @@
+RankJee Docker Deployment Runbook (Local -> GitHub -> Production)
+=================================================================
+
+GOAL
+----
+Deploy latest code safely to production with PostgreSQL + Redis, then export/import
+rankjee_full.json content bundle when needed.
+
+Assumptions:
+- Local repo path: ~/Desktop/sd-rankjee2026
+- Server repo path: ~/sdrankjee2026
+- Branch: main
+- Docker Compose project runs web, db (PostgreSQL), redis, celery, celery-beat
+
+
+1) LOCAL PRE-CHECK
+------------------
+Run on local machine:
+
+  cd ~/Desktop/sd-rankjee2026
+  git status
+  python3 manage.py check
+
+If you changed models:
+
+  python3 manage.py makemigrations
+  python3 manage.py migrate
+
+
+2) EXPORT FULL CONTENT BUNDLE (rankjee_full.json)
+-------------------------------------------------
+Run from local project root:
+
+  cd ~/Desktop/sd-rankjee2026
+  python3 manage.py export_content_bundle rankjee_full.json
+
+Verify file exists:
+
+  ls -lh rankjee_full.json
+
+Optional (single path only):
+
+  python3 manage.py export_content_bundle rankjee_one_path.json --path-id 4
+
+
+3) COMMIT + PUSH CODE TO GITHUB
+-------------------------------
+Run on local:
+
+  cd ~/Desktop/sd-rankjee2026
+  git add .
+  git commit -m "Deploy: <what changed>"
+  git push origin main
+
+Tip: do not commit secrets from .env.
+
+
+4) COPY rankjee_full.json TO SERVER (IF NOT IN GIT)
+---------------------------------------------------
+Recommended (most cases): copy manually with scp:
+
+  scp ~/Desktop/sd-rankjee2026/rankjee_full.json root@YOUR_SERVER_IP:~/sdrankjee2026/
+
+Verify on server:
+
+  ssh root@YOUR_SERVER_IP
+  ls -lh ~/sdrankjee2026/rankjee_full.json
+
+
+5) SERVER: PULL FROM GITHUB
+---------------------------
+On server:
+
+  cd ~/sdrankjee2026
+  git pull origin main
+
+Check latest commit:
+
+  git log -1 --oneline
+
+
+6) SERVER: VERIFY PRODUCTION ENV (.env)
+---------------------------------------
+In ~/sdrankjee2026/.env ensure at least:
+
+  DEBUG=False
+  SECRET_KEY=<strong secret>
+  ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com,YOUR_SERVER_IP,127.0.0.1,localhost
+
+  DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
+  DB_CONN_MAX_AGE=600
+
+  REDIS_URL=redis://redis:6379/0
+  REDIS_CACHE_URL=redis://redis:6379/2
+  CELERY_BROKER_URL=redis://redis:6379/0
+  CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+  SITE_BASE_URL=https://yourdomain.com
+
+Important:
+- DEBUG must be False in production.
+- With DEBUG=False, app expects PostgreSQL DATABASE_URL.
+
+
+7) RECREATE CONTAINERS (APPLIES docker-compose.yml CHANGES)
+------------------------------------------------------------
+On server:
+
+  cd ~/sdrankjee2026
+  docker compose down
+  docker compose up -d --build
+
+Check services:
+
+  docker compose ps
+
+Run migrations explicitly once after deploy:
+
+  docker compose exec web python manage.py migrate
+
+
+8) IMPORT rankjee_full.json ON PRODUCTION
+-----------------------------------------
+With compose volume .:/app, server file at ~/sdrankjee2026/rankjee_full.json appears as
+/app/rankjee_full.json inside container.
+
+Check inside container:
+
+  docker compose exec web ls -la /app/rankjee_full.json
+
+Import (default file supported):
+
+  docker compose exec web python manage.py import_content_bundle
+
+Or explicit path:
+
+  docker compose exec web python manage.py import_content_bundle /app/rankjee_full.json
+
+Expected success lines:
+- Using bundle file: ...
+- Partitioned "<skill>": <n> set(s).
+- Imported bundle from ...
+
+
+9) QUICK HEALTH CHECK
+---------------------
+On server:
+
+  docker compose logs web --tail=80
+  docker compose logs celery --tail=40
+
+Open in browser:
+- /users/signup/ (should not 500)
+- /sd/ (Django admin)
+- /admin/ (app dashboard)
+
+
+10) IF 500 ERROR AFTER DEPLOY
+-----------------------------
+Capture traceback live:
+
+  docker compose logs web -f --tail=20
+
+Trigger the failing page once, then inspect traceback.
+Also check file logs:
+
+  docker compose exec web tail -80 /app/app.log
+
+Common fixes:
+- Forgot git push/git pull
+- docker-compose.yml changed but containers not recreated
+- .env missing DATABASE_URL/ALLOWED_HOSTS/SECRET_KEY
+- rankjee_full.json missing in server project root
+
+
+11) FAST UPDATE FLOW (SMALL CODE-ONLY CHANGE)
+----------------------------------------------
+If only Python/templates changed and compose/env unchanged:
+
+  # local
+  git add . && git commit -m "Fix: ..." && git push origin main
+
+  # server
+  cd ~/sdrankjee2026
+  git pull origin main
+  docker compose restart web celery celery-beat
+
+If compose/Dockerfile changed, use full recreate step (#7).
+
+
+12) OPTIONAL BACKUP BEFORE BIG IMPORT
+-------------------------------------
+Create a backup bundle from production first:
+
+  docker compose exec web python manage.py export_content_bundle /app/prod_backup_before_import.json
+
+Then copy it from server project directory if needed.
+
