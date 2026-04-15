@@ -53,10 +53,14 @@ def _update_streak(user):
     user.save(update_fields=['streak_days', 'last_active_date'])
     
     if reward_daily:
-        user.add_wallet(1, transaction_type='EARN_DAILY')
-        from .gamification import send_notification
-        send_notification(user, '🪙 +₹1 daily login reward added to your wallet!')
-        on_streak_login(user)
+        try:
+            user.add_wallet(1, transaction_type='EARN_DAILY')
+            from .gamification import send_notification
+            send_notification(user, '🪙 +₹1 daily login reward added to your wallet!')
+            on_streak_login(user)
+        except Exception as exc:
+            # Signup/login must succeed even if optional reward side-effects fail.
+            logger.warning("Streak reward side-effects failed for user_id=%s: %s", user.id, exc, exc_info=True)
 
 
 def signup_view(request):
@@ -65,9 +69,13 @@ def signup_view(request):
     
     if request.method == 'POST':
         ip = request.META.get('REMOTE_ADDR', 'unknown')
-        if not cache.add(f"rl:signup:{ip}", 1, 30):
-            messages.error(request, "Please wait a few seconds and try again.")
-            return redirect('users:signup')
+        try:
+            if not cache.add(f"rl:signup:{ip}", 1, 30):
+                messages.error(request, "Please wait a few seconds and try again.")
+                return redirect('users:signup')
+        except Exception as exc:
+            # Fail open if Redis/cache is temporarily unavailable.
+            logger.warning("Signup rate-limit cache unavailable for ip=%s: %s", ip, exc, exc_info=True)
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
