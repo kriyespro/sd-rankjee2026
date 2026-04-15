@@ -92,7 +92,7 @@ def signup_view(request):
                         on_referral_signup(user, referrer)
                 except CustomUser.DoesNotExist:
                     pass
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             _update_streak(user)
             # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
             transaction.on_commit(lambda uid=user.id: _enqueue_welcome_email(uid))
