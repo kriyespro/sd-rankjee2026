@@ -1,0 +1,121 @@
+# Server Migration Execute Sheet (Copy-Paste Order)
+
+Use this file as the exact execution order for migration.
+Run from your laptop unless a step explicitly says "on OLD" or "on NEW".
+
+## 0) Set variables (laptop)
+```bash
+export OLD_SERVER_IP="161.97.146.14"
+export NEW_SERVER_IP="REPLACE_WITH_NEW_SERVER_IP"
+export PROJECT_PATH_OLD="/root/sd-rankjee2026"
+export PROJECT_PATH_NEW="/root/sd-rankjee2026"
+export NEW_BASE_URL="http://REPLACE_WITH_NEW_SERVER_IP:8889"
+```
+
+## 1) Quick connectivity check (laptop)
+```bash
+ssh root@$OLD_SERVER_IP "echo OLD_OK"
+ssh root@$NEW_SERVER_IP "echo NEW_OK"
+```
+
+## 2) Backup on OLD (database + media + static + env)
+```bash
+ssh root@$OLD_SERVER_IP "mkdir -p /root/migration_backup && cd /root/migration_backup && ls -la"
+ssh root@$OLD_SERVER_IP "cp $PROJECT_PATH_OLD/.env /root/migration_backup/env.backup"
+ssh root@$OLD_SERVER_IP "cd $PROJECT_PATH_OLD && docker compose exec -T db pg_dump -U postgres -d rankjee_db -Fc > /root/migration_backup/rankjee_db.dump"
+ssh root@$OLD_SERVER_IP "docker run --rm -v sd-rankjee2026_media_volume:/from -v /root/migration_backup:/to alpine sh -c 'cd /from && tar czf /to/media.tar.gz .'"
+ssh root@$OLD_SERVER_IP "docker run --rm -v sd-rankjee2026_static_volume:/from -v /root/migration_backup:/to alpine sh -c 'cd /from && tar czf /to/static.tar.gz .'"
+ssh root@$OLD_SERVER_IP "ls -lh /root/migration_backup"
+```
+
+## 3) Prepare NEW server codebase
+```bash
+ssh root@$NEW_SERVER_IP "cd /root && [ -d sd-rankjee2026 ] || git clone https://github.com/kriyespro/sd-rankjee2026.git"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && git pull origin main"
+```
+
+## 4) Copy backup files OLD -> NEW
+```bash
+scp root@$OLD_SERVER_IP:/root/migration_backup/rankjee_db.dump root@$NEW_SERVER_IP:/root/
+scp root@$OLD_SERVER_IP:/root/migration_backup/media.tar.gz root@$NEW_SERVER_IP:/root/
+scp root@$OLD_SERVER_IP:/root/migration_backup/static.tar.gz root@$NEW_SERVER_IP:/root/
+scp root@$OLD_SERVER_IP:/root/migration_backup/env.backup root@$NEW_SERVER_IP:/root/
+```
+
+## 5) Configure .env on NEW
+```bash
+ssh root@$NEW_SERVER_IP "cp -f /root/env.backup $PROJECT_PATH_NEW/.env"
+ssh root@$NEW_SERVER_IP "sed -i '' 's|^ALLOWED_HOSTS=.*|ALLOWED_HOSTS='$NEW_SERVER_IP',127.0.0.1,localhost|g' $PROJECT_PATH_NEW/.env" || true
+```
+
+If `sed -i ''` fails on Linux (likely), run this instead:
+```bash
+ssh root@$NEW_SERVER_IP "sed -i 's|^ALLOWED_HOSTS=.*|ALLOWED_HOSTS='$NEW_SERVER_IP',127.0.0.1,localhost|g' $PROJECT_PATH_NEW/.env"
+```
+
+Then manually verify/edit:
+```bash
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && nano .env"
+```
+
+Set at minimum:
+- `ALLOWED_HOSTS=<new-ip>,127.0.0.1,localhost`
+- `SITE_BASE_URL=$NEW_BASE_URL`
+
+## 6) Start containers on NEW (creates DB/volumes)
+```bash
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose up -d --build && docker compose ps"
+```
+
+## 7) Restore database on NEW
+```bash
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db psql -U postgres -d postgres -c \"DROP DATABASE IF EXISTS rankjee_db;\""
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db psql -U postgres -d postgres -c \"CREATE DATABASE rankjee_db;\""
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db pg_restore -U postgres -d rankjee_db --clean --if-exists < /root/rankjee_db.dump"
+```
+
+## 8) Restore media/static on NEW
+```bash
+ssh root@$NEW_SERVER_IP "docker run --rm -v sd-rankjee2026_media_volume:/to -v /root:/from alpine sh -c 'cd /to && tar xzf /from/media.tar.gz'"
+ssh root@$NEW_SERVER_IP "docker run --rm -v sd-rankjee2026_static_volume:/to -v /root:/from alpine sh -c 'cd /to && tar xzf /from/static.tar.gz'"
+```
+
+## 9) Django finalize on NEW
+```bash
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec web python manage.py migrate"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec web python manage.py collectstatic --noinput"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec web python manage.py check --deploy"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose restart web celery celery-beat"
+```
+
+## 10) Verify NEW server
+```bash
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose ps"
+ssh root@$NEW_SERVER_IP "curl -I http://127.0.0.1:8889"
+ssh root@$NEW_SERVER_IP "curl -I http://$NEW_SERVER_IP:8889"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose logs web --tail=120"
+```
+
+## 11) Final cutover (low downtime)
+1. Stop writes on OLD app briefly.
+2. Take FINAL DB dump from OLD.
+3. Restore FINAL DB dump on NEW.
+4. Switch DNS/IP traffic to NEW.
+5. Re-verify login + media + dashboard + payments.
+
+Final DB sync commands:
+```bash
+ssh root@$OLD_SERVER_IP "cd $PROJECT_PATH_OLD && docker compose exec -T db pg_dump -U postgres -d rankjee_db -Fc" > final_rankjee_db.dump
+scp final_rankjee_db.dump root@$NEW_SERVER_IP:/root/
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db psql -U postgres -d postgres -c \"DROP DATABASE IF EXISTS rankjee_db;\""
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db psql -U postgres -d postgres -c \"CREATE DATABASE rankjee_db;\""
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose exec -T db pg_restore -U postgres -d rankjee_db --clean --if-exists < /root/final_rankjee_db.dump"
+ssh root@$NEW_SERVER_IP "cd $PROJECT_PATH_NEW && docker compose restart web celery celery-beat"
+```
+
+## 12) Rollback (if needed)
+```bash
+ssh root@$OLD_SERVER_IP "cd $PROJECT_PATH_OLD && docker compose up -d && docker compose ps"
+```
+
+Keep old server intact for at least 3-7 days.

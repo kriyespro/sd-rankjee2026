@@ -1,10 +1,10 @@
-http://161.97.146.14:8889/
+https://rankjee.com/
 
 
 DEBUG=False
 SECRET_KEY=dxkWDQY5vmdru56zZFOyFojrUeVnHCJXMDs3s3prnm6Gw49aI0bCgYngR85VgzjN8NsANXNMrX5h7rU9ohKGvw
 # Include your Droplet public IP and domain (no spaces). Required when DEBUG=False or Docker sets D>
-ALLOWED_HOSTS=161.97.146.14,127.0.0.1,localhost
+ALLOWED_HOSTS=rankjee.com,www.rankjee.com,161.97.146.14,127.0.0.1,localhost
 
 # Database / cache (PostgreSQL required when DEBUG=False; pooled connections for performance)
 DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
@@ -34,4 +34,36 @@ RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
 RAZORPAY_USE_DUMMY=0
 
 # App URLs
-SITE_BASE_URL=http://161.97.146.14:8889
+SITE_BASE_URL=https://rankjee.com
+CSRF_TRUSTED_ORIGINS=https://rankjee.com,https://www.rankjee.com
+
+# --- Host Nginx (MindMap on 8080 frees host :80) ---
+# 1) DNS: A records for rankjee.com and www → 161.97.146.14
+#    Cloudflare proxied: SSL/TLS = Full (strict). DNS-only: traffic hits VPS directly.
+# 2) Create /etc/nginx/sites-available/rankjee.com — paste the two server { } blocks below (no leading #), then:
+#
+server {
+    listen 80;
+    listen [::]:80;
+    server_name rankjee.com www.rankjee.com;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name rankjee.com www.rankjee.com;
+    ssl_certificate     /etc/letsencrypt/live/rankjee.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/rankjee.com/privkey.pem;
+    client_max_body_size 25m;
+    location / {
+        proxy_pass http://127.0.0.1:8889;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+#
+# sudo ln -sf /etc/nginx/sites-available/rankjee.com /etc/nginx/sites-enabled/rankjee.com
+# sudo nginx -t && sudo systemctl enable --now nginx && sudo systemctl reload nginx
+# 3) cd ~/sd-rankjee2026 && git pull && docker compose up -d --force-recreate web

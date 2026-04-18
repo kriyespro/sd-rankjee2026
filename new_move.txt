@@ -1,0 +1,291 @@
+# Full Server-to-Server Migration Guide (Code + Database + Media)
+
+This guide is tailored for this project:
+- Django 5 app in Docker Compose
+- PostgreSQL in `db` service (volume: `postgres_data`)
+- Redis + Celery
+- Persistent files in Docker volumes (`media_volume`, `static_volume`)
+
+Use this to move from OLD server to NEW server safely with minimal downtime.
+
+------------------------------------------------------------
+0) Migration strategy (recommended)
+------------------------------------------------------------
+Use two-phase migration:
+1. Pre-copy code and static assets while site is live.
+2. Short freeze window, final DB dump, final media sync, then switch traffic.
+
+This avoids long downtime and prevents data loss.
+
+------------------------------------------------------------
+1) Pre-checklist (before touching anything)
+------------------------------------------------------------
+On old server, verify:
+- You can SSH into both servers.
+- You know project path (example: `/root/sd-rankjee2026`).
+- Docker and Docker Compose are installed on both servers.
+- Disk space is enough on new server.
+- You have the current `.env` from old server.
+
+Collect these values:
+- OLD_SERVER_IP
+- NEW_SERVER_IP
+- PROJECT_PATH_OLD (example `/root/sd-rankjee2026`)
+- PROJECT_PATH_NEW (example `/root/sd-rankjee2026`)
+
+Define local shell helpers (on your laptop):
+```bash
+export OLD_SERVER_IP="161.97.146.14"
+export NEW_SERVER_IP="NEW.SERVER.IP.HERE"
+export PROJECT_PATH_OLD="/root/sd-rankjee2026"
+export PROJECT_PATH_NEW="/root/sd-rankjee2026"
+```
+
+------------------------------------------------------------
+2) Backup everything on OLD server (must do)
+------------------------------------------------------------
+SSH into old server:
+```bash
+ssh root@$OLD_SERVER_IP
+cd $PROJECT_PATH_OLD
+```
+
+2.1 Create backup folder:
+```bash
+mkdir -p /root/migration_backup_$(date +%F_%H%M)
+cd /root/migration_backup_$(date +%F_%H%M)
+```
+
+2.2 Backup `.env`:
+```bash
+cp "$PROJECT_PATH_OLD/.env" ./env.backup
+```
+
+2.3 Backup PostgreSQL (logical dump from db container):
+```bash
+cd "$PROJECT_PATH_OLD"
+docker compose exec -T db pg_dump -U postgres -d rankjee_db -Fc > /root/migration_backup_latest_rankjee_db.dump
+```
+
+2.4 Backup media volume as tar:
+```bash
+docker run --rm \
+  -v sd-rankjee2026_media_volume:/from \
+  -v /root:/to \
+  alpine sh -c "cd /from && tar czf /to/migration_backup_latest_media.tar.gz ."
+```
+
+2.5 Backup static volume as tar (optional but recommended):
+```bash
+docker run --rm \
+  -v sd-rankjee2026_static_volume:/from \
+  -v /root:/to \
+  alpine sh -c "cd /from && tar czf /to/migration_backup_latest_static.tar.gz ."
+```
+
+2.6 Save image list (optional rollback helper):
+```bash
+docker images > /root/migration_backup_latest_docker_images.txt
+```
+
+Keep these files safe:
+- `/root/migration_backup_latest_rankjee_db.dump`
+- `/root/migration_backup_latest_media.tar.gz`
+- `/root/migration_backup_latest_static.tar.gz`
+- `/root/migration_backup_.../env.backup`
+
+------------------------------------------------------------
+3) Prepare NEW server
+------------------------------------------------------------
+SSH into new server:
+```bash
+ssh root@$NEW_SERVER_IP
+```
+
+3.1 Install Docker if not installed, then:
+```bash
+mkdir -p /root
+cd /root
+git clone https://github.com/kriyespro/sd-rankjee2026.git
+cd sd-rankjee2026
+```
+
+3.2 Copy `.env` from old server to new server:
+From your laptop:
+```bash
+scp root@$OLD_SERVER_IP:$PROJECT_PATH_OLD/.env root@$NEW_SERVER_IP:$PROJECT_PATH_NEW/.env
+```
+
+3.3 Update `.env` on new server:
+- Set `ALLOWED_HOSTS` to include NEW IP/domain.
+- Set `SITE_BASE_URL` to new URL/IP.
+- Keep same `SECRET_KEY`, database, email, Razorpay, Redis values.
+
+3.4 Start empty stack on new server (creates containers + volumes):
+```bash
+ssh root@$NEW_SERVER_IP
+cd $PROJECT_PATH_NEW
+docker compose up -d --build
+docker compose ps
+```
+
+------------------------------------------------------------
+4) Transfer backups OLD -> NEW
+------------------------------------------------------------
+From your laptop:
+```bash
+scp root@$OLD_SERVER_IP:/root/migration_backup_latest_rankjee_db.dump root@$NEW_SERVER_IP:/root/
+scp root@$OLD_SERVER_IP:/root/migration_backup_latest_media.tar.gz root@$NEW_SERVER_IP:/root/
+scp root@$OLD_SERVER_IP:/root/migration_backup_latest_static.tar.gz root@$NEW_SERVER_IP:/root/
+```
+
+Alternative (direct server-to-server via rsync/scp) is also fine.
+
+------------------------------------------------------------
+5) Restore data on NEW server
+------------------------------------------------------------
+SSH new server:
+```bash
+ssh root@$NEW_SERVER_IP
+cd $PROJECT_PATH_NEW
+```
+
+5.1 Restore PostgreSQL:
+```bash
+docker compose exec -T db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS rankjee_db;"
+docker compose exec -T db psql -U postgres -d postgres -c "CREATE DATABASE rankjee_db;"
+docker compose exec -T db pg_restore -U postgres -d rankjee_db --clean --if-exists < /root/migration_backup_latest_rankjee_db.dump
+```
+
+5.2 Restore media volume:
+```bash
+docker run --rm \
+  -v sd-rankjee2026_media_volume:/to \
+  -v /root:/from \
+  alpine sh -c "cd /to && tar xzf /from/migration_backup_latest_media.tar.gz"
+```
+
+5.3 Restore static volume (optional):
+```bash
+docker run --rm \
+  -v sd-rankjee2026_static_volume:/to \
+  -v /root:/from \
+  alpine sh -c "cd /to && tar xzf /from/migration_backup_latest_static.tar.gz"
+```
+
+5.4 Run Django post-restore commands:
+```bash
+docker compose exec web python manage.py migrate
+docker compose exec web python manage.py collectstatic --noinput
+docker compose exec web python manage.py check --deploy
+```
+
+5.5 Restart app services:
+```bash
+docker compose restart web celery celery-beat
+docker compose logs web --tail=120
+```
+
+------------------------------------------------------------
+6) Verify new server before go-live
+------------------------------------------------------------
+On new server:
+```bash
+cd $PROJECT_PATH_NEW
+docker compose ps
+curl -I http://127.0.0.1:8889
+curl -I http://$NEW_SERVER_IP:8889
+docker compose exec web python manage.py shell -c "from django.conf import settings; print(settings.DEBUG, settings.ALLOWED_HOSTS, settings.SITE_BASE_URL)"
+```
+
+Functional checks:
+- Login works with existing user accounts.
+- Dashboard loads.
+- Media files open (images/docs).
+- Payment config present.
+- Celery worker and beat are running.
+
+------------------------------------------------------------
+7) Cutover (minimal downtime method)
+------------------------------------------------------------
+At cutover time:
+1. Put old server into maintenance/read-only mode (or stop app briefly).
+2. Take FINAL database dump from old server.
+3. Take FINAL media sync from old server.
+4. Restore final dump and media on new server.
+5. Switch DNS/IP traffic to new server.
+6. Verify again.
+
+Final DB dump (old):
+```bash
+ssh root@$OLD_SERVER_IP "cd $PROJECT_PATH_OLD && docker compose exec -T db pg_dump -U postgres -d rankjee_db -Fc" > final_rankjee_db.dump
+scp final_rankjee_db.dump root@$NEW_SERVER_IP:/root/
+```
+
+Final DB restore (new):
+```bash
+ssh root@$NEW_SERVER_IP
+cd $PROJECT_PATH_NEW
+docker compose exec -T db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS rankjee_db;"
+docker compose exec -T db psql -U postgres -d postgres -c "CREATE DATABASE rankjee_db;"
+docker compose exec -T db pg_restore -U postgres -d rankjee_db --clean --if-exists < /root/final_rankjee_db.dump
+docker compose restart web celery celery-beat
+```
+
+------------------------------------------------------------
+8) Rollback plan (mandatory safety)
+------------------------------------------------------------
+If anything fails after cutover:
+- Point DNS/traffic back to OLD server.
+- Start old stack:
+```bash
+ssh root@$OLD_SERVER_IP
+cd $PROJECT_PATH_OLD
+docker compose up -d
+docker compose ps
+```
+- Keep old server untouched for at least 3-7 days.
+
+------------------------------------------------------------
+9) If OLD server uses SQLite (not your production case)
+------------------------------------------------------------
+This project uses PostgreSQL when `DEBUG=False`. But if you ever migrate a SQLite-based setup:
+
+On old:
+```bash
+scp $PROJECT_PATH_OLD/db.sqlite3 root@$NEW_SERVER_IP:$PROJECT_PATH_NEW/db.sqlite3
+```
+
+On new:
+- Ensure `DEBUG=True` and SQLite config enabled, then restart app.
+- For production, migrate to PostgreSQL instead of staying on SQLite.
+
+------------------------------------------------------------
+10) Post-migration hardening
+------------------------------------------------------------
+- Rotate secrets if old server is retired.
+- Restrict firewall: open only required ports.
+- Ensure backups (DB + media) are scheduled.
+- Enable TLS/HTTPS once domain points to new server.
+- Monitor logs for 24 hours:
+```bash
+cd $PROJECT_PATH_NEW
+docker compose logs web --tail=300
+docker compose logs celery --tail=200
+docker compose logs celery-beat --tail=200
+```
+
+------------------------------------------------------------
+11) One-command quick checklist
+------------------------------------------------------------
+On new server after restore:
+```bash
+cd /root/sd-rankjee2026 && \
+docker compose ps && \
+docker compose exec web python manage.py migrate && \
+docker compose exec web python manage.py collectstatic --noinput && \
+docker compose exec web python manage.py check --deploy && \
+curl -I http://127.0.0.1:8889
+```
+
+If all above pass, migration is successful.

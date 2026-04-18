@@ -34,6 +34,46 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 _raw_hosts = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(',') if h.strip()] if _raw_hosts else []
 
+# TLS terminated at Nginx: trust X-Forwarded-* for redirects, cookies, CSRF (production only).
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+
+def _csrf_trusted_origins():
+    """HTTPS + reverse-proxy setups need explicit origins; merge env with ALLOWED_HOSTS / SITE_BASE_URL."""
+    raw = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+    origins = [o.strip() for o in raw.split(',') if o.strip()]
+    if DEBUG:
+        return origins
+
+    def _add(url):
+        if url and url not in origins:
+            origins.append(url)
+
+    site = os.environ.get('SITE_BASE_URL', '').strip().rstrip('/')
+    _add(site)
+
+    for host in ALLOWED_HOSTS:
+        h = host.split(':')[0].strip().lower()
+        if not h or h in ('127.0.0.1', 'localhost'):
+            continue
+        parts = h.split('.')
+        is_ipv4 = len(parts) == 4 and all(p.isdigit() for p in parts)
+        if is_ipv4:
+            _add(f'http://{host}')
+            _add(f'https://{host}')
+            continue
+        _add(f'https://{h}')
+        _add(f'http://{h}')
+
+    return origins
+
+
+CSRF_TRUSTED_ORIGINS = _csrf_trusted_origins()
+
 
 # Application definition
 
