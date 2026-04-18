@@ -41,6 +41,30 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
+    # HSTS: sent on HTTPS responses when the request is treated as secure (incl. behind proxy).
+    # Set SECURE_HSTS_SECONDS=0 in .env to disable. Read Django docs before enabling preload/subdomains.
+    _hsts = os.environ.get('SECURE_HSTS_SECONDS', '31536000').strip()
+    SECURE_HSTS_SECONDS = int(_hsts) if _hsts.isdigit() else 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+        os.environ.get('SECURE_HSTS_INCLUDE_SUBDOMAINS', '0').lower() in ('1', 'true', 'yes')
+    )
+    SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', '0').lower() in ('1', 'true', 'yes')
+
+    # Gunicorn is HTTP-only; Nginx redirects 80→443. Django-level HTTPS redirect would break
+    # http://127.0.0.1:8000/ health checks and direct backend access.
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', '0').lower() in ('1', 'true', 'yes')
+
+    # W008: HTTPS is enforced at Nginx, not in Django (see above).
+    # W005 / W021: optional HSTS subdomain + preload; off by default until you opt in via env.
+    _silenced = []
+    if not SECURE_SSL_REDIRECT:
+        _silenced.append('security.W008')
+    if not SECURE_HSTS_INCLUDE_SUBDOMAINS:
+        _silenced.append('security.W005')
+    if not SECURE_HSTS_PRELOAD:
+        _silenced.append('security.W021')
+    SILENCED_SYSTEM_CHECKS = _silenced
+
 
 def _csrf_trusted_origins():
     """HTTPS + reverse-proxy setups need explicit origins; merge env with ALLOWED_HOSTS / SITE_BASE_URL."""
