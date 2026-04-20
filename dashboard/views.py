@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -28,6 +30,7 @@ from .forms import (
 )
 
 User = get_user_model()
+logger = logging.getLogger("rankjee.dashboard")
 
 
 def _role_dashboard_context(request):
@@ -650,16 +653,28 @@ def index(request):
 
     # Role-dedicated dashboards for non-staff roles.
     if role in ['TUTOR', 'PARENT', 'CITY_ADMIN', 'GLOBAL_ADMIN']:
-        role_ctx = _role_dashboard_context(request)
-        return render(
-            request,
-            role_ctx['template_name'],
-            {
-                'user': request.user,
-                'user_role': role,
-                **role_ctx,
-            },
-        )
+        try:
+            role_ctx = _role_dashboard_context(request)
+            return render(
+                request,
+                role_ctx['template_name'],
+                {
+                    'user': request.user,
+                    'user_role': role,
+                    **role_ctx,
+                },
+            )
+        except Exception as exc:
+            logger.exception(
+                "Role dashboard context failed (user_id=%s role=%s): %s",
+                request.user.id,
+                role,
+                exc,
+            )
+            messages.warning(
+                request,
+                "Your role dashboard is loading fallback mode while we sync live data.",
+            )
 
     # Student dashboard (learning + marketplace)
     latest_attempt = UserAttempt.objects.filter(
