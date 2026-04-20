@@ -802,7 +802,7 @@ def index(request):
     ).count()
     student_preview_mode = False
     if student_demo_qs.count() == 0 and student_engagements.count() == 0:
-        preview_user = CustomUser.objects.filter(username='demo_student').first()
+        preview_user = User.objects.filter(username='demo_student').first()
         if preview_user:
             student_preview_mode = True
             student_demo_qs = DemoRequest.objects.filter(requester=preview_user).select_related('tutor').order_by('-created_at')
