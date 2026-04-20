@@ -100,6 +100,20 @@ def signup_view(request):
                             trial_plan = (
                                 SubscriptionPlan.objects.filter(is_active=True).order_by("price").first()
                             )
+                            if not trial_plan:
+                                # Safety fallback for fresh/live DBs with no active plans yet.
+                                trial_plan = (
+                                    SubscriptionPlan.objects.filter(name="Referral Test Pro").order_by("-id").first()
+                                )
+                            if not trial_plan:
+                                trial_plan = SubscriptionPlan.objects.create(
+                                    name="Referral Test Pro",
+                                    description="Auto-created zero-price plan for referral testing unlocks.",
+                                    price=0,
+                                    duration_days=max(1, int(settings.REFERRAL_PREMIUM_DAYS)),
+                                    is_active=False,
+                                    features=["Referral test premium access"],
+                                )
                             if trial_plan:
                                 sub, created = UserSubscription.objects.get_or_create(
                                     user=user,
