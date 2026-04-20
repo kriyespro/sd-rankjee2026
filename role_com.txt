@@ -1,0 +1,53 @@
+# Role Dashboard Comparison Table
+
+Purpose: quick comparison of current dashboard capabilities by role.
+Status labels:
+- DONE = implemented in dashboard
+- PARTIAL = basic implementation exists, needs deeper flow work
+- PLANNED = not yet implemented
+
+| Feature / Module | Student | Parent | Tutor | City Admin | Global Admin |
+|---|---|---|---|---|---|
+| Dedicated role dashboard screen | DONE | DONE | DONE | DONE | DONE |
+| Role-specific top KPI cards | DONE | DONE | DONE | DONE | DONE |
+| Role-specific quick actions bar | DONE | DONE | DONE | DONE | DONE |
+| Role-specific navigation visibility | DONE | DONE | DONE | DONE | DONE |
+| Activity timeline feed | DONE | DONE | DONE | DONE | DONE |
+| SLA risk highlighting (age-based) | DONE | DONE | DONE | DONE | DONE |
+| Tutor discovery/search from dashboard | DONE | DONE | PARTIAL | PARTIAL | PARTIAL |
+| Tutor compare flow | DONE | PARTIAL | PLANNED | PLANNED | PLANNED |
+| Booking funnel visibility (request -> active -> paid) | DONE | PARTIAL | DONE (lead funnel) | PARTIAL | PARTIAL |
+| Demo request status visibility | DONE | DONE | DONE | PARTIAL | PARTIAL |
+| Parent approval gate mode | DONE (MVP mode) | DONE (visibility side) | PLANNED | PLANNED | PLANNED |
+| Learning journey / progress visibility | DONE | PARTIAL | PLANNED | PLANNED | PLANNED |
+| Weak-area based tutor recommendations | DONE | PLANNED | PLANNED | PLANNED | PLANNED |
+| Engagement room access shortcuts | DONE | DONE | DONE | PARTIAL | PARTIAL |
+| Payment continuity CTA from dashboard | DONE | PARTIAL | DONE (earnings side) | PARTIAL | PARTIAL |
+| Earnings summary (role business view) | PARTIAL | DONE (spend side) | DONE | PARTIAL | DONE |
+| Payout / withdrawal governance visibility | PLANNED | PLANNED | DONE | DONE | DONE |
+| Conversion analytics block | PARTIAL | PLANNED | DONE | DONE | DONE |
+| Queue management panels (verification/disputes) | PLANNED | PARTIAL | PARTIAL | DONE | DONE |
+| Revenue health metrics (GMV/platform revenue) | PLANNED | PARTIAL | PARTIAL | DONE | DONE |
+
+## Role Notes (Current)
+
+1) Student
+- Strongest implementation currently.
+- Includes booking-first UX, compare flow, funnel, weak-area recommendations, and continuity actions.
+
+2) Parent
+- Good operational visibility now (demos, engagements, spend, attendance).
+- Next needed: explicit approval actions and child-profile granularity.
+
+3) Tutor
+- Strong business view now (leads, conversion, earnings, ledger, schedule health).
+- Next needed: deeper availability calendar controls and growth automation.
+
+4) City Admin
+- Strong queue/governance panel for verification + disputes + SLA.
+- Added city funnel and GMV snapshot.
+- Next needed: strict city scoping and local demand-supply intelligence.
+
+5) Global Admin
+- Strong governance and monetization visibility (funnel + GMV + platform revenue).
+- Next needed: cross-city benchmarking and policy automation actions.

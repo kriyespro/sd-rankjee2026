@@ -24,9 +24,522 @@ from .forms import (
     QuestionForm,
     SkillForm,
     SkillPathForm,
+    VideoQuestionImportForm,
 )
 
 User = get_user_model()
+
+
+def _role_dashboard_context(request):
+    """Build focused, role-wise context for non-student dashboards."""
+    from hometutor.models import DemoRequest, TutorProfile, TutorEngagement, EngagementDispute, SessionAttendance
+    from hometutor_payments.models import MarketplaceOrder, TutorLedgerEntry, TutorPayoutRequest
+
+    role = getattr(request.user, 'role', 'STUDENT')
+    user = request.user
+    now = timezone.now()
+
+    if role == 'TUTOR':
+        tutor_profile = TutorProfile.objects.filter(user=user).first()
+        tutor_preview_mode = False
+        if not tutor_profile:
+            tutor_profile = (
+                TutorProfile.objects.filter(
+                    verification_status=TutorProfile.VerificationStatus.APPROVED
+                )
+                .order_by('-reviews_count', '-rating_display')
+                .first()
+            )
+            tutor_preview_mode = bool(tutor_profile)
+        pending_incoming = (
+            DemoRequest.objects.filter(
+                tutor=tutor_profile,
+                status=DemoRequest.Status.PENDING,
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        accepted_demos = (
+            DemoRequest.objects.filter(
+                tutor=tutor_profile,
+                status=DemoRequest.Status.ACCEPTED,
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        active_engagements = (
+            TutorEngagement.objects.filter(
+                tutor_profile=tutor_profile,
+                status=TutorEngagement.Status.ACTIVE,
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        open_disputes = (
+            EngagementDispute.objects.filter(
+                engagement__tutor_profile=tutor_profile,
+                status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW],
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        total_demos = (
+            DemoRequest.objects.filter(tutor=tutor_profile).count()
+            if tutor_profile
+            else 0
+        )
+        latest_pending_demos = (
+            DemoRequest.objects.filter(
+                tutor=tutor_profile,
+                status=DemoRequest.Status.PENDING,
+            )
+            .select_related('requester')
+            .order_by('-created_at')[:5]
+            if tutor_profile
+            else []
+        )
+        latest_active_engagements = (
+            TutorEngagement.objects.filter(
+                tutor_profile=tutor_profile,
+                status=TutorEngagement.Status.ACTIVE,
+            )
+            .select_related('student')
+            .order_by('-updated_at')[:5]
+            if tutor_profile
+            else []
+        )
+        tutor_paid_orders = (
+            MarketplaceOrder.objects.filter(
+                engagement__tutor_profile=tutor_profile,
+                status=MarketplaceOrder.Status.SUCCESS,
+            )
+            if tutor_profile
+            else MarketplaceOrder.objects.none()
+        )
+        tutor_paid_count = tutor_paid_orders.count()
+        tutor_total_credits = tutor_paid_orders.aggregate(total=Sum('tutor_credit_amount'))['total'] or 0
+        tutor_month_credits = tutor_paid_orders.filter(
+            paid_at__gte=now - timedelta(days=30)
+        ).aggregate(total=Sum('tutor_credit_amount'))['total'] or 0
+        tutor_pending_payout = (
+            TutorPayoutRequest.objects.filter(
+                tutor_profile=tutor_profile,
+                status=TutorPayoutRequest.Status.PENDING,
+            ).aggregate(total=Sum('amount'))['total'] or 0
+            if tutor_profile
+            else 0
+        )
+        latest_ledger = (
+            TutorLedgerEntry.objects.filter(tutor_profile=tutor_profile).order_by('-id').first()
+            if tutor_profile
+            else None
+        )
+        tutor_current_balance = latest_ledger.balance_after if latest_ledger else 0
+        tutor_recent_ledger = (
+            TutorLedgerEntry.objects.filter(tutor_profile=tutor_profile).order_by('-created_at')[:5]
+            if tutor_profile
+            else []
+        )
+        upcoming_sessions_count = (
+            SessionAttendance.objects.filter(
+                engagement__tutor_profile=tutor_profile,
+                scheduled_for__gte=now,
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        stale_active_engagement_count = (
+            TutorEngagement.objects.filter(
+                tutor_profile=tutor_profile,
+                status=TutorEngagement.Status.ACTIVE,
+                updated_at__lt=now - timedelta(days=7),
+            ).count()
+            if tutor_profile
+            else 0
+        )
+        accepted_rate = round((accepted_demos / total_demos) * 100, 1) if total_demos else 0
+        active_rate = round((active_engagements / accepted_demos) * 100, 1) if accepted_demos else 0
+        paid_rate = round((tutor_paid_count / active_engagements) * 100, 1) if active_engagements else 0
+        tutor_demo_sla_risk_ids = [
+            d.pk for d in latest_pending_demos if (now - d.created_at).total_seconds() > (24 * 3600)
+        ]
+        activity_timeline = []
+        for d in latest_pending_demos[:4]:
+            activity_timeline.append(
+                {
+                    'title': f'New demo request from {d.requester.get_username()}',
+                    'meta': d.created_at,
+                }
+            )
+        for e in latest_active_engagements[:4]:
+            activity_timeline.append(
+                {
+                    'title': f'Engagement active with {e.student.get_username()}',
+                    'meta': e.updated_at,
+                }
+            )
+        activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:8]
+        return {
+            'kpi_cards': [
+                {'label': 'Incoming demos', 'value': pending_incoming},
+                {'label': 'Accepted demos', 'value': accepted_demos},
+                {'label': 'Active students', 'value': active_engagements},
+                {'label': 'Open disputes', 'value': open_disputes},
+            ],
+            'tutor_profile': tutor_profile,
+            'tutor_preview_mode': tutor_preview_mode,
+            'pending_incoming': pending_incoming,
+            'accepted_demos': accepted_demos,
+            'active_engagements': active_engagements,
+            'open_disputes': open_disputes,
+            'latest_pending_demos': latest_pending_demos,
+            'latest_active_engagements': latest_active_engagements,
+            'tutor_total_credits': tutor_total_credits,
+            'tutor_month_credits': tutor_month_credits,
+            'tutor_pending_payout': tutor_pending_payout,
+            'tutor_current_balance': tutor_current_balance,
+            'tutor_recent_ledger': tutor_recent_ledger,
+            'upcoming_sessions_count': upcoming_sessions_count,
+            'stale_active_engagement_count': stale_active_engagement_count,
+            'total_demos': total_demos,
+            'accepted_rate': accepted_rate,
+            'active_rate': active_rate,
+            'paid_rate': paid_rate,
+            'tutor_paid_count': tutor_paid_count,
+            'tutor_demo_sla_risk_ids': tutor_demo_sla_risk_ids,
+            'tutor_demo_sla_risk_count': len(tutor_demo_sla_risk_ids),
+            'activity_timeline': activity_timeline,
+            'template_name': 'dashboard/role_tutor.jinja',
+        }
+
+    if role == 'PARENT':
+        pending_sent = DemoRequest.objects.filter(
+            requester=user,
+            status=DemoRequest.Status.PENDING,
+        ).count()
+        accepted_sent = DemoRequest.objects.filter(
+            requester=user,
+            status=DemoRequest.Status.ACCEPTED,
+        ).count()
+        active_learning = TutorEngagement.objects.filter(
+            student=user,
+            status=TutorEngagement.Status.ACTIVE,
+        ).count()
+        support_cases = EngagementDispute.objects.filter(
+            raised_by=user,
+            status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW],
+        ).count()
+        latest_demo_requests = (
+            DemoRequest.objects.filter(requester=user)
+            .select_related('tutor')
+            .order_by('-created_at')[:6]
+        )
+        latest_learning_engagements = (
+            TutorEngagement.objects.filter(student=user)
+            .select_related('tutor_profile')
+            .order_by('-updated_at')[:6]
+        )
+        parent_paid_orders = MarketplaceOrder.objects.filter(
+            payer=user,
+            status=MarketplaceOrder.Status.SUCCESS,
+        )
+        parent_monthly_spend = parent_paid_orders.filter(
+            paid_at__gte=now - timedelta(days=30)
+        ).aggregate(total=Sum('amount_gross'))['total'] or 0
+        parent_total_spend = parent_paid_orders.aggregate(total=Sum('amount_gross'))['total'] or 0
+        parent_pending_payment_count = TutorEngagement.objects.filter(
+            student=user,
+            status=TutorEngagement.Status.ACTIVE,
+        ).exclude(
+            marketplace_order__status=MarketplaceOrder.Status.SUCCESS,
+        ).count()
+        parent_sessions_total = SessionAttendance.objects.filter(engagement__student=user).count()
+        parent_sessions_present = SessionAttendance.objects.filter(
+            engagement__student=user,
+            status=SessionAttendance.AttendanceStatus.PRESENT,
+        ).count()
+        parent_attendance_rate = (
+            round((parent_sessions_present / parent_sessions_total) * 100, 1)
+            if parent_sessions_total
+            else 0
+        )
+        parent_demo_sla_risk_ids = [
+            d.pk
+            for d in latest_demo_requests
+            if d.status == DemoRequest.Status.PENDING and (now - d.created_at).total_seconds() > (24 * 3600)
+        ]
+        parent_next_actions = []
+        if parent_demo_sla_risk_ids:
+            parent_next_actions.append('Follow up on pending demo requests older than 24h.')
+        if parent_pending_payment_count > 0:
+            parent_next_actions.append('Complete pending engagement payments to avoid class disruption.')
+        if parent_attendance_rate and parent_attendance_rate < 80:
+            parent_next_actions.append('Improve attendance rhythm; target at least 80% consistency.')
+        if not parent_next_actions:
+            parent_next_actions.append('All key metrics are healthy. Continue weekly review cadence.')
+        activity_timeline = []
+        for d in latest_demo_requests[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Demo request {d.get_status_display()} with {d.tutor.display_name}',
+                    'meta': d.updated_at,
+                }
+            )
+        for e in latest_learning_engagements[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Learning engagement {e.get_status_display()} with {e.tutor_profile.display_name}',
+                    'meta': e.updated_at,
+                }
+            )
+        activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:8]
+        return {
+            'kpi_cards': [
+                {'label': 'Pending approvals', 'value': pending_sent},
+                {'label': 'Tutor demos booked', 'value': accepted_sent},
+                {'label': 'Active engagements', 'value': active_learning},
+                {'label': 'Open support cases', 'value': support_cases},
+            ],
+            'pending_sent': pending_sent,
+            'accepted_sent': accepted_sent,
+            'active_learning': active_learning,
+            'support_cases': support_cases,
+            'latest_demo_requests': latest_demo_requests,
+            'latest_learning_engagements': latest_learning_engagements,
+            'parent_monthly_spend': parent_monthly_spend,
+            'parent_total_spend': parent_total_spend,
+            'parent_pending_payment_count': parent_pending_payment_count,
+            'parent_attendance_rate': parent_attendance_rate,
+            'parent_next_actions': parent_next_actions,
+            'parent_demo_sla_risk_ids': parent_demo_sla_risk_ids,
+            'parent_demo_sla_risk_count': len(parent_demo_sla_risk_ids),
+            'activity_timeline': activity_timeline,
+            'template_name': 'dashboard/role_parent.jinja',
+        }
+
+    if role == 'CITY_ADMIN':
+        scoped_users = User.objects.filter(state=user.state) if user.state else User.objects.none()
+        city_tutor_qs = (
+            TutorProfile.objects.filter(user__state=user.state)
+            if user.state
+            else TutorProfile.objects.none()
+        )
+        city_tutors = city_tutor_qs.count()
+        pending_verification = city_tutor_qs.filter(
+            verification_status=TutorProfile.VerificationStatus.PENDING
+        ).count()
+        pending_disputes_qs = (
+            EngagementDispute.objects.filter(
+                status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW],
+                engagement__student__state=user.state,
+            )
+            if user.state
+            else EngagementDispute.objects.none()
+        )
+        pending_disputes = pending_disputes_qs.count()
+        pending_withdrawals = (
+            WithdrawalRequest.objects.filter(status='PENDING', user__state=user.state).count()
+            if user.state
+            else 0
+        )
+        city_demo_qs = (
+            DemoRequest.objects.filter(requester__state=user.state)
+            if user.state
+            else DemoRequest.objects.all()
+        )
+        city_total_demos = city_demo_qs.count()
+        city_accepted_demos = city_demo_qs.filter(status=DemoRequest.Status.ACCEPTED).count()
+        city_active_engagements = (
+            TutorEngagement.objects.filter(student__state=user.state, status=TutorEngagement.Status.ACTIVE).count()
+            if user.state
+            else TutorEngagement.objects.filter(status=TutorEngagement.Status.ACTIVE).count()
+        )
+        city_paid_orders = (
+            MarketplaceOrder.objects.filter(engagement__student__state=user.state, status=MarketplaceOrder.Status.SUCCESS)
+            if user.state
+            else MarketplaceOrder.objects.filter(status=MarketplaceOrder.Status.SUCCESS)
+        )
+        city_gmv_30d = city_paid_orders.filter(paid_at__gte=now - timedelta(days=30)).aggregate(total=Sum('amount_gross'))['total'] or 0
+        city_accepted_rate = round((city_accepted_demos / city_total_demos) * 100, 1) if city_total_demos else 0
+        city_active_rate = round((city_active_engagements / city_accepted_demos) * 100, 1) if city_accepted_demos else 0
+        city_paid_rate = round((city_paid_orders.count() / city_active_engagements) * 100, 1) if city_active_engagements else 0
+        latest_pending_tutors = city_tutor_qs.filter(
+            verification_status=TutorProfile.VerificationStatus.PENDING
+        ).order_by('-updated_at')[:8]
+        latest_disputes = pending_disputes_qs.select_related(
+            'engagement__student', 'engagement__tutor_profile'
+        ).order_by('-updated_at')[:8]
+        city_verification_sla_risk_ids = [
+            t.pk for t in latest_pending_tutors if (now - t.updated_at).total_seconds() > (48 * 3600)
+        ]
+        city_dispute_sla_risk_ids = [
+            d.pk for d in latest_disputes if (now - d.updated_at).total_seconds() > (24 * 3600)
+        ]
+        city_next_actions = []
+        if city_verification_sla_risk_ids:
+            city_next_actions.append('Clear aged tutor verification queue to protect onboarding SLA.')
+        if city_dispute_sla_risk_ids:
+            city_next_actions.append('Resolve stale disputes first to reduce trust risk in city operations.')
+        if city_paid_rate < 50 and city_total_demos >= 5:
+            city_next_actions.append('Investigate low paid-rate: review engagement follow-through and payment friction.')
+        if not city_next_actions:
+            city_next_actions.append('City health looks stable. Continue daily queue hygiene and weekly funnel audits.')
+        activity_timeline = []
+        for t in latest_pending_tutors[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Verification pending: {t.display_name}',
+                    'meta': t.updated_at,
+                }
+            )
+        for d in latest_disputes[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Dispute {d.get_status_display()} for {d.engagement.tutor_profile.display_name}',
+                    'meta': d.updated_at,
+                }
+            )
+        activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:8]
+        return {
+            'kpi_cards': [
+                {'label': 'Users in scope', 'value': scoped_users.count()},
+                {'label': 'Tutor verifications pending', 'value': pending_verification},
+                {'label': 'Live dispute queue', 'value': pending_disputes},
+                {'label': 'Pending withdrawals', 'value': pending_withdrawals},
+            ],
+            'scoped_users_count': scoped_users.count(),
+            'city_tutors_count': city_tutors,
+            'pending_verification': pending_verification,
+            'pending_disputes': pending_disputes,
+            'pending_withdrawals': pending_withdrawals,
+            'city_total_demos': city_total_demos,
+            'city_accepted_demos': city_accepted_demos,
+            'city_active_engagements': city_active_engagements,
+            'city_paid_count': city_paid_orders.count(),
+            'city_gmv_30d': city_gmv_30d,
+            'city_accepted_rate': city_accepted_rate,
+            'city_active_rate': city_active_rate,
+            'city_paid_rate': city_paid_rate,
+            'city_next_actions': city_next_actions,
+            'latest_pending_tutors': latest_pending_tutors,
+            'latest_disputes': latest_disputes,
+            'city_verification_sla_risk_ids': city_verification_sla_risk_ids,
+            'city_dispute_sla_risk_ids': city_dispute_sla_risk_ids,
+            'city_sla_risk_count': len(city_verification_sla_risk_ids) + len(city_dispute_sla_risk_ids),
+            'activity_timeline': activity_timeline,
+            'template_name': 'dashboard/role_city_admin.jinja',
+        }
+
+    if role == 'GLOBAL_ADMIN':
+        total_users = User.objects.count()
+        total_tutors = TutorProfile.objects.count()
+        pending_verification = TutorProfile.objects.filter(
+            verification_status=TutorProfile.VerificationStatus.PENDING
+        ).count()
+        live_disputes = EngagementDispute.objects.filter(
+            status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW]
+        ).count()
+        open_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').count()
+        global_total_demos = DemoRequest.objects.count()
+        global_accepted_demos = DemoRequest.objects.filter(status=DemoRequest.Status.ACCEPTED).count()
+        global_active_engagements = TutorEngagement.objects.filter(status=TutorEngagement.Status.ACTIVE).count()
+        global_paid_orders_qs = MarketplaceOrder.objects.filter(status=MarketplaceOrder.Status.SUCCESS)
+        global_paid_count = global_paid_orders_qs.count()
+        global_gmv_30d = global_paid_orders_qs.filter(paid_at__gte=now - timedelta(days=30)).aggregate(total=Sum('amount_gross'))['total'] or 0
+        global_platform_rev_30d = global_paid_orders_qs.filter(paid_at__gte=now - timedelta(days=30)).aggregate(total=Sum('platform_fee_amount'))['total'] or 0
+        global_accepted_rate = round((global_accepted_demos / global_total_demos) * 100, 1) if global_total_demos else 0
+        global_active_rate = round((global_active_engagements / global_accepted_demos) * 100, 1) if global_accepted_demos else 0
+        global_paid_rate = round((global_paid_count / global_active_engagements) * 100, 1) if global_active_engagements else 0
+        latest_pending_tutors = TutorProfile.objects.filter(
+            verification_status=TutorProfile.VerificationStatus.PENDING
+        ).order_by('-updated_at')[:10]
+        latest_disputes = EngagementDispute.objects.filter(
+            status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW]
+        ).select_related('engagement__student', 'engagement__tutor_profile').order_by('-updated_at')[:10]
+        latest_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').select_related('user').order_by('-requested_at')[:10]
+        global_verification_sla_risk_ids = [
+            t.pk for t in latest_pending_tutors if (now - t.updated_at).total_seconds() > (48 * 3600)
+        ]
+        global_dispute_sla_risk_ids = [
+            d.pk for d in latest_disputes if (now - d.updated_at).total_seconds() > (24 * 3600)
+        ]
+        global_withdrawal_sla_risk_ids = [
+            w.pk for w in latest_withdrawals if (now - w.requested_at).total_seconds() > (24 * 3600)
+        ]
+        global_next_actions = []
+        if global_accepted_rate < 40 and global_total_demos >= 10:
+            global_next_actions.append('Improve top-of-funnel acceptance by reviewing tutor response speed and profile quality.')
+        if global_paid_rate < 50 and global_active_engagements >= 10:
+            global_next_actions.append('Prioritize payment conversion improvements for active engagements.')
+        if global_sla_risk_ids := (
+            len(global_verification_sla_risk_ids)
+            + len(global_dispute_sla_risk_ids)
+            + len(global_withdrawal_sla_risk_ids)
+        ):
+            global_next_actions.append(f'Address {global_sla_risk_ids} SLA-risk governance items immediately.')
+        if not global_next_actions:
+            global_next_actions.append('Global metrics are stable. Continue monitoring weekly cohort and revenue trends.')
+        activity_timeline = []
+        for t in latest_pending_tutors[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Pending verification: {t.display_name} ({t.city})',
+                    'meta': t.updated_at,
+                }
+            )
+        for d in latest_disputes[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Dispute {d.get_status_display()} in engagement {d.engagement_id}',
+                    'meta': d.updated_at,
+                }
+            )
+        for w in latest_withdrawals[:5]:
+            activity_timeline.append(
+                {
+                    'title': f'Withdrawal pending for {w.user.get_username()} (₹{w.amount})',
+                    'meta': w.requested_at,
+                }
+            )
+        activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:10]
+        return {
+            'kpi_cards': [
+                {'label': 'Total users', 'value': total_users},
+                {'label': 'Tutor supply', 'value': total_tutors},
+                {'label': 'Pending verification', 'value': pending_verification},
+                {'label': 'Live disputes', 'value': live_disputes},
+            ],
+            'total_users_count': total_users,
+            'total_tutors_count': total_tutors,
+            'pending_verification': pending_verification,
+            'live_disputes': live_disputes,
+            'open_withdrawals': open_withdrawals,
+            'global_total_demos': global_total_demos,
+            'global_accepted_demos': global_accepted_demos,
+            'global_active_engagements': global_active_engagements,
+            'global_paid_count': global_paid_count,
+            'global_gmv_30d': global_gmv_30d,
+            'global_platform_rev_30d': global_platform_rev_30d,
+            'global_accepted_rate': global_accepted_rate,
+            'global_active_rate': global_active_rate,
+            'global_paid_rate': global_paid_rate,
+            'global_next_actions': global_next_actions,
+            'latest_pending_tutors': latest_pending_tutors,
+            'latest_disputes': latest_disputes,
+            'latest_withdrawals': latest_withdrawals,
+            'global_verification_sla_risk_ids': global_verification_sla_risk_ids,
+            'global_dispute_sla_risk_ids': global_dispute_sla_risk_ids,
+            'global_withdrawal_sla_risk_ids': global_withdrawal_sla_risk_ids,
+            'global_sla_risk_count': (
+                len(global_verification_sla_risk_ids)
+                + len(global_dispute_sla_risk_ids)
+                + len(global_withdrawal_sla_risk_ids)
+            ),
+            'activity_timeline': activity_timeline,
+            'template_name': 'dashboard/role_global_admin.jinja',
+        }
+
+    return {'template_name': 'dashboard/index.jinja'}
 
 
 def _staff_only(request):
@@ -36,6 +549,7 @@ def _staff_only(request):
 @login_required
 def index(request):
     role = getattr(request.user, 'role', 'STUDENT')
+    now = timezone.now()
     role_intro_map = {
         'TUTOR': "Manage your tutor listing, handle demo requests, and grow student enrollments.",
         'PARENT': "Find trusted tutors, track demos, and support your child with guided prep.",
@@ -134,7 +648,20 @@ def index(request):
             'pending_withdrawals_count': pending_withdrawals_count,
         })
 
-    # Normal User Dashboard
+    # Role-dedicated dashboards for non-staff roles.
+    if role in ['TUTOR', 'PARENT', 'CITY_ADMIN', 'GLOBAL_ADMIN']:
+        role_ctx = _role_dashboard_context(request)
+        return render(
+            request,
+            role_ctx['template_name'],
+            {
+                'user': request.user,
+                'user_role': role,
+                **role_ctx,
+            },
+        )
+
+    # Student dashboard (learning + marketplace)
     latest_attempt = UserAttempt.objects.filter(
         user=request.user
     ).order_by('-attempt_date').first()
@@ -205,12 +732,16 @@ def index(request):
     weak_areas = latest_attempt.weak_concepts if latest_attempt else []
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
+    recent_notifications = Notification.objects.filter(user=request.user).order_by('-created_at')[:6]
 
     user_certificates = request.user.certificates.select_related('skill').order_by('-issued_at')
 
     xp_rank_india = User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
 
-    from hometutor.models import DemoRequest, TutorProfile
+    from hometutor.models import DemoRequest, TutorProfile, TutorEngagement
+    from hometutor.services import attach_demo_status_to_cards, public_tutor_queryset, tutor_to_card_dict
+    from hometutor_payments.models import MarketplaceOrder
+    from core.hometutor_data import PILOT_CITY
 
     hometutor_tutor_profile = TutorProfile.objects.filter(user=request.user).first()
     hometutor_pending_incoming = (
@@ -225,6 +756,100 @@ def index(request):
         requester=request.user,
         status=DemoRequest.Status.PENDING,
     ).count()
+    parent_gate_param = request.GET.get('parent_gate')
+    if parent_gate_param in {'0', '1'}:
+        request.session['student_parent_gate_enabled'] = parent_gate_param == '1'
+    parent_gate_enabled = bool(request.session.get('student_parent_gate_enabled', False))
+
+    student_demo_qs = DemoRequest.objects.filter(requester=request.user).select_related('tutor').order_by('-created_at')
+    student_recent_demos = student_demo_qs[:6]
+    student_demo_pending = student_demo_qs.filter(status=DemoRequest.Status.PENDING).count()
+    student_demo_accepted = student_demo_qs.filter(status=DemoRequest.Status.ACCEPTED).count()
+    student_demo_declined = student_demo_qs.filter(status=DemoRequest.Status.DECLINED).count()
+
+    student_engagements = TutorEngagement.objects.filter(student=request.user).select_related('tutor_profile').order_by('-updated_at')
+    student_active_engagements = student_engagements.filter(status=TutorEngagement.Status.ACTIVE).count()
+    student_recent_engagements = student_engagements[:5]
+    student_paid_engagement_ids = set(
+        MarketplaceOrder.objects.filter(
+            payer=request.user,
+            status=MarketplaceOrder.Status.SUCCESS,
+            engagement__student=request.user,
+        ).values_list('engagement_id', flat=True)
+    )
+    student_paid_count = len(student_paid_engagement_ids)
+    student_parent_approval_pending = student_demo_pending + max(0, student_active_engagements - student_paid_count)
+
+    student_pending_demo_sla_risk_count = DemoRequest.objects.filter(
+        requester=request.user,
+        status=DemoRequest.Status.PENDING,
+        created_at__lt=now - timedelta(hours=24),
+    ).count()
+    student_preview_mode = False
+    if student_demo_qs.count() == 0 and student_engagements.count() == 0:
+        preview_user = CustomUser.objects.filter(username='demo_student').first()
+        if preview_user:
+            student_preview_mode = True
+            student_demo_qs = DemoRequest.objects.filter(requester=preview_user).select_related('tutor').order_by('-created_at')
+            student_recent_demos = student_demo_qs[:6]
+            student_demo_pending = student_demo_qs.filter(status=DemoRequest.Status.PENDING).count()
+            student_demo_accepted = student_demo_qs.filter(status=DemoRequest.Status.ACCEPTED).count()
+            student_demo_declined = student_demo_qs.filter(status=DemoRequest.Status.DECLINED).count()
+            student_engagements = TutorEngagement.objects.filter(student=preview_user).select_related('tutor_profile').order_by('-updated_at')
+            student_active_engagements = student_engagements.filter(status=TutorEngagement.Status.ACTIVE).count()
+            student_recent_engagements = student_engagements[:5]
+            student_paid_engagement_ids = set(
+                MarketplaceOrder.objects.filter(
+                    payer=preview_user,
+                    status=MarketplaceOrder.Status.SUCCESS,
+                    engagement__student=preview_user,
+                ).values_list('engagement_id', flat=True)
+            )
+            student_paid_count = len(student_paid_engagement_ids)
+            student_parent_approval_pending = student_demo_pending + max(0, student_active_engagements - student_paid_count)
+            student_pending_demo_sla_risk_count = DemoRequest.objects.filter(
+                requester=preview_user,
+                status=DemoRequest.Status.PENDING,
+                created_at__lt=now - timedelta(hours=24),
+            ).count()
+    quick_tutor_cards = [tutor_to_card_dict(t, PILOT_CITY) for t in public_tutor_queryset({'city': PILOT_CITY})[:6]]
+    quick_tutor_cards = attach_demo_status_to_cards(quick_tutor_cards, request.user)
+    weak_topic_tutor_cards = []
+    weak_terms = []
+    if isinstance(weak_areas, list):
+        weak_terms = [str(x).strip() for x in weak_areas if str(x).strip()][:3]
+    elif isinstance(weak_areas, str) and weak_areas.strip():
+        weak_terms = [weak_areas.strip()]
+    for term in weak_terms:
+        qs = TutorProfile.objects.filter(
+            verification_status=TutorProfile.VerificationStatus.APPROVED,
+            subjects__icontains=term,
+        ).order_by('-rating_display', 'display_name')[:2]
+        for t in qs:
+            weak_topic_tutor_cards.append(tutor_to_card_dict(t, PILOT_CITY))
+    # Deduplicate by slug and keep first 4 recommendations.
+    dedup = {}
+    for c in weak_topic_tutor_cards:
+        if c['slug'] not in dedup:
+            dedup[c['slug']] = c
+    weak_topic_tutor_cards = attach_demo_status_to_cards(list(dedup.values())[:4], request.user)
+
+    student_activity = []
+    for note in recent_notifications:
+        student_activity.append(
+            {
+                'title': note.message,
+                'meta': note.created_at,
+            }
+        )
+    if latest_attempt:
+        student_activity.append(
+            {
+                'title': f'Latest test score: {latest_attempt.score}% in {latest_attempt.skill.name}',
+                'meta': latest_attempt.attempt_date,
+            }
+        )
+    student_activity = sorted(student_activity, key=lambda x: x['meta'], reverse=True)[:8]
 
     role_stat_cards = [
         {'label': 'Total Credits', 'value': f'₹{int(request.user.wallet_balance)}'},
@@ -249,6 +874,23 @@ def index(request):
         'hometutor_tutor_profile': hometutor_tutor_profile,
         'hometutor_pending_incoming': hometutor_pending_incoming,
         'hometutor_my_pending_sent': hometutor_my_pending_sent,
+        'student_recent_demos': student_recent_demos,
+        'student_demo_pending': student_demo_pending,
+        'student_demo_accepted': student_demo_accepted,
+        'student_demo_declined': student_demo_declined,
+        'student_active_engagements': student_active_engagements,
+        'student_recent_engagements': student_recent_engagements,
+        'student_paid_engagement_ids': student_paid_engagement_ids,
+        'student_paid_count': student_paid_count,
+        'parent_gate_enabled': parent_gate_enabled,
+        'student_preview_mode': student_preview_mode,
+        'student_parent_approval_pending': student_parent_approval_pending,
+        'student_pending_demo_sla_risk_count': student_pending_demo_sla_risk_count,
+        'hometutor_pilot_city': PILOT_CITY,
+        'quick_tutor_cards': quick_tutor_cards,
+        'weak_terms': weak_terms,
+        'weak_topic_tutor_cards': weak_topic_tutor_cards,
+        'student_activity': student_activity,
         'role_stat_cards': role_stat_cards,
         'total_earned': total_earned,
         'weak_areas': weak_areas,
@@ -534,15 +1176,151 @@ def cms_video_edit(request, pk=None):
     if not _staff_only(request):
         return redirect("dashboard:index")
     obj = ConceptVideo.objects.filter(pk=pk).first() if pk else None
+    import_errors = []
+    import_count = 0
+
     if request.method == "POST":
-        form = ConceptVideoForm(request.POST, request.FILES, instance=obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Saved video.")
-            return redirect("dashboard:cms_videos")
+        action = request.POST.get("action", "save_video")
+        if action == "import_questions":
+            if not obj:
+                messages.error(request, "Save the video first, then import questions.")
+                return redirect("dashboard:cms_video_new")
+
+            import_form = VideoQuestionImportForm(request.POST, request.FILES)
+            form = ConceptVideoForm(instance=obj)
+            if import_form.is_valid():
+                default_skill = import_form.cleaned_data["skill"] or obj.skill
+                concept_tag_fallback = (
+                    (import_form.cleaned_data.get("concept_tag") or "").strip()
+                    or (obj.concept_tag or "").strip()
+                )
+                f = import_form.cleaned_data.get("csv_file")
+                csv_text = (import_form.cleaned_data.get("csv_text") or "").strip()
+                try:
+                    if f:
+                        content = f.read().decode("utf-8-sig")
+                    else:
+                        content = csv_text
+                    reader = csv.DictReader(io.StringIO(content))
+                    required = {
+                        "text",
+                        "option_a",
+                        "option_b",
+                        "option_c",
+                        "option_d",
+                        "correct_option",
+                        "difficulty",
+                        "explanation",
+                    }
+                    if not set(reader.fieldnames or []).issuperset(required):
+                        missing = sorted(list(required - set(reader.fieldnames or [])))
+                        import_errors.append("Missing columns: " + ", ".join(missing))
+                    else:
+                        skill_name_present = "skill_name" in set(reader.fieldnames or [])
+                        with transaction.atomic():
+                            for idx, row in enumerate(reader, start=2):
+                                co = (row.get("correct_option") or "").strip().upper()
+                                if co not in ("A", "B", "C", "D"):
+                                    import_errors.append(f"Row {idx}: invalid correct_option")
+                                    continue
+                                diff = (row.get("difficulty") or "EASY").strip().upper()
+                                if diff not in ("EASY", "MEDIUM", "HARD"):
+                                    diff = "EASY"
+
+                                skill = default_skill
+                                if skill_name_present:
+                                    skill_name = (row.get("skill_name") or "").strip()
+                                    if skill_name:
+                                        skill = Skill.objects.filter(name__iexact=skill_name).first()
+                                if not skill:
+                                    import_errors.append(
+                                        f"Row {idx}: skill missing. Set form skill or include valid skill_name."
+                                    )
+                                    continue
+
+                                concept_tag = (
+                                    (row.get("concept_tag") or "").strip()[:50]
+                                    or concept_tag_fallback[:50]
+                                )
+                                if not concept_tag:
+                                    import_errors.append(
+                                        f"Row {idx}: concept_tag missing. Set form topic or include row concept_tag."
+                                    )
+                                    continue
+                                question_text = (row.get("text") or "").strip()
+                                defaults = {
+                                    "source_video": obj,
+                                    "is_video_import": True,
+                                    "concept_tag": concept_tag,
+                                    "explanation": (row.get("explanation") or "").strip(),
+                                    "difficulty": diff,
+                                    "option_a": (row.get("option_a") or "").strip()[:200],
+                                    "option_b": (row.get("option_b") or "").strip()[:200],
+                                    "option_c": (row.get("option_c") or "").strip()[:200],
+                                    "option_d": (row.get("option_d") or "").strip()[:200],
+                                    "correct_option": co,
+                                }
+                                Question.objects.update_or_create(
+                                    skill=skill,
+                                    text=question_text,
+                                    defaults=defaults,
+                                )
+                                import_count += 1
+                        if import_count:
+                            if default_skill:
+                                default_skill.partition_questions()
+                            if skill_name_present:
+                                for sname in {
+                                    (row.get("skill_name") or "").strip()
+                                    for row in csv.DictReader(io.StringIO(content))
+                                    if (row.get("skill_name") or "").strip()
+                                }:
+                                    s = Skill.objects.filter(name__iexact=sname).first()
+                                    if s:
+                                        s.partition_questions()
+                            messages.success(
+                                request,
+                                f"Imported {import_count} question(s) successfully.",
+                            )
+                except Exception as exc:
+                    import_errors.append(str(exc))
+            else:
+                import_errors.extend(
+                    [f"{k}: {', '.join(v)}" for k, v in import_form.errors.items()]
+                )
+                import_errors.extend(import_form.non_field_errors())
+        else:
+            form = ConceptVideoForm(request.POST, request.FILES, instance=obj)
+            import_form = VideoQuestionImportForm(
+                initial={
+                    "skill": obj.skill if obj else None,
+                    "concept_tag": obj.concept_tag if obj else "",
+                }
+            )
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Saved video.")
+                return redirect("dashboard:cms_video_edit", pk=form.instance.pk)
     else:
         form = ConceptVideoForm(instance=obj)
-    return render(request, "dashboard/cms_form.jinja", {"form": form, "title": "Video"})
+        import_form = VideoQuestionImportForm(
+            initial={
+                "skill": obj.skill if obj else None,
+                "concept_tag": obj.concept_tag if obj else "",
+            }
+        )
+    return render(
+        request,
+        "dashboard/cms_video_form.jinja",
+        {
+            "form": form,
+            "import_form": import_form,
+            "title": "Video",
+            "video_obj": obj,
+            "import_errors": import_errors,
+            "import_count": import_count,
+        },
+    )
 
 
 @login_required

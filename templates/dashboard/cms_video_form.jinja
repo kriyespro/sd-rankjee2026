@@ -1,0 +1,99 @@
+{% extends "base.jinja" %}
+{% block title %}{{ title }} - CMS{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10 space-y-8">
+  <div class="flex items-center justify-between">
+    <h1 class="text-3xl font-black text-slate-900">{{ title }}</h1>
+    <a href="{{ url('dashboard:cms_home') }}" class="text-sm font-bold text-indigo-600 hover:underline">← CMS</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="save_video">
+    <h2 class="text-lg font-black text-slate-900">1) Upload / Edit Video</h2>
+    <div class="grid grid-cols-1 gap-4">
+      {% for field in form %}
+      <div class="space-y-1.5">
+        <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-slate-700">
+          {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+        </label>
+        {{ field }}
+        {% if field.help_text %}
+          <div class="text-sm text-slate-600">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+          <div class="text-xs font-bold text-rose-600">
+            {% for e in field.errors %}<div>{{ e }}</div>{% endfor %}
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="w-full bg-slate-900 text-white font-black text-sm uppercase tracking-widest py-3 rounded-xl hover:bg-indigo-600">
+      Save Video
+    </button>
+  </form>
+
+  <div class="bg-white border border-slate-200 rounded-2xl p-6 space-y-5">
+    <h2 class="text-lg font-black text-slate-900">2) Import Questions for this Topic</h2>
+    {% if not video_obj %}
+      <p class="text-sm text-slate-600">
+        Save the video first, then you can import topic questions by CSV here.
+      </p>
+    {% else %}
+      <p class="text-sm text-slate-600">
+        Topic: <span class="font-bold text-slate-900">{{ video_obj.concept_tag }}</span>
+        {% if video_obj.skill %}
+          · Skill: <span class="font-bold text-slate-900">{{ video_obj.skill.name }}</span>
+        {% endif %}
+      </p>
+
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <p class="font-black text-slate-900 mb-2">CSV required columns</p>
+        <p><code>text, option_a, option_b, option_c, option_d, correct_option, difficulty, explanation</code></p>
+        <p class="mt-2 text-xs">Optional columns: <code>skill_name</code>, <code>concept_tag</code>.</p>
+        <p class="mt-1 text-xs">If <code>skill_name</code> is omitted, selected form skill is used. If <code>concept_tag</code> is omitted, form topic is used.</p>
+      </div>
+
+      {% if import_errors %}
+      <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
+        {% for e in import_errors %}<div>{{ e }}</div>{% endfor %}
+      </div>
+      {% endif %}
+
+      {% if import_count %}
+      <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+        Imported {{ import_count }} question(s).
+      </div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" class="space-y-4">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="import_questions">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-black uppercase tracking-widest text-slate-700">{{ import_form.skill.label }}</label>
+            {{ import_form.skill }}
+          </div>
+          <div class="space-y-1.5">
+            <label class="block text-xs font-black uppercase tracking-widest text-slate-700">{{ import_form.concept_tag.label }}</label>
+            {{ import_form.concept_tag }}
+          </div>
+        </div>
+        <div class="space-y-1.5">
+          <label class="block text-xs font-black uppercase tracking-widest text-slate-700">{{ import_form.csv_file.label }}</label>
+          {{ import_form.csv_file }}
+        </div>
+        <div class="space-y-1.5">
+          <label class="block text-xs font-black uppercase tracking-widest text-slate-700">Paste CSV (clipboard import)</label>
+          {{ import_form.csv_text }}
+          <p class="text-xs text-slate-500">You can upload file or paste rows directly. Either one works.</p>
+        </div>
+        <button type="submit" class="w-full bg-indigo-600 text-white font-black text-sm uppercase tracking-widest py-3 rounded-xl hover:bg-indigo-500">
+          Import Questions CSV
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+# RankTutor Role Flows - Master Index
+
+This file maps all detailed role journeys for dashboard and core actions.
+No code. Planning only.
+
+## Role Flow Documents
+
+1. `student_flow.txt`
+   - Full student journey: discovery -> booking -> learning -> retention
+
+2. `parent_flow.txt`
+   - Child setup -> booking approvals -> spend control -> progress oversight
+
+3. `tutor_flow.txt`
+   - Onboarding -> lead handling -> class delivery -> payouts -> growth
+
+4. `city_admin_flow.txt`
+   - Tutor verification -> local operations -> disputes -> city growth
+
+5. `global_admin_flow.txt`
+   - Platform governance -> revenue optimization -> risk control -> scaling
+
+## Shared Planning Principles
+
+1. Every role dashboard begins with:
+   - KPI cards
+   - Priority action queue
+   - Activity feed
+   - Revenue/retention CTA
+
+2. Every flow includes:
+   - Entry trigger
+   - Main steps
+   - Decision points
+   - Failure/recovery paths
+   - Success metrics
+
+3. Revenue-first execution order:
+   - Student + Tutor flows first
+   - Parent controls second
+   - Admin operations and optimization third

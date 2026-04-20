@@ -22,9 +22,9 @@
         <div class="bg-white rounded-xl shadow hover:shadow-md transition p-5">
             <span class="text-xs font-semibold bg-indigo-100 text-indigo-700 px-2 py-1 rounded uppercase">{{ video.concept_tag }}</span>
             <h3 class="text-lg font-bold mt-3 mb-2">{{ video.title }}</h3>
-            <div class="relative w-full overflow-hidden rounded-lg group" style="padding-top: 56.25%" x-data="{ playing: false }">
+            <div class="relative w-full overflow-hidden rounded-lg group video-player" style="padding-top: 56.25%" data-embed-url="{{ video.get_embed_url() }}">
                 <!-- Thumbnail Layer -->
-                <div x-show="!playing" class="absolute inset-0 cursor-pointer" @click="playing = true">
+                <button type="button" class="absolute inset-0 cursor-pointer video-poster text-left w-full" aria-label="Play {{ video.title }}">
                     <img src="{{ video.get_thumbnail_url() }}" 
                          alt="{{ video.title }}" 
                          class="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
@@ -40,22 +40,23 @@
                             </svg>
                         </div>
                     </div>
-                </div>
+                </button>
 
                 <!-- Video Layer -->
-                <template x-if="playing">
-                    <iframe
-                        class="absolute inset-0 w-full h-full rounded-lg"
-                        src="{{ video.get_embed_url() }}"
-                        title="{{ video.title }}"
-                        frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen>
-                    </iframe>
-                </template>
+                <iframe
+                    class="absolute inset-0 w-full h-full rounded-lg hidden video-iframe"
+                    src=""
+                    data-loaded="0"
+                    title="{{ video.title }}"
+                    frameborder="0"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen>
+                </iframe>
             </div>
             <div class="flex justify-between items-center mt-3">
                 <p class="text-gray-400 text-xs">~{{ video.duration_seconds // 60 }} min</p>
+                <a href="{{ video.video_url }}" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-indigo-700 hover:underline">Open on YouTube</a>
             </div>
             {% if video.text_summary %}
             <details class="mt-4 bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -64,7 +65,7 @@
             </details>
             {% endif %}
             {% if video.skill %}
-            <a href="{{ url('assessment:take_test', video.skill.id) }}" class="mt-4 block text-center bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 hover:shadow-lg transition-all">
+            <a href="{{ url('assessment:take_test', video.skill.id) }}?concept={{ video.concept_tag|urlencode }}&video_id={{ video.id }}" class="mt-4 block text-center bg-indigo-600 text-white py-2.5 rounded-lg font-bold hover:bg-indigo-700 hover:shadow-lg transition-all">
                 Retest &rarr;
             </a>
             {% endif %}
@@ -78,4 +79,23 @@
     </div>
     {% endif %}
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.video-player').forEach(function (root) {
+        const poster = root.querySelector('.video-poster');
+        const iframe = root.querySelector('.video-iframe');
+        if (!poster || !iframe) return;
+        poster.addEventListener('click', function () {
+            const embedUrl = root.dataset.embedUrl || '';
+            if (!embedUrl) return;
+            if (iframe.dataset.loaded !== '1') {
+                iframe.src = embedUrl;
+                iframe.dataset.loaded = '1';
+            }
+            poster.classList.add('hidden');
+            iframe.classList.remove('hidden');
+        });
+    });
+});
+</script>
 {% endblock %}

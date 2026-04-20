@@ -70,6 +70,36 @@ class ConceptVideoForm(_StyledModelForm):
         )
 
 
+class VideoQuestionImportForm(forms.Form):
+    skill = forms.ModelChoiceField(queryset=Skill.objects.filter(is_active=True).order_by("name"), required=False)
+    concept_tag = forms.CharField(max_length=50, required=False)
+    csv_file = forms.FileField(required=False)
+    csv_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 10,
+                "placeholder": "Paste CSV rows here...",
+            }
+        ),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["skill"].widget.attrs.setdefault("class", BASE_SELECT_CLASS)
+        self.fields["concept_tag"].widget.attrs.setdefault("class", BASE_INPUT_CLASS)
+        self.fields["csv_file"].widget.attrs.setdefault("class", BASE_INPUT_CLASS)
+        self.fields["csv_text"].widget.attrs.setdefault("class", BASE_TEXTAREA_CLASS)
+
+    def clean(self):
+        cleaned = super().clean()
+        csv_file = cleaned.get("csv_file")
+        csv_text = (cleaned.get("csv_text") or "").strip()
+        if not csv_file and not csv_text:
+            raise forms.ValidationError("Provide either a CSV file upload or pasted CSV text.")
+        return cleaned
+
+
 class EarningTaskForm(_StyledModelForm):
     class Meta:
         model = EarningTask

@@ -1,0 +1,123 @@
+# City Admin Flow (Deep Planning)
+
+Goal: maintain city-level tutor quality, operational efficiency, and local revenue growth.
+
+------------------------------------------------------------
+1) FLOW A: TUTOR APPLICATION TRIAGE
+------------------------------------------------------------
+
+Trigger:
+- New tutor applications submitted in city scope.
+
+Steps:
+1. Queue sorting
+   - by age, priority, subject demand, risk flags
+2. Document verification
+   - KYC, qualification, address, background checks
+3. Decisioning
+   - approve / reject / request more info
+4. Audit trail
+   - reason logs and operator identity
+
+Decision points:
+- High-demand subject applicant -> fast-lane verification
+- Risk flag present -> mandatory manual review
+
+Success output:
+- Reliable tutor supply with controlled quality.
+
+------------------------------------------------------------
+2) FLOW B: CITY DEMAND-SUPPLY OPTIMIZATION
+------------------------------------------------------------
+
+Trigger:
+- Weekly city planning cycle.
+
+Steps:
+1. Demand analysis
+   - subject demand hotspots and time-slot demand spikes
+2. Supply analysis
+   - available tutors by locality and subject
+3. Gap identification
+   - shortage zones and over-supply segments
+4. Action planning
+   - targeted tutor recruitment or incentive campaigns
+
+Success output:
+- Better match rates and lower student wait times.
+
+------------------------------------------------------------
+3) FLOW C: COMPLAINTS + DISPUTE RESOLUTION
+------------------------------------------------------------
+
+Trigger:
+- Complaint raised by student/parent/tutor in city.
+
+Steps:
+1. Ticket intake and categorization
+   - quality, behavior, payment, scheduling
+2. Assignment
+   - owner and SLA deadline allocation
+3. Investigation
+   - evidence review, session logs, chat history
+4. Resolution
+   - refund, replacement tutor, warning, suspension
+5. Closure feedback
+   - resolution quality score
+
+Decision points:
+- Severe misconduct -> immediate temporary suspension
+- Repeated quality complaints -> tutor re-evaluation path
+
+Success output:
+- Faster issue closure and trust retention.
+
+------------------------------------------------------------
+4) FLOW D: CITY REVENUE AND PERFORMANCE GOVERNANCE
+------------------------------------------------------------
+
+Trigger:
+- Monthly operations review.
+
+Steps:
+1. Revenue and booking dashboard review
+2. Funnel review
+   - signup -> search -> booking -> repeat
+3. Team performance review
+   - verification SLA, dispute SLA, activation rates
+4. Corrective action creation
+   - process fixes and local campaigns
+
+Success output:
+- Sustainable city growth with better operational discipline.
+
+------------------------------------------------------------
+5) FLOW E: POLICY ENFORCEMENT
+------------------------------------------------------------
+
+Trigger:
+- New global policy updates or local compliance incidents.
+
+Steps:
+1. Policy dissemination to city team
+2. Process checklist updates
+3. Spot audits on approved tutors and transactions
+4. Exception reporting to global admin
+
+Success output:
+- Lower compliance risk and predictable governance quality.
+
+------------------------------------------------------------
+6) CITY ADMIN KPIs
+------------------------------------------------------------
+
+Primary:
+- Tutor verification turnaround time
+- City tutor activation rate
+- Complaint resolution SLA adherence
+- City booking growth %
+
+Secondary:
+- Repeat complaint rate
+- Approval rejection quality (accuracy proxy)
+- Local conversion improvements after interventions

@@ -1,0 +1,134 @@
+# Tutor Flow (Deep Planning)
+
+Goal: maximize tutor earnings, lead conversion, and teaching quality consistency.
+
+------------------------------------------------------------
+1) FLOW A: TUTOR ONBOARDING + VERIFICATION
+------------------------------------------------------------
+
+Trigger:
+- Tutor signs up and lands on onboarding dashboard.
+
+Steps:
+1. Identity and qualification profile
+   - subjects, classes, experience, certifications
+2. Teaching preferences
+   - mode, languages, preferred locations, fee range
+3. Verification upload
+   - KYC docs, degree proof, optional demo video
+4. Availability setup
+   - weekly slots, recurring availability templates
+
+Decision points:
+- Incomplete KYC -> visibility restricted in search
+- Missing fee or availability -> ranking penalty warning
+
+Success output:
+- Tutor profile verified and discoverable.
+
+------------------------------------------------------------
+2) FLOW B: LEAD INTAKE + RESPONSE
+------------------------------------------------------------
+
+Trigger:
+- Student inquiry/booking request arrives.
+
+Steps:
+1. Lead appears in tutor lead center
+   - student need summary + match score
+2. Tutor actions
+   - accept / decline / propose alternate slot
+3. Pre-booking conversation
+   - clarifications on syllabus and goals
+4. Confirmation
+   - trial or package booking
+
+Decision points:
+- If lead mismatch -> decline with reason
+- If schedule conflict -> propose 2-3 alternative slots
+
+Success output:
+- Faster response and higher lead-to-book conversion.
+
+------------------------------------------------------------
+3) FLOW C: CLASS DELIVERY OPERATIONS
+------------------------------------------------------------
+
+Trigger:
+- Booking confirmed for tutor.
+
+Steps:
+1. Pre-class prep
+   - session agenda, resources, objective
+2. Class execution
+   - attendance marking and session notes
+3. Post-class update
+   - homework/tasks, progress notes, parent note (if needed)
+4. Continuity CTA
+   - suggest next class or package upgrade
+
+Decision points:
+- Low student engagement -> recommend frequency change or support intervention
+- Repeated absences -> schedule re-optimization
+
+Success output:
+- High completion and repeat engagement.
+
+------------------------------------------------------------
+4) FLOW D: EARNINGS + PAYOUTS
+------------------------------------------------------------
+
+Trigger:
+- Tutor completes billable sessions.
+
+Steps:
+1. Earnings dashboard
+   - daily/weekly/monthly earnings and pending payouts
+2. Payout settings
+   - bank details, payout cycle preferences
+3. Transaction ledger
+   - session-wise credits, deductions, platform commission
+4. Raise payout issue
+   - payment support ticket with timeline
+
+Decision points:
+- If payout blocked -> compliance/KYC reminders
+- If earnings drop trend -> profile optimization suggestions
+
+Success output:
+- Predictable tutor income and confidence.
+
+------------------------------------------------------------
+5) FLOW E: TUTOR GROWTH ENGINE
+------------------------------------------------------------
+
+Trigger:
+- Tutor wants more bookings and better ranking.
+
+Steps:
+1. Profile optimization checklist
+   - add demo, update bio, improve response time
+2. Offer creation
+   - trial discount, package bundles
+3. Performance insights
+   - response SLA, conversion %, rating trend
+4. Reputation management
+   - resolve low ratings with improvement actions
+
+Success output:
+- Better visibility and sustained tutor revenue growth.
+
+------------------------------------------------------------
+6) TUTOR KPIs
+------------------------------------------------------------
+
+Primary:
+- Lead response time
+- Lead -> trial conversion %
+- Trial -> recurring conversion %
+- Monthly earnings per active tutor
+
+Secondary:
+- Session completion rate
+- Rating average and trend
+- Cancellation ratio

@@ -1,0 +1,141 @@
+# Global Admin Flow (Deep Planning)
+
+Goal: optimize platform-wide revenue, quality, compliance, and scalable operations.
+
+------------------------------------------------------------
+1) FLOW A: PLATFORM COMMAND REVIEW (DAILY)
+------------------------------------------------------------
+
+Trigger:
+- Daily executive review window.
+
+Steps:
+1. Unified KPI snapshot
+   - GMV, net revenue, active users, booking volume
+2. Health checks
+   - payment success, cancellation spikes, support backlog
+3. Incident detection
+   - anomaly alerts and red-flag segments
+4. Priority assignment
+   - operations, product, risk, growth owners
+
+Success output:
+- Platform risks identified early and addressed quickly.
+
+------------------------------------------------------------
+2) FLOW B: REVENUE FUNNEL OPTIMIZATION
+------------------------------------------------------------
+
+Trigger:
+- Weekly growth and monetization review.
+
+Steps:
+1. Funnel breakdown
+   - visitor -> signup -> profile complete -> booking -> repeat
+2. Segment analysis
+   - by city, subject, role, acquisition source
+3. Drop-off diagnosis
+   - identify highest leakage stages
+4. Intervention planning
+   - pricing tests, onboarding changes, recommendation tuning
+5. Impact tracking
+   - monitor pre/post intervention metrics
+
+Success output:
+- Higher conversion and better LTV.
+
+------------------------------------------------------------
+3) FLOW C: POLICY + RISK GOVERNANCE
+------------------------------------------------------------
+
+Trigger:
+- Fraud alert, abuse report, compliance event, or audit cycle.
+
+Steps:
+1. Risk queue review
+   - suspicious payment/tutor/account behavior
+2. Severity scoring
+   - low/medium/high/critical
+3. Action routing
+   - suspend, investigate, monitor, legal/compliance escalation
+4. Preventive policy update
+   - update rules, thresholds, and city admin guidance
+
+Success output:
+- Reduced platform abuse and financial risk exposure.
+
+------------------------------------------------------------
+4) FLOW D: CITY ADMIN PERFORMANCE MANAGEMENT
+------------------------------------------------------------
+
+Trigger:
+- Monthly city governance review.
+
+Steps:
+1. City scorecard comparison
+   - growth, SLA adherence, quality index, dispute rates
+2. Underperformer diagnostics
+   - root-cause by process and staffing
+3. Enablement plan
+   - playbooks, training, operating standards
+4. Accountability checkpoints
+   - milestone-based review and escalation path
+
+Success output:
+- Consistent standards across all cities.
+
+------------------------------------------------------------
+5) FLOW E: PLATFORM CONFIGURATION CONTROL
+------------------------------------------------------------
+
+Trigger:
+- Strategic pricing/policy/product configuration updates.
+
+Steps:
+1. Configure commission and fee rules
+2. Configure coupon and campaign guardrails
+3. Configure category/subject taxonomy changes
+4. Communicate changes to downstream stakeholders
+5. Monitor impact and rollback criteria
+
+Decision points:
+- If negative impact exceeds threshold -> rollback workflow
+- If region-specific outcome differs -> local override strategy
+
+Success output:
+- Controlled experimentation and safe scaling.
+
+------------------------------------------------------------
+6) FLOW F: EXECUTIVE REPORTING
+------------------------------------------------------------
+
+Trigger:
+- Monthly/quarterly business review.
+
+Steps:
+1. Financial summary
+   - revenue, take rate, cost centers
+2. Growth summary
+   - acquisition, retention, cohort movements
+3. Quality summary
+   - NPS, dispute trends, tutor quality indicators
+4. Strategic action list
+   - next quarter priorities
+
+Success output:
+- Data-backed strategic decisions for platform expansion.
+
+------------------------------------------------------------
+7) GLOBAL ADMIN KPIs
+------------------------------------------------------------
+
+Primary:
+- Net revenue growth %
+- LTV/CAC ratio
+- Repeat booking cohort retention
+- Platform take rate stability
+
+Secondary:
+- Policy violation incidence
+- Payment failure trend
+- City performance variance index

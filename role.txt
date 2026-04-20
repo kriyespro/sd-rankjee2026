@@ -1,0 +1,389 @@
+# RankTutor Role-Wise Dashboard Plan (Deep Planning, No Code)
+
+This document defines a deep, role-wise product plan for dedicated dashboards and workflows.
+Goal: each role gets a focused, revenue-oriented experience with clear actions and metrics.
+
+------------------------------------------------------------
+1) PRODUCT PRINCIPLES (APPLY TO ALL ROLES)
+------------------------------------------------------------
+
+1. Dashboard must answer:
+   - What should I do now?
+   - What is pending?
+   - What did I earn/save/learn this week?
+
+2. Every role page should include:
+   - Top KPIs (cards)
+   - Action center (urgent tasks)
+   - Timeline/feed (recent activity)
+   - Quick actions (1-click)
+
+3. Revenue-first priorities:
+   - Faster tutor discovery
+   - Higher booking conversion
+   - Better retention (repeat classes)
+   - Better trust (verification + reviews + response rates)
+
+4. Permission architecture:
+   - Strict role-based access (Student, Parent, Tutor, City Admin, Global Admin)
+   - Sensitive operations gated by verification and status checks
+
+------------------------------------------------------------
+2) ROLE: STUDENT (MOST IMPORTANT)
+------------------------------------------------------------
+
+A) Student dashboard objective
+- Help student find the right tutor quickly and book without friction.
+- Improve learning outcomes and repeat bookings.
+
+B) Student dashboard sections
+1. Header + quick state
+   - Profile completion %
+   - Learning goal (exam board, class, target score)
+   - Preferred mode (online/offline/home)
+
+2. KPI cards
+   - Upcoming classes
+   - Hours learned this week
+   - Practice streak
+   - Trial classes left / used
+   - Wallet balance
+
+3. "Book Tutor Now" primary module (top priority)
+   - Search by subject, class, board, exam, budget, language, mode, city
+   - Smart filters: rating, years experience, response time, verification badge
+   - Sort options: best match, highest rated, low fee, fastest available
+   - Suggested tutors based on prior behavior and weak topics
+
+4. Recommended tutors carousel/list
+   - Tutor card should show:
+     - Image, name, rating, reviews count
+     - Subjects + classes taught
+     - Fee/hr
+     - Next available slot
+     - Teaching mode (online/home/center)
+     - 3 key trust badges (verified, demo available, high repeat)
+   - Quick actions on card:
+     - View profile
+     - Book trial
+     - Message tutor
+     - Save tutor
+
+5. Upcoming classes + schedule
+   - Next class details
+   - Join link/location
+   - Reschedule / cancel (policy controlled)
+   - Add reminder
+
+6. Learning progress
+   - Subject-wise progress bars
+   - Recent test scores
+   - Weak chapter recommendations
+   - Assignment completion rate
+
+7. My bookings and payment status
+   - Pending requests
+   - Confirmed bookings
+   - Completed sessions
+   - Refund/failed payment alerts
+
+8. Student inbox/notifications
+   - New tutor responses
+   - Booking confirmations
+   - Payment receipts
+   - Class reminders
+
+C) Student tutor booking workflow (deep)
+1. Need capture
+   - Student selects subject, level, board, goal, availability, budget
+
+2. Matching
+   - System returns scored list (fit score + transparency labels)
+   - "Why this tutor?" text per recommendation
+
+3. Compare
+   - Student can compare up to 3 tutors side by side:
+     - fee, rating, experience, response time, available slots
+
+4. Tutor profile deep view
+   - Bio + teaching approach
+   - Experience and certificates
+   - Demo video/intro
+   - Reviews by similar students (same class/board)
+   - Availability calendar
+   - Course packages/offers
+
+5. Booking selection
+   - Trial class or full package
+   - Select slot + mode + duration
+   - Price breakdown (fee + platform + tax if any)
+   - Coupon/wallet apply
+
+6. Checkout
+   - Confirm details
+   - Payment
+   - Instant confirmation page + invoice + reminder setup
+
+7. Post-booking engagement
+   - Pre-class checklist
+   - After class: rating + feedback + rebook CTA
+   - "Continue with same tutor" one-click repeat booking
+
+D) Student advanced feature backlog
+- AI study planner by target exam date
+- Weakness to tutor match automation
+- Learning report shared to parent
+- Subscription plans (monthly class bundles)
+- Referral rewards for inviting peers
+
+E) Student dashboard success metrics
+- Search-to-book conversion %
+- Trial-to-paid conversion %
+- Repeat booking rate
+- 7-day and 30-day retention
+- Average order value (AOV)
+
+------------------------------------------------------------
+3) ROLE: PARENT
+------------------------------------------------------------
+
+A) Parent dashboard objective
+- Control and visibility of child learning + spending.
+
+B) Parent dashboard sections
+1. Child summary cards
+   - Upcoming classes per child
+   - Monthly spend
+   - Attendance %
+   - Progress score
+
+2. Tutor management
+   - Active tutors by child
+   - Communication center (parent <-> tutor)
+   - Replacement request if mismatch
+
+3. Booking approval center
+   - Pending booking approvals
+   - Budget caps and alerts
+
+4. Performance tracking
+   - Weekly progress digest
+   - Test trend chart
+   - Teacher comments
+
+5. Billing controls
+   - Wallet top-up
+   - Auto-pay toggle
+   - Download invoices
+   - Refund status
+
+C) Parent key flows
+- Add child profile
+- Set goal and budget
+- Approve/reject tutor booking
+- Review monthly learning + spending summary
+
+D) Parent metrics
+- Parent approval turnaround time
+- Parent NPS
+- Churn risk (inactive child accounts)
+
+------------------------------------------------------------
+4) ROLE: TUTOR
+------------------------------------------------------------
+
+A) Tutor dashboard objective
+- Maximize tutor earnings and booking fill-rate.
+
+B) Tutor dashboard sections
+1. Earnings snapshot
+   - Today/weekly/monthly earnings
+   - Pending payouts
+   - Conversion rate (inquiry -> booked)
+
+2. Lead/inquiry center
+   - New student requests
+   - Match score and urgency labels
+   - One-click accept/decline/propose slot
+
+3. Profile performance
+   - Profile views
+   - Response time
+   - Rating trend
+   - Missing profile fields (improve ranking checklist)
+
+4. Schedule and availability
+   - Calendar with open/busy slots
+   - Recurring slot templates
+   - Leave/day-off management
+
+5. Class operations
+   - Upcoming classes
+   - Student notes
+   - Homework/tasks
+   - Attendance marking
+
+6. Revenue growth tools
+   - Package creation (4/8/12 class bundles)
+   - Discount campaigns
+   - Upsell prompts (trial -> monthly package)
+
+C) Tutor key flows
+- Complete verification
+- Optimize profile for ranking
+- Respond quickly to leads
+- Convert trials to recurring subscriptions
+
+D) Tutor metrics
+- Lead response SLA
+- Trial-to-paid conversion %
+- Session completion %
+- Monthly revenue per tutor
+
+------------------------------------------------------------
+5) ROLE: CITY ADMIN
+------------------------------------------------------------
+
+A) City admin dashboard objective
+- Ensure city-level supply quality and operations health.
+
+B) City admin dashboard sections
+1. City KPI cards
+   - New tutor applications
+   - Verification pending
+   - Active bookings
+   - Revenue in city
+
+2. Tutor approval queue
+   - KYC/doc verification
+   - Background checks status
+   - Approve/reject with reason logs
+
+3. Local demand-supply map
+   - High-demand subjects
+   - Tutor shortage zones
+   - Avg fee by locality
+
+4. Dispute and compliance center
+   - Active complaints
+   - Escalation matrix
+   - Resolution SLA tracker
+
+5. City growth tools
+   - Campaign performance
+   - Referral partner leads
+   - City-wise conversion funnel
+
+C) City admin metrics
+- Approval TAT
+- Complaint resolution time
+- City booking growth %
+- Tutor activation rate %
+
+------------------------------------------------------------
+6) ROLE: GLOBAL ADMIN
+------------------------------------------------------------
+
+A) Global admin dashboard objective
+- Drive platform revenue, quality, compliance, and scale.
+
+B) Global admin dashboard sections
+1. Platform command center
+   - GMV/revenue
+   - Net take rate
+   - New registrations by role
+   - Active users DAU/WAU/MAU
+
+2. Funnel analytics
+   - Visitor -> signup -> search -> booking -> repeat
+   - Role-wise drop-off analysis
+
+3. Risk and policy center
+   - Fraud alerts
+   - Payment failure spikes
+   - Abuse/content moderation queue
+
+4. Catalog and pricing control
+   - Subject/category management
+   - Commission rules
+   - Coupons/promotions manager
+
+5. Operations governance
+   - City admin performance scorecards
+   - SLA compliance matrix
+   - Audit logs and access control
+
+C) Global admin metrics
+- Revenue growth %
+- CAC vs LTV
+- Retention cohorts
+- Net promoter score
+- Dispute rate
+
+------------------------------------------------------------
+7) SHARED MODULES (ROLE-AWARE BEHAVIOR)
+------------------------------------------------------------
+
+1. Messaging module
+   - Student/Tutor/Parent communication with templates and reminders
+
+2. Notification engine
+   - Role-specific alerts: booking, payment, class, verification
+
+3. Review and trust module
+   - Post-session ratings
+   - Quality score influencing tutor ranking
+
+4. Wallet and payments
+   - Unified transactions
+   - Role-specific visibility and controls
+
+5. Help and support center
+   - Ticketing with category, priority, SLA, escalation
+
+------------------------------------------------------------
+8) PHASED EXECUTION PLAN (ROLE-WISE DASHBOARD)
+------------------------------------------------------------
+
+Phase 1 (MVP revenue core)
+- Student booking-first dashboard
+- Tutor lead/earnings dashboard
+- Parent approval + spend visibility basics
+
+Phase 2 (trust + retention)
+- Advanced tutor profiles
+- Learning progress analytics
+- Review quality score integration
+
+Phase 3 (ops scale)
+- City admin demand-supply tools
+- Dispute SLA center
+- Global funnel and revenue intelligence
+
+Phase 4 (optimization)
+- AI-based recommendations
+- Pricing optimization
+- Predictive churn and reactivation workflows
+
+------------------------------------------------------------
+9) NON-NEGOTIABLE UX RULES
+------------------------------------------------------------
+
+1. No role should see irrelevant modules.
+2. Student "Book Tutor" CTA must always be visible.
+3. Every dashboard screen should have at least one direct revenue action.
+4. Fast mobile-first rendering for search and booking pages.
+5. Empty-state screens must guide next action (no dead ends).
+
+------------------------------------------------------------
+10) NEXT PLANNING DOCUMENTS TO PREPARE
+------------------------------------------------------------
+
+1. `student_flow.txt`:
+   - detailed UX journey from landing -> booking -> retention
+2. `role_permissions_matrix.txt`:
+   - page/module/action access by role
+3. `kpi_definition.txt`:
+   - exact formulas and targets per role
+4. `dashboard_wireframe_notes.txt`:
+   - section-by-section UI sketch notes

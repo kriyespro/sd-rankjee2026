@@ -6,3 +6,8 @@ tutor , student , parants , city-admin , global admin
 
 2 . 
 tutor card make more advanced with tutor image , also make details tutor profile page make more advanced 
+
+
+3 
+.
+make course lms - sell option and Student learinig all features . admin option

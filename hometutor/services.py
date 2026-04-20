@@ -47,6 +47,36 @@ def tutor_to_card_dict(profile: TutorProfile, pilot: str | None = None) -> dict:
     }
 
 
+def attach_demo_status_to_cards(cards: list[dict], requester) -> list[dict]:
+    """
+    Add latest demo request status (if any) for each tutor card and requester.
+    Keeps card payload template-friendly.
+    """
+    if not requester or not getattr(requester, 'is_authenticated', False):
+        for card in cards:
+            card['demo_status'] = ''
+        return cards
+
+    slugs = [c.get('slug') for c in cards if c.get('slug')]
+    if not slugs:
+        return cards
+
+    requests = (
+        DemoRequest.objects.filter(requester=requester, tutor__slug__in=slugs)
+        .select_related('tutor')
+        .order_by('-created_at')
+    )
+    latest_by_slug = {}
+    for item in requests:
+        slug = item.tutor.slug
+        if slug not in latest_by_slug:
+            latest_by_slug[slug] = item.status
+
+    for card in cards:
+        card['demo_status'] = latest_by_slug.get(card.get('slug', ''), '')
+    return cards
+
+
 def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
     """
     Return (rows, from_database).
@@ -56,6 +86,7 @@ def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
     qs = (
         TutorProfile.objects.filter(
             verification_status=TutorProfile.VerificationStatus.APPROVED,
+            user__isnull=False,
             city__iexact=pilot,
         )
         .order_by('-is_featured_home', '-rating_display', 'display_name')[:limit]
@@ -73,9 +104,10 @@ def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
 
 
 def public_tutor_queryset(request_get):
-    """Filter approved listings for the public search page."""
+    """Filter approved, bookable listings for the public search page."""
     qs = TutorProfile.objects.filter(
         verification_status=TutorProfile.VerificationStatus.APPROVED,
+        user__isnull=False,
     )
     city = (request_get.get('city') or PILOT_CITY).strip()
     if city:

@@ -102,7 +102,7 @@
             </div>
 
             {% if can_request_demo and demo_form %}
-            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            <div id="request-demo" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">Request a free demo</h2>
                 <p class="text-slate-600 text-sm mb-4">The tutor will receive your message in RankJee inbox.</p>
                 <form method="post" action="{{ url('hometutor:demo_request_create', t.slug) }}" class="space-y-3">

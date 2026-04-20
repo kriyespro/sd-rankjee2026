@@ -1,0 +1,161 @@
+# Student Flow (Deep Planning)
+
+Goal: maximize tutor booking conversion, class continuity, and learning outcomes.
+
+------------------------------------------------------------
+1) FLOW A: NEW STUDENT ONBOARDING
+------------------------------------------------------------
+
+Trigger:
+- Student signs up and lands on first-time dashboard.
+
+Steps:
+1. Complete profile
+   - Class, board, target exam, preferred subjects, city, mode, budget
+2. Set learning goal
+   - Score target and target date
+3. Availability capture
+   - Preferred weekdays/time slots
+4. Preference confirmation
+   - Language, tutor gender preference (optional), teaching style
+
+Decision points:
+- If profile < 70% complete -> show blocking checklist before booking
+- If no availability selected -> show slot helper wizard
+
+Success output:
+- Student profile score and personalized tutor recommendations ready.
+
+------------------------------------------------------------
+2) FLOW B: TUTOR DISCOVERY + MATCHING
+------------------------------------------------------------
+
+Trigger:
+- Student clicks "Book Tutor" from dashboard.
+
+Steps:
+1. Search input
+   - Subject + class + board + mode + location
+2. Advanced filter
+   - Fee range, rating, years experience, response time, verification
+3. Results page
+   - Best match list with explainable matching labels
+4. Compare mode
+   - Select up to 3 tutors and compare side-by-side
+5. Save shortlist
+   - Bookmark tutors for later
+
+Decision points:
+- If no relevant tutors -> show alternatives (nearby city, online mode, different budget)
+- If budget mismatch -> suggest package discounts or trial options
+
+Success output:
+- Student reaches tutor profile with clear confidence to book.
+
+------------------------------------------------------------
+3) FLOW C: TUTOR PROFILE EVALUATION
+------------------------------------------------------------
+
+Trigger:
+- Student opens tutor profile.
+
+Sections to evaluate:
+1. Trust
+   - Verification badge, documents status, response SLA
+2. Quality
+   - Rating trend, review highlights, repeat student ratio
+3. Fit
+   - Subjects, class levels, teaching method, language
+4. Availability
+   - Real-time free slots
+5. Pricing
+   - Trial class fee, package fee, discount availability
+
+Decision points:
+- If student uncertain -> prompt "Message tutor first"
+- If student confident -> prompt "Book trial now"
+
+Success output:
+- Student chooses trial or full package.
+
+------------------------------------------------------------
+4) FLOW D: BOOKING + PAYMENT
+------------------------------------------------------------
+
+Trigger:
+- Student clicks "Book trial" or "Book package".
+
+Steps:
+1. Select slot and session type
+2. Choose mode (online/offline/home)
+3. Checkout summary
+   - Tutor fee, platform fee, total payable, coupon, wallet
+4. Payment complete
+5. Booking confirmation page
+   - session details + reminder setup + support link
+
+Failure paths:
+- Payment failed -> retry options + alternate method
+- Slot got unavailable -> instant reselect slots
+
+Success output:
+- Booking status = confirmed and visible in upcoming classes.
+
+------------------------------------------------------------
+5) FLOW E: PRE-CLASS + CLASS + POST-CLASS
+------------------------------------------------------------
+
+Trigger:
+- Booking confirmed.
+
+Steps:
+1. Pre-class
+   - Reminder + prep checklist + material upload (optional)
+2. During class
+   - Join link/location + attendance
+3. Post-class
+   - Rate session
+   - Leave feedback
+   - Rebook / convert to package CTA
+
+Retention actions:
+- If rating >= 4: prompt recurring package
+- If rating <= 2: start tutor replacement flow
+
+Success output:
+- Higher repeat booking and stable tutor-student pairing.
+
+------------------------------------------------------------
+6) FLOW F: ONGOING LEARNING TRACK
+------------------------------------------------------------
+
+Trigger:
+- Student has completed at least one session.
+
+Steps:
+1. Progress dashboard
+   - Subject progress, test scores, weak chapters
+2. Study plan suggestions
+   - Weekly targets and tasks
+3. Alerting
+   - Missed classes, low progress warnings
+4. Re-engagement
+   - "Book next class" prompts based on inactivity
+
+Success output:
+- Continuous usage and academic improvement.
+
+------------------------------------------------------------
+7) STUDENT KPIs
+------------------------------------------------------------
+
+Primary:
+- Search -> profile view conversion
+- Profile view -> booking conversion
+- Trial -> paid package conversion
+- Repeat booking rate (30 days)
+
+Secondary:
+- Payment success rate
+- Avg response time from tutor
+- Session completion rate

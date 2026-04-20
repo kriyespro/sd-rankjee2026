@@ -74,6 +74,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pb-20 md:pb-0">
+    {% set current_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
 
     <nav class="nav-glass sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex justify-between items-center">
@@ -89,10 +90,32 @@
             </div>
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-12 text-sm font-black text-slate-600 uppercase tracking-[0.2em]">
-                <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
-                <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
-                <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
+                {% if not request.user.is_authenticated %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
+                {% elif current_role == 'TUTOR' %}
+                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
+                    <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
+                    <a href="{{ url('hometutor:my_profile') }}" class="nav-link">My Listing</a>
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
+                {% elif current_role == 'PARENT' %}
+                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="nav-link">My Demos</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
+                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
+                    <a href="/sd/" class="nav-link">Admin</a>
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                {% else %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
+                {% endif %}
             </div>
             
             <div class="flex items-center gap-4 md:gap-6">
@@ -127,18 +150,59 @@
                 <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
                 <span class="text-xs font-black uppercase tracking-widest {% if request.path == '/' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.home }}</span>
             </a>
-            <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
-                <span class="text-xs font-black uppercase tracking-widest {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.test }}</span>
-            </a>
-            <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
-                <span class="text-xs font-black uppercase tracking-widest {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
-            </a>
-            <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-1 p-2 group">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'earnings' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">💰</div>
-                <span class="text-xs font-black uppercase tracking-widest {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.earn }}</span>
-            </a>
+            {% if not request.user.is_authenticated or current_role == 'STUDENT' %}
+                <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.test }}</span>
+                </a>
+                <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
+                </a>
+                <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'earnings' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">💰</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.earn }}</span>
+                </a>
+            {% elif current_role == 'TUTOR' %}
+                <a href="{{ url('hometutor:tutor_demos') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/demos' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📥</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/demos' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Inbox</span>
+                </a>
+                <a href="{{ url('hometutor:my_profile') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/profile' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🧑</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/profile' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Profile</span>
+                </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                </a>
+            {% elif current_role == 'PARENT' %}
+                <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
+                </a>
+                <a href="{{ url('hometutor:my_demo_requests') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/requests' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📅</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/requests' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Demos</span>
+                </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                </a>
+            {% else %}
+                <a href="/sd/" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/sd/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🛡️</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/sd/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Admin</span>
+                </a>
+                <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
+                </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                </a>
+            {% endif %}
         </div>
     </div>
 

@@ -1,0 +1,14 @@
+{% if tutor_cards %}
+<p class="mb-4 text-sm font-medium text-slate-600">{{ tutor_cards|length }} tutor{% if tutor_cards|length != 1 %}s{% endif %} matched your filters.</p>
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    {% for t in tutor_cards %}
+    {% include "hometutor/partials/_tutor_card.jinja" %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+    <p class="text-sm font-bold text-slate-800">No tutors found for this combination.</p>
+    <p class="mt-1 text-sm text-slate-500">Try widening city, class, or mode filters.</p>
+    <a href="{{ url('hometutor:tutor_list') }}" class="mt-4 inline-flex rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-700 hover:bg-slate-100">See all tutors</a>
+</div>
+{% endif %}

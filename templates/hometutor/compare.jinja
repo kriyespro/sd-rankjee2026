@@ -1,0 +1,105 @@
+{% extends "base.jinja" %}
+{% block title %}Compare Tutors · RankJee{% endblock %}
+
+{% block content %}
+<section class="bg-slate-100 border-b border-slate-200/80 px-4 pb-8 pt-8">
+    <div class="mx-auto max-w-6xl">
+        <p class="mb-2 text-xs font-black uppercase tracking-[0.2em] text-indigo-600">Tutor compare</p>
+        <h1 class="text-3xl font-black tracking-tight text-slate-900">Compare shortlisted tutors</h1>
+        <p class="mt-2 max-w-2xl text-sm text-slate-600">Review fit, pricing, teaching mode, and demo status before booking.</p>
+    </div>
+</section>
+
+<section class="mx-auto max-w-6xl px-4 py-8">
+    {% if tutor_cards %}
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm font-medium text-slate-600">{{ selected_count }} tutor{% if selected_count != 1 %}s{% endif %} selected.</p>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Back to marketplace</a>
+            <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">My demo requests</a>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="min-w-full border-collapse">
+            <thead>
+                <tr class="bg-slate-50">
+                    <th class="border-b border-slate-200 p-4 text-left text-xs font-black uppercase tracking-widest text-slate-500">Criteria</th>
+                    {% for t in tutor_cards %}
+                    <th class="border-b border-slate-200 p-4 text-left">
+                        <p class="text-sm font-black text-slate-900">{{ t.name }}</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-500">{{ t.subjects }}</p>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Rating</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-bold text-slate-800">★ {{ t.rating }} <span class="text-xs text-slate-500">({{ t.reviews }})</span></td>
+                    {% endfor %}
+                </tr>
+                <tr class="bg-slate-50/50">
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Fee</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-bold text-slate-800">{{ t.fee_label }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Class range</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700">{{ t.class_range }}</td>
+                    {% endfor %}
+                </tr>
+                <tr class="bg-slate-50/50">
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Teaching mode</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700">{{ t.teaching_mode }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Languages</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700">{{ t.languages }}</td>
+                    {% endfor %}
+                </tr>
+                <tr class="bg-slate-50/50">
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Location</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700">{{ t.area }}, {{ t.city }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="border-b border-slate-100 p-4 text-xs font-black uppercase tracking-wider text-slate-500">Demo status</td>
+                    {% for t in tutor_cards %}
+                    <td class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700">{{ t.demo_status or 'Not requested' }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td class="p-4 text-xs font-black uppercase tracking-wider text-slate-500">Actions</td>
+                    {% for t in tutor_cards %}
+                    <td class="p-4">
+                        <div class="flex flex-col gap-2">
+                            <a href="{{ t.profile_url }}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">View full profile</a>
+                            {% if t.demo_status == 'PENDING' or t.demo_status == 'ACCEPTED' %}
+                            <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">View demo request</a>
+                            {% else %}
+                            <a href="{{ t.profile_url }}#request-demo" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Request demo</a>
+                            {% endif %}
+                        </div>
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+        <p class="text-sm font-bold text-slate-800">No tutors selected for comparison.</p>
+        <p class="mt-1 text-sm text-slate-500">Add 2-3 tutors from the dashboard shortlist or tutor marketplace.</p>
+        <a href="{{ url('hometutor:tutor_list') }}" class="mt-4 inline-flex rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Browse tutors</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

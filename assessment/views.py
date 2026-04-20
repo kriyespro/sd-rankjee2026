@@ -113,6 +113,8 @@ def settle_jackpot(jackpot):
 @login_required
 def take_test(request, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id, is_active=True)
+    concept = (request.GET.get("concept") or "").strip()
+    video_id = request.GET.get("video_id")
     if (
         skill.path_id
         and getattr(skill.path, 'level_order', 0) >= 3
@@ -131,18 +133,17 @@ def take_test(request, skill_id):
         passed=True
     ).values_list('question_set_id', flat=True)
     
-    current_set = skill.sets.filter(is_active=True).exclude(id__in=user_passed_sets).order_by('order').first()
+    current_set = None if concept else skill.sets.filter(is_active=True).exclude(id__in=user_passed_sets).order_by('order').first()
     
     # SELF-HEALING: If there are unassigned questions or no sets exist, auto-partition
-    if skill.questions.filter(question_set__isnull=True).exists() or not skill.sets.exists():
+    if (not concept) and (skill.questions.filter(question_set__isnull=True).exists() or not skill.sets.exists()):
         if skill.questions.exists():
             skill.partition_questions()
             # Refresh current_set after partitioning logic
             current_set = skill.sets.filter(is_active=True).exclude(id__in=user_passed_sets).order_by('order').first()
     
     # If sets exist but all are passed, then they have mastered it
-    if skill.sets.exists() and not current_set:
-        from django.contrib import messages
+    if (not concept) and skill.sets.exists() and not current_set:
         messages.success(request, f"Congratulations! You've mastered all levels of {skill.name}.")
         return redirect('dashboard:index')
 
@@ -179,7 +180,25 @@ def take_test(request, skill_id):
                     )
                     return redirect('core:earnings')
     
-    if current_set:
+    if video_id:
+        # Strict video-linked retest: show only questions imported for this video.
+        questions = list(
+            Question.objects.filter(
+                skill=skill,
+                source_video_id=video_id,
+                is_video_import=True,
+            ).order_by("id")
+        )
+    elif concept:
+        # Concept retest mode (from learning page): use the concept pool directly.
+        questions = list(
+            Question.objects.filter(skill=skill, concept_tag__iexact=concept).order_by("id")
+        )
+        if not questions:
+            questions = list(
+                Question.objects.filter(skill=skill, concept_tag__icontains=concept).order_by("id")
+            )
+    elif current_set:
         questions = list(current_set.questions.all())
     else:
         # LEGACY FALLBACK: If no sets defined yet, pick 10 random ones
@@ -207,6 +226,7 @@ def take_test(request, skill_id):
     return render(request, 'assessment/take_test.jinja', {
         'skill': skill,
         'current_set': current_set,
+        'concept': concept,
         'questions': questions,
     })
 
@@ -338,7 +358,6 @@ def download_certificate(request, certificate_id):
     
     # Premium Gate: Check if user is premium to download PDF
     if not request.user.is_premium:
-        from django.contrib import messages
         messages.warning(request, "Premium Subscription required to download PDF certificates. Upgrade now!")
         return redirect('payments:plans')
 

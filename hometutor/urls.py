@@ -6,6 +6,8 @@ app_name = 'hometutor'
 
 urlpatterns = [
     path('', views.tutor_list, name='tutor_list'),
+    path('search/quick/', views.quick_tutor_search, name='quick_tutor_search'),
+    path('compare/', views.compare_tutors, name='compare_tutors'),
     path('my/profile/', views.tutor_profile_edit, name='my_profile'),
     path('my/demos/', views.tutor_incoming_demos, name='tutor_demos'),
     path('my/requests/', views.my_demo_requests, name='my_demo_requests'),

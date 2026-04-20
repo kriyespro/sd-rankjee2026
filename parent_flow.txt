@@ -1,0 +1,134 @@
+# Parent Flow (Deep Planning)
+
+Goal: give parents full control over child learning quality and monthly spending.
+
+------------------------------------------------------------
+1) FLOW A: PARENT ONBOARDING + CHILD SETUP
+------------------------------------------------------------
+
+Trigger:
+- Parent signs up and enters dashboard first time.
+
+Steps:
+1. Parent profile completion
+   - contact, city, preferred communication channel
+2. Add child profile
+   - class, board, target exam, weak subjects
+3. Set guardrails
+   - monthly budget cap, approved class timings, preferred mode
+4. Consent + notifications
+   - booking alerts, payment alerts, performance digest frequency
+
+Decision points:
+- Multiple children? -> create child switcher in dashboard
+- Missing child academic details? -> show guided completion wizard
+
+Success output:
+- Parent account ready to supervise bookings and progress.
+
+------------------------------------------------------------
+2) FLOW B: BOOKING APPROVAL AND CONTROL
+------------------------------------------------------------
+
+Trigger:
+- Child/student initiates tutor booking requiring parent approval.
+
+Steps:
+1. Parent receives approval request
+   - tutor details, price, schedule, mode
+2. Parent review panel
+   - rating, reviews, verification, trial/full package
+3. Approval action
+   - approve / reject / ask for alternative
+4. If approved
+   - proceed to payment authorization path
+
+Decision points:
+- If price exceeds budget cap -> highlight exception and request explicit override
+- If tutor rating below threshold -> show risk alert
+
+Failure/recovery:
+- Approval timeout -> auto-reminder
+- Rejection -> child gets re-search suggestions
+
+Success output:
+- Controlled booking with parent transparency.
+
+------------------------------------------------------------
+3) FLOW C: SPEND MANAGEMENT + BILLING
+------------------------------------------------------------
+
+Trigger:
+- Active child bookings and recurring payments.
+
+Steps:
+1. Monthly spend dashboard
+   - child-wise spend split
+2. Wallet and autopay management
+   - top-up, payment method, autopay toggle
+3. Invoice center
+   - downloadable invoices and payment history
+4. Refund and dispute tracking
+   - status timeline and expected resolution date
+
+Decision points:
+- If monthly spend > cap -> freeze future auto approvals
+- If repeated payment failure -> trigger payment health workflow
+
+Success output:
+- Predictable and controlled learning budget.
+
+------------------------------------------------------------
+4) FLOW D: LEARNING OVERSIGHT
+------------------------------------------------------------
+
+Trigger:
+- Child completes sessions and tests.
+
+Steps:
+1. Weekly report digest
+   - attendance, session quality, tutor comments
+2. Monthly progress dashboard
+   - subject growth trend and weak topic alerts
+3. Intervention actions
+   - request tutor meeting
+   - request replacement tutor
+   - assign extra sessions
+
+Decision points:
+- If progress stagnates 3+ weeks -> trigger intervention recommendation
+- If low attendance -> suggest schedule change
+
+Success output:
+- Parent can make informed educational decisions early.
+
+------------------------------------------------------------
+5) FLOW E: SUPPORT + ESCALATION
+------------------------------------------------------------
+
+Trigger:
+- Parent raises issue (quality, payment, conduct, schedule).
+
+Steps:
+1. Ticket creation with category and priority
+2. Auto-routing to tutor/city admin/support
+3. SLA timeline visibility
+4. Resolution confirmation and feedback
+
+Success output:
+- Trust and confidence in platform governance.
+
+------------------------------------------------------------
+6) PARENT KPIs
+------------------------------------------------------------
+
+Primary:
+- Approval turnaround time
+- Budget adherence rate
+- Parent retention (30/90 days)
+- Parent NPS
+
+Secondary:
+- Child attendance consistency
+- Child improvement score trend
+- Billing dispute frequency

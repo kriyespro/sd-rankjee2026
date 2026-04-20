@@ -105,6 +105,15 @@ class Question(models.Model):
     )
     skill = models.ForeignKey(Skill, on_delete=models.CASCADE, related_name='questions')
     question_set = models.ForeignKey(QuestionSet, on_delete=models.SET_NULL, null=True, blank=True, related_name='questions')
+    source_video = models.ForeignKey(
+        'learning.ConceptVideo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='imported_questions',
+        help_text='If set, this question is linked to a specific learning video import.',
+    )
+    is_video_import = models.BooleanField(default=False, db_index=True)
     text = models.TextField()
     concept_tag = models.CharField(max_length=50) # e.g. "SEO", "Facebook Ads"
     explanation = models.TextField(blank=True, help_text="Explanation of the correct answer shown upon failing")

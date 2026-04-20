@@ -14,6 +14,19 @@
             <span class="text-xs text-amber-600 font-bold bg-amber-50 px-2.5 py-1 rounded-full">★ {{ t.rating }} <span class="text-slate-500 font-semibold">({{ t.reviews }})</span></span>
         </div>
     </div>
+    {% if t.demo_status %}
+    <div class="mb-3">
+        {% if t.demo_status == 'PENDING' %}
+        <span class="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-amber-800">Demo status: pending</span>
+        {% elif t.demo_status == 'ACCEPTED' %}
+        <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">Demo status: accepted</span>
+        {% elif t.demo_status == 'DECLINED' %}
+        <span class="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-rose-800">Demo status: declined</span>
+        {% elif t.demo_status == 'CANCELLED' %}
+        <span class="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700">Demo status: cancelled</span>
+        {% endif %}
+    </div>
+    {% endif %}
     {% if t.profile_url %}
     <a href="{{ t.profile_url }}" class="group block flex-grow flex flex-col">
         <h3 class="text-lg font-black text-slate-900 group-hover:text-indigo-700">{{ t.name }}</h3>
@@ -33,9 +46,31 @@
             <span class="text-base font-black text-slate-900">{{ t.fee_label }}</span>
         </div>
     </a>
-    <a href="{{ t.profile_url }}" class="mt-5 w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold text-center hover:bg-indigo-500 transition-colors">
-        View full profile
-    </a>
+    <div class="mt-5 grid grid-cols-1 gap-2">
+        <a href="{{ t.profile_url }}" class="w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold text-center hover:bg-indigo-500 transition-colors">
+            View full profile
+        </a>
+        {% if dashboard_mode %}
+        {% if t.demo_status == 'PENDING' or t.demo_status == 'ACCEPTED' %}
+        <a href="{{ url('hometutor:my_demo_requests') }}" class="w-full py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs font-black uppercase tracking-wider text-center hover:bg-emerald-100 transition-colors">
+            View my demo request
+        </a>
+        {% else %}
+        <a href="{{ t.profile_url }}#request-demo" class="w-full py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-wider text-center hover:bg-indigo-100 transition-colors">
+            {% if parent_gate_enabled %}Request for approval{% else %}Request demo{% endif %}
+        </a>
+        {% endif %}
+        {% endif %}
+        {% if enable_compare %}
+        <button
+            type="button"
+            class="w-full py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-black uppercase tracking-wider hover:bg-slate-100 transition-colors"
+            @click='toggleCompare({{ t.slug|tojson }}, {{ t.name|tojson }}, {{ t.profile_url|tojson }})'
+        >
+            Add to compare
+        </button>
+        {% endif %}
+    </div>
     {% else %}
     <div class="flex-grow flex flex-col">
         <h3 class="text-lg font-black text-slate-900">{{ t.name }}</h3>

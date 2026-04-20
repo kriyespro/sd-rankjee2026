@@ -40,85 +40,242 @@
         {% endfor %}
     </div>
 
-    {# Simplified Status Bar #}
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Balance & Recharge -->
-        <div class="bg-indigo-600 rounded-2xl p-5 text-white shadow-xl shadow-indigo-100 flex flex-col justify-between group overflow-hidden relative">
-            <div class="absolute -top-6 -right-6 w-20 h-20 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-            <div class="relative z-10">
-                <p class="text-xs uppercase font-black tracking-widest text-indigo-200 mb-1">Total Credits</p>
-                <p class="text-3xl font-black">₹{{ user.wallet_balance|int }}</p>
-            </div>
-            <form action="{{ url('dashboard:recharge') }}" method="POST" class="mt-4 relative z-10 w-full">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <button type="submit" class="w-full bg-white/20 hover:bg-white/30 border border-white/20 backdrop-blur-md text-white text-xs font-black uppercase py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-                    ⚡ Instant Topup
-                </button>
-            </form>
+    <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+        <p class="text-xs font-black uppercase tracking-widest text-indigo-700">Quick actions</p>
+        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Take test</a>
+            <a href="{{ url('learning:index') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Watch videos</a>
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Book tutor</a>
+            <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">My demos</a>
         </div>
-
-        <!-- Mastery Progress -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-                <p class="text-xs uppercase font-black tracking-widest text-slate-400 mb-1">Mastery Score</p>
-                <p class="text-3xl font-black text-slate-900">{{ progress }}%</p>
-            </div>
-            <div class="mt-4">
-                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div class="bg-indigo-500 h-full transition-all duration-1000" style="width: {{ progress }}%"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- XP & Ranking -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between group">
-            <div>
-                <p class="text-xs uppercase font-black tracking-widest text-slate-400 mb-1">Total XP</p>
-                <p class="text-3xl font-black text-slate-900">{{ user.xp_points }} <span class="text-sm font-bold text-slate-300">PTS</span></p>
-                <p class="text-sm font-black text-indigo-600 mt-2">You are Rank #{{ xp_rank_india }} in India</p>
-            </div>
-            <a href="{{ url('dashboard:leaderboard') }}" class="mt-4 text-xs font-black uppercase text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
-                View Global Leaderboard 🏆
-            </a>
-        </div>
-
-        <!-- Remaining Trials -->
-        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-                <p class="text-xs uppercase font-black tracking-widest text-slate-400 mb-1">Free Test Uses</p>
-                <p class="text-3xl font-black text-slate-900">{{ user.trial_tests_left }}</p>
-            </div>
-            <div class="mt-4">
-                {% if user.trial_tests_left > 0 %}
-                    <span class="text-xs font-black bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md border border-emerald-100">Ready to test!</span>
-                {% else %}
-                    <span class="text-xs font-black bg-rose-50 text-rose-600 px-2 py-1 rounded-md border border-rose-100">₹10 Per test used</span>
-                {% endif %}
-            </div>
+        {% if student_pending_demo_sla_risk_count > 0 %}
+        <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800">
+            {{ student_pending_demo_sla_risk_count }} pending demo request{% if student_pending_demo_sla_risk_count != 1 %}s{% endif %} older than 24h.
+        </p>
+        {% endif %}
+        <div class="mt-3 flex flex-wrap gap-2">
+            {% if parent_gate_enabled %}
+            <a href="{{ url('dashboard:index') }}?parent_gate=0" class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Disable parent-approval mode</a>
+            {% else %}
+            <a href="{{ url('dashboard:index') }}?parent_gate=1" class="inline-flex rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Enable parent-approval mode</a>
+            {% endif %}
         </div>
     </div>
 
-    <section class="w-full rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6 md:p-8 shadow-sm">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-800 mb-1">Home tutors</p>
-                <h2 class="text-xl font-black text-slate-900 tracking-tight">Marketplace</h2>
-                <p class="text-sm text-slate-600 mt-1">{{ role_marketplace_label }}</p>
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-xs uppercase font-black tracking-widest text-slate-400">Learning health</p>
+            <p class="mt-1 text-3xl font-black text-slate-900">{{ progress }}%</p>
+            <p class="mt-1 text-sm text-slate-600">Mastery score from your completed skill path.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-xs uppercase font-black tracking-widest text-slate-400">Wallet + tests</p>
+            <p class="mt-1 text-3xl font-black text-slate-900">₹{{ user.wallet_balance|int }}</p>
+            <p class="mt-1 text-sm text-slate-600">{{ user.trial_tests_left }} free test uses left.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p class="text-xs uppercase font-black tracking-widest text-slate-400">Leaderboard rank</p>
+            <p class="mt-1 text-3xl font-black text-slate-900">#{{ xp_rank_india }}</p>
+            <a href="{{ url('dashboard:leaderboard') }}" class="mt-2 inline-flex text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-900">Open leaderboard</a>
+        </div>
+    </div>
+    {% if student_preview_mode %}
+    <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <p class="text-xs font-black uppercase tracking-widest text-amber-800">
+            Demo preview mode enabled because this account has no tutor-booking records yet.
+        </p>
+    </div>
+    {% endif %}
+
+    <section
+        class="w-full rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6 md:p-8 shadow-sm"
+        x-data="{
+            compare: [],
+            toggleCompare(slug, name, url) {
+                const i = this.compare.findIndex((x) => x.slug === slug);
+                if (i >= 0) {
+                    this.compare.splice(i, 1);
+                    return;
+                }
+                if (this.compare.length >= 3) {
+                    this.compare.shift();
+                }
+                this.compare.push({ slug, name, url });
+            }
+        }"
+    >
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-800 mb-1">Home tutors</p>
+                    <h2 class="text-xl font-black text-slate-900 tracking-tight">Book Tutor Now</h2>
+                    <p class="text-sm text-slate-600 mt-1">Fast shortlist and booking workflow for students and parents.</p>
+                </div>
+                <div class="flex flex-wrap gap-2 md:gap-3">
+                    <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">Full marketplace</a>
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-500 transition-colors shadow-sm">My demos{% if hometutor_my_pending_sent %} ({{ hometutor_my_pending_sent }}){% endif %}</a>
+                </div>
             </div>
-            <div class="flex flex-wrap gap-2 md:gap-3">
-                <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">Browse</a>
-                {% if user_role == 'TUTOR' %}
-                <a href="{{ url('hometutor:my_profile') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-500 transition-colors shadow-sm">My listing</a>
+
+            <form
+                class="rounded-2xl border border-emerald-200 bg-white p-4"
+                hx-get="{{ url('hometutor:quick_tutor_search') }}"
+                hx-target="#quick-tutor-results"
+                hx-swap="innerHTML"
+                hx-indicator="#quick-search-indicator"
+            >
+                <input type="hidden" name="parent_gate" value="{{ '1' if parent_gate_enabled else '0' }}">
+                <div class="grid grid-cols-1 gap-3 md:grid-cols-5">
+                    <input type="text" name="subject" placeholder="Subject (Math, Physics)" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500">
+                    <input type="number" name="class_min" min="1" max="12" placeholder="Class" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500">
+                    <select name="mode" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500">
+                        <option value="">Any mode</option>
+                        <option value="ONLINE">Online</option>
+                        <option value="OFFLINE">Offline</option>
+                        <option value="HYBRID">Hybrid</option>
+                    </select>
+                    <input type="text" name="city" value="{{ hometutor_pilot_city }}" placeholder="City" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500">Find tutors</button>
+                </div>
+                <p class="mt-2 text-xs text-slate-500">Tip: Click "View full profile" to request demo instantly.</p>
+            </form>
+
+            <div id="quick-search-indicator" class="htmx-indicator text-xs font-black uppercase tracking-widest text-emerald-700">Loading tutors...</div>
+            <div id="quick-tutor-results">
+                {% set tutor_cards = quick_tutor_cards %}
+                {% set enable_compare = true %}
+                {% set dashboard_mode = true %}
+                {% include "hometutor/partials/_tutor_search_results.jinja" %}
+            </div>
+
+            <div x-show="compare.length > 0" x-cloak class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p class="text-xs font-black uppercase tracking-widest text-indigo-700">Shortlist compare</p>
+                        <p class="text-sm text-slate-700">Compare up to 3 tutors and open profiles in new tabs.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            @click="window.location.href='{{ url('hometutor:compare_tutors') }}?' + compare.map((x) => 't=' + encodeURIComponent(x.slug)).join('&')"
+                            class="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500"
+                        >
+                            Compare now
+                        </button>
+                        <button type="button" @click="compare = []" class="rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Clear</button>
+                    </div>
+                </div>
+                <div class="mt-3 grid grid-cols-1 gap-2 md:grid-cols-3">
+                    <template x-for="item in compare" :key="item.slug">
+                        <a :href="item.url" target="_blank" class="rounded-xl border border-indigo-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 hover:bg-indigo-100" x-text="item.name"></a>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Booking funnel</p>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">From request to confirmed learning</h2>
+                <p class="mt-1 text-sm text-slate-600">Track where your tutor booking is currently blocked or moving.</p>
+            </div>
+            <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Open my requests</a>
+        </div>
+
+        <div class="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">Requested</p>
+                <p class="mt-1 text-2xl font-black text-slate-900">{{ student_demo_pending }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">Accepted</p>
+                <p class="mt-1 text-2xl font-black text-slate-900">{{ student_demo_accepted }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">Active</p>
+                <p class="mt-1 text-2xl font-black text-slate-900">{{ student_active_engagements }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">Paid</p>
+                <p class="mt-1 text-2xl font-black text-slate-900">{{ student_paid_count }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <p class="text-[11px] font-black uppercase tracking-widest text-slate-500">Declined</p>
+                <p class="mt-1 text-2xl font-black text-slate-900">{{ student_demo_declined }}</p>
+            </div>
+        </div>
+        {% if parent_gate_enabled %}
+        <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800">
+            Parent-approval mode is active. {{ student_parent_approval_pending }} action{% if student_parent_approval_pending != 1 %}s{% endif %} may require parent sign-off before payment continuity.
+        </p>
+        {% endif %}
+
+        <div class="mt-5 grid gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-sm font-black text-slate-900">Recent demo requests</h3>
+                {% if student_recent_demos %}
+                <div class="mt-3 space-y-2">
+                    {% for d in student_recent_demos %}
+                    <div class="rounded-xl border border-slate-200 bg-white p-3">
+                        <p class="text-sm font-black text-slate-900">{{ d.tutor.display_name }}</p>
+                        <p class="mt-1 text-xs font-bold uppercase tracking-wider text-slate-600">{{ d.get_status_display() }}</p>
+                        {% if d.scheduled_at %}
+                        <p class="mt-1 text-xs text-slate-500">Scheduled: {{ d.scheduled_at.strftime('%d %b %Y %H:%M') }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
-                <a href="{{ url('hometutor:my_profile') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-500 transition-colors shadow-sm">Become a tutor</a>
+                <p class="mt-3 text-sm text-slate-500">No demo requests yet. Start by booking a tutor above.</p>
                 {% endif %}
-                <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">My demos{% if hometutor_my_pending_sent %} ({{ hometutor_my_pending_sent }}){% endif %}</a>
-                {% if hometutor_tutor_profile %}
-                <a href="{{ url('hometutor:tutor_demos') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">Inbox{% if hometutor_pending_incoming %} ({{ hometutor_pending_incoming }}){% endif %}</a>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h3 class="text-sm font-black text-slate-900">Post-booking continuity</h3>
+                {% if student_recent_engagements %}
+                <div class="mt-3 space-y-2">
+                    {% for e in student_recent_engagements %}
+                    <div class="rounded-xl border border-slate-200 bg-white p-3">
+                        <p class="text-sm font-black text-slate-900">{{ e.tutor_profile.display_name }}</p>
+                        <p class="mt-1 text-xs font-bold uppercase tracking-wider text-slate-600">{{ e.get_status_display() }}</p>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <a href="{{ url('hometutor:engagement_room', pk=e.pk) }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Open room</a>
+                            {% if e.pk not in student_paid_engagement_ids and e.status == 'ACTIVE' %}
+                            <a href="{{ url('hometutor_payments:pay_checkout', engagement_id=e.pk) }}" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Complete payment</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="mt-3 text-sm text-slate-500">No active engagements yet. Accept and confirm a demo to continue.</p>
                 {% endif %}
             </div>
         </div>
     </section>
+
+    {% if weak_topic_tutor_cards %}
+    <section class="w-full rounded-3xl border border-indigo-100 bg-indigo-50/50 p-6 shadow-sm md:p-8">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-700 mb-1">Weak-area support</p>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">Recommended tutors for your weak topics</h2>
+                {% if weak_terms %}
+                <p class="mt-1 text-sm text-slate-600">Based on recent weak concepts: {{ weak_terms|join(', ') }}</p>
+                {% endif %}
+            </div>
+            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center rounded-xl border border-indigo-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Retake diagnostic</a>
+        </div>
+        <div class="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {% set enable_compare = false %}
+            {% set dashboard_mode = true %}
+            {% for t in weak_topic_tutor_cards %}
+            {% include "hometutor/partials/_tutor_card.jinja" %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 
     {# Main + sidebar: flex gives the journey card all remaining width; sidebar fixed narrow #}
     <div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-8 xl:gap-10">
@@ -126,13 +283,11 @@
         {# Main: learning path + secondary row — grows to fill #}
         <div class="min-w-0 w-full flex flex-1 flex-col gap-8">
             
-            <section class="scroll-mt-24 w-full rounded-3xl border border-indigo-100 bg-indigo-50/50 p-6 shadow-sm md:p-8 lg:p-10">
+            <section class="scroll-mt-24 w-full rounded-3xl border border-indigo-100 bg-indigo-50/50 p-6 shadow-sm md:p-8">
                 <div class="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
                     <div>
-                        <h2 class="text-3xl font-black text-slate-900 tracking-tighter flex items-center gap-2">
-                             Your Learning Journey
-                        </h2>
-                        <p class="text-slate-500 text-xs font-black mt-1 uppercase tracking-widest leading-none">Complete each module to unlock the next level.</p>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Learning Journey</h2>
+                        <p class="text-slate-500 text-xs font-black mt-1 uppercase tracking-widest leading-none">Clear path: complete current skill to unlock next.</p>
                     </div>
                 </div>
 
@@ -168,6 +323,22 @@
                         <span class="text-white/20 group-hover:translate-x-1 transition-transform">→</span>
                     </a>
                 </div>
+            </section>
+
+            <section class="w-full rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">Activity timeline</h2>
+                {% if student_activity %}
+                <div class="mt-4 space-y-3">
+                    {% for item in student_activity %}
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p class="text-sm font-bold text-slate-900">{{ item.title }}</p>
+                        <p class="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ item.meta.strftime('%d %b %Y %H:%M') }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="mt-3 text-sm text-slate-500">No recent activity yet. Start with a test or tutor booking.</p>
+                {% endif %}
             </section>
 
             {# Secondary Actions Grid #}
@@ -221,18 +392,8 @@
             {% endif %}
         </div>
 
-        {# Right Sidebar: compact width so journey table has room #}
+        {# Right Sidebar: keep only useful summary blocks #}
         <aside class="flex w-full shrink-0 flex-col gap-5 lg:w-[17rem] lg:max-w-[17rem] xl:w-[18rem] xl:max-w-[18rem]">
-            
-            {% if next_badge_hint %}
-            <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm lg:rounded-3xl">
-                <h3 class="text-xs font-black uppercase tracking-widest text-slate-600 mb-2">Next badge</h3>
-                <p class="text-sm font-black text-slate-900">{{ next_badge_hint }}</p>
-                <p class="text-sm text-slate-600 mt-2">Consistency wins. Stack small daily progress.</p>
-            </div>
-            {% endif %}
-
-            {# Notifications Flyout (Integrated) #}
             {% if unread_notifications > 0 %}
             <a href="{{ url('dashboard:notifications') }}" class="group flex items-center justify-between rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm">
                 <div class="flex items-center gap-3">
@@ -243,7 +404,6 @@
             </a>
             {% endif %}
 
-            {# Recent Performance Widget #}
             <div class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:rounded-3xl lg:p-6">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full blur-3xl -mr-16 -mt-16 z-0"></div>
                 <h3 class="relative z-10 mb-5 text-xs font-black uppercase tracking-widest text-slate-600 lg:mb-6">Last Test Result</h3>
@@ -262,85 +422,14 @@
                 {% endif %}
             </div>
 
-            {# Certificate Collection #}
-            {% if user_certificates %}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:rounded-3xl lg:p-6">
-                <h3 class="mb-5 flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-600 lg:mb-6">
-                    My Certificates
-                    <span class="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded text-xs">{{ user_certificates|length }} EARNED</span>
-                </h3>
-                <div class="space-y-4">
-                    {% for cert in user_certificates[:3] %}
-                    <a href="{{ url('assessment:view_certificate', certificate_id=cert.certificate_id) }}" class="flex items-center gap-3 group">
-                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg group-hover:scale-110 transition-transform">📜</div>
-                        <div class="flex-grow">
-                            <p class="text-sm font-black text-slate-900 leading-none mb-1">{{ cert.skill.name }}</p>
-                            <p class="text-xs font-bold text-slate-600 uppercase tracking-tighter">Verified Achievement</p>
-                        </div>
-                        <span class="text-slate-300 group-hover:text-indigo-600 transition-colors">→</span>
-                    </a>
-                    {% endfor %}
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-600">Useful links</h3>
+                <div class="mt-3 space-y-2">
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="block rounded-lg border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">My demo requests</a>
+                    <a href="{{ url('learning:index') }}" class="block rounded-lg border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Video library</a>
+                    <a href="{{ url('assessment:index') }}" class="block rounded-lg border border-slate-200 px-3 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Take test</a>
                 </div>
             </div>
-            {% endif %}
-
-            {# Integrated Referral #}
-            <div class="group relative overflow-hidden rounded-2xl bg-slate-900 p-5 text-white shadow-xl shadow-slate-200 lg:rounded-3xl lg:p-6">
-                <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-indigo-500/20 rounded-full blur-3xl transition-transform group-hover:scale-150 duration-700"></div>
-                <h3 class="text-xs font-black uppercase tracking-widest text-white/30 mb-4">Invite Friends</h3>
-                <p class="text-sm font-black mb-2 leading-snug">Give ₹50, Get ₹50</p>
-                <p class="text-xs text-white/60 mb-6 group-hover:text-indigo-200 transition-colors">Instant credits for every lead.</p>
-                
-                <div class="flex gap-2">
-                    <code class="flex-grow bg-white/5 border border-white/10 px-4 py-3 rounded-xl font-mono font-black text-sm text-indigo-100 text-center uppercase tracking-widest leading-none flex items-center justify-center">
-                        {{ user.referral_code }}
-                    </code>
-                    <button onclick="navigator.clipboard.writeText('{{ request.scheme }}://{{ request.get_host() }}/users/signup/?ref={{ user.referral_code }}'); let o = this.innerHTML; this.innerHTML='<span class=\'text-indigo-400\'>✓</span>'; setTimeout(()=>this.innerHTML=o,2000)"
-                            class="p-3 bg-white text-slate-900 rounded-xl hover:bg-indigo-50 transition-all font-black flex items-center justify-center" title="Copy Link">
-                        📋
-                    </button>
-                    <a href="https://wa.me/?text=Check%20out%20RankJee%20and%20earn%20%E2%82%B950!%20Sign%20up%20here:%20{{ request.scheme }}://{{ request.get_host() }}/users/signup/?ref={{ user.referral_code }}" target="_blank"
-                       class="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center" title="Share to WhatsApp">
-                        <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12.031 0C5.385 0 0 5.385 0 12.031c0 2.128.552 4.137 1.547 5.918L.044 24l6.19-1.624A11.97 11.97 0 0012.031 24c6.646 0 12.031-5.385 12.031-12.031S18.677 0 12.031 0zm0 22.012a9.966 9.966 0 01-5.088-1.39l-3.642.955.972-3.551A9.957 9.957 0 012.04 12.03c0-5.513 4.488-10.001 10.001-10.001 5.513 0 10.001 4.488 10.001 10.001S17.544 22.012 12.031 22.012zm5.558-7.551c-.304-.152-1.802-.89-2.08-.992-.278-.102-.482-.152-.684.152-.203.303-.786.992-.963 1.194-.177.203-.355.228-.659.076-.304-.152-1.284-.473-2.448-1.51-1.164-1.037-1.95-2.315-2.127-2.618-.177-.303-.019-.467.133-.619.153-.153.304-.304.456-.456.152-.153.203-.254.304-.456.101-.203.051-.355-.025-.508-.076-.152-.684-1.65-.938-2.261-.253-.611-.508-.508-.684-.508-.178 0-.38-.025-.583-.025s-.532.076-.811.38c-.278.304-1.064 1.039-1.064 2.536 0 1.496 1.089 2.94 1.242 3.143.153.203 2.146 3.279 5.2 4.59.306.132.545.211.732.269.875.279 1.672.24 2.301.146.629-.094 1.802-.736 2.054-1.446.253-.71.253-1.318.178-1.446-.076-.127-.279-.203-.583-.355z"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            {# Top Earners Mini #}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:rounded-3xl lg:p-6">
-                <h3 class="mb-5 text-xs font-black uppercase tracking-widest text-slate-600 lg:mb-6">Top Rankers</h3>
-                <div class="flex flex-col gap-4">
-                    {% for u in top_users %}
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-black w-4 text-slate-300">#{{ loop.index }}</span>
-                            <span class="text-xs font-black {{ 'text-indigo-600' if u.pk == user.pk else 'text-slate-700' }}">{{ u.username }}</span>
-                        </div>
-                        <span class="text-xs font-black text-slate-600">{{ u.xp_points }} XP</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                <a href="{{ url('dashboard:leaderboard') }}" class="block text-center mt-6 text-xs font-black uppercase tracking-widest text-slate-600 hover:text-indigo-600 transition-colors">View Ranking Board &rarr;</a>
-            </div>
-
-            {# Badge Collection Quickview #}
-            {% if user_badges %}
-            <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm lg:rounded-3xl lg:p-6">
-                <h3 class="mb-4 text-xs font-black uppercase tracking-widest text-slate-600">My Collection</h3>
-                <div class="flex flex-wrap gap-2">
-                    {% for ub in user_badges[:4] %}
-                    <div class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-lg shadow-sm hover:scale-110 transition-transform cursor-help" title="{{ ub.badge.title }}">
-                        {{ ub.badge.icon }}
-                    </div>
-                    {% endfor %}
-                    {% if user_badges|length > 4 %}
-                    <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-xs font-black text-indigo-600">
-                        +{{ user_badges|length - 4 }}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-            {% endif %}
 
         </aside>
     </div>

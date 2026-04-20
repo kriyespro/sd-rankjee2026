@@ -23,6 +23,7 @@ from hometutor_payments.models import MarketplaceOrder
 
 from .models import DemoRequest, EngagementReview, SessionAttendance, TutorEngagement, TutorProfile
 from .services import (
+    attach_demo_status_to_cards,
     apply_engagement_confirm,
     ensure_engagement,
     get_tutor_profile,
@@ -36,24 +37,83 @@ from .services import (
 )
 
 
+def _tutor_filter_context(request):
+    return {
+        'filter_q': request.GET.get('q', ''),
+        'filter_subject': request.GET.get('subject', ''),
+        'filter_mode': request.GET.get('mode', ''),
+        'filter_language': request.GET.get('language', ''),
+        'filter_area': request.GET.get('area', ''),
+        'filter_city': request.GET.get('city', '') or PILOT_CITY,
+        'filter_class_min': request.GET.get('class_min', ''),
+        'filter_pincode': request.GET.get('pincode', ''),
+        'filter_radius_km': request.GET.get('radius_km', ''),
+    }
+
+
 def tutor_list(request):
     tutors = public_tutor_queryset(request.GET)
     cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
+    cards = attach_demo_status_to_cards(cards, request.user)
     return render(
         request,
         'hometutor/list.jinja',
         {
             'tutor_cards': cards,
             'hometutor_pilot_city': PILOT_CITY,
-            'filter_q': request.GET.get('q', ''),
-            'filter_subject': request.GET.get('subject', ''),
-            'filter_mode': request.GET.get('mode', ''),
-            'filter_language': request.GET.get('language', ''),
-            'filter_area': request.GET.get('area', ''),
-            'filter_city': request.GET.get('city', '') or PILOT_CITY,
-            'filter_class_min': request.GET.get('class_min', ''),
-            'filter_pincode': request.GET.get('pincode', ''),
-            'filter_radius_km': request.GET.get('radius_km', ''),
+            **_tutor_filter_context(request),
+        },
+    )
+
+
+def quick_tutor_search(request):
+    """HTMX endpoint for lightweight dashboard tutor search."""
+    tutors = public_tutor_queryset(request.GET)[:6]
+    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
+    cards = attach_demo_status_to_cards(cards, request.user)
+    return render(
+        request,
+        'hometutor/partials/_tutor_search_results.jinja',
+        {
+            'tutor_cards': cards,
+            'hometutor_pilot_city': PILOT_CITY,
+            'enable_compare': True,
+            'dashboard_mode': True,
+            'parent_gate_enabled': request.GET.get('parent_gate') == '1',
+            **_tutor_filter_context(request),
+        },
+    )
+
+
+def compare_tutors(request):
+    """Compare up to 3 tutor profiles side by side."""
+    slugs = [s.strip() for s in request.GET.getlist('t') if s.strip()]
+    # Preserve order from query string and cap list size.
+    ordered_slugs = []
+    for slug in slugs:
+        if slug not in ordered_slugs:
+            ordered_slugs.append(slug)
+        if len(ordered_slugs) >= 3:
+            break
+
+    profiles = list(
+        TutorProfile.objects.filter(
+            slug__in=ordered_slugs,
+            verification_status=TutorProfile.VerificationStatus.APPROVED,
+        )
+    )
+    profile_map = {p.slug: p for p in profiles}
+    ordered_profiles = [profile_map[s] for s in ordered_slugs if s in profile_map]
+    tutor_cards = [tutor_to_card_dict(p, PILOT_CITY) for p in ordered_profiles]
+    tutor_cards = attach_demo_status_to_cards(tutor_cards, request.user)
+
+    return render(
+        request,
+        'hometutor/compare.jinja',
+        {
+            'tutor_cards': tutor_cards,
+            'selected_count': len(tutor_cards),
+            'hometutor_pilot_city': PILOT_CITY,
         },
     )
 
