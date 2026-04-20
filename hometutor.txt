@@ -1,0 +1,154 @@
+# Home tutor marketplace — feasibility & build plan (RankJee)
+
+Source blueprint: `home_tutor_app_blueprint.html` (parent/student ↔ tutor ↔ admin flows,
+screens, feature modules, MVP vs V2).
+
+---
+
+## 1. Can we add this to RankJee?
+
+**Yes — technically and architecturally.** The blueprint describes a standard two-sided
+marketplace (supply = home tutors, demand = parents/students) with escrow-style money
+flow, verification, and operations. That fits Django + Jinja2 + HTMX + PostgreSQL well.
+
+**Product positioning:** RankJee today is exam/JEE-centric (assessment, learning,
+wallet, subscriptions). The home-tutor vertical is a **separate revenue line** but can
+share:
+
+- `users.CustomUser` (extended with roles: parent, tutor, optional child profile)
+- Auth, CSRF, Axes, existing `/sd/` admin and `/admin/` staff dashboard patterns
+- **Payments:** Razorpay is already in the project — you will add **marketplace-specific**
+  orders, commission, and tutor payouts (do **not** overload the existing subscription
+  `PaymentOrder` model; use a dedicated app, e.g. `hometutor_payments` or `marketplace_payments`)
+
+**Hard constraints to plan for:**
+
+- **Trust & compliance:** Aadhar/education verification implies data handling and consent;
+  store minimal PII, encrypt sensitive docs, define retention policy.
+- **Chicken-and-egg:** Blueprint’s warning is correct — seed one geography with 20–30
+  verified tutors before marketing to parents.
+- **Scope:** Building “everything in the blueprint” at once is not viable; ship MVP
+  slices (below).
+
+---
+
+## 2. Fit with current repo (post-rollback)
+
+| Area              | Today (typical)              | Home tutor needs                                      |
+|-------------------|------------------------------|--------------------------------------------------------|
+| Users             | Student-centric accounts     | Roles: parent, tutor; child entity optional           |
+| Payments          | Subscription / Razorpay      | Monthly fee per engagement + platform fee + payouts   |
+| Dashboard         | RankJee admin + student hub  | Tutor dashboard + parent “my tutors” + ops queue        |
+| Messaging         | Not present as first-class   | In-app chat (MVP: threads; V2: realtime if needed)      |
+| Maps / distance   | —                            | Pincode → lat/lng (geocode API) + radius filter        |
+
+None of this blocks the project; it extends it with new apps and URL namespaces.
+
+---
+
+## 3. Recommended Django app layout (clean boundaries)
+
+Use a **URL prefix** e.g. `/hometutor/` so nothing clashes with `/`, `/admin/`, `/payments/`.
+
+Suggested apps (names indicative):
+
+1. **`hometutor`** (or `tutor_marketplace`) — core domain: TutorProfile, ParentProfile,
+   ChildRequirement, Shortlist, TutorSearch indexes.
+2. **`hometutor_bookings`** — DemoRequest, Engagement (confirmed tutor–family), Schedule,
+   Session (attendance), optional CalendarHoliday.
+3. **`hometutor_payments`** — Parent charges, platform fee, tutor balance, payout batch
+   (manual MVP → Razorpay X / route later). **Label must not be `payments`** (conflicts
+   with RankJee subscriptions).
+4. **`hometutor_messaging`** — Thread, Message, attachment (V2), admin support queue.
+5. **Admin / ops** — Either extend `dashboard` with namespaced routes under
+   `/admin/hometutor/…` or a thin `hometutor_ops` app for verification & disputes.
+
+---
+
+## 4. Phased plan (aligned with blueprint MVP vs V2)
+
+### Phase A — Foundation (weeks 1–2)
+
+- [ ] Extend user model or add profiles: **tutor** vs **parent** (and optional **child**).
+- [ ] Data model for **TutorProfile** (subjects, boards, area, fee, verification state).
+- [ ] **Admin verification queue** in `/sd/` or staff UI: approve/reject + notes.
+- [ ] Basic **Jinja** templates + HTMX for tutor signup and profile edit.
+
+### Phase B — Discovery (weeks 2–3)
+
+- [ ] **Requirement post** or search form: class, board, subjects, area/pincode, budget,
+  timing preferences.
+- [ ] **Tutor listing** with filters (subject, fee, rating) and **distance** once
+  pincode → coordinates exist.
+- [ ] Tutor **public profile** page (read-only for parents).
+
+### Phase C — Demo & engagement (weeks 3–5)
+
+- [ ] **Demo request** workflow: parent → tutor accept/decline → scheduled datetime.
+- [ ] Reminders (email first; **WhatsApp** = integration cost — V2 or third-party).
+- [ ] **Post-demo mutual confirm** → creates **Engagement** + locked **Schedule** (blueprint
+  steps 3–5 parent/tutor journeys).
+
+### Phase D — Money (weeks 4–6, parallel where safe)
+
+- [ ] Razorpay **parent checkout** for monthly fee (new models, webhooks idempotent).
+- [ ] **Platform commission** line items; tutor **ledger** and **manual payout** list for MVP.
+- [ ] Fee due reminders (Celery + email; push/WhatsApp later).
+
+### Phase E — Sessions & trust (weeks 5–7)
+
+- [ ] Tutor **marks session complete**; parent **attendance view** (calendar MVP: list/table).
+- [ ] **Reviews** only after verified engagement (reduces fake reviews).
+- [ ] **Dispute** model + admin workflow (blueprint admin screens).
+
+### Phase F — Communication (week 6–8)
+
+- [ ] **Basic in-app chat** (server-rendered + HTMX polling or lightweight SSE later).
+- [ ] Masked identity (no raw phone in MVP if possible).
+
+### V2 (after ~50 active engagements — per blueprint)
+
+- Intro video hosting or **YouTube embed** only in MVP.
+- **Razorpay X** or route **automated payouts**.
+- Live location on demo day, tutor comparison table, session notes PDF, 80C receipt PDF,
+  richer calendar.
+
+---
+
+## 5. MVP checklist (from blueprint — “Must-have for launch”)
+
+Mirror of blueprint; track in issue tracker:
+
+1. Tutor profile + **identity/education verification** (admin gate).
+2. Parent **requirement + search** (subject + area + class minimum).
+3. **Demo request + two-sided confirmation** → engagement.
+4. **Monthly fee** via Razorpay (parent pays platform).
+5. **Session attendance** (tutor marks done; parent sees log — basic).
+6. **Tutor payout** — **manual** NEFT list acceptable for first months.
+7. **Admin verification panel**.
+8. **Basic chat** (text-only).
+
+---
+
+## 6. Risks & mitigations
+
+| Risk                    | Mitigation                                                |
+|-------------------------|------------------------------------------------------------|
+| Empty marketplace       | Seed one city; manual tutor onboarding first               |
+| Payment disputes        | Clear T&C, logged sessions, admin dispute flow             |
+| Model bloat in `users`  | Keep marketplace profiles in dedicated apps              |
+| Regulatory / KYC        | Start with document upload + manual check; formal KYC API later |
+
+---
+
+## 7. Next concrete step
+
+1. **Product:** Pick pilot city + tutor count target (e.g. 25 tutors).
+2. **Tech:** Add **`hometutor`** app + migrations for TutorProfile + verification states only.
+3. **Ship:** One vertical slice — “verified tutor list + contact request” (even before full
+   demo flow) to validate listing UX.
+
+---
+
+*This file is a planning artifact. Update checkboxes as you implement. Reference the HTML
+blueprint for full screen/feature inventory.*

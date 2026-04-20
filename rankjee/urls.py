@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from core import views as core_views
 
 admin.site.site_header = "RankJee Admin Control"
 admin.site.site_title = "RankJee Admin"
@@ -30,6 +31,9 @@ urlpatterns = [
     path('assessment/', include('assessment.urls')),
     path('learning/', include('learning.urls')),
     path('payments/', include('payments.urls')),
+    path('hometutor/', include('hometutor.urls')),
+    path('hometutor/payments/', include('hometutor_payments.urls')),
+    path('sw.js', core_views.service_worker, name='service_worker'),
     path('', include('core.urls')),
 ]
 

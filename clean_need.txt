@@ -1,0 +1,50 @@
+# RankTutor - Comprehensive Tutor Portal Platform
+
+A full-featured tutor portal platform built with Django 5, Jinja2 templates, Tailwind CSS, Alpine.js, and HTMX.
+
+## Features
+
+### Phase 1: MVP (Completed)
+- ✅ User Management System (5 roles: Student, Parent, Tutor, City Admin, Global Admin)
+- ✅ Tutor Profile Builder with document verification
+- ✅ Advanced Tutor Search (Subject, Level, Mode, Fee, Language)
+- ✅ Booking & Scheduling System
+- ✅ Payment System with 15% commission model
+- ✅ Reviews & Ratings System
+- ✅ In-App Messaging
+- ✅ City Admin Dashboard
+- ✅ Global Admin Dashboard
+
+### Phase 2-4: Enhanced Features (Planned)
+- Geolocation & Map-based Search (OpenStreetMap/Leaflet)
+- AI Matchmaking
+- Calendar Sync (Google/Outlook)
+- Video Conferencing (Jitsi/Zoom)
+- Premium Features
+- Advanced Analytics
+- CMS & Marketing
+- And much more...
+
+
+
+├── tutors/            # Tutor profiles and management
+├── students/          # Student profiles
+├── bookings/          # Booking and scheduling
+├── payments/          # Payment processing
+├── messaging/         # In-app messaging
+├── reviews/           # Reviews and ratings
+├── admin_panel/       # Admin dashboards
+├── cms/               # Content management
+├── analytics/         # Analytics and reporting
+└── notifications/     # Email and push notifications
+```
+
+## User Roles
+
+1. **Student**: Search and book tutors, track lessons
+2. **Parent**: Manage bookings for children
+3. **Tutor**: Create profile, manage bookings, set pricing
+4. **City Admin**: Approve tutors, manage local operations
+5. **Global Admin**: Platform-wide management
+
+

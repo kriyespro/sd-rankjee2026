@@ -1,0 +1,98 @@
+{% extends "base.jinja" %}
+{% block title %}{{ t.display_name }} · Home tutor · RankJee{% endblock %}
+
+{% block content %}
+<section class="bg-gradient-to-b from-indigo-50 to-slate-50 border-b border-indigo-100/80 pt-10 pb-8 px-4">
+    <div class="max-w-3xl mx-auto">
+        <nav class="text-xs font-bold text-slate-500 mb-4">
+            <a href="{{ url('core:home') }}" class="hover:text-indigo-600">Home</a>
+            <span class="mx-2">/</span>
+            <a href="{{ url('hometutor:tutor_list') }}" class="hover:text-indigo-600">Tutors</a>
+            <span class="mx-2">/</span>
+            <span class="text-slate-800">{{ t.display_name }}</span>
+        </nav>
+        <div class="flex items-start gap-4">
+            {% if t.profile_image %}
+            <img src="{{ t.profile_image.url }}" alt="{{ t.display_name }}" class="w-20 h-20 rounded-2xl object-cover border border-indigo-100 shadow-sm shrink-0">
+            {% else %}
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center text-2xl font-black shrink-0">
+                {{ t.display_name[0] }}
+            </div>
+            {% endif %}
+            <div>
+                <h1 class="text-3xl font-black text-slate-900 tracking-tight">{{ t.display_name }}</h1>
+                <p class="text-indigo-600 font-semibold mt-1">{{ t.subjects }}</p>
+                <p class="text-slate-600 text-sm mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                    <span>📍 {{ t.area or '—' }}, {{ t.city }}</span>
+                    <span>🧭 {{ t.get_teaching_mode_display() }}</span>
+                    {% if t.languages %}<span>🗣️ {{ t.languages }}</span>{% endif %}
+                    {% if t.pincode %}<span>Pin {{ t.pincode }}</span>{% endif %}
+                    <span class="text-amber-600 font-bold">★ {{ t.rating_display }} ({{ t.reviews_count }} reviews)</span>
+                </p>
+                {% if viewer_is_owner %}
+                <p class="mt-3 text-xs font-bold text-indigo-800 bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 inline-block">
+                    Listing status: {{ t.get_verification_status_display() }}
+                    · <a href="{{ url('hometutor:my_profile') }}" class="underline hover:text-indigo-950">Edit listing</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="max-w-3xl mx-auto px-4 py-10 space-y-8">
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">Classes &amp; fee</h2>
+        <p class="text-slate-800 font-medium">{% if t.classes_label %}{{ t.classes_label }}{% else %}Class {{ t.teaches_from }}–{{ t.teaches_to }}{% endif %}</p>
+        <p class="text-2xl font-black text-slate-900 mt-2">{{ t.fee_label or 'Fee on request' }}</p>
+    </div>
+
+    {% if t.bio %}
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">About</h2>
+        <p class="text-slate-700 whitespace-pre-line">{{ t.bio }}</p>
+    </div>
+    {% endif %}
+
+    {% if can_request_demo and demo_form %}
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">Request a free demo</h2>
+        <p class="text-slate-600 text-sm mb-4">The tutor will see your message in their RankJee inbox.</p>
+        <form method="post" action="{{ url('hometutor:demo_request_create', t.slug) }}" class="space-y-3">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <div>
+                <label for="{{ demo_form.message.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Message</label>
+                {{ demo_form.message }}
+            </div>
+            <div>
+                <label for="{{ demo_form.contact_phone.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Contact (optional)</label>
+                {{ demo_form.contact_phone }}
+            </div>
+            <button type="submit" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+                Send demo request
+            </button>
+        </form>
+    </div>
+    {% elif not request.user.is_authenticated %}
+    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
+        <a href="{{ url('users:login') }}?next={{ request.path }}" class="font-black text-indigo-600 hover:underline">Log in</a> to request a demo with this tutor.
+    </div>
+    {% elif not t.user_id %}
+    <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-6 text-sm text-amber-900">
+        This listing isn&apos;t linked to a live tutor account yet — demo requests are unavailable.
+    </div>
+    {% endif %}
+
+    <div class="rounded-2xl border border-indigo-100 bg-indigo-50/50 p-6">
+        <h2 class="text-sm font-black uppercase tracking-wider text-indigo-800 mb-2">Prepare online on RankJee</h2>
+        <p class="text-slate-700 text-sm mb-4">Diagnostics, skill paths, and rewards — same account as your tutor search.</p>
+        <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+            Practice online
+        </a>
+    </div>
+
+    <p class="text-center text-xs text-slate-500">
+        <a href="{{ url('hometutor:tutor_list') }}" class="text-indigo-600 font-bold hover:underline">← Back to all tutors</a>
+    </p>
+</section>
+{% endblock %}

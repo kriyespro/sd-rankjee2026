@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}Master Your Skills, Unlock Your Future - RankJee{% endblock %}
+{% block title %}Find Home Tutors &amp; Practice Online - RankJee{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -34,30 +34,45 @@
 
     <div class="max-w-6xl mx-auto text-center relative z-10 px-4">
         <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-5 py-2 text-xs font-black uppercase tracking-[0.2em] mb-10 text-indigo-200 shadow-2xl">
-            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
-            Intelligence at Scale
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            Home tutors · {{ hometutor_pilot_city }} pilot
         </div>
         
-        <h1 class="text-6xl md:text-9xl font-black leading-[0.85] mb-8 tracking-tighter">
-            Skill up. <br>
-            <span class="text-gradient">Stand out.</span>
+        <h1 class="text-4xl sm:text-6xl md:text-8xl font-black leading-[0.95] mb-6 tracking-tighter">
+            Find a verified <br>
+            <span class="text-gradient">home tutor.</span>
         </h1>
         
-        <p class="text-lg md:text-2xl text-slate-300 max-w-3xl mx-auto mb-10 font-medium leading-relaxed">
-            Eliminate your weak spots with AI-driven diagnostics. <br class="hidden md:block"> Earn direct cash rewards for every milestone.
+        <p class="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-4 font-medium leading-relaxed">
+            Book trusted tutors for CBSE, ICSE &amp; boards — starting in <strong class="text-white">{{ hometutor_pilot_city }}</strong>.
+        </p>
+        <p class="text-base md:text-lg text-slate-400 max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
+            <span class="text-indigo-200">Upsell:</span> Same account unlocks online exams, skill paths &amp; rewards when you&apos;re ready.
         </p>
         
-        <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-4 rounded-[2.5rem] max-w-fit mx-auto shadow-2xl">
-            <div class="flex flex-col sm:flex-row gap-4 items-center">
+        <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-4 rounded-[2.5rem] max-w-4xl mx-auto shadow-2xl">
+            <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-center justify-center">
+                <a href="#find-tutors"
+                   class="w-full sm:w-auto bg-white text-slate-900 font-black px-8 py-4 rounded-2xl hover:bg-slate-100 transition-all shadow-xl text-sm tracking-wide active:scale-95 uppercase text-center">
+                    Browse tutors
+                </a>
+                <a href="{{ url('assessment:index') }}"
+                   class="w-full sm:w-auto bg-indigo-500 text-white font-black px-8 py-4 rounded-2xl hover:bg-indigo-400 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
+                    Practice online (exams)
+                </a>
                 <a href="{{ url('users:signup') }}"
-                   class="w-full sm:w-auto bg-white text-slate-900 font-black px-12 py-5 rounded-2xl hover:bg-slate-100 transition-all shadow-2xl shadow-white/10 text-sm tracking-wide active:scale-95 uppercase">
+                   class="w-full sm:w-auto bg-white/10 text-white border border-white/25 font-black px-8 py-4 rounded-2xl hover:bg-white/20 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
                     {{ uil.get_started }}
                 </a>
-                <a href="{{ url('core:watch_ads') }}"
-                   class="w-full sm:w-auto bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-black px-12 py-5 rounded-2xl hover:bg-indigo-600 hover:text-white transition-all text-sm tracking-wide active:scale-95 uppercase">
-                    {{ uil.watch_earn }}
+                <a href="{{ url('hometutor:my_profile') }}"
+                   class="w-full sm:w-auto text-indigo-200 border border-indigo-400/40 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-500/20 transition-all text-sm tracking-wide text-center">
+                    I&apos;m a tutor — list me
                 </a>
             </div>
+            <p class="text-center text-xs text-slate-400 mt-4 font-medium">
+                <a href="{{ url('core:watch_ads') }}" class="text-indigo-300 hover:text-white underline underline-offset-2">{{ uil.watch_earn }}</a>
+                · {% if featured_tutors_from_db %}Featured tutors are live in <strong class="text-white/90">{{ hometutor_pilot_city }}</strong> — browse the full directory anytime.{% else %}Listings below are placeholders until you seed tutors (see <code class="text-indigo-200/90">seed_hometutor_tutors</code>).{% endif %}
+            </p>
         </div>
 
         {% if jackpot %}
@@ -91,6 +106,35 @@
     </div>
 </section>
 
+<!-- Home tutor listings: DB-backed when seeded (HT-1); else static fallback (core/hometutor_data.py) -->
+<section id="find-tutors" class="bg-slate-100 border-y border-slate-200/80 scroll-mt-20">
+    <div class="max-w-6xl mx-auto px-4 py-14 md:py-20">
+        <div class="text-center mb-10 md:mb-14">
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Featured in {{ hometutor_pilot_city }}</p>
+            <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Home tutors you can book next</h2>
+            <p class="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
+                {% if featured_tutors_from_db %}Verified listings — request a demo when the tutor uses a linked RankJee account.{% else %}Placeholder cards until you run <code class="text-xs bg-slate-200 px-1 rounded">python manage.py seed_hometutor_tutors</code>.{% endif %}
+            </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for t in featured_home_tutors %}
+            {% include "hometutor/partials/_tutor_card.jinja" %}
+            {% endfor %}
+        </div>
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+                Browse all tutors →
+            </a>
+            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-colors">
+                Upsell: start online practice →
+            </a>
+            <a href="{{ url('users:signup') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-colors">
+                Create free account
+            </a>
+        </div>
+    </div>
+</section>
+
 <!-- Trust Section -->
 <div class="bg-indigo-900/10 backdrop-blur-md border-y border-indigo-100/10 py-6 md:py-8">
     <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
@@ -105,8 +149,9 @@
 <section class="py-16 md:py-24 bg-slate-50">
     <div class="max-w-6xl mx-auto px-4">
         <div class="text-center mb-12 md:mb-16 px-4">
+            <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Online exam &amp; skills</p>
             <h2 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">Engineering your success.</h2>
-            <p class="text-slate-600 text-sm md:text-base font-medium max-w-xl mx-auto">We've automated the learning process so you can focus on mastering high-value skills.</p>
+            <p class="text-slate-600 text-sm md:text-base font-medium max-w-xl mx-auto">After you find a tutor, use RankJee diagnostics and micro-learning to close skill gaps — and earn along the way.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto">
@@ -172,8 +217,16 @@
         <h2 class="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-tight">Master the platform. <br> <span class="text-indigo-500">Master your life.</span></h2>
         <p class="text-slate-400 text-lg mb-12 font-medium">Join thousands of students who have optimized their learning path and started earning from home.</p>
         <div class="flex flex-wrap justify-center gap-4">
+            <a href="#find-tutors"
+               class="bg-emerald-600 text-white font-black px-10 py-5 rounded-2xl hover:bg-emerald-500 transition-all shadow-2xl shadow-emerald-600/30">
+                FIND TUTORS
+            </a>
+            <a href="{{ url('assessment:index') }}"
+               class="bg-indigo-600 text-white font-black px-10 py-5 rounded-2xl hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30">
+                PRACTICE ONLINE
+            </a>
             <a href="{{ url('users:signup') }}"
-               class="bg-indigo-600 text-white font-black px-12 py-5 rounded-2xl hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30">
+               class="border border-slate-600 text-slate-200 font-black px-10 py-5 rounded-2xl hover:bg-slate-800 transition-all">
                 START NOW &rarr;
             </a>
         </div>

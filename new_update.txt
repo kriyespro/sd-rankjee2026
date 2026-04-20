@@ -1,0 +1,8 @@
+1. 
+i want each role have own dedicated dashbaord content ,stats 
+
+tutor , student , parants , city-admin , global admin 
+
+
+2 . 
+tutor card make more advanced with tutor image , also make details tutor profile page make more advanced 

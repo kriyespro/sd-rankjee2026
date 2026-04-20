@@ -35,16 +35,41 @@ def _staff_only(request):
 
 @login_required
 def index(request):
+    role = getattr(request.user, 'role', 'STUDENT')
+    role_intro_map = {
+        'TUTOR': "Manage your tutor listing, handle demo requests, and grow student enrollments.",
+        'PARENT': "Find trusted tutors, track demos, and support your child with guided prep.",
+        'STUDENT': "Build mastery with tests and videos, and connect with the right tutor when needed.",
+        'CITY_ADMIN': "Track city-level tutor quality, disputes, and demand trends for operational excellence.",
+        'GLOBAL_ADMIN': "Oversee platform-wide growth, trust, and monetization with cross-region visibility.",
+    }
+    role_marketplace_label_map = {
+        'TUTOR': "Review incoming demos and keep your tutor profile optimized for conversions.",
+        'PARENT': "Browse tutors and request demos to choose the best tutor for your child.",
+        'STUDENT': "Explore tutors and request a demo to accelerate your preparation.",
+        'CITY_ADMIN': "Review city tutor supply and conversion funnels from discovery to engagement.",
+        'GLOBAL_ADMIN': "Monitor total supply-demand health and marketplace quality across all regions.",
+    }
+
     if request.user.is_superuser or request.user.is_staff:
+        is_city_admin = role == 'CITY_ADMIN'
+        admin_scope_label = 'Global'
+        scoped_users = User.objects.all()
+        if is_city_admin and getattr(request.user, 'state', None):
+            scoped_users = User.objects.filter(state=request.user.state)
+            admin_scope_label = f"City/State: {request.user.get_state_display()}"
+        elif is_city_admin:
+            admin_scope_label = 'City/State: not set'
+
         # App-wide Admin Dashboard Stats
-        total_users_count = User.objects.count()
+        total_users_count = scoped_users.count()
         total_questions = Question.objects.count()
         total_videos = ConceptVideo.objects.count()
         total_skills = Skill.objects.filter(is_active=True).count()
         
         # User Search & Pagination
         search_query = request.GET.get('q', '').strip()
-        users_queryset = User.objects.all().order_by('-date_joined')
+        users_queryset = scoped_users.order_by('-date_joined')
         if search_query:
             users_queryset = users_queryset.filter(
                 Q(username__icontains=search_query) | Q(email__icontains=search_query)
@@ -69,7 +94,7 @@ def index(request):
         last_7_days = timezone.now() - timedelta(days=7)
         recent_attempts_count = UserAttempt.objects.filter(attempt_date__gte=last_7_days).count()
         recent_submissions_count = UserTaskSubmission.objects.filter(submitted_at__gte=last_7_days).count()
-        recent_registrations_count = User.objects.filter(date_joined__gte=last_7_days).count()
+        recent_registrations_count = scoped_users.filter(date_joined__gte=last_7_days).count()
         
         # New analytics
         pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').order_by('-submitted_at')
@@ -80,7 +105,7 @@ def index(request):
         )['total'] or 0
         
         # Calculate total XP across platform to show engagement
-        total_xp_platform = User.objects.aggregate(Sum('xp_points'))['xp_points__sum'] or 0
+        total_xp_platform = scoped_users.aggregate(Sum('xp_points'))['xp_points__sum'] or 0
 
         pending_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').select_related(
             'user'
@@ -88,6 +113,8 @@ def index(request):
         pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
 
         return render(request, 'dashboard/admin_dashboard.jinja', {
+            'admin_role': role,
+            'admin_scope_label': admin_scope_label,
             'total_users': total_users_count,
             'total_questions': total_questions,
             'total_videos': total_videos,
@@ -183,11 +210,46 @@ def index(request):
 
     xp_rank_india = User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
 
+    from hometutor.models import DemoRequest, TutorProfile
+
+    hometutor_tutor_profile = TutorProfile.objects.filter(user=request.user).first()
+    hometutor_pending_incoming = (
+        DemoRequest.objects.filter(
+            tutor=hometutor_tutor_profile,
+            status=DemoRequest.Status.PENDING,
+        ).count()
+        if hometutor_tutor_profile
+        else 0
+    )
+    hometutor_my_pending_sent = DemoRequest.objects.filter(
+        requester=request.user,
+        status=DemoRequest.Status.PENDING,
+    ).count()
+
+    role_stat_cards = [
+        {'label': 'Total Credits', 'value': f'₹{int(request.user.wallet_balance)}'},
+        {'label': 'Mastery', 'value': f'{progress}%'},
+        {'label': 'XP Rank (India)', 'value': f'#{xp_rank_india}'},
+    ]
+    if role == 'TUTOR':
+        role_stat_cards.append({'label': 'Incoming Demo Requests', 'value': str(hometutor_pending_incoming)})
+    elif role == 'PARENT':
+        role_stat_cards.append({'label': 'My Pending Tutor Requests', 'value': str(hometutor_my_pending_sent)})
+    else:
+        role_stat_cards.append({'label': 'Free Test Uses', 'value': str(request.user.trial_tests_left)})
+
     return render(request, 'dashboard/index.jinja', {
         'user': request.user,
+        'user_role': role,
+        'role_intro': role_intro_map.get(role, role_intro_map['STUDENT']),
+        'role_marketplace_label': role_marketplace_label_map.get(role, role_marketplace_label_map['STUDENT']),
         'progress': progress,
         'nav_progress_percent': progress,
         'xp_rank_india': xp_rank_india,
+        'hometutor_tutor_profile': hometutor_tutor_profile,
+        'hometutor_pending_incoming': hometutor_pending_incoming,
+        'hometutor_my_pending_sent': hometutor_my_pending_sent,
+        'role_stat_cards': role_stat_cards,
         'total_earned': total_earned,
         'weak_areas': weak_areas,
         'latest_attempt': latest_attempt,

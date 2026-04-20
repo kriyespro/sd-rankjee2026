@@ -3,10 +3,16 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum
 from django.contrib import messages
 from django.core.cache import cache
+from django.http import HttpResponse
 from .models import EarningTask, UserTaskSubmission
 from assessment.models import UserAttempt
 from django.utils import timezone
 from assessment.models import DailyJackpot
+
+from hometutor.services import featured_home_tutors
+
+from .hometutor_data import PILOT_CITY
+
 
 def privacy(request):
     return render(request, 'core/privacy.jinja')
@@ -16,13 +22,26 @@ def terms(request):
     return render(request, 'core/terms.jinja')
 
 
+def service_worker(request):
+    # Return an empty service worker to silence stale browser registrations.
+    return HttpResponse(
+        "self.addEventListener('install', () => self.skipWaiting());"
+        "self.addEventListener('activate', () => self.clients.claim());",
+        content_type='application/javascript',
+    )
+
+
 def home(request):
     now = timezone.now()
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
     time_to_go = int((jackpot.scheduled_time - now).total_seconds()) if jackpot else 0
+    featured_rows, featured_from_db = featured_home_tutors()
     return render(request, 'core/home.jinja', {
         'jackpot': jackpot,
-        'jackpot_time_to_go': time_to_go
+        'jackpot_time_to_go': time_to_go,
+        'featured_home_tutors': featured_rows,
+        'featured_tutors_from_db': featured_from_db,
+        'hometutor_pilot_city': PILOT_CITY,
     })
 
 

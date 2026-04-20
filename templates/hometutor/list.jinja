@@ -1,0 +1,102 @@
+{% extends "base.jinja" %}
+{% block title %}Find home tutors · {{ hometutor_pilot_city }} · RankJee{% endblock %}
+
+{% block content %}
+<section class="bg-slate-100 border-b border-slate-200/80 pt-8 pb-10 px-4">
+    <div class="max-w-6xl mx-auto">
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Home tutors</p>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">Browse verified tutors</h1>
+        <p class="text-slate-600 text-sm md:text-base max-w-2xl">Pilot: <strong>{{ hometutor_pilot_city }}</strong>. Filter by subject, area, or class.</p>
+    </div>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+    <form method="get" action="{{ url('hometutor:tutor_list') }}" class="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label for="id_q" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Search</label>
+                <input type="search" name="q" id="id_q" value="{{ filter_q }}" placeholder="Name, subject, area…"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_subject" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Subject</label>
+                <input type="text" name="subject" id="id_subject" value="{{ filter_subject }}" placeholder="e.g. Physics"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_mode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Mode</label>
+                <select name="mode" id="id_mode" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Any mode</option>
+                    <option value="OFFLINE" {% if filter_mode == 'OFFLINE' %}selected{% endif %}>Offline</option>
+                    <option value="ONLINE" {% if filter_mode == 'ONLINE' %}selected{% endif %}>Online</option>
+                    <option value="HYBRID" {% if filter_mode == 'HYBRID' %}selected{% endif %}>Hybrid</option>
+                </select>
+            </div>
+            <div>
+                <label for="id_area" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Area</label>
+                <input type="text" name="area" id="id_area" value="{{ filter_area }}" placeholder="e.g. Satellite"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_language" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Language</label>
+                <input type="text" name="language" id="id_language" value="{{ filter_language }}" placeholder="e.g. Hindi"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_city" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">City</label>
+                <input type="text" name="city" id="id_city" value="{{ filter_city }}" placeholder="{{ hometutor_pilot_city }}"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_class_min" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Student class (1–12)</label>
+                <input type="number" name="class_min" id="id_class_min" value="{{ filter_class_min }}" min="1" max="12" placeholder="10"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_pincode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Pincode (radius search)</label>
+                <input type="text" name="pincode" id="id_pincode" value="{{ filter_pincode }}" placeholder="e.g. 380015"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <div>
+                <label for="id_radius_km" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Radius (km)</label>
+                <input type="number" name="radius_km" id="id_radius_km" value="{{ filter_radius_km }}" min="1" max="100" placeholder="5"
+                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-3">
+            <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+                Apply filters
+            </button>
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">
+                Reset
+            </a>
+        </div>
+    </form>
+
+    {% if tutor_cards %}
+    <p class="text-sm text-slate-600 mb-4 font-medium">{{ tutor_cards|length }} tutor{% if tutor_cards|length != 1 %}s{% endif %} match.</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for t in tutor_cards %}
+        {% include "hometutor/partials/_tutor_card.jinja" %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+        <p class="text-slate-700 font-bold mb-2">No tutors match these filters.</p>
+        <p class="text-slate-500 text-sm mb-4">Try clearing subject or area, or check back as we onboard more supply.</p>
+        <a href="{{ url('hometutor:tutor_list') }}" class="text-indigo-600 font-black text-sm hover:underline">View all in {{ hometutor_pilot_city }}</a>
+    </div>
+    {% endif %}
+</section>
+
+<section class="max-w-6xl mx-auto px-4 pb-10">
+    <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6">
+        <h2 class="text-sm font-black uppercase tracking-wider text-indigo-800 mb-2">Prepare online on RankJee</h2>
+        <p class="text-slate-700 text-sm mb-4">After shortlisting a tutor, run diagnostic tests and video lessons in the same account.</p>
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">Start diagnostics</a>
+            <a href="{{ url('learning:index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-indigo-200 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-colors">Watch concept videos</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

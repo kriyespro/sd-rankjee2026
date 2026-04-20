@@ -24,13 +24,13 @@ logger = logging.getLogger("rankjee.signup")
 def _enqueue_welcome_email(user_id):
     """Never fail the HTTP response if Celery/Redis is down."""
     try:
-        send_welcome_email.delay(user_id)
+        # Ignore task result to avoid result-backend (Redis) dependency in web requests.
+        send_welcome_email.apply_async(args=[user_id], ignore_result=True)
     except Exception as exc:
         logger.warning(
             "Welcome email task not queued (user_id=%s): %s",
             user_id,
             exc,
-            exc_info=True,
         )
 
 

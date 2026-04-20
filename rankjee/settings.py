@@ -115,6 +115,8 @@ INSTALLED_APPS = [
     'assessment',
     'learning',
     'payments',
+    'hometutor',
+    'hometutor_payments',
     'django_celery_beat',
     'axes',
 ]
@@ -125,6 +127,12 @@ INSTALLED_APPS = [
 # Set RAZORPAY_USE_DUMMY=1 to force simulated payments even if keys exist (local only).
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+# Razorpay webhooks (payment.captured) for home tutor marketplace — verify X-Razorpay-Signature
+RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '').strip()
+
+# Home tutor marketplace (separate from subscription `payments`)
+HOMETUTOR_DEFAULT_MONTHLY_FEE_INR = os.environ.get('HOMETUTOR_DEFAULT_MONTHLY_FEE_INR', '5000')
+HOMETUTOR_PLATFORM_FEE_PERCENT = os.environ.get('HOMETUTOR_PLATFORM_FEE_PERCENT', '15')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -294,6 +302,7 @@ CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', CELERY_BROKER_UR
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_IGNORE_RESULT = os.environ.get('CELERY_TASK_IGNORE_RESULT', 'True') == 'True'
 
 # Cache: Redis in production when REDIS_URL is set (unless USE_REDIS_CACHE=0); LocMem for local dev.
 _redis_cache_url = os.environ.get('REDIS_CACHE_URL') or _redis_default.replace('/0', '/2')

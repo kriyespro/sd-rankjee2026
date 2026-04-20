@@ -1,64 +1,250 @@
-# RankJee - Development Plan (Phase-wise)
+# RankJee — dev_plan.txt (single roadmap)
 
-## Phase 1: MVP (Months 0-3) - Validation & Core Loop ✅ DONE
+**How to use this file:** This is the **one** product + engineering roadmap. For home-tutor
+**feature detail** (models, apps, MVP checklist), see **`hometutor.txt`**. For full UX spec,
+see **`home_tutor_app_blueprint.html`**.
 
-### 1. Project Setup
-- [x] Initialize Python 3.12 Virtual Environment
-- [x] Install Django 5, Jinja2, psycopg2, python-dotenv
-- [x] Configure `settings.py`:
-  - [x] Primary: Jinja2, Secondary: Django Templates (for `/sd/` admin)
-  - [x] DB config (SQLite for DEV, PostgreSQL for PROD)
-  - [x] Static files & Templates directory setup
-- [x] Create `durga.py` dev script (clear cache, runserver)
-- [x] Create base semantic layout (`base.jinja`) with Tailwind, Alpine, HTMX via CDN
-- [x] Set up Modular Apps: `core`, `users`, `dashboard`, `assessment`, `learning`
+Do **not** maintain a parallel roadmap elsewhere unless it links back here.
 
-### 2. User System & URLs
-- [x] Move default Django admin to `/sd/`
-- [x] Set up Custom Dashboard at `/admin/`
-- [x] Implement Custom User Model in `users` app
-- [x] Signup/Login flows using HTMX
+---
 
-### 3. Test Engine & Core Loop
-- [x] `assessment` app: Models for Question, Skill, Tags
-- [x] MCQ-based diagnostic test view
-- [x] Weak Area Engine logic
+## Legend
 
-### 4. Micro Learning Module
-- [x] `learning` app: Models for Videos, Content, Questions
-- [x] Rule-based weak area to content mapping
+| Symbol | Meaning |
+|--------|---------|
+| ✅ | Done (shipped or accepted) |
+| ◐ | Partial (core shipped, follow-up pending) |
+| ⬜ | Not started / backlog |
 
-### 5. Retest Engine
-- [x] Concept retest flow
-- [x] Retest lock logic (score > 80% to unlock)
+---
 
-### 6. Earnings & UI
-- [x] Basic dashboard UI using Tailwind+Alpine (progress %, weak skills)
-- [x] Simple earning tasks submission system
-- [x] Custom Django admin for uploading skills/questions/videos
+## 1. Product direction (no confusion)
 
-### 7. Seed Data
-- [x] Digital Marketing skill with 10 MCQ questions
-- [x] 4 learning videos mapped to concept tags
-- [x] 3 earning tasks seeded
+| Layer | What it is | Role |
+|-------|------------|------|
+| **Primary GTM (now)** | **Home tutor marketplace** — find / list verified tutors | Main story on **public home page**; drives trust and local demand |
+| **Core platform (existing)** | **Online exam / JEE prep** — MCQs, skills, learning, wallet | **Upsell** to the same families and tutors: “also practice & track progress on RankJee” |
+| **Who can upsell** | Parents, students, **and** home tutors | Tutors refer students to tests; students upgrade to premium exam features |
 
-## Phase 2: Growth (Months 3-9) - Retention & Automation
-- [x] Leaderboard & XP gamification system
-- [x] Daily streak & notification reminders
-- [x] AI Personalization (difficulty, sequencing)
-- [x] Auto Task Marketplace (auto-approve based on URL)
-- [x] Skill Paths System (Beginner → Pro → Earner)
-- [x] Referral system implementation (Bonus feature)
-- [x] Background tasks (Celery + Redis)
+**One-line pitch:** RankJee helps you **find the right home tutor**, and **level up with online exams** when you are ready.
 
-## Phase 3: Monetization & Scale (Months 9-18)
-- [ ] Premium Plans & Paywalls
-- [ ] Certification Engine (PDF certificate on passing)
-- [ ] Company Hiring Portal
-- [ ] Platform Commission logic
+---
 
-## Phase 4: Domination (18+ Months)
-- [ ] AI Mentor Chat
-- [ ] Real Freelance Marketplace
-- [ ] Mobile App (React Native/Flutter)
-- [ ] Regional Expansion (Hindi + local languages)
+## 2. Completed work (snapshot — do not re-scope)
+
+These are **done**; new work builds on top.
+
+- **Stack:** Django 5, Jinja2, HTMX, Tailwind/Alpine (CDN), Celery+Redis, SQLite dev / Postgres prod.
+- **Apps:** `core`, `users`, `dashboard`, `assessment`, `learning`, `payments` (subscriptions), Axes.
+- **URLs:** Django admin `/sd/`, staff dashboard `/admin/`, core site `/`.
+- **Loops shipped:** Custom user, signup/login, MCQ assessment, weak-area → learning, retest,
+  earnings tasks, skill paths, referrals, gamification, Razorpay subscription path (where enabled).
+
+---
+
+## 3. Roadmap — build order (what to do next)
+
+Numbers are **sequence**, not calendar months. Finish earlier phases before starting later ones
+unless a task is explicitly parallel.
+
+---
+
+### HomeTutor Spec parity (`hometutor.txt`) — audit status
+
+This block tracks parity against `hometutor.txt` phases/checklist so status stays factual.
+
+| Spec item (`hometutor.txt`) | Status | Notes |
+|---|:---:|---|
+| Phase A: tutor/parent role support + tutor profile + admin verification + tutor edit UX | ✅ | Roles + tutor listing/profile + `/sd/` verification are live. |
+| Phase B: parent requirement post/search (class/subject/area etc.) + tutor discovery | ✅ | Tutor search/filter + profile pages are live (requirement-post is covered by search/request flow). |
+| Phase B: distance filter (pincode → geocode/radius) | ✅ | Implemented via `PincodeGeo` + radius filter in tutor discovery. |
+| Phase C: demo request → accept/decline → scheduling + reminders + mutual confirm | ✅ | End-to-end flow is live with reminder tasks. |
+| Phase D: parent checkout + commission split + tutor ledger/payout + fee reminders | ✅ | Live in `hometutor_payments` + Celery reminder task. |
+| Phase E: session attendance + reviews tied to engagements | ✅ | Live via engagement room and admin records. |
+| Phase E: dispute model + admin dispute workflow | ✅ | `EngagementDispute` model + admin workflow + raise-dispute flow in engagement room. |
+| Phase F: basic in-app chat (text) | ✅ | Live via engagement room chat. |
+| Phase F: masked identity / avoid exposing direct phone by default | ✅ | Tutor inbox now shows masked email/phone by default. |
+| MVP checklist (items 1–8 in `hometutor.txt`) | ✅ | Core launch checklist delivered (with above V2/security follow-ups pending). |
+
+---
+
+### `clean_need.txt` reconciliation (actual repo vs claim)
+
+`clean_need.txt` mixes implemented work with aspirational modules. Use this table as source of truth.
+
+| `clean_need.txt` claim | In current project? | Reality |
+|---|:---:|---|
+| 5 roles: Student, Parent, Tutor, City Admin, Global Admin | ◐ | Role enum includes all five roles; dedicated city/global role-scoped dashboards and permissions are still pending. |
+| Advanced tutor search: Subject, Level, Mode, Fee, Language | ✅ | Implemented filters now include subject, fee (display), class level, mode, language, city/area, and pincode-radius. |
+| Booking & scheduling system | ✅ | Implemented as demo request → tutor accept/decline → scheduled datetime → mutual confirm → engagement + session logs. |
+| Payment with 15% commission model | ✅ | Implemented in `hometutor_payments` with configurable `HOMETUTOR_PLATFORM_FEE_PERCENT` (default 15). |
+| Reviews & ratings system | ✅ | Engagement-tied reviews implemented. |
+| In-app messaging | ✅ | Engagement-room chat implemented (text + support flag). |
+| City Admin dashboard | ◐ | Foundation role exists, but dedicated city admin dashboard and policy guards are pending. |
+| Global Admin dashboard | ◐ | Foundation role exists; currently platform still uses existing `/sd/` + `/admin/` without dedicated global admin UX. |
+| Separate apps: `tutors`, `students`, `bookings`, `messaging`, `reviews`, `admin_panel`, `cms`, `analytics`, `notifications` | ⬜ | Not this architecture; current code uses `hometutor`, `hometutor_payments`, and existing project apps. |
+| Leaflet/OpenStreetMap, AI matchmaking, calendar sync, video conferencing | ⬜ | Not implemented. |
+
+---
+
+### Phase HT-0 — Visibility & story (weeks 1–2) — *unblocks marketing*
+
+**Status:** ✅ **Complete**
+
+**Goal:** Homepage shows **home tutor** as the lead offer; exam prep is clearly secondary (upsell).
+
+| Done | Item |
+|:----:|------|
+| ✅ | **Home page:** Hero + section “Find home tutors” (pilot city in copy). (`templates/core/home.jinja`, `core/hometutor_data.py`) |
+| ✅ | **Tutor listing on home:** Seeded static cards (`FEATURED_HOME_TUTORS`); DB-backed in HT-1. |
+| ✅ | **CTA paths:** Browse tutors (#find-tutors) · Practice online (`assessment:index`) · Get started / I’m a tutor · Watch & earn link retained. |
+| ✅ | **Pilot geography:** `PILOT_CITY` in `core/hometutor_data.py` (default Ahmedabad). |
+
+**Exit:** A stranger understands in 10 seconds: tutors first, exams second.
+
+---
+
+### Phase HT-1 — Home tutor foundation (weeks 2–6)
+
+**Status:** ✅ **Complete**
+
+**Goal:** Real listings + verification gate. **Detail:** `hometutor.txt` §3–4 Phase A–B.
+
+| Done | Item |
+|:----:|------|
+| ✅ | New app under URL prefix **`/hometutor/`** (`hometutor` app; `rankjee/urls.py`). |
+| ✅ | Models: `TutorProfile` (verification states, listing fields), `TutorDocument` (staff review). |
+| ✅ | **`/sd/`** (Django admin): approve/reject tutors + documents; list filters. |
+| ✅ | Public **tutor profile** (`/hometutor/t/<slug>/`) + **search / filters** on `/hometutor/`. |
+| ✅ | Seed **25 tutors** in pilot city: `python manage.py seed_hometutor_tutors` (upsert by slug). |
+
+**Exit:** Verified tutors appear on home + listing; no empty nationwide search.
+
+**Follow-ups:** parent/child requirement model, richer staff ops beyond `/sd/`.
+
+---
+
+### Phase HT-2 — Conversion (weeks 4–8)
+
+**Status:** ✅ **Complete** (one optional item moved to HT-3 / later)
+
+**Goal:** Demo → engagement. **Detail:** `hometutor.txt` Phase C.
+
+| Done | Item |
+|:----:|------|
+| ✅ | **Tutor listing:** Logged-in tutors create/edit `TutorProfile` at `/hometutor/my/profile/` (draft / submit for review; re-review on material edits if previously approved). |
+| ✅ | **Demo request** from public tutor page (linked tutor accounts only); **my requests** at `/hometutor/my/requests/`. |
+| ✅ | **Tutor inbox** `/hometutor/my/demos/` — accept (schedule datetime) or decline; in-app + email notifications (best-effort). |
+| ✅ | **Engagement** `TutorEngagement` — created on accept; **mutual confirm** (parent + tutor) → `ACTIVE`; `/sd/` admin list. |
+| ✅ | **~24h reminder emails** — Celery Beat `hometutor.tasks.send_demo_reminders` (idempotent via `demo_reminder_sent_at`). |
+| ✅ | **Marketplace billing** wired via Phase HT-3 — `hometutor_payments` app. |
+
+**Exit:** Demo → mutual confirm → auditable engagement row; reminders without spam; billing separate.
+
+---
+
+### Phase HT-3 — Marketplace money (parallel after HT-2 starts)
+
+**Status:** ✅ **Complete**
+
+**Goal:** Parents pay platform; tutors get paid (manual payout OK at first). **Detail:** `hometutor.txt` Phase D.
+
+| Done | Item |
+|:----:|------|
+| ✅ | Separate app **`hometutor_payments`** (not subscription `payments`): `MarketplaceOrder`, `TutorLedgerEntry`, `TutorPayoutRequest`. |
+| ✅ | Razorpay checkout + verify + **`payment.captured` webhook** (`/hometutor/payments/webhook/razorpay/`); idempotent; `RAZORPAY_WEBHOOK_SECRET` required when `DEBUG=False`. |
+| ✅ | Platform fee (`HOMETUTOR_PLATFORM_FEE_PERCENT`) + tutor credit on success; **manual payout** in `/sd/` (mark PAID → ledger debit). |
+| ✅ | Fee-due **reminders** for recurring months (Celery) — optional follow-up. |
+
+**Exit:** Money flow auditable; tutor balance + payout records for ops.
+
+**URLs:** Pay from **My demo requests** when engagement is **ACTIVE** → `/hometutor/payments/pay/<engagement_id>/`.
+
+---
+
+### Phase HT-4 — Sessions, reviews, chat (weeks 6–10)
+
+**Status:** ✅ **Complete**
+
+**Goal:** Trust + retention. **Detail:** `hometutor.txt` Phase E–F.
+
+| Done | Item |
+|:----:|------|
+| ✅ | Session attendance (tutor marks; parent sees log). |
+| ✅ | Reviews tied to real engagements. |
+| ✅ | Basic in-app chat (text); admin support queue light. |
+
+---
+
+### Phase EX-1 — Exam upsell (ongoing from HT-0 onward, small slices)
+
+**Status:** ✅ **Complete**
+
+**Goal:** Same users discover exam product **after** tutor story.
+
+| Done | Item |
+|:----:|------|
+| ✅ | Home + tutor pages: **“Prepare online”** blocks linking to existing assessment/learning. |
+| ✅ | Dashboard: if role = tutor, show **“Invite student to practice tests”** (referral / link). |
+| ✅ | Signup flow: user selects role (**Tutor / Student / Parent**) and dashboard hero/content adapts by role. |
+| ✅ | Pricing copy: subscription = **add-on** to learning, not competing with tutor headline. |
+
+**Exit:** Every major tutor touchpoint has one obvious path to exam prep.
+
+---
+
+### Phase EX-2 — Monetization scale (after HT-3 stable)
+
+**Status:** ✅ **Complete (MVP)**
+
+**Goal:** Align `hometutor.txt` V2 items with existing Phase 3 ideas.
+
+| Done | Item |
+|:----:|------|
+| ✅ | Premium exam plans & paywalls (existing backlog). |
+| ✅ | Certificates, hiring portal, platform commission — **only where** they do not conflict with marketplace commission rules (document which product each fee applies to). |
+
+---
+
+### Phase Future — optional
+
+**Status:** ⬜ **Backlog**
+
+- AI mentor, freelance marketplace beyond tutors, mobile app, regional languages — **after**
+  HT marketplace + exam upsell loop is measurable.
+- Home tutor parity follow-ups complete; backlog now only contains post-MVP expansion items.
+
+---
+
+## 4. What we are *not* doing first (avoid confusion)
+
+- **Not** two equal homepages (tutor vs exam). Exam is **upsell**, not co-equal hero.
+- **Not** reusing subscription `payments` models for tutor monthly fees — separate app
+  (`hometutor_payments` per `hometutor.txt`).
+- **Not** nationwide launch with zero supply — pilot city first.
+
+---
+
+## 5. Reference index
+
+| File | Purpose |
+|------|---------|
+| `dev_plan.txt` | **This roadmap** — order of phases and product direction |
+| `hometutor.txt` | Technical phases A–F, apps, MVP checklist, risks |
+| `home_tutor_app_blueprint.html` | Full screen + feature inventory |
+| `test_user.txt` | Local test credentials |
+
+---
+
+## 6. Changelog
+
+| Date | Change |
+|------|--------|
+| 2026-04 | `clean_need` alignment: added `CITY_ADMIN`/`GLOBAL_ADMIN` roles and advanced tutor filters (`mode`, `language`) |
+| 2026-04 | HomeTutor parity gaps closed: pincode geocode/radius filtering, dispute workflow, masked identity in tutor inbox |
+| 2026-04 | HT-4 complete: session attendance, engagement reviews, in-app chat (+ support-flag queue) |
+| 2026-04 | EX-2 MVP complete: premium exam paywall for advanced tracks + billing boundary copy (`payments` vs `hometutor_payments`) |
+| 2026-04 | HT-3 reminder complete: recurring monthly marketplace fee reminder task added via Celery |
+| 2026-04 | Rewrote roadmap: home tutor primary on home, exam upsell; merged old Phase 1–2 snapshot; added HT / EX phases |
+| 2026-04 | HT-3: `hometutor_payments` — marketplace Razorpay, ledger, payouts in `/sd/` |
+| 2026-04 | `dev_plan.txt` — legend, phase status lines, ✅ / ⬜ tables for readability |

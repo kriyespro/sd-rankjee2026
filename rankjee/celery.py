@@ -22,6 +22,14 @@ app.conf.beat_schedule = {
         'task': 'users.tasks.check_and_reset_streaks',
         'schedule': crontab(hour=0, minute=5),
     },
+    'hometutor-demo-reminders-hourly': {
+        'task': 'hometutor.tasks.send_demo_reminders',
+        'schedule': crontab(minute=12),
+    },
+    'hometutor-recurring-fee-reminders-daily': {
+        'task': 'hometutor_payments.tasks.send_recurring_fee_reminders',
+        'schedule': crontab(hour=10, minute=0),
+    },
 }
 
 @app.task(bind=True)

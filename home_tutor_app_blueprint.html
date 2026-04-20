@@ -1,0 +1,534 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.root{padding:1.5rem 0;font-family:var(--font-sans)}
+.tab-row{display:flex;gap:4px;margin-bottom:1.5rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:0;flex-wrap:wrap}
+.tab{padding:8px 14px;font-size:13px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;border-top:none;border-left:none;border-right:none}
+.tab.active{color:var(--color-text-info);border-bottom:2px solid var(--color-text-info);font-weight:500}
+.panel{display:none}.panel.active{display:block}
+.sec-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.08em;color:var(--color-text-tertiary);margin-bottom:12px;margin-top:1.5rem}
+.sec-label:first-child{margin-top:0}
+.module{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);margin-bottom:12px;overflow:hidden}
+.mod-header{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;user-select:none}
+.mod-header:hover{background:var(--color-background-secondary)}
+.mod-icon{width:32px;height:32px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mod-title{font-size:15px;font-weight:500;color:var(--color-text-primary)}
+.mod-sub{font-size:12px;color:var(--color-text-secondary);margin-top:1px}
+.mod-arrow{margin-left:auto;font-size:12px;color:var(--color-text-tertiary);transition:transform 0.2s}
+.mod-arrow.open{transform:rotate(90deg)}
+.mod-body{display:none;padding:0 16px 14px;border-top:0.5px solid var(--color-border-tertiary)}
+.mod-body.open{display:block}
+.feat{padding:8px 0;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;gap:10px;align-items:flex-start}
+.feat:last-child{border-bottom:none}
+.feat-dot{width:6px;height:6px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.feat-name{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.feat-desc{font-size:12px;color:var(--color-text-secondary);margin-top:2px;line-height:1.4}
+.flow-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:0}
+.flow-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.flow-content{flex:1;padding-bottom:16px}
+.flow-title{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.flow-desc{font-size:13px;color:var(--color-text-secondary);margin-top:3px;line-height:1.5}
+.flow-actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.act-pill{font-size:11px;padding:3px 8px;border-radius:999px;background:var(--color-background-secondary);color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary)}
+.flow-connector{width:28px;display:flex;justify-content:center}
+.flow-line{width:1px;background:var(--color-border-secondary);min-height:16px;flex:1}
+.screen-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:10px}
+.screen-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px}
+.screen-name{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px}
+.screen-who{font-size:11px;padding:2px 7px;border-radius:999px;display:inline-block;margin-bottom:6px}
+.screen-items div{font-size:12px;color:var(--color-text-secondary);padding:2px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.screen-items div:last-child{border-bottom:none}
+.role-section{margin-bottom:1.5rem}
+.role-badge{display:inline-block;font-size:12px;font-weight:500;padding:4px 12px;border-radius:999px;margin-bottom:12px}
+.deep-btn{display:block;width:100%;padding:10px 14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);font-size:13px;color:var(--color-text-info);cursor:pointer;text-align:left;margin-top:8px}
+.deep-btn:hover{background:var(--color-background-info)}
+.mvp-open{background:var(--color-background-success);color:var(--color-text-success)}
+.v2-open{background:var(--color-background-warning);color:var(--color-text-warning)}
+</style>
+
+<div class="root">
+<h2 class="sr-only">Home tutor provider app — full flow and features blueprint</h2>
+
+<div class="tab-row">
+  <button class="tab active" onclick="switchTab('flow',this)">App flow</button>
+  <button class="tab" onclick="switchTab('screens',this)">Screens</button>
+  <button class="tab" onclick="switchTab('features',this)">All features</button>
+  <button class="tab" onclick="switchTab('mvp',this)">MVP vs V2</button>
+</div>
+
+<div id="flow" class="panel active">
+
+  <div class="sec-label">3 users — 3 journeys</div>
+  <div style="display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap">
+    <span style="background:#E6F1FB;color:#0C447C;font-size:12px;padding:4px 12px;border-radius:999px">Parent / Student</span>
+    <span style="background:#E1F5EE;color:#085041;font-size:12px;padding:4px 12px;border-radius:999px">Tutor</span>
+    <span style="background:#EEEDFE;color:#3C3489;font-size:12px;padding:4px 12px;border-radius:999px">Admin (you)</span>
+  </div>
+
+  <div class="sec-label">Parent / student journey</div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">1</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Sign up & post requirement</div>
+      <div class="flow-desc">Parent enters child's class, subjects needed, preferred area, budget, timing (morning/evening/weekend), gender preference for tutor.</div>
+      <div class="flow-actions"><span class="act-pill">Class & board selection</span><span class="act-pill">Subject multi-select</span><span class="act-pill">Area / pincode</span><span class="act-pill">Budget range</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">2</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Browse matched tutors</div>
+      <div class="flow-desc">App shows tutors matching the requirement — sorted by rating, distance, experience. Each tutor card shows photo, subjects, fee, ratings, and verified badge.</div>
+      <div class="flow-actions"><span class="act-pill">Filter by subject</span><span class="act-pill">Filter by fee</span><span class="act-pill">Filter by rating</span><span class="act-pill">Sort by distance</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">3</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">View tutor profile & request demo</div>
+      <div class="flow-desc">Parent opens tutor profile — sees education, experience, reviews, subjects, timing, intro video. Sends a "Request demo class" — one free trial session.</div>
+      <div class="flow-actions"><span class="act-pill">View full profile</span><span class="act-pill">Read reviews</span><span class="act-pill">Request demo class</span><span class="act-pill">Chat with tutor</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">4</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Demo class happens</div>
+      <div class="flow-desc">Tutor comes home for a free 30-min demo. App notifies both sides with time, address, and tutor's photo for safety.</div>
+      <div class="flow-actions"><span class="act-pill">Demo reminder</span><span class="act-pill">Tutor live location share</span><span class="act-pill">Mark demo done</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">5</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Confirm & pay fees</div>
+      <div class="flow-desc">Parent confirms the tutor. Sets up monthly fee payment via app. Schedule is locked — days, time, subjects. Fee paid to platform, tutor paid after each month.</div>
+      <div class="flow-actions"><span class="act-pill">Confirm tutor</span><span class="act-pill">Set schedule</span><span class="act-pill">Pay via UPI / card</span><span class="act-pill">Auto-pay toggle</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">6</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Sessions run monthly</div>
+      <div class="flow-desc">Tutor marks each session done in app. Parent gets attendance log. Auto-reminder for fee payment before each month. Parent can report issues or leave session feedback.</div>
+      <div class="flow-actions"><span class="act-pill">Session attendance</span><span class="act-pill">Monthly fee reminder</span><span class="act-pill">Session feedback</span><span class="act-pill">Report issue</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E6F1FB;color:#0C447C">7</div></div>
+    <div class="flow-content">
+      <div class="flow-title">Leave review & renew or change</div>
+      <div class="flow-desc">After 1 month, parent is prompted to leave a review. Can renew, request a different tutor, or stop. Reviews go live on tutor profile.</div>
+      <div class="flow-actions"><span class="act-pill">Leave star rating</span><span class="act-pill">Write review</span><span class="act-pill">Renew / change tutor</span></div>
+    </div>
+  </div>
+
+  <div class="sec-label" style="margin-top:1.5rem">Tutor journey</div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">1</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Register & build profile</div>
+      <div class="flow-desc">Tutor enters subjects, classes taught, education, experience, area willing to travel, fee per month, available timings. Uploads photo and Aadhar for verification.</div>
+      <div class="flow-actions"><span class="act-pill">Profile creation</span><span class="act-pill">Aadhar upload</span><span class="act-pill">Education proof</span><span class="act-pill">Intro video (optional)</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">2</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Admin verifies profile</div>
+      <div class="flow-desc">You (admin) review the Aadhar, education proof, and do a quick phone verification call. Profile goes live once verified. Unverified tutors are hidden.</div>
+      <div class="flow-actions"><span class="act-pill">Document review</span><span class="act-pill">Phone verification</span><span class="act-pill">Approve / reject</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">3</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Receive enquiries & demo requests</div>
+      <div class="flow-desc">Tutor gets push notification when a parent requests demo. Sees parent's name, child's class, subjects, area, and offered fee. Accepts or declines with reason.</div>
+      <div class="flow-actions"><span class="act-pill">Demo request alert</span><span class="act-pill">View requirement</span><span class="act-pill">Accept / decline</span><span class="act-pill">Chat with parent</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">4</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Conduct demo & confirm</div>
+      <div class="flow-desc">Tutor goes for demo class. Marks it done in app. If both sides confirm, tutor is now assigned to this student. Schedule is locked.</div>
+      <div class="flow-actions"><span class="act-pill">Mark demo done</span><span class="act-pill">View student address</span><span class="act-pill">Confirm student</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">5</div><div class="flow-line" style="margin-top:4px"></div></div>
+    <div class="flow-content">
+      <div class="flow-title">Mark sessions & get paid</div>
+      <div class="flow-desc">Tutor marks each class done. At end of month, payment is released to tutor's bank account automatically after deducting platform fee. Tutor sees earnings dashboard.</div>
+      <div class="flow-actions"><span class="act-pill">Mark class done</span><span class="act-pill">View monthly payout</span><span class="act-pill">Bank account setup</span><span class="act-pill">Earning history</span></div>
+    </div>
+  </div>
+
+  <div class="flow-step">
+    <div style="display:flex;flex-direction:column;align-items:center"><div class="flow-num" style="background:#E1F5EE;color:#085041">6</div></div>
+    <div class="flow-content">
+      <div class="flow-title">Build profile with reviews</div>
+      <div class="flow-desc">Each satisfied parent leaves a review. More reviews = higher ranking in search. Top-rated tutors get a "Top tutor" badge — drives more enquiries organically.</div>
+      <div class="flow-actions"><span class="act-pill">Collect reviews</span><span class="act-pill">Ranking improvement</span><span class="act-pill">Top tutor badge</span></div>
+    </div>
+  </div>
+
+  <button class="deep-btn" onclick="sendPrompt('Design the database schema for the home tutor app with parents, tutors, sessions, and payments tables')">See database schema for this ↗</button>
+</div>
+
+<div id="screens" class="panel">
+  <div class="sec-label">Parent / student screens</div>
+  <div class="screen-grid" style="margin-bottom:1.5rem">
+    <div class="screen-card">
+      <div class="screen-name">Home / Search</div>
+      <div class="screen-items">
+        <div>Enter subject + class + area</div>
+        <div>Tutor cards grid</div>
+        <div>Filter & sort bar</div>
+        <div>Featured tutors row</div>
+        <div>Quick requirement post</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Tutor profile</div>
+      <div class="screen-items">
+        <div>Photo, name, verified badge</div>
+        <div>Subjects & classes</div>
+        <div>Education & experience</div>
+        <div>Fee per month</div>
+        <div>Availability slots</div>
+        <div>Student reviews</div>
+        <div>Intro video</div>
+        <div>Request demo button</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">My tutors</div>
+      <div class="screen-items">
+        <div>Active tutor card</div>
+        <div>Session schedule</div>
+        <div>Attendance log</div>
+        <div>Fee payment status</div>
+        <div>Chat with tutor</div>
+        <div>Request change</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Fee & payments</div>
+      <div class="screen-items">
+        <div>Current month fee due</div>
+        <div>Payment history</div>
+        <div>Pay via UPI / card</div>
+        <div>Auto-pay toggle</div>
+        <div>Fee receipt download</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Messages / chat</div>
+      <div class="screen-items">
+        <div>Chat with tutor</div>
+        <div>Chat with admin support</div>
+        <div>File / photo sharing</div>
+        <div>Unread badge count</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Parent profile</div>
+      <div class="screen-items">
+        <div>Parent + child details</div>
+        <div>Home address</div>
+        <div>Saved requirements</div>
+        <div>Review history written</div>
+        <div>Notification settings</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-label">Tutor screens</div>
+  <div class="screen-grid" style="margin-bottom:1.5rem">
+    <div class="screen-card">
+      <div class="screen-name">Tutor dashboard</div>
+      <div class="screen-items">
+        <div>Today's classes</div>
+        <div>Pending demo requests</div>
+        <div>This month's earnings</div>
+        <div>Profile completeness</div>
+        <div>Unread messages</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">My students</div>
+      <div class="screen-items">
+        <div>Active student list</div>
+        <div>Student detail page</div>
+        <div>Subject & schedule per student</div>
+        <div>Mark class done</div>
+        <div>Session notes</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Demo requests</div>
+      <div class="screen-items">
+        <div>Incoming request cards</div>
+        <div>Student requirement details</div>
+        <div>Accept / decline</div>
+        <div>Propose alternate time</div>
+        <div>Demo history</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Earnings</div>
+      <div class="screen-items">
+        <div>This month payout</div>
+        <div>Payout history</div>
+        <div>Per student breakdown</div>
+        <div>Platform fee deducted</div>
+        <div>Bank account linked</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">My profile (edit)</div>
+      <div class="screen-items">
+        <div>Photo & intro video</div>
+        <div>Subjects & fee update</div>
+        <div>Availability slots</div>
+        <div>Documents uploaded</div>
+        <div>Verified badge status</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Schedule / calendar</div>
+      <div class="screen-items">
+        <div>Weekly class view</div>
+        <div>All students on one calendar</div>
+        <div>Mark holiday / leave</div>
+        <div>Class count this month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec-label">Admin screens (your dashboard)</div>
+  <div class="screen-grid">
+    <div class="screen-card">
+      <div class="screen-name">Admin dashboard</div>
+      <div class="screen-items">
+        <div>Total tutors / parents</div>
+        <div>Active matches today</div>
+        <div>Revenue this month</div>
+        <div>Pending verifications</div>
+        <div>Reported issues</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Tutor verification</div>
+      <div class="screen-items">
+        <div>Pending tutor queue</div>
+        <div>View uploaded documents</div>
+        <div>Approve / reject</div>
+        <div>Add rejection reason</div>
+        <div>Call tutor button</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Dispute resolution</div>
+      <div class="screen-items">
+        <div>Reported issues list</div>
+        <div>Parent & tutor version</div>
+        <div>Refund initiation</div>
+        <div>Tutor warning / suspend</div>
+        <div>Issue close & notes</div>
+      </div>
+    </div>
+    <div class="screen-card">
+      <div class="screen-name">Revenue & payouts</div>
+      <div class="screen-items">
+        <div>All transactions</div>
+        <div>Platform fee collected</div>
+        <div>Tutor payouts pending</div>
+        <div>Initiate bulk payout</div>
+        <div>Monthly P&L</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="features" class="panel">
+  <div class="sec-label">Features by module — click to expand</div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:#E6F1FB"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#185FA5" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg></div>
+      <div><div class="mod-title">Tutor discovery & matching</div><div class="mod-sub">How parents find the right tutor</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Requirement-based search</div><div class="feat-desc">Parent enters subject, class/board (CBSE/ICSE/State), area, budget — app returns ranked tutors matching all criteria.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Smart filters</div><div class="feat-desc">Filter by gender preference, language of teaching, online/offline, fee range, rating, availability day/time.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Distance-based sorting</div><div class="feat-desc">Show tutors nearest to parent's pincode first. Distance displayed on tutor card (e.g. "2.3 km away").</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Requirement post (reverse search)</div><div class="feat-desc">Parent posts requirement publicly — matching tutors in the area get notified and can apply. Tutor comes to parent, not just other way round.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Tutor comparison</div><div class="feat-desc">Select 2–3 tutors and view side-by-side on fee, experience, ratings, and subjects.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#378ADD"></div><div><div class="feat-name">Saved / shortlisted tutors</div><div class="feat-desc">Parent can save tutors to a shortlist before requesting demo — compare later.</div></div></div>
+    </div>
+  </div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:#E1F5EE"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#0F6E56" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8l2 2 4-4"/></svg></div>
+      <div><div class="mod-title">Tutor profile & verification</div><div class="mod-sub">Trust is the product — verification is everything</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Rich tutor profile</div><div class="feat-desc">Photo, bio, subjects, boards, classes taught, medium (English/Hindi/Gujarati), years of experience, education qualification, current occupation.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Aadhar-based identity verification</div><div class="feat-desc">Tutor uploads Aadhar + selfie. Admin verifies. Verified badge shown on profile — parents trust this most.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Education document upload</div><div class="feat-desc">Degree / marksheet upload. Admin verifies claimed qualifications before profile goes live.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Intro video (60 sec)</div><div class="feat-desc">Tutor records a short self-introduction. Parents watch before requesting demo — massively increases conversion.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Availability calendar</div><div class="feat-desc">Tutor sets available days and time slots. Parents only see tutors available when they need them.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Student reviews & ratings</div><div class="feat-desc">Only verified past students can leave reviews. Star rating (1–5) + written review. Fake review prevention built in.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Teaching area / travel radius</div><div class="feat-desc">Tutor sets max distance willing to travel. Only shown in searches within that radius.</div></div></div>
+    </div>
+  </div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:#FAEEDA"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#854F0B" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M5 1v4M11 1v4M2 8h12"/></svg></div>
+      <div><div class="mod-title">Demo class & booking</div><div class="mod-sub">Trial before commitment — reduces dropout</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Demo class request</div><div class="feat-desc">Parent sends demo request with preferred date/time. Tutor accepts or proposes alternate time.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Demo reminders</div><div class="feat-desc">Both parent and tutor get WhatsApp + push notification 1 day before and 1 hour before demo.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Tutor live location share</div><div class="feat-desc">On demo day, tutor can share live location to parent — safety feature, also shows they're on the way.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Post-demo decision prompt</div><div class="feat-desc">After demo is marked done, both parent and tutor are asked: "Want to continue?" — if both say yes, booking is created.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Schedule setup</div><div class="feat-desc">On confirmation, parent and tutor agree on recurring days, time, subjects. Saved as active schedule in app.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">1 free demo per tutor per student</div><div class="feat-desc">System enforces one free demo — prevents misuse. Second demo with same tutor is paid at ₹99.</div></div></div>
+    </div>
+  </div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:#EEEDFE"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#534AB7" stroke-width="1.5"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/></svg></div>
+      <div><div class="mod-title">Session tracking & attendance</div><div class="mod-sub">Every class logged — full transparency</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Session mark done (tutor)</div><div class="feat-desc">Tutor marks each class done from their app. Parent gets notification — "Today's class marked complete."</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Attendance calendar (parent)</div><div class="feat-desc">Parent sees monthly attendance calendar — green = class happened, red = missed, yellow = holiday.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Session notes</div><div class="feat-desc">Tutor can add brief notes after each session — "Covered Chapter 3, homework assigned." Parent can see this.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Missed class reason & makeup</div><div class="feat-desc">If tutor cancels, they must give reason and propose makeup class. Excessive cancellations flagged by admin.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Monthly session count</div><div class="feat-desc">Total classes done this month shown to both parties — used for fee calculation if per-class billing model.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#7F77DD"></div><div><div class="feat-name">Holiday marking</div><div class="feat-desc">Tutor or parent can mark upcoming holidays in advance. Both sides see upcoming breaks on calendar.</div></div></div>
+    </div>
+  </div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:var(--color-background-danger)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--color-text-danger)" stroke-width="1.5"><path d="M3 5h10M3 8h6M3 11h4"/><rect x="1" y="2" width="14" height="12" rx="2"/></svg></div>
+      <div><div class="mod-title">Payments & earnings</div><div class="mod-sub">Money flow — parent pays, tutor earns, you take cut</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Monthly fee collection (parent)</div><div class="feat-desc">Parent pays monthly fee via UPI, card, or net banking through Razorpay. Auto-pay option for recurring payment.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Platform commission deduction</div><div class="feat-desc">You take 10–15% of fee. Tutor gets 85–90%. Deduction shown transparently in tutor's payout screen.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Tutor payout (monthly)</div><div class="feat-desc">On 5th of every month, payout released to tutor's linked bank account via IMPS/NEFT. Tutor gets notification.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Fee reminder to parent</div><div class="feat-desc">Auto-reminder 3 days before fee due date via WhatsApp and push notification. Reduces payment delays.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Refund on early termination</div><div class="feat-desc">If parent stops mid-month, proportional refund calculated based on classes held. Admin approves.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Invoice / receipt download</div><div class="feat-desc">Parent can download fee receipt as PDF. Useful for tax exemption claims under 80C.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#E24B4A"></div><div><div class="feat-name">Admin revenue dashboard</div><div class="feat-desc">Total GMV, platform commission earned, tutor payouts pending, monthly growth — all in one view.</div></div></div>
+    </div>
+  </div>
+
+  <div class="module">
+    <div class="mod-header" onclick="toggleMod(this)">
+      <div class="mod-icon" style="background:#FAECE7"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#993C1D" stroke-width="1.5"><path d="M13 2H3a1 1 0 00-1 1v9a1 1 0 001 1h2l3 2 3-2h2a1 1 0 001-1V3a1 1 0 00-1-1z"/></svg></div>
+      <div><div class="mod-title">Communication & safety</div><div class="mod-sub">In-app chat + safety features for home visits</div></div>
+      <div class="mod-arrow">▶</div>
+    </div>
+    <div class="mod-body">
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">In-app chat (masked)</div><div class="feat-desc">Parent and tutor chat inside app — real phone numbers never shared. Platform controls communication and has dispute record.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">File & photo sharing in chat</div><div class="feat-desc">Share study material, sample papers, homework photos inside chat. Keeps everything in one place.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">Tutor photo shown before visit</div><div class="feat-desc">Parent sees tutor's verified photo before they arrive. Safety feature — important for families.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">Report tutor / report parent</div><div class="feat-desc">Either side can report the other. Goes to admin queue with both accounts flagged until resolved.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">SOS / emergency contact</div><div class="feat-desc">Tutor can share live location to a trusted contact during visits. Safety for female tutors visiting new homes.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#D85A30"></div><div><div class="feat-name">Admin support chat</div><div class="feat-desc">Both parent and tutor can raise a support ticket. Admin responds within app.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="mvp" class="panel">
+  <div class="sec-label">Build in MVP — first 8 weeks</div>
+  <div class="module">
+    <div class="mod-header" style="cursor:default" class="mvp-open">
+      <div style="background:var(--color-background-success);padding:12px 16px;width:100%;border-radius:var(--border-radius-lg)">
+        <div class="mod-title" style="color:var(--color-text-success)">Must-have for launch</div>
+        <div class="mod-sub" style="color:var(--color-text-success)">Without these, the app cannot function</div>
+      </div>
+    </div>
+    <div class="mod-body open" style="border-top:0.5px solid var(--color-border-success)">
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Tutor profile + Aadhar verification</div><div class="feat-desc">The foundation of trust. No verification = no parent trust = no bookings. Non-negotiable.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Parent requirement + tutor search</div><div class="feat-desc">Core discovery. Must work with at least subject + area + class filters.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Demo class request + confirmation flow</div><div class="feat-desc">The main conversion event. Both sides must confirm — without this there's no booking.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Monthly fee payment via Razorpay</div><div class="feat-desc">Your revenue engine. Must work before launch — this is how you make money.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Session attendance marking</div><div class="feat-desc">Tutor marks class done — parent is notified. Basic version: just a button. No notes yet.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Tutor payout to bank (manual in MVP)</div><div class="feat-desc">Pay tutors manually via NEFT for first 3 months. Automate in V2 once volume justifies it.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">Admin verification panel</div><div class="feat-desc">You need to approve tutors before they go live. Simple web dashboard is enough for MVP.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#1D9E75"></div><div><div class="feat-name">In-app chat (basic)</div><div class="feat-desc">Text only, no file sharing yet. Essential for coordination without sharing real phone numbers.</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-label" style="margin-top:1rem">Save for V2</div>
+  <div class="module">
+    <div class="mod-header" style="cursor:default">
+      <div style="background:var(--color-background-warning);padding:12px 16px;width:100%;border-radius:var(--border-radius-lg)">
+        <div class="mod-title" style="color:var(--color-text-warning)">Build after first 50 active bookings</div>
+        <div class="mod-sub" style="color:var(--color-text-warning)">Validate demand first, then invest in these</div>
+      </div>
+    </div>
+    <div class="mod-body open" style="border-top:0.5px solid var(--color-border-warning)">
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Intro video upload for tutors</div><div class="feat-desc">Big conversion booster but needs video storage infra. Use YouTube link embed in MVP.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Auto bank payout via Razorpay X</div><div class="feat-desc">Manual payout works fine for first 30 tutors. Automate when you cross 50+.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Tutor live location share on demo day</div><div class="feat-desc">Nice safety feature. Manual WhatsApp share works for MVP.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Tutor comparison side-by-side</div><div class="feat-desc">Useful UX but not blocking. Parents manage fine with individual profiles for now.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">Session notes & study material sharing</div><div class="feat-desc">Parents like this but it's not why they pay. Attendance log is enough for V1.</div></div></div>
+      <div class="feat"><div class="feat-dot" style="background:#BA7517"></div><div><div class="feat-name">80C fee receipt PDF</div><div class="feat-desc">Tax season feature — easy to add with a PDF template, but not urgent at launch.</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-label" style="margin-top:1rem">One honest warning</div>
+  <div style="background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);border-radius:var(--border-radius-lg);padding:1rem 1.25rem">
+    <div style="font-size:14px;font-weight:500;color:var(--color-text-danger);margin-bottom:6px">This is a marketplace — chicken-and-egg problem is real</div>
+    <div style="font-size:13px;color:var(--color-text-danger);line-height:1.6">You need tutors to attract parents, and parents to attract tutors. Before you build anything, manually onboard 20–30 verified tutors in one area of Ahmedabad. Then open to parents. Never launch both sides simultaneously with zero supply — parents will search, find nothing, and never return.</div>
+  </div>
+
+  <button class="deep-btn" onclick="sendPrompt('How do I manually onboard first 30 tutors in Ahmedabad for my tutor marketplace app?')">How to onboard first 30 tutors manually ↗</button>
+  <button class="deep-btn" onclick="sendPrompt('Give me the 8-week sprint plan to build the home tutor app MVP')">8-week sprint plan for MVP ↗</button>
+  <button class="deep-btn" onclick="sendPrompt('What is the best tech stack to build a home tutor marketplace app in India as a solo developer?')">Best tech stack for solo dev ↗</button>
+</div>
+</div>
+
+<script>
+function switchTab(id,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+function toggleMod(header){
+  const body=header.nextElementSibling;
+  const arrow=header.querySelector('.mod-arrow');
+  const open=body.classList.toggle('open');
+  if(arrow) arrow.classList.toggle('open',open);
+}
+</script>

@@ -1,0 +1,120 @@
+{% extends "base.jinja" %}
+{% block title %}Pay tutor (marketplace) · RankJee{% endblock %}
+
+{% block content %}
+<section class="max-w-lg mx-auto px-4 py-12">
+    <p class="text-xs font-black uppercase tracking-wider text-indigo-600 mb-2">Home tutor marketplace</p>
+    <h1 class="text-2xl font-black text-slate-900 mb-2">First month (MVP)</h1>
+    <p class="text-sm text-slate-600 mb-6">
+        Tutor: <strong>{{ engagement.tutor_profile.display_name }}</strong><br>
+        Engagement #{{ engagement.id }} — platform fee keeps RankJee running; the rest is credited to your tutor&apos;s balance (paid out manually for now).
+    </p>
+    <p class="text-xs text-slate-500 mb-6">
+        Note: this marketplace payment is separate from RankJee Pro exam subscription plans.
+    </p>
+
+    {% if existing_order and existing_order.status == 'SUCCESS' %}
+    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-emerald-900 font-bold">
+        Payment received. Thank you.
+    </div>
+    <a href="{{ url('hometutor:my_demo_requests') }}" class="mt-6 inline-block text-indigo-600 font-black text-sm hover:underline">← Back to demo requests</a>
+    {% else %}
+    {% if payment_dummy %}
+    <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+        <strong>Dummy checkout</strong> — local testing without live Razorpay keys.
+    </div>
+    {% endif %}
+
+    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-slate-500">Amount</span><span class="font-black">₹{{ gross }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Platform fee ({{ fee_pct_label }}%)</span><span class="font-bold text-slate-800">₹{{ platform_fee }}</span></div>
+        <div class="flex justify-between border-t border-slate-100 pt-2"><span class="text-slate-500">Tutor credit</span><span class="font-black text-indigo-700">₹{{ tutor_credit }}</span></div>
+    </div>
+
+    <button type="button" id="mp-pay-btn"
+            class="mt-8 w-full py-4 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest hover:bg-indigo-500 shadow-lg">
+        Pay ₹{{ gross|int }} with Razorpay
+    </button>
+    <p class="text-xs text-slate-500 mt-4 text-center">Secured by Razorpay · separate from exam subscription billing</p>
+    <a href="{{ url('hometutor:my_demo_requests') }}" class="mt-6 block text-center text-slate-600 text-sm font-bold hover:text-indigo-600">Cancel</a>
+    {% endif %}
+</section>
+
+{% if not (existing_order and existing_order.status == 'SUCCESS') %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(function (c) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+        });
+    }
+    return v;
+}
+const engagementId = {{ engagement.id }};
+const csrftoken = getCookie('csrftoken');
+
+async function verifyOnServer(payload) {
+    const body = new URLSearchParams(payload);
+    const verifyResp = await fetch('{{ url("hometutor_payments:verify_payment") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken || '',
+        },
+        credentials: 'same-origin',
+        body: body,
+    });
+    const verifyData = await verifyResp.json();
+    if (verifyData.status === 'success') {
+        window.location.href = '{{ url("hometutor:my_demo_requests") }}?paid=1';
+    } else {
+        alert(verifyData.error || 'Payment verification failed');
+    }
+}
+
+async function startCheckout() {
+    const response = await fetch('{{ url("hometutor_payments:create_order", engagement.id) }}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken || '' },
+        credentials: 'same-origin',
+    });
+    const data = await response.json();
+    if (data.error) {
+        alert(data.error);
+        return;
+    }
+    if (data.checkout_mode === 'dummy') {
+        await verifyOnServer({
+            razorpay_order_id: data.order_id,
+            razorpay_payment_id: 'pay_dummy_marketplace',
+            razorpay_signature: 'dummy',
+        });
+        return;
+    }
+    const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: 'INR',
+        name: data.name,
+        description: data.description,
+        order_id: data.order_id,
+        handler: function (response) {
+            verifyOnServer({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+            });
+        },
+        prefill: { name: data.user_name, email: data.user_email },
+        theme: { color: '#4f46e5' },
+    };
+    new Razorpay(options).open();
+}
+
+document.getElementById('mp-pay-btn').addEventListener('click', startCheckout);
+</script>
+{% endif %}
+{% endblock %}

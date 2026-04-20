@@ -22,6 +22,19 @@ INDIAN_STATES = [
 ]
 
 class CustomUser(AbstractUser):
+    class Role(models.TextChoices):
+        STUDENT = 'STUDENT', 'Student'
+        PARENT = 'PARENT', 'Parent'
+        TUTOR = 'TUTOR', 'Tutor'
+        CITY_ADMIN = 'CITY_ADMIN', 'City admin'
+        GLOBAL_ADMIN = 'GLOBAL_ADMIN', 'Global admin'
+
+    role = models.CharField(
+        max_length=20,
+        choices=Role.choices,
+        default=Role.STUDENT,
+        db_index=True,
+    )
     state = models.CharField(max_length=2, choices=INDIAN_STATES, blank=True, null=True)
     streak_days = models.IntegerField(default=0)
     last_active_date = models.DateField(null=True, blank=True)

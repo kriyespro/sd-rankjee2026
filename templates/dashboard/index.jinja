@@ -9,13 +9,14 @@
         <div class="flex flex-col gap-1">
             <div class="flex items-center gap-3">
                 <h1 class="text-3xl font-black text-slate-900 tracking-tight">Hi, {{ user.username }} 👋</h1>
+                <span class="bg-slate-100 text-slate-700 text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">{{ user_role|lower }}</span>
                 {% if user.is_premium %}
                 <span class="bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg shadow-orange-100 uppercase tracking-widest flex items-center gap-1.5">
                     <span class="text-xs">⭐</span> PRO MEMBER
                 </span>
                 {% endif %}
             </div>
-            <p class="text-slate-600 font-medium max-w-md">Ready to master your next skill? Your goal is to reach <span class="text-indigo-600 font-bold">100% Mastery</span>.</p>
+            <p class="text-slate-600 font-medium max-w-2xl">{{ role_intro }}</p>
         </div>
         
         {# Profile Summary #}
@@ -28,6 +29,15 @@
                 {{ user.username[0]|upper }}
             </a>
         </div>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {% for item in role_stat_cards %}
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <p class="text-[11px] uppercase font-black tracking-widest text-slate-400">{{ item.label }}</p>
+            <p class="text-2xl font-black text-slate-900 mt-1">{{ item.value }}</p>
+        </div>
+        {% endfor %}
     </div>
 
     {# Simplified Status Bar #}
@@ -87,6 +97,28 @@
             </div>
         </div>
     </div>
+
+    <section class="w-full rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6 md:p-8 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-800 mb-1">Home tutors</p>
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">Marketplace</h2>
+                <p class="text-sm text-slate-600 mt-1">{{ role_marketplace_label }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2 md:gap-3">
+                <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">Browse</a>
+                {% if user_role == 'TUTOR' %}
+                <a href="{{ url('hometutor:my_profile') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-500 transition-colors shadow-sm">My listing</a>
+                {% else %}
+                <a href="{{ url('hometutor:my_profile') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-wider hover:bg-emerald-500 transition-colors shadow-sm">Become a tutor</a>
+                {% endif %}
+                <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">My demos{% if hometutor_my_pending_sent %} ({{ hometutor_my_pending_sent }}){% endif %}</a>
+                {% if hometutor_tutor_profile %}
+                <a href="{{ url('hometutor:tutor_demos') }}" class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-emerald-200 text-emerald-900 text-xs font-black uppercase tracking-wider hover:bg-emerald-100/80 transition-colors">Inbox{% if hometutor_pending_incoming %} ({{ hometutor_pending_incoming }}){% endif %}</a>
+                {% endif %}
+            </div>
+        </div>
+    </section>
 
     {# Main + sidebar: flex gives the journey card all remaining width; sidebar fixed narrow #}
     <div class="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-8 xl:gap-10">
@@ -155,6 +187,38 @@
                     </div>
                 </a>
             </div>
+
+            {% if user_role == 'TUTOR' %}
+            <div class="rounded-2xl border border-sky-100 bg-sky-50/70 p-5">
+                <p class="text-xs font-black uppercase tracking-widest text-sky-700 mb-2">Role action</p>
+                <h3 class="text-lg font-black text-slate-900">Invite students to online practice</h3>
+                <p class="text-sm text-slate-600 mt-1">Share your referral link with students to unlock tests and track progress digitally.</p>
+            </div>
+            {% elif user_role == 'PARENT' %}
+            <div class="rounded-2xl border border-amber-100 bg-amber-50/70 p-5">
+                <p class="text-xs font-black uppercase tracking-widest text-amber-700 mb-2">Role action</p>
+                <h3 class="text-lg font-black text-slate-900">Track your child’s prep rhythm</h3>
+                <p class="text-sm text-slate-600 mt-1">Use test results and tutor demos together to choose the best academic path.</p>
+            </div>
+            {% elif user_role == 'CITY_ADMIN' %}
+            <div class="rounded-2xl border border-fuchsia-100 bg-fuchsia-50/70 p-5">
+                <p class="text-xs font-black uppercase tracking-widest text-fuchsia-700 mb-2">Role action</p>
+                <h3 class="text-lg font-black text-slate-900">Monitor your city tutor operations</h3>
+                <p class="text-sm text-slate-600 mt-1">Review local tutor quality, disputes, and active demo conversions with staff workflows.</p>
+            </div>
+            {% elif user_role == 'GLOBAL_ADMIN' %}
+            <div class="rounded-2xl border border-slate-200 bg-slate-100/70 p-5">
+                <p class="text-xs font-black uppercase tracking-widest text-slate-700 mb-2">Role action</p>
+                <h3 class="text-lg font-black text-slate-900">Run platform-wide growth and quality ops</h3>
+                <p class="text-sm text-slate-600 mt-1">Track network metrics, trust & safety, and monetization health across all regions.</p>
+            </div>
+            {% else %}
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5">
+                <p class="text-xs font-black uppercase tracking-widest text-indigo-700 mb-2">Role action</p>
+                <h3 class="text-lg font-black text-slate-900">Practice tests + tutor support</h3>
+                <p class="text-sm text-slate-600 mt-1">Take diagnostics, fix weak areas, and request demos when you need guided help.</p>
+            </div>
+            {% endif %}
         </div>
 
         {# Right Sidebar: compact width so journey table has room #}

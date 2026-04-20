@@ -1,6 +1,7 @@
 import random
 
 from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
@@ -23,10 +24,16 @@ def test_index(request):
     paths = SkillPath.objects.filter(is_active=True).prefetch_related('skills')
     unassigned_skills = Skill.objects.filter(is_active=True, path__isnull=True)
     attempts = UserAttempt.objects.filter(user=request.user).values_list('skill_id', flat=True)
+    is_premium_user = bool(request.user.is_premium or request.user.is_staff or request.user.is_superuser)
+    pro_locked_skill_ids = set(
+        Skill.objects.filter(is_active=True, path__level_order__gte=3).values_list('id', flat=True)
+    )
     return render(request, 'assessment/test_list.jinja', {
         'paths': paths,
         'unassigned_skills': unassigned_skills,
         'attempted_ids': list(attempts),
+        'pro_locked_skill_ids': pro_locked_skill_ids,
+        'is_premium_user': is_premium_user,
     })
 
 @login_required
@@ -106,6 +113,16 @@ def settle_jackpot(jackpot):
 @login_required
 def take_test(request, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id, is_active=True)
+    if (
+        skill.path_id
+        and getattr(skill.path, 'level_order', 0) >= 3
+        and not (request.user.is_premium or request.user.is_staff or request.user.is_superuser)
+    ):
+        messages.warning(
+            request,
+            'This advanced track is part of RankJee Pro. Upgrade to unlock premium exam tracks.',
+        )
+        return redirect('payments:plans')
     
     # NEW: Determine which set the user is on
     user_passed_sets = UserSetAttempt.objects.filter(
@@ -156,8 +173,6 @@ def take_test(request, skill_id):
                     SkillTestEntitlement.objects.create(user=u, skill=skill)
                     request.session[session_key] = True
                 else:
-                    from django.contrib import messages
-
                     messages.error(
                         request,
                         "Insufficient Wallet Balance! Tests cost ₹10 after your free trials. Earn money on the Freelance Board or invite friends!",
@@ -180,7 +195,6 @@ def take_test(request, skill_id):
         random.shuffle(questions)
 
     if not questions:
-        from django.contrib import messages
         messages.info(request, "This topic doesn't have enough questions for a test yet.")
         return redirect('dashboard:index')
     
