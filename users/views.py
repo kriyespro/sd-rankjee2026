@@ -24,6 +24,13 @@ from .tasks import send_welcome_email
 logger = logging.getLogger("rankjee.signup")
 
 
+def _post_auth_redirect(request, fallback="learning:index"):
+    next_url = request.POST.get("next") or request.GET.get("next") or ""
+    if next_url.startswith("/") and not next_url.startswith("//"):
+        return next_url
+    return fallback
+
+
 def _enqueue_welcome_email(user_id):
     """Never fail the HTTP response if Celery/Redis is down."""
     try:
@@ -135,7 +142,7 @@ def signup_view(request):
             _update_streak(user)
             # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
             transaction.on_commit(lambda uid=user.id: _enqueue_welcome_email(uid))
-            return redirect('dashboard:index')
+            return redirect(_post_auth_redirect(request))
     else:
         form = CustomUserCreationForm()
     ref_code = request.GET.get('ref', '')
@@ -152,7 +159,7 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             _update_streak(user)
-            return redirect('dashboard:index')
+            return redirect(_post_auth_redirect(request))
     else:
         form = AuthenticationForm()
     return render(request, 'users/login.jinja', {'form': form})

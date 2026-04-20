@@ -1,10 +1,12 @@
 import random
+from urllib.parse import urlencode
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
+from django.urls import reverse
 from users.models import CustomUser
 from .models import (
     SkillPath,
@@ -115,6 +117,13 @@ def take_test(request, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id, is_active=True)
     concept = (request.GET.get("concept") or "").strip()
     video_id = request.GET.get("video_id")
+
+    def _learning_redirect():
+        base = reverse("learning:index")
+        params = {"skill": skill.id}
+        if concept:
+            params["concept"] = concept
+        return redirect(f"{base}?{urlencode(params)}")
     if (
         skill.path_id
         and getattr(skill.path, 'level_order', 0) >= 3
@@ -145,7 +154,7 @@ def take_test(request, skill_id):
     # If sets exist but all are passed, then they have mastered it
     if (not concept) and skill.sets.exists() and not current_set:
         messages.success(request, f"Congratulations! You've mastered all levels of {skill.name}.")
-        return redirect('dashboard:index')
+        return _learning_redirect()
 
     # Monetization: trials or wallet; entitlement row prevents double charge (tabs / races)
     session_key = f'active_test_paid_{skill.id}'
@@ -215,7 +224,7 @@ def take_test(request, skill_id):
 
     if not questions:
         messages.info(request, "This topic doesn't have enough questions for a test yet.")
-        return redirect('dashboard:index')
+        return _learning_redirect()
     
     # Store the question IDs in session so we know which ones were in THIS test
     request.session[f'test_questions_{skill.id}'] = [q.id for q in questions]
