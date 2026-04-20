@@ -295,6 +295,11 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
 
+# Testing helper: unlock temporary Pro on signup via referral code.
+# Keep disabled in strict production by setting REFERRAL_PREMIUM_ENABLED=0.
+REFERRAL_PREMIUM_ENABLED = os.environ.get('REFERRAL_PREMIUM_ENABLED', '1').lower() in ('1', 'true', 'yes')
+REFERRAL_PREMIUM_DAYS = int(os.environ.get('REFERRAL_PREMIUM_DAYS', '30'))
+
 # Celery Configuration
 _redis_default = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', _redis_default)

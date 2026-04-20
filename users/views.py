@@ -1,5 +1,8 @@
 import logging
 
+from datetime import timedelta
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -90,6 +93,28 @@ def signup_view(request):
                         user.referred_by = referrer
                         user.save(update_fields=['referred_by'])
                         on_referral_signup(user, referrer)
+                        if settings.REFERRAL_PREMIUM_ENABLED:
+                            # Temporary Pro unlock for referral onboarding/testing.
+                            from payments.models import SubscriptionPlan, UserSubscription
+
+                            trial_plan = (
+                                SubscriptionPlan.objects.filter(is_active=True).order_by("price").first()
+                            )
+                            if trial_plan:
+                                sub, created = UserSubscription.objects.get_or_create(
+                                    user=user,
+                                    defaults={
+                                        "plan": trial_plan,
+                                        "end_date": timezone.now() + timedelta(days=settings.REFERRAL_PREMIUM_DAYS),
+                                        "is_active": True,
+                                    },
+                                )
+                                if not created:
+                                    base = sub.end_date if sub.end_date and sub.end_date > timezone.now() else timezone.now()
+                                    sub.plan = trial_plan
+                                    sub.end_date = base + timedelta(days=settings.REFERRAL_PREMIUM_DAYS)
+                                    sub.is_active = True
+                                    sub.save(update_fields=["plan", "end_date", "is_active"])
                 except CustomUser.DoesNotExist:
                     pass
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')

@@ -19,6 +19,8 @@ def plans_view(request):
         {
             "plans": plans,
             "payment_dummy": razorpay_dummy_mode(),
+            "referral_premium_enabled": getattr(settings, "REFERRAL_PREMIUM_ENABLED", False),
+            "referral_premium_days": getattr(settings, "REFERRAL_PREMIUM_DAYS", 0),
         },
     )
 
