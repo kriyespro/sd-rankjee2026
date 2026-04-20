@@ -22,7 +22,8 @@ def get_tutor_profile(user) -> TutorProfile | None:
 
 
 def tutor_to_card_dict(profile: TutorProfile, pilot: str | None = None) -> dict:
-    city = pilot or PILOT_CITY
+    fallback_city = pilot or PILOT_CITY
+    city = profile.city or fallback_city
     return {
         'name': profile.display_name,
         'image_url': profile.profile_image.url if profile.profile_image else '',
@@ -32,14 +33,17 @@ def tutor_to_card_dict(profile: TutorProfile, pilot: str | None = None) -> dict:
         'classes': profile.classes_label or (
             f'Class {profile.teaches_from}–{profile.teaches_to}'
         ),
+        'class_range': f'Class {profile.teaches_from}-{profile.teaches_to}',
         'fee_label': profile.fee_label or 'Fee on request',
         'area': profile.area or '—',
+        'city': city,
+        'pincode': profile.pincode or '',
         'rating': str(profile.rating_display),
         'reviews': profile.reviews_count,
         'verified': profile.verification_status == TutorProfile.VerificationStatus.APPROVED,
         'profile_url': reverse('hometutor:tutor_detail', kwargs={'slug': profile.slug}),
         'slug': profile.slug,
-        'pilot_city': city,
+        'pilot_city': fallback_city,
     }
 
 
