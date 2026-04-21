@@ -31,7 +31,7 @@ class CourseAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
 
 
-@admin.action(description="Mark selected referrals SUCCESS and pay 30% commission")
+@admin.action(description="Mark selected referrals SUCCESS and pay 30%% commission")
 def mark_referral_success_and_pay(modeladmin, request, queryset):
     for item in queryset.select_related("referrer", "course"):
         if item.commission_paid_at:
