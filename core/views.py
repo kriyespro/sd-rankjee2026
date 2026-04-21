@@ -1,10 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import HttpResponse
-from .models import EarningTask, UserTaskSubmission
+from .models import Course, CourseReferral, EarningTask, UserTaskSubmission
 from assessment.models import UserAttempt
 from django.utils import timezone
 from assessment.models import DailyJackpot
@@ -43,6 +44,68 @@ def home(request):
         'featured_tutors_from_db': featured_from_db,
         'hometutor_pilot_city': PILOT_CITY,
     })
+
+
+def courses(request):
+    ref_code = (request.GET.get("ref") or "").strip().upper()
+    if ref_code:
+        request.session["pending_course_referrer_code"] = ref_code
+    pending_ref = request.session.get("pending_course_referrer_code", "")
+
+    if request.method == "POST":
+        course_id = request.POST.get("course_id")
+        lead_name = (request.POST.get("lead_name") or "").strip()[:120]
+        lead_email = (request.POST.get("lead_email") or "").strip().lower()
+        if not course_id or not lead_email:
+            messages.error(request, "Please select a course and enter your email.")
+            return redirect("core:courses")
+        course = Course.objects.filter(id=course_id, is_active=True).first()
+        if not course:
+            messages.error(request, "Invalid course selected.")
+            return redirect("core:courses")
+        referrer = None
+        if pending_ref:
+            referrer = get_user_model().objects.filter(referral_code=pending_ref).first()
+        if not referrer:
+            messages.error(request, "Referral code missing/invalid. Open courses page with a referral link.")
+            return redirect("core:courses")
+        if request.user.is_authenticated and referrer.id == request.user.id:
+            messages.error(request, "You cannot refer yourself.")
+            return redirect("core:courses")
+
+        lead_user = request.user if request.user.is_authenticated else None
+        referral, created = CourseReferral.objects.get_or_create(
+            course=course,
+            referrer=referrer,
+            lead_email=lead_email,
+            defaults={
+                "lead_name": lead_name,
+                "lead_user": lead_user,
+                "status": CourseReferral.Status.PENDING,
+                "sale_amount": course.price_inr,
+            },
+        )
+        if not created:
+            referral.lead_name = lead_name or referral.lead_name
+            referral.lead_user = lead_user or referral.lead_user
+            if not referral.sale_amount:
+                referral.sale_amount = course.price_inr
+            referral.save(update_fields=["lead_name", "lead_user", "sale_amount"])
+        messages.success(
+            request,
+            "Interest recorded. After successful enrollment, referrer gets 30% commission.",
+        )
+        return redirect("core:courses")
+
+    courses_qs = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    return render(
+        request,
+        "core/courses.jinja",
+        {
+            "courses": courses_qs,
+            "pending_course_referrer_code": pending_ref,
+        },
+    )
 
 
 @login_required

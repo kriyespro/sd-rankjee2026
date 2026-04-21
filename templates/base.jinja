@@ -83,16 +83,14 @@
                 <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
             </a>
             
-            <div class="hidden md:flex items-center gap-3 text-xs font-black text-slate-600 uppercase">
-                <span class="text-indigo-600">EN</span>
-            </div>
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-12 text-sm font-black text-slate-600 uppercase tracking-[0.2em]">
                 {% if not request.user.is_authenticated %}
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% elif current_role == 'TUTOR' %}
                     <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                     <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
@@ -110,9 +108,10 @@
                     <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
                 {% else %}
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">{{ uil.rewards }}</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% endif %}
             </div>
             
