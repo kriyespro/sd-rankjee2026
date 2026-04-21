@@ -14,6 +14,29 @@ from .models import (
 )
 from .tasks import send_withdrawal_status_email
 from .gamification import send_notification
+from payments.services import grant_complimentary_subscription_days
+
+
+@admin.action(description='Exam Pro: grant 30 days complimentary (payments plans access)')
+def user_grant_30_days_pro(modeladmin, request, queryset):
+    for user in queryset:
+        grant_complimentary_subscription_days(user, 30)
+
+
+@admin.action(description='Exam Pro: grant 7 days complimentary')
+def user_grant_7_days_pro(modeladmin, request, queryset):
+    for user in queryset:
+        grant_complimentary_subscription_days(user, 7)
+
+
+@admin.action(description='Mark selected users as VIP testing (always Pro for exam module)')
+def user_mark_vip_testing(modeladmin, request, queryset):
+    queryset.update(is_vip_testing_user=True)
+
+
+@admin.action(description='Remove VIP testing flag from selected users')
+def user_unmark_vip_testing(modeladmin, request, queryset):
+    queryset.update(is_vip_testing_user=False)
 
 
 @admin.action(description='Mark withdrawals as processed')
@@ -67,12 +90,27 @@ class CustomUserAdmin(UserAdmin):
         'username',
         'email',
         'state',
+        'is_vip_testing_user',
         'streak_days',
         'xp_points',
         'wallet_balance',
         'referral_code',
     )
-    readonly_fields = ('referral_code', 'last_ad_claim_at')
+    list_filter = (
+        'is_vip_testing_user',
+        'state',
+        'is_staff',
+        'is_superuser',
+        'is_active',
+        'groups',
+    )
+    actions = UserAdmin.actions + (
+        user_grant_30_days_pro,
+        user_grant_7_days_pro,
+        user_mark_vip_testing,
+        user_unmark_vip_testing,
+    )
+    readonly_fields = ('referral_code', 'last_ad_claim_at', 'signup_pro_trial_applied_at')
     fieldsets = UserAdmin.fieldsets + (
         (
             'RankJee',
@@ -87,6 +125,16 @@ class CustomUserAdmin(UserAdmin):
                     'referral_code',
                     'referred_by',
                 )
+            },
+        ),
+        (
+            'Exam Pro (payments /plans)',
+            {
+                'fields': (
+                    'is_vip_testing_user',
+                    'signup_pro_trial_applied_at',
+                ),
+                'description': 'VIP testers always unlock exam Pro features. Use list actions to grant 7/30 day complimentary access (same as /payments/plans/).',
             },
         ),
     )

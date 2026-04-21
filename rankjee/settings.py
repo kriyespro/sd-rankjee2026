@@ -354,6 +354,10 @@ SOCIALACCOUNT_PROVIDERS = {
 REFERRAL_PREMIUM_ENABLED = os.environ.get('REFERRAL_PREMIUM_ENABLED', '1').lower() in ('1', 'true', 'yes')
 REFERRAL_PREMIUM_DAYS = int(os.environ.get('REFERRAL_PREMIUM_DAYS', '30'))
 
+# One-time exam Pro trial after new account (payments module); stacks before referral premium on email signup.
+SIGNUP_TRIAL_ENABLED = os.environ.get('SIGNUP_TRIAL_ENABLED', '1').lower() in ('1', 'true', 'yes')
+SIGNUP_TRIAL_DAYS = int(os.environ.get('SIGNUP_TRIAL_DAYS', '7'))
+
 # Celery Configuration
 _redis_default = os.environ.get('REDIS_URL', 'redis://127.0.0.1:6379/0')
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', _redis_default)

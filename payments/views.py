@@ -21,6 +21,8 @@ def plans_view(request):
             "payment_dummy": razorpay_dummy_mode(),
             "referral_premium_enabled": getattr(settings, "REFERRAL_PREMIUM_ENABLED", False),
             "referral_premium_days": getattr(settings, "REFERRAL_PREMIUM_DAYS", 0),
+            "signup_trial_enabled": getattr(settings, "SIGNUP_TRIAL_ENABLED", False),
+            "signup_trial_days": getattr(settings, "SIGNUP_TRIAL_DAYS", 0),
         },
     )
 

@@ -19,6 +19,7 @@ from core.models import UserTaskSubmission
 from .forms import CustomUserCreationForm
 from .gamification import on_referral_signup, on_streak_login, send_notification
 from .models import CompanyInquiry, CustomUser, PublicProfile
+from .subscription import try_apply_signup_pro_trial
 from .tasks import send_welcome_email
 
 logger = logging.getLogger("rankjee.signup")
@@ -90,7 +91,8 @@ def signup_view(request):
         if form.is_valid():
             user = form.save()
             user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
-            
+            try_apply_signup_pro_trial(user)
+
             # Handle referral code
             ref_code = request.POST.get('referral_code', '').strip().upper()
             if ref_code:

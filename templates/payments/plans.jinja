@@ -10,6 +10,11 @@
             <strong>Dummy checkout</strong> — no real Razorpay keys needed in DEBUG. Click Get Started and confirm to activate Pro locally.
         </div>
         {% endif %}
+        {% if signup_trial_enabled and signup_trial_days > 0 %}
+        <div class="mb-8 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-center text-sm font-semibold text-indigo-900">
+            New accounts get <strong>{{ signup_trial_days }} days</strong> of exam Pro access free (no card). Subscribe anytime on this page to extend.
+        </div>
+        {% endif %}
         {% if referral_premium_enabled %}
         <div class="mb-8 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-900">
             Test mode: sign up using any valid referral code and get {{ referral_premium_days }} days Pro access without payment.

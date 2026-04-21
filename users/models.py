@@ -1,6 +1,7 @@
 import uuid
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 
@@ -54,6 +55,16 @@ class CustomUser(AbstractUser):
     referred_by = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL, related_name='referrals'
     )
+    is_vip_testing_user = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="If set, user always has exam Pro access (feedback / QA). Manage from /sd/.",
+    )
+    signup_pro_trial_applied_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Set when the one-time signup Pro trial was applied (payments module).",
+    )
 
     def add_xp(self, points):
         self.xp_points += points
@@ -83,11 +94,14 @@ class CustomUser(AbstractUser):
         )
     @property
     def is_premium(self):
-        """Check if user has an active, non-expired subscription."""
+        """Exam Pro (payments subscription), VIP tester flag, or active paid/complimentary sub."""
+        if self.is_vip_testing_user:
+            return True
         try:
-            return self.subscription.is_active and not self.subscription.is_expired
-        except:
+            sub = self.subscription
+        except ObjectDoesNotExist:
             return False
+        return sub.is_active and not sub.is_expired
 
 
 class Badge(models.Model):
