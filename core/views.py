@@ -50,28 +50,39 @@ def courses(request):
     ref_code = (request.GET.get("ref") or "").strip().upper()
     if ref_code:
         request.session["pending_course_referrer_code"] = ref_code
+    courses_qs = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    return render(
+        request,
+        "core/courses.jinja",
+        {
+            "courses": courses_qs,
+        },
+    )
+
+
+def course_detail(request, slug):
+    ref_code = (request.GET.get("ref") or "").strip().upper()
+    if ref_code:
+        request.session["pending_course_referrer_code"] = ref_code
     pending_ref = request.session.get("pending_course_referrer_code", "")
+    course = get_object_or_404(Course, slug=slug, is_active=True)
 
     if request.method == "POST":
-        course_id = request.POST.get("course_id")
         lead_name = (request.POST.get("lead_name") or "").strip()[:120]
         lead_email = (request.POST.get("lead_email") or "").strip().lower()
-        if not course_id or not lead_email:
-            messages.error(request, "Please select a course and enter your email.")
-            return redirect("core:courses")
-        course = Course.objects.filter(id=course_id, is_active=True).first()
-        if not course:
-            messages.error(request, "Invalid course selected.")
-            return redirect("core:courses")
+        if not lead_email:
+            messages.error(request, "Please enter your email.")
+            return redirect("core:course_detail", slug=course.slug)
+
         referrer = None
         if pending_ref:
             referrer = get_user_model().objects.filter(referral_code=pending_ref).first()
         if not referrer:
-            messages.error(request, "Referral code missing/invalid. Open courses page with a referral link.")
-            return redirect("core:courses")
+            messages.error(request, "Referral code missing/invalid. Use a referral link from Earn page.")
+            return redirect("core:course_detail", slug=course.slug)
         if request.user.is_authenticated and referrer.id == request.user.id:
             messages.error(request, "You cannot refer yourself.")
-            return redirect("core:courses")
+            return redirect("core:course_detail", slug=course.slug)
 
         lead_user = request.user if request.user.is_authenticated else None
         referral, created = CourseReferral.objects.get_or_create(
@@ -93,16 +104,15 @@ def courses(request):
             referral.save(update_fields=["lead_name", "lead_user", "sale_amount"])
         messages.success(
             request,
-            "Interest recorded. After successful enrollment, referrer gets 30% commission.",
+            "Enrollment interest recorded. On successful conversion, 30% referral commission is credited.",
         )
-        return redirect("core:courses")
+        return redirect("core:course_detail", slug=course.slug)
 
-    courses_qs = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
     return render(
         request,
-        "core/courses.jinja",
+        "core/course_detail.jinja",
         {
-            "courses": courses_qs,
+            "course": course,
             "pending_course_referrer_code": pending_ref,
         },
     )
@@ -122,6 +132,13 @@ def earnings(request):
     total_earned = user.wallet_balance
     wallet_transactions = user.wallet_transactions.all()[:20]
     withdrawals = user.withdrawals.all()[:5]
+    active_courses = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    course_ref_links = {}
+    if getattr(user, "referral_code", ""):
+        for c in active_courses:
+            course_ref_links[c.id] = (
+                f"{scheme}://{site_domain}/courses/{c.slug}/?ref={user.referral_code}"
+            )
     
     return render(request, 'core/earnings.jinja', {
         'referrals': referrals,
@@ -130,6 +147,8 @@ def earnings(request):
         'total_earned': total_earned,
         'transactions': wallet_transactions,
         'withdrawals': withdrawals,
+        'active_courses': active_courses,
+        'course_ref_links': course_ref_links,
     })
 
 

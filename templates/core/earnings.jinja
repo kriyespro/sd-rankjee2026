@@ -52,6 +52,36 @@
                 </div>
             </div>
 
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 md:p-8">
+                <h3 class="text-lg font-black text-slate-900 mb-2 flex items-center gap-2">
+                    <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">🎓</span>
+                    Course referral links (30% commission)
+                </h3>
+                <p class="text-sm text-slate-600 mb-5">Share course-specific links. On successful enrollment, you earn 30% commission.</p>
+                <div class="space-y-3">
+                    {% for c in active_courses %}
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" x-data="{ copied: false, link: '{{ course_ref_links.get(c.id, '') }}' }">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-black text-slate-900">{{ c.title }}</p>
+                                <p class="text-xs text-slate-500">Price: ₹{{ c.price_inr }}</p>
+                            </div>
+                            <a href="{{ url('core:course_detail', c.slug) }}" class="text-xs font-black text-indigo-700 hover:text-indigo-500">View course</a>
+                        </div>
+                        <div class="mt-2 relative">
+                            <input type="text" x-model="link" readonly class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 pr-24 text-xs text-slate-600 font-mono">
+                            <button @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-md bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">
+                                <span x-show="!copied">Copy</span>
+                                <span x-show="copied" x-cloak>Copied</span>
+                            </button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-slate-500">No active courses available yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
             <!-- Referral List Table -->
             <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-8">
                 <div class="p-6 border-b border-slate-100 flex justify-between items-center">

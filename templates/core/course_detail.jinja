@@ -1,0 +1,57 @@
+{% extends "base.jinja" %}
+{% block title %}{{ course.title }} - RankJee{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10">
+    <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
+
+    <article class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm p-6 md:p-8">
+        {% if course.thumbnail_url %}
+        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-64 object-cover rounded-xl mb-6">
+        {% endif %}
+        <h1 class="text-3xl font-black text-slate-900">{{ course.title }}</h1>
+        <p class="text-slate-600 mt-3">{{ course.short_description }}</p>
+
+        <div class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <p class="text-xs text-slate-500 font-semibold">Price</p>
+                <p class="font-black text-emerald-700">₹{{ course.price_inr }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <p class="text-xs text-slate-500 font-semibold">Duration</p>
+                <p class="font-black text-slate-800">{{ course.duration_weeks }} weeks</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <p class="text-xs text-slate-500 font-semibold">Level</p>
+                <p class="font-black text-slate-800">{{ course.level or "All levels" }}</p>
+            </div>
+            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                <p class="text-xs text-slate-500 font-semibold">Format</p>
+                <p class="font-black text-slate-800">Online</p>
+            </div>
+        </div>
+
+        {% if course.description %}
+        <div class="mt-6 text-sm text-slate-700 whitespace-pre-line">{{ course.description }}</div>
+        {% endif %}
+    </article>
+
+    <section class="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
+        <h2 class="text-lg font-black text-indigo-900">Enroll Now</h2>
+        <p class="text-sm text-indigo-800 mt-1">Submit your details to register interest for this course.</p>
+        {% if pending_course_referrer_code %}
+        <p class="mt-3 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700">
+            Referral code active: {{ pending_course_referrer_code }}
+        </p>
+        {% endif %}
+        <form method="post" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="text" name="lead_name" placeholder="Your name" class="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm">
+            <input type="email" name="lead_email" placeholder="Your email" value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}" class="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm" required>
+            <button type="submit" class="rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-xs font-black uppercase tracking-wider hover:bg-indigo-500">
+                Submit Enrollment
+            </button>
+        </form>
+    </section>
+</div>
+{% endblock %}
