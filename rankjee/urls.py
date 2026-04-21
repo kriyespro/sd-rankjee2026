@@ -27,6 +27,7 @@ admin.site.index_title = "Welcome to RankJee Control Centre"
 urlpatterns = [
     path('sd/', admin.site.urls), # standard django admin
     path('admin/', include('dashboard.urls')), # custom dashboard
+    path('accounts/', include('allauth.urls')),
     path('users/', include('users.urls')),
     path('assessment/', include('assessment.urls')),
     path('learning/', include('learning.urls')),

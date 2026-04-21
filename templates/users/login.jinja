@@ -38,6 +38,19 @@
                 Log In &rarr;
             </button>
         </form>
+        <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-slate-200"></div>
+            </div>
+            <div class="relative flex justify-center text-xs uppercase">
+                <span class="bg-white px-3 text-slate-500 font-semibold">or continue with</span>
+            </div>
+        </div>
+        <a href="/accounts/google/login/?process=login"
+           class="w-full inline-flex items-center justify-center gap-3 border border-slate-300 text-slate-700 py-3 rounded-xl font-bold text-sm hover:bg-slate-50 transition-colors">
+            <span>G</span>
+            <span>Continue with Google</span>
+        </a>
     </div>
     <p class="mt-8 text-center text-sm font-medium text-slate-500">Don't have an account?
         <a href="{{ url('users:signup') }}" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">Sign up free</a>

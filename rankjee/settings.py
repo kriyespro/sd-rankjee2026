@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
@@ -28,11 +29,28 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-7o*(o1ovr)l&1pn)g2ie8+^q9dzx8h++%rj)x^%!ljr=7u8r_=')
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Safe defaulting:
+# - If DEBUG is explicitly set, honor it.
+# - If missing, prefer DEBUG=False when DATABASE_URL is configured (typical prod signal).
+# - Keep DEBUG=True for pure local/dev sqlite setups without DATABASE_URL.
+DEBUG = _env_bool('DEBUG', default=not bool(os.environ.get('DATABASE_URL')))
 
 _raw_hosts = os.environ.get('ALLOWED_HOSTS', '')
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(',') if h.strip()] if _raw_hosts else []
+if not ALLOWED_HOSTS:
+    _site_for_hosts = os.environ.get('SITE_BASE_URL', '').strip()
+    if _site_for_hosts:
+        parsed = urlparse(_site_for_hosts)
+        if parsed.hostname:
+            ALLOWED_HOSTS = [parsed.hostname]
 
 # TLS terminated at Nginx: trust X-Forwarded-* for redirects, cookies, CSRF (production only).
 if not DEBUG:
@@ -40,6 +58,13 @@ if not DEBUG:
     USE_X_FORWARDED_HOST = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+    CSRF_COOKIE_SAMESITE = os.environ.get('CSRF_COOKIE_SAMESITE', 'Lax')
+    # Optional: share auth+csrf cookies across apex/www, e.g. ".rankjee.com".
+    _cookie_domain = os.environ.get('COOKIE_DOMAIN', '').strip()
+    if _cookie_domain:
+        SESSION_COOKIE_DOMAIN = _cookie_domain
+        CSRF_COOKIE_DOMAIN = _cookie_domain
 
     # HSTS: sent on HTTPS responses when the request is treated as secure (incl. behind proxy).
     # Set SECURE_HSTS_SECONDS=0 in .env to disable. Read Django docs before enabling preload/subdomains.
@@ -50,9 +75,8 @@ if not DEBUG:
     )
     SECURE_HSTS_PRELOAD = os.environ.get('SECURE_HSTS_PRELOAD', '0').lower() in ('1', 'true', 'yes')
 
-    # Gunicorn is HTTP-only; Nginx redirects 80→443. Django-level HTTPS redirect would break
-    # http://127.0.0.1:8000/ health checks and direct backend access.
-    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', '0').lower() in ('1', 'true', 'yes')
+    # Force end users onto HTTPS; can be disabled explicitly if needed.
+    SECURE_SSL_REDIRECT = _env_bool('SECURE_SSL_REDIRECT', default=True)
 
     # W008: HTTPS is enforced at Nginx, not in Django (see above).
     # W005 / W021: optional HSTS subdomain + preload; off by default until you opt in via env.
@@ -91,7 +115,6 @@ def _csrf_trusted_origins():
             _add(f'https://{host}')
             continue
         _add(f'https://{h}')
-        _add(f'http://{h}')
 
     return origins
 
@@ -105,9 +128,14 @@ INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.sites',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     # Local Apps
     'core',
     'users',
@@ -140,6 +168,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'axes.middleware.AxesMiddleware',
@@ -269,6 +298,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 AUTHENTICATION_BACKENDS = [
     'axes.backends.AxesBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -294,6 +324,30 @@ LOGIN_URL = '/users/login/'
 LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
+SITE_ID = int(os.environ.get('SITE_ID', '1'))
+
+# django-allauth account settings
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# Google OAuth credentials from environment (recommended for deploys).
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '').strip()
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            'client_id': GOOGLE_OAUTH_CLIENT_ID,
+            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
+            'key': '',
+        },
+    },
+}
 
 # Testing helper: unlock temporary Pro on signup via referral code.
 # Keep disabled in strict production by setting REFERRAL_PREMIUM_ENABLED=0.

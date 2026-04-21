@@ -3,6 +3,7 @@ venv/
 ENV/
 env/
 .env
+googleid.txt
 app.log
 app.log.*
 *.pyc
