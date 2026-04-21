@@ -12,12 +12,24 @@ from .services import get_razorpay_client, make_dummy_order_id, razorpay_dummy_m
 
 
 def plans_view(request):
-    plans = SubscriptionPlan.objects.filter(is_active=True).order_by("price")
+    plans = list(SubscriptionPlan.objects.filter(is_active=True).order_by("price"))
+    has_monthly = any(p.duration_days <= 30 for p in plans)
+    has_annual = any(p.duration_days > 30 for p in plans)
+    # Alpine default tab: if only annual plans exist, start on "annual" or the grid looks empty.
+    if has_monthly:
+        plans_billing_default = "monthly"
+    elif has_annual:
+        plans_billing_default = "annual"
+    else:
+        plans_billing_default = "monthly"
     return render(
         request,
         "payments/plans.jinja",
         {
             "plans": plans,
+            "plans_billing_default": plans_billing_default,
+            "has_monthly_plans": has_monthly,
+            "has_annual_plans": has_annual,
             "payment_dummy": razorpay_dummy_mode(),
             "referral_premium_enabled": getattr(settings, "REFERRAL_PREMIUM_ENABLED", False),
             "referral_premium_days": getattr(settings, "REFERRAL_PREMIUM_DAYS", 0),

@@ -3,7 +3,7 @@
 {% block title %}Pricing Plans - RankJee{% endblock %}
 
 {% block content %}
-<div class="py-12 bg-gray-50 min-h-screen" x-data="{ billing: 'monthly' }">
+<div class="py-12 bg-gray-50 min-h-screen" x-data="{ billing: '{{ plans_billing_default }}' }">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {% if payment_dummy %}
         <div class="mb-8 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-900">
@@ -29,10 +29,17 @@
                 These plans are an optional add-on for online diagnostics, skill paths, and practice tests.
             </p>
             <p class="max-w-3xl mt-3 mx-auto text-sm text-slate-500">
-                Exam subscriptions are billed in the `payments` module only. Home tutor marketplace fees are separate and billed under `hometutor_payments`.
+                Academy learning videos and basic practice stay on <strong>Learn</strong>; this page is only for the <strong>exam Pro</strong> add-on (extra tests, certificates, analytics). Exam subscriptions are billed here only. Home tutor fees use <code class="text-xs bg-slate-100 px-1 rounded">hometutor_payments</code>.
             </p>
         </div>
 
+        {% if not plans %}
+        <div class="mt-12 max-w-2xl mx-auto rounded-xl border border-amber-200 bg-amber-50 px-6 py-5 text-center text-amber-950">
+            <p class="font-semibold">No active exam plans in the catalog yet.</p>
+            <p class="mt-2 text-sm">Staff can add plans in <code class="text-xs bg-white/80 px-1 rounded">/sd/</code> or run <code class="text-xs bg-white/80 px-1 rounded">python manage.py seed_subscription_plans</code> on the server.</p>
+        </div>
+        {% else %}
+        {% if has_monthly_plans and has_annual_plans %}
         <div class="mt-12 flex justify-center">
             <div class="relative bg-white rounded-lg p-0.5 flex sm:mt-8">
                 <button type="button" @click="billing = 'monthly'" :class="{ 'bg-white shadow-sm text-gray-900': billing === 'monthly', 'text-gray-500': billing !== 'monthly' }" class="relative py-2 px-6 border-transparent rounded-md text-sm font-medium whitespace-nowrap focus:outline-none focus:z-10 sm:w-auto sm:px-8">
@@ -43,10 +50,11 @@
                 </button>
             </div>
         </div>
+        {% endif %}
 
         <div class="mt-12 space-y-12 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-x-8">
             {% for plan in plans %}
-            <div class="relative p-8 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1" x-show="billing === '{% if plan.duration_days > 30 %}annual{% else %}monthly{% endif %}'">
+            <div class="relative p-8 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1" {% if has_monthly_plans and has_annual_plans %}x-show="billing === '{% if plan.duration_days > 30 %}annual{% else %}monthly{% endif %}'"{% endif %}>
                 <div class="flex-1">
                     <h3 class="text-xl font-semibold text-gray-900">{{ plan.name }}</h3>
                     {% if plan.duration_days > 30 %}
@@ -88,6 +96,7 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
     </div>
 </div>
 
