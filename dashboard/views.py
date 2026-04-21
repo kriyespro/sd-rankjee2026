@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField
+from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -547,6 +547,82 @@ def _role_dashboard_context(request):
 
 def _staff_only(request):
     return request.user.is_staff or request.user.is_superuser
+
+
+@login_required
+def students_score_table(request):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+
+    q = (request.GET.get("q") or "").strip()
+    user_qs = User.objects.all()
+    if q:
+        user_qs = user_qs.filter(Q(username__icontains=q) | Q(email__icontains=q))
+
+    qs = (
+        user_qs.annotate(
+            attempts_count=Count("userattempt", distinct=True),
+            avg_score=Avg("userattempt__score"),
+            best_score=Max("userattempt__score"),
+            pass_count=Count("userattempt", filter=Q(userattempt__passed=True), distinct=True),
+            last_attempt_at=Max("userattempt__attempt_date"),
+        )
+        .order_by("-last_attempt_at", "-attempts_count", "-xp_points", "-date_joined")
+    )
+    paginator = Paginator(qs, 30)
+    students_page = paginator.get_page(request.GET.get("page", 1))
+
+    # Build weak-topic hint from latest attempt for each visible student.
+    page_user_ids = [u.id for u in students_page.object_list]
+    latest_attempts = (
+        UserAttempt.objects.filter(user_id__in=page_user_ids)
+        .select_related("skill")
+        .order_by("user_id", "-attempt_date")
+    )
+    latest_by_user = {}
+    for item in latest_attempts:
+        if item.user_id not in latest_by_user:
+            latest_by_user[item.user_id] = item
+
+    rows = []
+    for u in students_page.object_list:
+        attempts = int(getattr(u, "attempts_count", 0) or 0)
+        pass_count = int(getattr(u, "pass_count", 0) or 0)
+        pass_rate = round((pass_count / attempts) * 100, 1) if attempts else 0
+        avg_score = float(getattr(u, "avg_score", 0) or 0)
+        best_score = int(getattr(u, "best_score", 0) or 0)
+        latest_attempt = latest_by_user.get(u.id)
+        weak_preview = ""
+        latest_skill_name = ""
+        latest_score = None
+        if latest_attempt:
+            latest_skill_name = latest_attempt.skill.name if latest_attempt.skill else ""
+            latest_score = latest_attempt.score
+            weak_preview = ", ".join((latest_attempt.weak_concepts or [])[:3])
+        rows.append(
+            {
+                "student": u,
+                "attempts": attempts,
+                "pass_count": pass_count,
+                "pass_rate": pass_rate,
+                "avg_score": round(avg_score, 1),
+                "best_score": best_score,
+                "last_attempt_at": getattr(u, "last_attempt_at", None),
+                "latest_skill_name": latest_skill_name,
+                "latest_score": latest_score,
+                "weak_preview": weak_preview,
+            }
+        )
+
+    return render(
+        request,
+        "dashboard/students_score_table.jinja",
+        {
+            "rows": rows,
+            "students_page": students_page,
+            "search_query": q,
+        },
+    )
 
 
 @login_required

@@ -90,8 +90,8 @@
             <span class="text-base font-black text-slate-900">{{ t.fee_label }}</span>
         </div>
     </div>
-    <button type="button" disabled class="mt-5 w-full py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold cursor-not-allowed border border-slate-200">
-        Request demo — soon
-    </button>
+    <a href="{{ url('hometutor:tutor_list') }}" class="mt-5 w-full py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold text-center hover:bg-indigo-500 transition-colors block">
+        Request demo
+    </a>
     {% endif %}
 </article>

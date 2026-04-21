@@ -1,8 +1,5 @@
 import logging
 
-from datetime import timedelta
-
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -17,8 +14,9 @@ from django.utils.text import slugify
 from assessment.models import UserAttempt
 from core.models import UserTaskSubmission
 from .forms import CustomUserCreationForm
-from .gamification import on_referral_signup, on_streak_login, send_notification
+from .gamification import on_streak_login, send_notification
 from .models import CompanyInquiry, CustomUser, PublicProfile
+from .referrals import process_referral_signup
 from .subscription import try_apply_signup_pro_trial
 from .tasks import send_welcome_email
 
@@ -93,53 +91,11 @@ def signup_view(request):
             user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
             try_apply_signup_pro_trial(user)
 
-            # Handle referral code
+            # Handle referral code (email signup path); also stored in session for social signup path.
             ref_code = request.POST.get('referral_code', '').strip().upper()
             if ref_code:
-                try:
-                    referrer = CustomUser.objects.get(referral_code=ref_code)
-                    if referrer != user:
-                        user.referred_by = referrer
-                        user.save(update_fields=['referred_by'])
-                        on_referral_signup(user, referrer)
-                        if settings.REFERRAL_PREMIUM_ENABLED:
-                            # Temporary Pro unlock for referral onboarding/testing.
-                            from payments.models import SubscriptionPlan, UserSubscription
-
-                            trial_plan = (
-                                SubscriptionPlan.objects.filter(is_active=True).order_by("price").first()
-                            )
-                            if not trial_plan:
-                                # Safety fallback for fresh/live DBs with no active plans yet.
-                                trial_plan = (
-                                    SubscriptionPlan.objects.filter(name="Referral Test Pro").order_by("-id").first()
-                                )
-                            if not trial_plan:
-                                trial_plan = SubscriptionPlan.objects.create(
-                                    name="Referral Test Pro",
-                                    description="Auto-created zero-price plan for referral testing unlocks.",
-                                    price=0,
-                                    duration_days=max(1, int(settings.REFERRAL_PREMIUM_DAYS)),
-                                    is_active=False,
-                                    features=["Referral test premium access"],
-                                )
-                            if trial_plan:
-                                sub, created = UserSubscription.objects.get_or_create(
-                                    user=user,
-                                    defaults={
-                                        "plan": trial_plan,
-                                        "end_date": timezone.now() + timedelta(days=settings.REFERRAL_PREMIUM_DAYS),
-                                        "is_active": True,
-                                    },
-                                )
-                                if not created:
-                                    base = sub.end_date if sub.end_date and sub.end_date > timezone.now() else timezone.now()
-                                    sub.plan = trial_plan
-                                    sub.end_date = base + timedelta(days=settings.REFERRAL_PREMIUM_DAYS)
-                                    sub.is_active = True
-                                    sub.save(update_fields=["plan", "end_date", "is_active"])
-                except CustomUser.DoesNotExist:
-                    pass
+                process_referral_signup(user, ref_code)
+            request.session.pop("pending_referral_code", None)
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             _update_streak(user)
             # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
@@ -148,6 +104,8 @@ def signup_view(request):
     else:
         form = CustomUserCreationForm()
     ref_code = request.GET.get('ref', '')
+    if ref_code:
+        request.session["pending_referral_code"] = ref_code.strip().upper()
     return render(request, 'users/signup.jinja', {'form': form, 'ref_code': ref_code})
 
 

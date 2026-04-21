@@ -84,9 +84,7 @@
             </a>
             
             <div class="hidden md:flex items-center gap-3 text-xs font-black text-slate-600 uppercase">
-                <a href="{{ url('users:set_ui_lang', 'en') }}?next={{ request.path }}" class="{% if ui_lang != 'hi' %}text-indigo-600{% endif %} hover:text-indigo-500">EN</a>
-                <span class="text-slate-300">|</span>
-                <a href="{{ url('users:set_ui_lang', 'hi') }}?next={{ request.path }}" class="{% if ui_lang == 'hi' %}text-indigo-600{% endif %} hover:text-indigo-500">HI</a>
+                <span class="text-indigo-600">EN</span>
             </div>
             <!-- Desktop Nav -->
             <div class="hidden md:flex items-center gap-12 text-sm font-black text-slate-600 uppercase tracking-[0.2em]">

@@ -1,0 +1,92 @@
+{% extends "base.jinja" %}
+{% block title %}Students Score Table - RankJee{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Students score table</h1>
+            <p class="text-sm text-slate-600 mt-1">Smart snapshot: attempts, pass rate, average score, latest weak topics, and wallet/XP signals.</p>
+        </div>
+        <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">Back to dashboard</a>
+    </div>
+
+    <form method="get" class="mb-4">
+        <input
+            type="text"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="Search username or email"
+            class="w-full md:w-80 rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none"
+        >
+    </form>
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto">
+        <table class="w-full min-w-[1100px] text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200 text-xs font-black uppercase tracking-wider text-slate-600">
+                <tr>
+                    <th class="text-left px-4 py-3">Student</th>
+                    <th class="text-left px-4 py-3">Attempts</th>
+                    <th class="text-left px-4 py-3">Pass rate</th>
+                    <th class="text-left px-4 py-3">Avg score</th>
+                    <th class="text-left px-4 py-3">Best score</th>
+                    <th class="text-left px-4 py-3">Latest attempt</th>
+                    <th class="text-left px-4 py-3">Weak topics</th>
+                    <th class="text-left px-4 py-3">Wallet</th>
+                    <th class="text-left px-4 py-3">XP</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for row in rows %}
+                <tr class="hover:bg-indigo-50/30">
+                    <td class="px-4 py-3">
+                        <p class="font-black text-slate-900">{{ row.student.username }}</p>
+                        <p class="text-xs text-slate-500">{{ row.student.email }}</p>
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">{{ row.attempts }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex rounded-full px-2 py-1 text-xs font-black {% if row.pass_rate >= 70 %}bg-emerald-100 text-emerald-700{% elif row.pass_rate >= 40 %}bg-amber-100 text-amber-700{% else %}bg-rose-100 text-rose-700{% endif %}">
+                            {{ row.pass_rate }}%
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">{{ row.avg_score }}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">{{ row.best_score }}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">
+                        {% if row.latest_attempt_at %}
+                            <p class="font-semibold">{{ row.latest_attempt_at.strftime('%d %b %Y %H:%M') }}</p>
+                            <p>
+                                {% if row.latest_skill_name %}{{ row.latest_skill_name }}{% endif %}
+                                {% if row.latest_score is not none %} · {{ row.latest_score }}%{% endif %}
+                            </p>
+                        {% else %}
+                            No attempts
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-slate-600 max-w-[240px]">
+                        {{ row.weak_preview or '—' }}
+                    </td>
+                    <td class="px-4 py-3 font-semibold text-emerald-700">₹{{ row.student.wallet_balance|float }}</td>
+                    <td class="px-4 py-3 font-semibold text-indigo-700">{{ row.student.xp_points }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="px-4 py-12 text-center text-slate-500 font-semibold">No students found for this filter.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-4 flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-600">
+        <span>Page {{ students_page.number }} of {{ students_page.paginator.num_pages }}</span>
+        <div class="flex gap-2">
+            {% if students_page.has_previous() %}
+            <a href="?page={{ students_page.previous_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Prev</a>
+            {% endif %}
+            {% if students_page.has_next() %}
+            <a href="?page={{ students_page.next_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="rounded-lg border border-slate-300 px-3 py-1.5 hover:bg-slate-100">Next</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
