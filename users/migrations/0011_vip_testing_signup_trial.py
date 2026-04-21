@@ -3,21 +3,74 @@
 from django.db import migrations, models
 
 
+def _apply_vip_columns(apps, schema_editor):
+    """Safe when columns/index already exist (e.g. manual SQL or retried deploy)."""
+    connection = schema_editor.connection
+    table = apps.get_model("users", "CustomUser")._meta.db_table
+    qt = schema_editor.quote_name(table)
+    q_vip = schema_editor.quote_name("is_vip_testing_user")
+    q_trial = schema_editor.quote_name("signup_pro_trial_applied_at")
+    q_idx = schema_editor.quote_name("users_customuser_is_vip_testing_user")
+
+    with connection.cursor() as cursor:
+        if connection.vendor == "postgresql":
+            cursor.execute(
+                f"ALTER TABLE {qt} ADD COLUMN IF NOT EXISTS {q_vip} boolean NOT NULL DEFAULT false"
+            )
+            cursor.execute(
+                f"CREATE INDEX IF NOT EXISTS {q_idx} ON {qt} ({q_vip})"
+            )
+            cursor.execute(
+                f"ALTER TABLE {qt} ADD COLUMN IF NOT EXISTS {q_trial} timestamp with time zone NULL"
+            )
+        else:
+            for sql in (
+                f"ALTER TABLE {qt} ADD COLUMN {q_vip} integer NOT NULL DEFAULT 0",
+                f"ALTER TABLE {qt} ADD COLUMN {q_trial} datetime NULL",
+            ):
+                try:
+                    cursor.execute(sql)
+                except Exception:
+                    pass
+            try:
+                cursor.execute(
+                    f"CREATE INDEX IF NOT EXISTS users_customuser_is_vip_testing_user "
+                    f"ON {qt} ({q_vip})"
+                )
+            except Exception:
+                pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0010_alter_customuser_role'),
+        ("users", "0010_alter_customuser_role"),
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='customuser',
-            name='is_vip_testing_user',
-            field=models.BooleanField(db_index=True, default=False, help_text='If set, user always has exam Pro access (feedback / QA). Manage from /sd/.'),
-        ),
-        migrations.AddField(
-            model_name='customuser',
-            name='signup_pro_trial_applied_at',
-            field=models.DateTimeField(blank=True, help_text='Set when the one-time signup Pro trial was applied (payments module).', null=True),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(_apply_vip_columns, migrations.RunPython.noop),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name="customuser",
+                    name="is_vip_testing_user",
+                    field=models.BooleanField(
+                        db_index=True,
+                        default=False,
+                        help_text="If set, user always has exam Pro access (feedback / QA). Manage from /sd/.",
+                    ),
+                ),
+                migrations.AddField(
+                    model_name="customuser",
+                    name="signup_pro_trial_applied_at",
+                    field=models.DateTimeField(
+                        blank=True,
+                        help_text="Set when the one-time signup Pro trial was applied (payments module).",
+                        null=True,
+                    ),
+                ),
+            ],
         ),
     ]
