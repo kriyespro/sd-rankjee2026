@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from assessment.models import UserAttempt, Skill
@@ -8,36 +8,63 @@ from .models import ConceptVideo
 def learning_index(request):
     skill_id = request.GET.get('skill')
     concept = (request.GET.get('concept') or '').strip()
-    
+
+    all_videos = ConceptVideo.objects.select_related("skill")
+    category_skills = list(
+        Skill.objects.filter(videos__isnull=False, is_active=True)
+        .annotate(video_count=Count("videos"))
+        .order_by("order", "name")
+        .distinct()
+    )
+
+    selected_skill = None
     if skill_id:
-        # Prefer skill-linked videos, but fall back to concept_tag videos for weak areas
-        videos = ConceptVideo.objects.filter(skill_id=skill_id)
-        current_skill = Skill.objects.filter(id=skill_id).first()
-        if concept and not videos.exists():
-            videos = ConceptVideo.objects.filter(concept_tag__iexact=concept)
-        elif concept:
-            videos = videos.filter(Q(concept_tag__iexact=concept) | Q(concept_tag__icontains=concept))
+        selected_skill = Skill.objects.filter(id=skill_id, is_active=True).first()
+
+    latest_attempt = UserAttempt.objects.filter(user=request.user).select_related("skill").order_by("-attempt_date").first()
+    latest_failed_attempt = UserAttempt.objects.filter(user=request.user, passed=False).select_related("skill").order_by("-attempt_date").first()
+
+    if not selected_skill:
+        selected_skill = (latest_attempt.skill if latest_attempt else None) or (category_skills[0] if category_skills else None)
+
+    if selected_skill:
+        videos = all_videos.filter(skill=selected_skill)
     else:
-        # Get the user's most recent failed attempt and map to available videos
-        latest_attempt = UserAttempt.objects.filter(
-            user=request.user, passed=False
-        ).order_by('-attempt_date').first()
-        current_skill = latest_attempt.skill if latest_attempt else None
+        videos = all_videos
 
-        if concept:
-            videos = ConceptVideo.objects.filter(concept_tag__iexact=concept)
-        elif latest_attempt and latest_attempt.weak_concepts:
-            # Use case-insensitive matching to avoid tag casing mismatches
-            q = Q()
-            for tag in latest_attempt.weak_concepts:
-                if tag:
-                    q |= Q(concept_tag__iexact=str(tag).strip())
-            videos = ConceptVideo.objects.filter(q) if q else ConceptVideo.objects.none()
+    if concept:
+        filtered = videos.filter(Q(concept_tag__iexact=concept) | Q(concept_tag__icontains=concept))
+        if filtered.exists():
+            videos = filtered
         else:
-            videos = ConceptVideo.objects.all()[:6]
+            global_concept = all_videos.filter(Q(concept_tag__iexact=concept) | Q(concept_tag__icontains=concept))
+            if global_concept.exists():
+                videos = global_concept
+    elif latest_failed_attempt and latest_failed_attempt.weak_concepts:
+        q = Q()
+        for tag in latest_failed_attempt.weak_concepts:
+            if tag:
+                q |= Q(concept_tag__iexact=str(tag).strip())
+        if q:
+            weak_filtered = videos.filter(q)
+            if weak_filtered.exists():
+                videos = weak_filtered
 
-    return render(request, 'learning/index.jinja', {
-        'videos': videos,
-        'current_skill': current_skill,
-    })
+    # Final safety net: never return blank just because weak-concept mapping failed.
+    if not videos.exists():
+        if selected_skill and all_videos.filter(skill=selected_skill).exists():
+            videos = all_videos.filter(skill=selected_skill)
+        else:
+            videos = all_videos.order_by("-id")
+
+    return render(
+        request,
+        "learning/index.jinja",
+        {
+            "videos": videos[:24],
+            "current_skill": selected_skill,
+            "category_skills": category_skills,
+            "selected_concept": concept,
+        },
+    )
 

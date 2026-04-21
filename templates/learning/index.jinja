@@ -4,11 +4,33 @@
 <div class="max-w-4xl mx-auto">
     <h2 class="text-3xl font-bold mb-2">Your Learning Plan</h2>
     {% if current_skill %}
-    <p class="text-gray-500 mb-6">Learning: <strong>{{ current_skill.name }}</strong>. Watch the lessons below then take the test!</p>
+    <p class="text-gray-500 mb-4">Learning: <strong>{{ current_skill.name }}</strong>. Watch videos, revise quickly, then take the quiz.</p>
+    {% if selected_concept %}
+    <p class="text-sm text-indigo-700 mb-6">Focused concept: <strong>{{ selected_concept }}</strong></p>
+    {% else %}
+    <p class="text-sm text-slate-500 mb-6">Pick a category below to switch topics faster.</p>
+    {% endif %}
+
+    {% if category_skills %}
+    <div class="mb-6 overflow-x-auto">
+        <div class="flex gap-2 min-w-max">
+            {% for skill in category_skills %}
+            <a
+                href="{{ url('learning:index') }}?skill={{ skill.id }}"
+                class="px-4 py-2 rounded-full text-sm font-semibold border transition {% if current_skill and current_skill.id == skill.id %}bg-indigo-600 text-white border-indigo-600{% else %}bg-white text-slate-700 border-slate-200 hover:border-indigo-300 hover:text-indigo-700{% endif %}"
+            >
+                {{ skill.name }}
+                <span class="ml-1 text-xs opacity-80">({{ skill.video_count }})</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="mb-8 p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex justify-between items-center">
         <div>
-            <h3 class="font-bold text-indigo-900">Ready to test your knowledge?</h3>
-            <p class="text-sm text-indigo-700">Pass this topic with 80% to move to the next lesson.</p>
+            <h3 class="font-bold text-indigo-900">Step 3: Take category quiz</h3>
+            <p class="text-sm text-indigo-700">Pass with 80% to move to the next lesson.</p>
         </div>
         <a href="{{ url('assessment:take_test', current_skill.id) }}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition">Take Assessment &rarr;</a>
     </div>
@@ -74,8 +96,9 @@
     </div>
     {% else %}
     <div class="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-        <p>No learning content available yet. Take a test first!</p>
+        <p>No learning content available for this filter yet.</p>
         <a href="{{ url('assessment:index') }}" class="mt-4 inline-block text-indigo-600 font-semibold hover:underline">Take a Diagnostic Test</a>
+        <a href="{{ url('learning:index') }}" class="mt-3 ml-4 inline-block text-slate-600 font-semibold hover:underline">Reset filters</a>
     </div>
     {% endif %}
 </div>
