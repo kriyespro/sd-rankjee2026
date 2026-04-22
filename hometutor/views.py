@@ -177,7 +177,7 @@ def demo_request_create(request, slug):
         notify_demo_request_created(demo)
         messages.success(
             request,
-            'Demo request sent. The tutor will respond here and via email when possible.',
+            'Request a free demo submitted successfully. The tutor will receive your message in RankJee inbox.',
         )
     else:
         for err in form.non_field_errors():
