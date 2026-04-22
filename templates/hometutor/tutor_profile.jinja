@@ -57,8 +57,8 @@
                 <label for="{{ doc_form.label.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider">Add document</label>
                 {{ doc_form.label }}
                 {{ doc_form.file }}
-                {% if doc_form.non_field_errors %}
-                <p class="text-red-600 text-sm">{% for e in doc_form.non_field_errors %}{{ e }}{% endfor %}</p>
+                {% if doc_form.non_field_errors() %}
+                <p class="text-red-600 text-sm">{% for e in doc_form.non_field_errors() %}{{ e }}{% endfor %}</p>
                 {% endif %}
             </div>
         </div>
