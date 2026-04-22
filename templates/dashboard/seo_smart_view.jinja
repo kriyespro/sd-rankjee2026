@@ -1,0 +1,72 @@
+{% extends "base.jinja" %}
+{% block title %}SEO Smart View{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-black text-slate-900">SEO Target Smart View</h1>
+                <p class="text-sm text-slate-600">Superuser control panel to track execution from `seoplan/seo_action.txt`.</p>
+            </div>
+            <a href="/sd/dashboard/seotarget/" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-slate-700">Open in /sd/</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs font-black uppercase text-slate-500">Total</p><p class="text-2xl font-black">{{ total_targets }}</p></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs font-black uppercase text-slate-500">Done</p><p class="text-2xl font-black text-emerald-600">{{ done_count }}</p></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs font-black uppercase text-slate-500">In Progress</p><p class="text-2xl font-black text-indigo-600">{{ in_progress_count }}</p></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs font-black uppercase text-slate-500">Blocked</p><p class="text-2xl font-black text-rose-600">{{ blocked_count }}</p></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><p class="text-xs font-black uppercase text-slate-500">Progress</p><p class="text-2xl font-black">{{ progress_percent }}%</p></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search target..." class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+            <select name="status" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">All status</option>
+                {% for key, label in status_choices %}
+                <option value="{{ key }}" {% if status_filter == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="phase" class="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">All phases</option>
+                {% for phase in phases %}
+                <option value="{{ phase }}" {% if phase_filter == phase %}selected{% endif %}>{{ phase }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-700">Apply Filters</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
+            <h2 class="text-xs font-black uppercase tracking-wider text-slate-700">Execution Checklist</h2>
+        </div>
+        <div class="divide-y divide-slate-100">
+            {% for item in targets %}
+            <div class="p-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-wider text-slate-500">{{ item.phase }}</p>
+                    <p class="text-sm font-bold text-slate-900">{{ item.title }}</p>
+                    <p class="text-xs text-slate-500">Priority: {{ item.get_priority_display() }}{% if item.owner %} • Owner: {{ item.owner }}{% endif %}</p>
+                </div>
+                <form method="post" class="flex items-center gap-2">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="target_id" value="{{ item.id }}">
+                    <select name="status" class="rounded-lg border border-slate-300 px-2 py-1 text-xs font-bold">
+                        {% for key, label in status_choices %}
+                        <option value="{{ key }}" {% if item.status == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-white hover:bg-slate-700">Update</button>
+                </form>
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-sm font-bold text-slate-500">No targets found for current filters.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

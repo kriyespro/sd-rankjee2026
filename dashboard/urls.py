@@ -5,6 +5,7 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('seo/smart-view/', views.seo_smart_view, name='seo_smart_view'),
     path('students/scores/', views.students_score_table, name='students_score_table'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('notifications/', views.notifications, name='notifications'),

@@ -1,0 +1,172 @@
+# SEO Action Plan (Execution Checklist)
+
+## Goal (90 Days)
+- [ ] Grow qualified organic traffic for tutor, mock test, and course pages
+- [ ] Build a scalable SEO system (programmatic pages + content + internal linking)
+- [ ] Improve conversion from organic visitors into signups/leads
+
+## Phase 1: Technical Foundation (Week 1)
+
+### 1.1 Search Console and Analytics Setup
+- [ ] Add and verify domain in Google Search Console
+- [ ] Submit primary sitemap URL (`/sitemap.xml`)
+- [ ] Connect GA4 and define conversion events (signup, lead form, paid enrollment)
+- [ ] Create baseline dashboard (impressions, clicks, CTR, avg position, conversions)
+
+### 1.2 Crawl and Indexing Controls
+- [ ] Implement dynamic XML sitemaps (courses, city tutor pages, mock tests, blogs)
+- [ ] Add and validate `robots.txt` with sitemap reference
+- [ ] Add canonical tags on all indexable pages
+- [ ] Noindex thin/utility pages (filters, internal search, duplicate query pages)
+
+### 1.3 On-Page Meta System
+- [ ] Add unique dynamic `<title>` and meta description for each template type
+- [ ] Ensure one H1 per page aligned with main keyword
+- [ ] Add Open Graph/Twitter tags for share previews
+- [ ] Define default fallback meta values for missing fields
+
+### 1.4 Structured Data (Rich Results)
+- [ ] Add `Course` schema on course pages
+- [ ] Add `FAQPage` schema on tutor/city/mock pages
+- [ ] Add `LocalBusiness` schema for city landing pages
+- [ ] Validate with Rich Results Test and fix errors
+
+### 1.5 Performance and UX Basics
+- [ ] Compress and optimize images (WebP where possible)
+- [ ] Enable caching for stable SEO landing pages
+- [ ] Improve Core Web Vitals (LCP, CLS, INP) on top traffic templates
+- [ ] Confirm mobile-first layout and readable typography
+
+## Phase 2: Keyword and Page Mapping (Week 1-2)
+
+### 2.1 Keyword Cluster Strategy
+- [ ] Build 3 core clusters: Home Tutors, Mock Tests, Courses
+- [ ] Map primary + secondary keyword per URL
+- [ ] Prioritize high-intent and city-specific keywords first
+- [ ] Create keyword-to-URL sheet to avoid cannibalization
+
+### 2.2 URL Architecture
+- [ ] Finalize clean URL patterns:
+- [ ] `/home-tutor/<city>/`
+- [ ] `/home-tutor/<city>/<subject>/`
+- [ ] `/mock-test/<exam>/`
+- [ ] `/mock-test/<exam>/<city>/`
+- [ ] `/courses/<course>/<city>/`
+- [ ] Keep slugs lowercase, hyphenated, and stable
+
+### 2.3 Priority Market Selection
+- [ ] Pick first 10 high-opportunity cities
+- [ ] Pick first 8-10 high-volume exams
+- [ ] Pick first 10 monetizable courses
+- [ ] Create launch matrix: city x subject x exam x course
+
+## Phase 3: Programmatic SEO Pages (Week 2-4)
+
+### 3.1 Page Template Standards
+- [ ] Create reusable page blueprint for each type (city tutor, exam, course)
+- [ ] Include mandatory blocks: intro, benefits, proof, FAQs, CTA
+- [ ] Add internal links to related city, exam, and course pages
+- [ ] Include trust elements (student counts, ratings, outcomes where available)
+
+### 3.2 First Launch Batch
+- [ ] Publish first 50 city tutor pages
+- [ ] Publish first 20 exam/mock pages
+- [ ] Publish first 20 course-city pages
+- [ ] Ensure each page has unique title, description, intro, and FAQ content
+
+### 3.3 Quality Controls for Scale
+- [ ] Define minimum content quality checklist for every generated page
+- [ ] Remove/merge weak pages with thin content
+- [ ] Run monthly duplicate-content audit
+- [ ] Track index coverage and fix excluded pages quickly
+
+## Phase 4: Content Engine (Week 3-8)
+
+### 4.1 Weekly Publishing Cadence
+- [ ] Publish 2-3 blog posts/week targeting long-tail intent
+- [ ] Publish 1 exam strategy post/week
+- [ ] Publish 1 city-specific education guide/week
+- [ ] Refresh top pages every 30-45 days
+
+### 4.2 Content Topics That Convert
+- [ ] "Best home tutor in <city> for <subject>"
+- [ ] "<exam> mock test free + preparation strategy"
+- [ ] "How to prepare for <exam> in 30 days"
+- [ ] "<course> in <city>: fees, outcomes, and career path"
+
+### 4.3 CTR Improvement Workflow
+- [ ] Identify high-impression, low-CTR pages in Search Console
+- [ ] Rewrite title/meta with stronger intent and benefit
+- [ ] Add FAQ snippets to improve SERP visibility
+- [ ] Recheck CTR after 14 days and iterate
+
+## Phase 5: Internal Linking and Authority (Week 4-10)
+
+### 5.1 Internal Link Graph
+- [ ] Link every city page to relevant course + exam pages
+- [ ] Add "related pages" module on all templates
+- [ ] Build hub pages by city and by exam
+- [ ] Fix orphan pages monthly
+
+### 5.2 Local and Niche Backlinks
+- [ ] Create and optimize Google Business profiles for target cities
+- [ ] Submit business to trusted local directories
+- [ ] Acquire 5-10 relevant education backlinks/month
+- [ ] Publish shareable resources (study plans, checklists, calculators)
+
+### 5.3 Referral SEO Loop
+- [ ] Create indexable referral landing page format with unique value
+- [ ] Add strong internal links from referral pages to money pages
+- [ ] Add social sharing prompts to referral pages
+- [ ] Monitor referral page indexation and engagement
+
+## Phase 6: Conversion and Revenue Layer (Week 5-12)
+
+### 6.1 SEO-to-Revenue Optimization
+- [ ] Add clear CTAs above fold and below FAQs
+- [ ] Add lead capture form on all money pages
+- [ ] Add trust widgets (testimonials, ratings, outcomes)
+- [ ] Track conversion by landing page category
+
+### 6.2 Landing Page Experimentation
+- [ ] A/B test CTA copy on top 20 organic pages
+- [ ] Test form length (short vs long)
+- [ ] Test pricing/offer visibility on course pages
+- [ ] Keep winners and roll out globally
+
+## Phase 7: Measurement and Governance (Ongoing)
+
+### 7.1 Weekly SEO Review (60 min)
+- [ ] Review impressions, clicks, CTR, average positions
+- [ ] Review conversions from organic by page type
+- [ ] Review newly indexed and dropped URLs
+- [ ] Pick next 10 pages to improve
+
+### 7.2 Monthly SEO Audit
+- [ ] Crawl site for broken links, redirects, duplicate titles, missing metas
+- [ ] Revalidate schema and sitemap health
+- [ ] Reassess keyword opportunities and competition shifts
+- [ ] Update roadmap for next month based on revenue impact
+
+## 30-60-90 Day Milestones
+
+### Day 30
+- [ ] Technical SEO fully live
+- [ ] First 90 programmatic pages published
+- [ ] Search Console shows growing indexation trend
+
+### Day 60
+- [ ] 150+ total SEO pages live
+- [ ] Internal linking hubs complete
+- [ ] Organic leads from at least 3 page categories
+
+### Day 90
+- [ ] 250+ high-quality indexed pages
+- [ ] Stable weekly content cadence
+- [ ] Measurable organic-to-revenue funnel with clear winners
+
+## Execution Rules (Keep This Strict)
+- [ ] Prioritize pages that can generate leads/revenue first
+- [ ] Do not publish thin/duplicate pages
+- [ ] Every page must have: unique meta + unique intro + FAQ + CTA + internal links
+- [ ] Improve top-performing pages before creating too many new low-quality pages
