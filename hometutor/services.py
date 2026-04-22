@@ -1,6 +1,7 @@
 """Home tutor listing helpers (HT-1) + tutor utilities (HT-2)."""
 
 import logging
+from urllib.parse import quote_plus
 from math import atan2, cos, radians, sin, sqrt
 
 from django.conf import settings
@@ -24,9 +25,15 @@ def get_tutor_profile(user) -> TutorProfile | None:
 def tutor_to_card_dict(profile: TutorProfile, pilot: str | None = None) -> dict:
     fallback_city = pilot or PILOT_CITY
     city = profile.city or fallback_city
+    avatar_seed = quote_plus(profile.display_name or profile.slug or 'Tutor')
+    image_url = (
+        profile.profile_image.url
+        if profile.profile_image
+        else f'https://ui-avatars.com/api/?name={avatar_seed}&background=4f46e5&color=ffffff&size=256&rounded=true'
+    )
     return {
         'name': profile.display_name,
-        'image_url': profile.profile_image.url if profile.profile_image else '',
+        'image_url': image_url,
         'subjects': profile.subjects,
         'teaching_mode': profile.get_teaching_mode_display(),
         'languages': profile.languages or '—',
@@ -86,7 +93,6 @@ def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
     qs = (
         TutorProfile.objects.filter(
             verification_status=TutorProfile.VerificationStatus.APPROVED,
-            user__isnull=False,
             city__iexact=pilot,
         )
         .order_by('-is_featured_home', '-rating_display', 'display_name')[:limit]
@@ -107,7 +113,6 @@ def public_tutor_queryset(request_get):
     """Filter approved, bookable listings for the public search page."""
     qs = TutorProfile.objects.filter(
         verification_status=TutorProfile.VerificationStatus.APPROVED,
-        user__isnull=False,
     )
     city = (request_get.get('city') or PILOT_CITY).strip()
     if city:

@@ -7,7 +7,7 @@ from django.utils.text import slugify
 
 from core.hometutor_data import PILOT_CITY
 
-from hometutor.models import TutorProfile
+from hometutor.models import DemoRequest, TutorProfile
 
 _FIRST_NAMES = [
     'Aarav', 'Vivaan', 'Aditya', 'Arjun', 'Reyansh', 'Krishna', 'Ishaan', 'Karan', 'Rohan', 'Nikhil',
@@ -121,22 +121,42 @@ class Command(BaseCommand):
         parser.add_argument(
             '--count',
             type=int,
-            default=100,
-            help='Number of tutors to generate (default: 100).',
+            default=500,
+            help='Number of tutors to generate (default: 500).',
         )
         parser.add_argument(
             '--all-cities',
             action='store_true',
             help='Spread tutors across major Indian cities instead of one city.',
         )
+        parser.add_argument(
+            '--wipe',
+            action='store_true',
+            help='Delete existing TutorProfile rows before seeding.',
+        )
 
     def handle(self, *args, **options):
         city = (options['city'] or PILOT_CITY).strip()
-        count = max(1, int(options['count'] or 100))
+        count = max(1, int(options['count'] or 500))
         use_all_cities = bool(options.get('all_cities'))
+        wipe = bool(options.get('wipe'))
         created = 0
         updated = 0
         city_names = list(_CITY_PROFILES.keys())
+
+        if wipe:
+            protected_ids = set(
+                DemoRequest.objects.exclude(tutor_id__isnull=True).values_list('tutor_id', flat=True)
+            )
+            delete_qs = TutorProfile.objects.exclude(id__in=protected_ids)
+            deleted_count, _ = delete_qs.delete()
+            self.stdout.write(self.style.WARNING(f'Wiped existing unlinked TutorProfile rows: {deleted_count}'))
+            if protected_ids:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'Skipped {len(protected_ids)} tutor(s) linked to demo/payment history (protected).'
+                    )
+                )
 
         for i in range(1, count + 1):
             selected_city = city_names[(i - 1) % len(city_names)] if use_all_cities else city
@@ -198,6 +218,6 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Done. city={city!r} all_cities={use_all_cities} created={created} updated={updated} (total {count} upserts).'
+                f'Done. city={city!r} all_cities={use_all_cities} wipe={wipe} created={created} updated={updated} (total {count} upserts).'
             )
         )
