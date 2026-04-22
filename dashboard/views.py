@@ -28,7 +28,10 @@ from .forms import (
     SkillPathForm,
     VideoQuestionImportForm,
 )
-from .models import SeoTarget
+try:
+    from .models import SeoTarget
+except ImportError:
+    SeoTarget = None
 
 User = get_user_model()
 logger = logging.getLogger("rankjee.dashboard")
@@ -584,6 +587,9 @@ def _seed_default_seo_targets():
 def seo_smart_view(request):
     if not _superuser_only(request):
         messages.error(request, "Only superusers can access SEO Smart View.")
+        return redirect("dashboard:index")
+    if SeoTarget is None:
+        messages.error(request, "SEO module unavailable on this deploy. Please sync dashboard models.")
         return redirect("dashboard:index")
 
     _seed_default_seo_targets()
