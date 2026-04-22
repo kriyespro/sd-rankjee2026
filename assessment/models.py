@@ -132,6 +132,13 @@ class Question(models.Model):
 class UserAttempt(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     skill = models.ForeignKey(Skill, on_delete=models.CASCADE)
+    attempted_video = models.ForeignKey(
+        'learning.ConceptVideo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='attempts',
+    )
     score = models.IntegerField(default=0)
     time_taken_seconds = models.IntegerField(default=0)
     passed = models.BooleanField(default=False) # >80% to pass

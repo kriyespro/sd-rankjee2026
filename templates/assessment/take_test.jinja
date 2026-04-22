@@ -18,8 +18,15 @@
             <h2 class="text-2xl font-black text-slate-900 tracking-tight">{{ skill.name }} Test</h2>
             <p class="text-slate-500 text-sm font-medium mt-1">Focus on one question at a time.</p>
         </div>
-        <div class="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-4 py-2 text-sm font-bold shadow-sm">
-            Progress <span x-text="Object.keys(answers).length"></span> / <span x-text="total"></span>
+        <div class="flex items-center gap-2">
+            {% if selected_video %}
+            <div class="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-4 py-2 text-sm font-bold shadow-sm max-w-xs truncate" title="{{ selected_video.title }}">
+                {{ selected_video.title }}
+            </div>
+            {% endif %}
+            <div class="bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-lg px-4 py-2 text-sm font-bold shadow-sm">
+                Progress <span x-text="Object.keys(answers).length"></span> / <span x-text="total"></span>
+            </div>
         </div>
     </div>
 

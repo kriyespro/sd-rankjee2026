@@ -1,0 +1,111 @@
+# Live SEO Ops Runbook (Manual Closeout)
+
+Use this runbook to complete all remaining non-code SEO actions from `seo_action.txt`.
+
+## Pre-Flight (One Time)
+
+- [ ] Confirm production domain is live on latest code
+- [ ] Confirm `https://<domain>/sitemap.xml` loads
+- [ ] Confirm `https://<domain>/robots.txt` loads with sitemap reference
+- [ ] Confirm top landing URLs return HTTP 200
+
+## Step 1: Google Search Console Setup
+
+- [ ] Open Google Search Console and add **Domain Property**
+- [ ] Complete DNS TXT verification
+- [ ] Submit `https://<domain>/sitemap.xml`
+- [ ] Request indexing for top 20 priority URLs from `seoplan/seo_publish_queue.csv`
+- [ ] Export baseline report (impressions, clicks, CTR, avg position)
+
+Deliverable:
+- Screenshot + date saved in `seoplan/evidence/` (optional folder)
+
+## Step 2: GA4 + Conversion Tracking
+
+- [ ] Create/verify GA4 property
+- [ ] Ensure GA4 tag is firing on all page templates
+- [ ] Create conversion events:
+  - [ ] signup success
+  - [ ] lead form submit
+  - [ ] paid enrollment / payment success
+- [ ] Build baseline dashboard (organic sessions + conversion by landing path)
+
+Deliverable:
+- Conversion event list + baseline metrics note
+
+## Step 3: Rich Results Validation
+
+- [ ] Open `seoplan/rich_results_validation.txt`
+- [ ] Run each URL through Google Rich Results Test
+- [ ] Log PASS/FAIL + issues
+- [ ] Fix issues in code if any
+- [ ] Re-test and update statuses
+- [ ] Mark rich-results item done in `seo_action.txt`
+
+## Step 4: Launch Batch Go-Live Workflow
+
+- [ ] Open `seoplan/seo_publish_queue.csv`
+- [ ] Filter `status=needs-content`
+- [ ] For each URL:
+  - [ ] Confirm unique title + description
+  - [ ] Confirm unique intro
+  - [ ] Confirm FAQ + CTA + internal links
+  - [ ] Validate with `seoplan/programmatic_quality_checklist.txt`
+  - [ ] Update row status to `ready`
+- [ ] Publish ready rows in batches of 20
+- [ ] After publish, update status to `live`
+
+## Step 5: Indexation and Quality Monitoring (Weekly)
+
+- [ ] Check Search Console coverage:
+  - [ ] indexed pages trend
+  - [ ] excluded pages reasons
+  - [ ] crawl anomalies
+- [ ] Fix soft-404/thin/duplicate URLs
+- [ ] Re-submit improved URLs for indexing
+- [ ] Log top 10 pages needing improvement
+
+## Step 6: Content Engine Operations
+
+- [ ] Publish weekly:
+  - [ ] 2-3 long-tail blogs
+  - [ ] 1 exam strategy post
+  - [ ] 1 city-specific guide
+- [ ] Refresh top landing pages every 30-45 days
+- [ ] Track performance deltas for refreshed pages
+
+## Step 7: Authority and Local SEO
+
+- [ ] Create/optimize Google Business profiles for top cities
+- [ ] Submit to trusted local directories
+- [ ] Acquire 5-10 niche backlinks/month
+- [ ] Track referral/source quality monthly
+
+## Step 8: Conversion Optimization
+
+- [ ] Ensure every money page has visible CTA above fold
+- [ ] Ensure lead form is present and tested
+- [ ] Add trust modules (review/proof/outcomes)
+- [ ] Start CTA/form experiments on top organic pages
+
+## Weekly Review Template (Copy/Paste)
+
+Date:
+- Organic impressions:
+- Organic clicks:
+- CTR:
+- Avg position:
+- Organic leads:
+- Organic paid conversions:
+- URLs moved to live:
+- URLs needing fixes:
+- Top next actions (3):
+
+## Definition of Done
+
+Mark SEO rollout as operationally complete when:
+- [ ] Search Console verified and sitemap active
+- [ ] GA4 conversions tracked correctly
+- [ ] Rich results validation passes for target templates
+- [ ] First 90+ pages are live and indexed trend is positive
+- [ ] Weekly SEO review cadence is running without gaps

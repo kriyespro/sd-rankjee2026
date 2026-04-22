@@ -13,7 +13,14 @@ from django.utils.text import slugify
 
 from assessment.models import UserAttempt
 from core.models import UserTaskSubmission
-from .forms import CustomUserCreationForm
+from core.hometutor_data import PILOT_CITY
+from hometutor.models import TutorProfile
+from .forms import (
+    CustomUserCreationForm,
+    RoleSelectionForm,
+    StudentParentOnboardingForm,
+    TutorOnboardingForm,
+)
 from .gamification import on_streak_login, send_notification
 from .models import CompanyInquiry, CustomUser, PublicProfile
 from .referrals import process_referral_signup
@@ -21,9 +28,16 @@ from .subscription import try_apply_signup_pro_trial
 from .tasks import send_welcome_email
 
 logger = logging.getLogger("rankjee.signup")
+PUBLIC_SELF_ASSIGNABLE_ROLES = {
+    CustomUser.Role.STUDENT,
+    CustomUser.Role.PARENT,
+    CustomUser.Role.TUTOR,
+}
 
 
 def _post_auth_redirect(request, fallback="learning:index"):
+    if request.user.is_authenticated and not getattr(request.user, "onboarding_completed", True):
+        return "users:onboarding_role"
     next_url = request.POST.get("next") or request.GET.get("next") or ""
     if next_url.startswith("/") and not next_url.startswith("//"):
         return next_url
@@ -88,6 +102,9 @@ def signup_view(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
+            if user.role not in PUBLIC_SELF_ASSIGNABLE_ROLES:
+                user.role = CustomUser.Role.STUDENT
+                user.save(update_fields=['role'])
             user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
             try_apply_signup_pro_trial(user)
 
@@ -252,3 +269,88 @@ def regenerate_referral(request):
         request.user.referral_code = uuid.uuid4().hex[:8].upper()
         request.user.save(update_fields=['referral_code'])
     return redirect('dashboard:index')
+
+
+@login_required
+def onboarding_role(request):
+    if request.user.onboarding_completed:
+        return redirect('dashboard:index')
+
+    if request.method == 'POST':
+        form = RoleSelectionForm(request.POST)
+        if form.is_valid():
+            role = form.cleaned_data['role']
+            request.user.role = role
+            request.user.save(update_fields=['role'])
+            return redirect('users:onboarding_profile')
+    else:
+        form = RoleSelectionForm(initial={'role': request.user.role})
+    return render(request, 'users/onboarding_role.jinja', {'form': form})
+
+
+@login_required
+def onboarding_profile(request):
+    if request.user.onboarding_completed:
+        return redirect('dashboard:index')
+
+    role = request.user.role
+    if role not in PUBLIC_SELF_ASSIGNABLE_ROLES:
+        messages.error(request, 'Please select a valid role first.')
+        return redirect('users:onboarding_role')
+
+    if role == CustomUser.Role.TUTOR:
+        profile = TutorProfile.objects.filter(user=request.user).first()
+        tutor_initial = {}
+        if not profile:
+            tutor_initial = {
+                'display_name': (request.user.get_full_name() or request.user.username).strip(),
+                'city': PILOT_CITY,
+                'subjects': 'Math, Science',
+                'languages': 'English, Hindi',
+                'area': '',
+                'fee_label': 'from ₹5000/mo',
+                'bio': 'Experienced tutor focused on exam-ready outcomes and consistent practice.',
+            }
+        if request.method == 'POST':
+            form = TutorOnboardingForm(request.POST, instance=profile)
+            if form.is_valid():
+                obj = form.save(commit=False)
+                obj.user = request.user
+                obj.verification_status = TutorProfile.VerificationStatus.PENDING
+                obj.save()
+                request.user.onboarding_completed = True
+                request.user.save(update_fields=['onboarding_completed'])
+                messages.success(request, 'Tutor onboarding complete. Finish your listing to start receiving demos.')
+                return redirect('hometutor:my_profile')
+        else:
+            form = TutorOnboardingForm(instance=profile, initial=tutor_initial if not profile else None)
+        return render(
+            request,
+            'users/onboarding_profile.jinja',
+            {
+                'form': form,
+                'role': role,
+                'role_label': 'Tutor',
+            },
+        )
+
+    if request.method == 'POST':
+        form = StudentParentOnboardingForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            request.user.onboarding_completed = True
+            request.user.save(update_fields=['onboarding_completed'])
+            messages.success(request, 'Profile setup complete.')
+            return redirect('dashboard:index')
+    else:
+        form = StudentParentOnboardingForm(instance=request.user)
+
+    return render(
+        request,
+        'users/onboarding_profile.jinja',
+        {
+            'form': form,
+            'role': role,
+            'role_label': 'Student' if role == CustomUser.Role.STUDENT else 'Parent',
+        },
+    )

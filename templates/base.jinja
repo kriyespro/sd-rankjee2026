@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}RankJee - Earn While You Learn{% endblock %}</title>
+    {% set _seo_title = seo_title if seo_title is defined and seo_title else "RankJee - Earn While You Learn" %}
+    {% set _seo_description = seo_description if seo_description is defined and seo_description else "RankJee helps students learn, practice, and grow with tests, courses, and tutor support." %}
+    {% set _canonical_url = canonical_url if canonical_url is defined and canonical_url else request.build_absolute_uri(request.path) %}
+    <title>{% block title %}{{ _seo_title }}{% endblock %}</title>
+    <meta name="description" content="{{ _seo_description }}">
+    <link rel="canonical" href="{{ _canonical_url }}">
+    {% if seo_noindex is defined and seo_noindex %}
+    <meta name="robots" content="noindex, nofollow">
+    {% else %}
+    <meta name="robots" content="index, follow">
+    {% endif %}
+    <meta property="og:title" content="{{ _seo_title }}">
+    <meta property="og:description" content="{{ _seo_description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ _canonical_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ _seo_title }}">
+    <meta name="twitter:description" content="{{ _seo_description }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -71,6 +88,7 @@
             box-shadow: 0 -4px 20px -5px rgba(0, 0, 0, 0.08);
         }
     </style>
+    {% block schema %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pb-20 md:pb-0">

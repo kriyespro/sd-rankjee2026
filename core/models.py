@@ -64,6 +64,9 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.title} (₹{self.price_inr})"
 
+    def get_absolute_url(self):
+        return f"/courses/{self.slug}/"
+
 
 class CourseReferral(models.Model):
     class Status(models.TextChoices):

@@ -4,6 +4,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from core.hometutor_data import PILOT_CITY
@@ -51,6 +53,14 @@ def _tutor_filter_context(request):
     }
 
 
+def _unslug(value: str) -> str:
+    return (value or "").replace("-", " ").strip()
+
+
+def _title_case(value: str) -> str:
+    return " ".join(part.capitalize() for part in value.split())
+
+
 def tutor_list(request):
     tutors = public_tutor_queryset(request.GET)
     cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
@@ -61,6 +71,109 @@ def tutor_list(request):
         {
             'tutor_cards': cards,
             'hometutor_pilot_city': PILOT_CITY,
+            **_tutor_filter_context(request),
+        },
+    )
+
+
+def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, location_slug=None):
+    city = _title_case(_unslug(city_slug))
+    subject = _title_case(_unslug(subject_slug or ""))
+    location = _title_case(_unslug(location_slug or ""))
+
+    filters = {"city": city}
+    if subject:
+        filters["subject"] = subject
+    if grade:
+        filters["class_min"] = str(grade)
+    if location:
+        filters["area"] = location
+
+    tutors = public_tutor_queryset(filters)
+    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
+    cards = attach_demo_status_to_cards(cards, request.user)
+
+    city_tutors = public_tutor_queryset({"city": city})[:50]
+    related_subjects = []
+    seen_subjects = set()
+    for tutor in city_tutors:
+        for token in (tutor.subjects or "").split(","):
+            item = token.strip()
+            if not item:
+                continue
+            key = item.lower()
+            if key in seen_subjects:
+                continue
+            seen_subjects.add(key)
+            related_subjects.append({"label": _title_case(item), "slug": slugify(item)})
+            if len(related_subjects) >= 8:
+                break
+        if len(related_subjects) >= 8:
+            break
+
+    heading_parts = [f"Home Tutor in {city}"]
+    if subject:
+        heading_parts = [f"{subject} Home Tutor in {city}"]
+    if grade:
+        heading_parts.append(f"for Class {grade}")
+    if location:
+        heading_parts.append(f"near {location}")
+    seo_heading = " ".join(heading_parts)
+
+    canonical_kwargs = {"city_slug": slugify(city)}
+    canonical_name = "hometutor:tutor_city_landing"
+    if subject:
+        canonical_kwargs["subject_slug"] = slugify(subject)
+        canonical_name = "hometutor:tutor_city_subject_landing"
+    if subject and grade:
+        canonical_kwargs["grade"] = grade
+        canonical_name = "hometutor:tutor_city_subject_class_landing"
+    if subject and grade and location:
+        canonical_kwargs["location_slug"] = slugify(location)
+        canonical_name = "hometutor:tutor_city_subject_class_location_landing"
+
+    seo_title = f"{seo_heading} | RankJee"
+    seo_description = (
+        f"Find verified {subject or ''} tutors in {city} "
+        f"{'for class ' + str(grade) if grade else ''} "
+        f"{'near ' + location if location else ''}. "
+        "Compare profiles, fees, and request a free demo."
+    )
+    seo_description = " ".join(seo_description.split())[:160]
+
+    faq_items = [
+        {
+            "q": f"How do I choose the right home tutor in {city}?",
+            "a": "Compare tutor subjects, teaching mode, class coverage, ratings, and area match before requesting a demo.",
+        },
+        {
+            "q": "Can I book a free demo before finalizing?",
+            "a": "Yes, you can request a demo directly from tutor profiles and confirm only after both sides agree.",
+        },
+        {
+            "q": "Do tutors support online and offline classes?",
+            "a": "Many tutors support offline, online, or hybrid teaching. Use mode filters to shortlist quickly.",
+        },
+    ]
+    canonical_path = reverse(canonical_name, kwargs=canonical_kwargs)
+
+    return render(
+        request,
+        "hometutor/list.jinja",
+        {
+            "tutor_cards": cards,
+            "hometutor_pilot_city": PILOT_CITY,
+            "is_seo_landing": True,
+            "landing_city": city,
+            "landing_subject": subject,
+            "landing_grade": grade,
+            "landing_location": location,
+            "seo_heading": seo_heading,
+            "related_subjects": related_subjects,
+            "seo_title": seo_title,
+            "seo_description": seo_description,
+            "canonical_url": request.build_absolute_uri(canonical_path),
+            "faq_items": faq_items,
             **_tutor_filter_context(request),
         },
     )

@@ -1,0 +1,28 @@
+# Programmatic Page Quality Checklist (Phase 3.3)
+
+Use this for every generated landing URL before marking it live.
+
+## Must Pass
+- [ ] Unique page title (includes core intent + city)
+- [ ] Unique meta description (not duplicated)
+- [ ] Exactly one H1 aligned to primary keyword
+- [ ] Intro paragraph exists and is non-generic
+- [ ] FAQ block present (3+ useful Q&A)
+- [ ] At least one clear CTA above fold
+- [ ] Internal links to related city/exam/course pages
+- [ ] Canonical URL is self-referencing and clean
+- [ ] Structured data present and valid (where applicable)
+- [ ] Page loads with 200 status
+
+## Content Threshold
+- [ ] No placeholder text remains
+- [ ] No empty sections
+- [ ] No repeated paragraph from another landing page
+- [ ] Copy mentions location context naturally
+- [ ] Copy mentions target audience/problem
+
+## SEO Safety
+- [ ] Not blocked by robots/noindex (unless intentional utility page)
+- [ ] Included in sitemap scope
+- [ ] URL follows lowercase hyphenated format
+- [ ] No cannibalization against existing canonical URL

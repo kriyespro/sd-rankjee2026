@@ -1,0 +1,80 @@
+# Keyword to URL Map (Phase 2.1)
+
+## Cluster 1: Home Tutors (Revenue Priority: High)
+
+- Primary: home tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/
+  - Secondary: private tutor ahmedabad, verified tutor ahmedabad
+
+- Primary: maths home tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/maths/
+  - Secondary: class 10 maths tutor ahmedabad, algebra tutor ahmedabad
+
+- Primary: science home tutor in surat
+  - URL: /hometutor/city/surat/subject/science/
+  - Secondary: class 9 science tutor surat, cbse science tutor surat
+
+- Primary: english tutor in vadodara
+  - URL: /hometutor/city/vadodara/subject/english/
+  - Secondary: spoken english tutor vadodara, class 8 english tutor
+
+- Primary: class 10 maths tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/maths/class-10/
+  - Secondary: board exam maths tutor ahmedabad
+
+- Primary: class 12 physics tutor in ahmedabad satellite
+  - URL: /hometutor/city/ahmedabad/subject/physics/class-12/satellite/
+  - Secondary: jee physics tutor satellite
+
+## Cluster 2: Mock Tests (Revenue Priority: High)
+
+- Primary: jee main mock test free
+  - URL: /assessment/mock-test/jee-main/
+  - Secondary: jee main online test series, jee test practice
+
+- Primary: jee mock test in ahmedabad
+  - URL: /assessment/mock-test/jee-main/ahmedabad/
+  - Secondary: jee practice test ahmedabad
+
+- Primary: neet mock test free
+  - URL: /assessment/mock-test/neet/
+  - Secondary: neet chapter test online, neet test series free
+
+- Primary: neet mock test in surat
+  - URL: /assessment/mock-test/neet/surat/
+  - Secondary: neet practice test surat
+
+- Primary: ssc cgl mock test online
+  - URL: /assessment/mock-test/ssc-cgl/
+  - Secondary: ssc cgl tier 1 mock test
+
+## Cluster 3: Courses (Revenue Priority: Highest)
+
+- Primary: digital marketing course in ahmedabad
+  - URL: /courses/digital-marketing/ahmedabad/
+  - Secondary: performance marketing course ahmedabad
+
+- Primary: python course in surat
+  - URL: /courses/python/surat/
+  - Secondary: python full stack course surat
+
+- Primary: data analytics course in vadodara
+  - URL: /courses/data-analytics/vadodara/
+  - Secondary: analytics certification vadodara
+
+- Primary: job ready online course in delhi
+  - URL: /courses/<course-slug>/delhi/
+  - Secondary: placement support course delhi
+
+## Cannibalization Rules
+
+- One primary keyword maps to one canonical URL only.
+- City intent keywords must always map to city landing pages, not generic pages.
+- Class-specific intent must map to class-specific pages where available.
+- Do not target the same exact primary keyword on blog and landing page together.
+
+## Next Build Queue (Priority Order)
+
+1. Tutor pages: Ahmedabad, Surat, Vadodara + top 5 subjects each
+2. Mock pages: JEE, NEET, SSC + top 6 cities each
+3. Course-city pages: top 10 monetizable courses x top 8 cities

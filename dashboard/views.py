@@ -724,6 +724,8 @@ def students_score_table(request):
 
 @login_required
 def index(request):
+    if not getattr(request.user, 'onboarding_completed', True):
+        return redirect('users:onboarding_role')
     role = getattr(request.user, 'role', 'STUDENT')
     now = timezone.now()
     role_intro_map = {
@@ -852,11 +854,20 @@ def index(request):
     # Student dashboard (learning + marketplace)
     user_exam_attempts = (
         UserAttempt.objects.filter(user=request.user)
-        .select_related("skill")
+        .select_related("skill", "attempted_video")
         .order_by("-attempt_date")
     )
     latest_attempt = user_exam_attempts.first()
-    my_exam_performance = user_exam_attempts[:10]
+    my_exam_performance = list(user_exam_attempts[:10])
+
+    my_exam_performance_rows = [
+        {
+            "attempt": attempt,
+            "video_id": attempt.attempted_video_id,
+            "video_title": attempt.attempted_video.title if attempt.attempted_video else "",
+        }
+        for attempt in my_exam_performance
+    ]
 
     attempts_count = UserAttempt.objects.filter(user=request.user).count()
     passed_count = UserAttempt.objects.filter(user=request.user, passed=True).count()
@@ -1087,7 +1098,7 @@ def index(request):
         'total_earned': total_earned,
         'weak_areas': weak_areas,
         'latest_attempt': latest_attempt,
-        'my_exam_performance': my_exam_performance,
+        'my_exam_performance_rows': my_exam_performance_rows,
         'streak_days': request.user.streak_days,
         'user_badges': user_badges,
         'user_certificates': user_certificates, # Added

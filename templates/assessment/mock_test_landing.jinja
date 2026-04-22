@@ -1,0 +1,85 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block schema %}
+{% if faq_items %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for item in faq_items %}
+    {
+      "@type": "Question",
+      "name": "{{ item.q|e }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ item.a|e }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="bg-slate-100 border-b border-slate-200/80 pt-10 pb-10 px-4">
+    <div class="max-w-6xl mx-auto">
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Mock test landing</p>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
+            Free {{ exam_label }} Mock Test in {{ city_label }}
+        </h1>
+        <p class="text-slate-600 text-sm md:text-base max-w-3xl">
+            Practice timed tests, find weak topics, and improve your score with focused revision.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2">
+            {% for city in related_cities %}
+            <a href="{{ url('assessment:mock_test_city_landing', exam_slug=exam_label|lower|replace(' ', '-'), city_slug=city|lower|replace(' ', '-')) }}"
+               class="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-50">
+                {{ exam_label }} in {{ city }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="max-w-6xl mx-auto px-4 py-8">
+    {% if exam_skills %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for skill in exam_skills %}
+        <article class="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
+            <h2 class="text-lg font-black text-slate-900">{{ skill.name }}</h2>
+            <p class="mt-2 text-sm text-slate-600">{{ skill.description }}</p>
+            <a href="{{ url('assessment:take_test', skill.id) }}"
+               class="mt-4 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
+                Start mock test
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
+        <p class="text-slate-700 font-bold mb-2">No mapped mock tests found yet.</p>
+        <p class="text-slate-500 text-sm mb-4">Add more exam skills in admin to expand this landing page.</p>
+        <a href="{{ url('assessment:index') }}" class="text-indigo-600 font-black text-sm hover:underline">Browse full skill catalog</a>
+    </div>
+    {% endif %}
+</section>
+
+{% if faq_items %}
+<section class="max-w-6xl mx-auto px-4 pb-10">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 class="text-lg font-black text-slate-900 mb-4">Frequently asked questions</h2>
+        <div class="space-y-4">
+            {% for item in faq_items %}
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <h3 class="text-sm font-black text-slate-800">{{ item.q }}</h3>
+                <p class="mt-1 text-sm text-slate-600">{{ item.a }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

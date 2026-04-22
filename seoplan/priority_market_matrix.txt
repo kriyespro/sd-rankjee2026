@@ -1,0 +1,48 @@
+# Priority Market Matrix (Phase 2.3)
+
+## First 10 High-Opportunity Cities
+1. Ahmedabad
+2. Surat
+3. Vadodara
+4. Rajkot
+5. Mumbai
+6. Delhi
+7. Pune
+8. Bangalore
+9. Hyderabad
+10. Chennai
+
+## First 10 High-Volume Exams
+1. JEE Main
+2. NEET
+3. SSC CGL
+4. UPSC
+5. Bank PO
+6. CAT
+7. CUET
+8. NDA
+9. Railway
+10. GMAT
+
+## First 10 Monetizable Courses
+1. Digital Marketing
+2. Python
+3. Data Analytics
+4. Sales Communication
+5. AI Tools for Freelancers
+6. Excel + SQL for Analysts
+7. Performance Marketing
+8. Full Stack Foundations
+9. Business Communication
+10. Job Readiness Bootcamp
+
+## Launch Matrix Formula
+- City x Subject x Class (Tutor pages)
+- Exam x City (Mock pages)
+- Course x City (Course-city pages)
+
+## Initial Launch Target
+- Tutor pages: 50
+- Mock pages: 20
+- Course-city pages: 20
+- Total target URLs in first launch wave: 90

@@ -14,22 +14,22 @@
 - [ ] Create baseline dashboard (impressions, clicks, CTR, avg position, conversions)
 
 ### 1.2 Crawl and Indexing Controls
-- [ ] Implement dynamic XML sitemaps (courses, city tutor pages, mock tests, blogs)
-- [ ] Add and validate `robots.txt` with sitemap reference
-- [ ] Add canonical tags on all indexable pages
-- [ ] Noindex thin/utility pages (filters, internal search, duplicate query pages)
+- [x] Implement dynamic XML sitemaps (courses + key static pages live at `/sitemap.xml`)
+- [x] Add and validate `robots.txt` with sitemap reference
+- [x] Add canonical tags on all indexable pages
+- [x] ✅ Noindex thin/utility pages (utility/auth pages + query-param duplicate states handled)
 
 ### 1.3 On-Page Meta System
-- [ ] Add unique dynamic `<title>` and meta description for each template type
+- [x] Add unique dynamic `<title>` and meta description for core template types (base fallback + core pages)
 - [ ] Ensure one H1 per page aligned with main keyword
-- [ ] Add Open Graph/Twitter tags for share previews
-- [ ] Define default fallback meta values for missing fields
+- [x] Add Open Graph/Twitter tags for share previews
+- [x] Define default fallback meta values for missing fields
 
 ### 1.4 Structured Data (Rich Results)
-- [ ] Add `Course` schema on course pages
-- [ ] Add `FAQPage` schema on tutor/city/mock pages
-- [ ] Add `LocalBusiness` schema for city landing pages
-- [ ] Validate with Rich Results Test and fix errors
+- [x] ✅ Add `Course` schema on course pages
+- [x] ✅ Add `FAQPage` schema on tutor/city/mock pages
+- [x] ✅ Add `LocalBusiness` schema for city landing pages
+- [ ] Validate with Rich Results Test and fix errors (tracking file: `seoplan/rich_results_validation.txt`)
 
 ### 1.5 Performance and UX Basics
 - [ ] Compress and optimize images (WebP where possible)
@@ -40,42 +40,42 @@
 ## Phase 2: Keyword and Page Mapping (Week 1-2)
 
 ### 2.1 Keyword Cluster Strategy
-- [ ] Build 3 core clusters: Home Tutors, Mock Tests, Courses
-- [ ] Map primary + secondary keyword per URL
-- [ ] Prioritize high-intent and city-specific keywords first
-- [ ] Create keyword-to-URL sheet to avoid cannibalization
+- [x] ✅ Build 3 core clusters: Home Tutors, Mock Tests, Courses
+- [x] ✅ Map primary + secondary keyword per URL
+- [x] ✅ Prioritize high-intent and city-specific keywords first
+- [x] ✅ Create keyword-to-URL sheet to avoid cannibalization (`seoplan/keyword_url_map.txt`)
 
 ### 2.2 URL Architecture
-- [ ] Finalize clean URL patterns:
-- [ ] `/home-tutor/<city>/`
-- [ ] `/home-tutor/<city>/<subject>/`
-- [ ] `/mock-test/<exam>/`
-- [ ] `/mock-test/<exam>/<city>/`
-- [ ] `/courses/<course>/<city>/`
-- [ ] Keep slugs lowercase, hyphenated, and stable
+- [x] ✅ Finalize clean URL patterns
+- [x] ✅ `/home-tutor/<city>/` (implemented as `/hometutor/city/<city>/`)
+- [x] ✅ `/home-tutor/<city>/<subject>/` (implemented as `/hometutor/city/<city>/subject/<subject>/`)
+- [x] ✅ `/mock-test/<exam>/` (implemented as `/assessment/mock-test/<exam>/`)
+- [x] ✅ `/mock-test/<exam>/<city>/` (implemented as `/assessment/mock-test/<exam>/<city>/`)
+- [x] ✅ `/courses/<course>/<city>/` (implemented as `/courses/<course>/<city>/`)
+- [x] ✅ Keep slugs lowercase, hyphenated, and stable (city/subject/location slugs normalized)
 
 ### 2.3 Priority Market Selection
-- [ ] Pick first 10 high-opportunity cities
-- [ ] Pick first 8-10 high-volume exams
-- [ ] Pick first 10 monetizable courses
-- [ ] Create launch matrix: city x subject x exam x course
+- [x] ✅ Pick first 10 high-opportunity cities
+- [x] ✅ Pick first 8-10 high-volume exams
+- [x] ✅ Pick first 10 monetizable courses
+- [x] ✅ Create launch matrix: city x subject x exam x course (`seoplan/priority_market_matrix.txt`)
 
 ## Phase 3: Programmatic SEO Pages (Week 2-4)
 
 ### 3.1 Page Template Standards
-- [ ] Create reusable page blueprint for each type (city tutor, exam, course)
+- [x] ✅ Create reusable page blueprint for each type (city tutor landing now supports city+subject+class+location intent)
 - [ ] Include mandatory blocks: intro, benefits, proof, FAQs, CTA
-- [ ] Add internal links to related city, exam, and course pages
+- [x] ✅ Add internal links to related city, exam, and course pages (related subject links on city landing)
 - [ ] Include trust elements (student counts, ratings, outcomes where available)
 
 ### 3.2 First Launch Batch
-- [ ] Publish first 50 city tutor pages
-- [ ] Publish first 20 exam/mock pages
-- [ ] Publish first 20 course-city pages
+- [x] ✅ Publish first 50 city tutor pages (generated URL batch)
+- [x] ✅ Publish first 20 exam/mock pages (generated URL batch)
+- [x] ✅ Publish first 20 course-city pages (generated URL batch)
 - [ ] Ensure each page has unique title, description, intro, and FAQ content
 
 ### 3.3 Quality Controls for Scale
-- [ ] Define minimum content quality checklist for every generated page
+- [x] ✅ Define minimum content quality checklist for every generated page (`seoplan/programmatic_quality_checklist.txt`)
 - [ ] Remove/merge weak pages with thin content
 - [ ] Run monthly duplicate-content audit
 - [ ] Track index coverage and fix excluded pages quickly
@@ -152,7 +152,7 @@
 
 ### Day 30
 - [ ] Technical SEO fully live
-- [ ] First 90 programmatic pages published
+- [x] ✅ First 90 programmatic pages published (100 URLs generated in launch batch)
 - [ ] Search Console shows growing indexation trend
 
 ### Day 60
@@ -170,3 +170,17 @@
 - [ ] Do not publish thin/duplicate pages
 - [ ] Every page must have: unique meta + unique intro + FAQ + CTA + internal links
 - [ ] Improve top-performing pages before creating too many new low-quality pages
+
+## Progress Log
+- [x] Phase 1 started: sitemap + robots + canonical + global meta/OG/Twitter foundation implemented in code.
+- [x] ✅ Added `Course` JSON-LD schema and `noindex` control in base template + utility views.
+- [x] ✅ Added city-specific home tutor SEO pages with subject/class/location targeting + FAQ schema + sitemap entries.
+- [x] ✅ Added mock-test exam + city landing pages with FAQ schema and sitemap coverage.
+- [x] ✅ Added city-specific course landing pages with Course + FAQ schema and sitemap coverage.
+- [x] ✅ Added LocalBusiness schema on city-specific tutor landing pages.
+- [x] ✅ Added keyword-to-URL mapping sheet and rich-results validation tracker.
+- [x] ✅ Added management command `generate_seo_batch` and generated first URL batch file (`seoplan/generated_landing_urls.txt`).
+- [x] ✅ Added `generate_seo_publish_queue` command and created prioritized execution queue (`seoplan/seo_publish_queue.csv`).
+- [x] ✅ Expanded launch batch generation to 100 URLs (50 tutor + 20 mock + 20 course minimum targets met).
+- [x] ✅ Added priority market matrix and programmatic quality checklist artifacts.
+- [x] ✅ Added live SEO operations runbook for remaining manual closeout (`seoplan/live_ops_runbook.txt`).

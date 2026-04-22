@@ -14,6 +14,9 @@ logger = logging.getLogger("rankjee.signup")
 def on_allauth_user_signed_up(request, user, **kwargs):
     """OAuth / allauth signups skip users.views.signup_view — apply trial + pending referral code."""
     try:
+        if getattr(user, "onboarding_completed", True):
+            user.onboarding_completed = False
+            user.save(update_fields=["onboarding_completed"])
         try_apply_signup_pro_trial(user)
         pending_code = ""
         if request and hasattr(request, "session"):

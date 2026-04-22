@@ -66,27 +66,33 @@
         <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <h2 class="text-sm font-black uppercase tracking-widest text-slate-800">My Exam Score Performance</h2>
             <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700">
-                Last {{ my_exam_performance|length }} attempts
+                Last {{ my_exam_performance_rows|length }} attempts
             </span>
         </div>
         <div class="mt-3 overflow-x-auto">
-            <table class="w-full min-w-[640px] border-collapse text-left">
+            <table class="w-full min-w-[820px] border-collapse text-left">
                 <thead class="bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-500">
                     <tr>
                         <th class="px-3 py-2">Date</th>
                         <th class="px-3 py-2">Skill</th>
+                        <th class="px-3 py-2">Video Title</th>
                         <th class="px-3 py-2 text-right">Score</th>
                         <th class="px-3 py-2 text-right">Result</th>
+                        <th class="px-3 py-2 text-right">Retry</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    {% for attempt in my_exam_performance %}
+                    {% for row in my_exam_performance_rows %}
+                    {% set attempt = row.attempt %}
                     <tr class="hover:bg-slate-50">
                         <td class="px-3 py-2 text-xs font-bold text-slate-600">
                             {{ attempt.attempt_date.strftime('%d %b %Y · %H:%M') }}
                         </td>
                         <td class="px-3 py-2 text-sm font-black text-slate-900">
                             {{ attempt.skill.name if attempt.skill else 'General Test' }}
+                        </td>
+                        <td class="px-3 py-2 text-xs font-bold text-slate-700">
+                            {{ row.video_title if row.video_title else 'No linked video' }}
                         </td>
                         <td class="px-3 py-2 text-right text-sm font-black text-slate-900">
                             {{ attempt.score }}%
@@ -96,10 +102,22 @@
                                 {{ 'Passed' if attempt.passed else 'Retry' }}
                             </span>
                         </td>
+                        <td class="px-3 py-2 text-right">
+                            {% if attempt.skill %}
+                            <a
+                                href="{{ url('assessment:take_test', attempt.skill.id) }}{% if row.video_id %}?video_id={{ row.video_id }}{% endif %}"
+                                class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100"
+                            >
+                                Retry Test
+                            </a>
+                            {% else %}
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">N/A</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="4" class="px-3 py-8 text-center text-sm font-bold text-slate-500">
+                        <td colspan="6" class="px-3 py-8 text-center text-sm font-bold text-slate-500">
                             No exam attempts yet. Take your first test to see performance here.
                         </td>
                     </tr>

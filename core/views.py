@@ -5,6 +5,8 @@ from django.db.models import Sum
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import HttpResponse
+from django.conf import settings
+from django.urls import reverse
 from .models import Course, CourseReferral, EarningTask, UserTaskSubmission
 from assessment.models import UserAttempt
 from django.utils import timezone
@@ -32,6 +34,19 @@ def service_worker(request):
     )
 
 
+def robots_txt(request):
+    sitemap_url = f"{settings.SITE_BASE_URL}/sitemap.xml"
+    body = (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /sd/\n"
+        "Disallow: /admin/\n"
+        "Disallow: /accounts/\n"
+        "Sitemap: " + sitemap_url + "\n"
+    )
+    return HttpResponse(body, content_type="text/plain")
+
+
 def home(request):
     now = timezone.now()
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
@@ -43,6 +58,8 @@ def home(request):
         'featured_home_tutors': featured_rows,
         'featured_tutors_from_db': featured_from_db,
         'hometutor_pilot_city': PILOT_CITY,
+        'seo_title': "RankJee - Home Tutors, Courses and Mock Tests",
+        'seo_description': "Find trusted home tutors, explore job-ready courses, and practice with mock tests on RankJee.",
     })
 
 
@@ -56,6 +73,10 @@ def courses(request):
         "core/courses.jinja",
         {
             "courses": courses_qs,
+            "seo_title": "Courses - Upskill Faster with RankJee",
+            "seo_description": "Explore practical courses with outcomes, duration, and pricing to accelerate your career.",
+            "canonical_url": request.build_absolute_uri(request.path),
+            "seo_noindex": bool(ref_code),
         },
     )
 
@@ -114,6 +135,58 @@ def course_detail(request, slug):
         {
             "course": course,
             "pending_course_referrer_code": pending_ref,
+            "seo_title": f"{course.title} - Course Details | RankJee",
+            "seo_description": (course.short_description or course.description or "Explore this course on RankJee.")[:155],
+            "canonical_url": request.build_absolute_uri(request.path),
+            "seo_noindex": bool(ref_code),
+        },
+    )
+
+
+def course_city_landing(request, slug, city_slug):
+    course = get_object_or_404(Course, slug=slug, is_active=True)
+    city = (city_slug or "").replace("-", " ").strip().title()
+    if not city:
+        city = PILOT_CITY
+
+    seo_title = f"{course.title} Course in {city} | RankJee"
+    seo_description = (
+        f"Join the {course.title} course in {city}. "
+        f"Duration: {course.duration_weeks} weeks. "
+        "Compare outcomes, pricing, and register your interest on RankJee."
+    )[:160]
+
+    faq_items = [
+        {
+            "q": f"Is {course.title} available for students in {city}?",
+            "a": "Yes, learners in this city can register interest and start the course through RankJee.",
+        },
+        {
+            "q": "Do I get mentor support and structured learning?",
+            "a": "Yes, course flow is designed with structured milestones and support to improve outcomes.",
+        },
+        {
+            "q": "How do I enroll quickly?",
+            "a": "Use the enrollment form on this page. Our team will contact you with next steps.",
+        },
+    ]
+
+    top_cities = ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Mumbai", "Delhi", "Pune", "Bangalore"]
+    related_cities = [c for c in top_cities if c.lower() != city.lower()][:6]
+
+    return render(
+        request,
+        "core/course_city_landing.jinja",
+        {
+            "course": course,
+            "city_label": city,
+            "related_cities": related_cities,
+            "faq_items": faq_items,
+            "seo_title": seo_title,
+            "seo_description": seo_description,
+            "canonical_url": request.build_absolute_uri(
+                reverse("core:course_city_landing", kwargs={"slug": course.slug, "city_slug": city_slug})
+            ),
         },
     )
 
@@ -149,6 +222,7 @@ def earnings(request):
         'withdrawals': withdrawals,
         'active_courses': active_courses,
         'course_ref_links': course_ref_links,
+        'seo_noindex': True,
     })
 
 
@@ -218,7 +292,7 @@ def admin_reject_submission(request, submission_id):
 
 @login_required
 def watch_ads(request):
-    return render(request, 'core/watch_ads.jinja')
+    return render(request, 'core/watch_ads.jinja', {'seo_noindex': True})
 
 
 @login_required

@@ -1,0 +1,28 @@
+{% extends "base.jinja" %}
+{% block title %}Choose your role · RankJee{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl mx-auto px-4 py-12">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+        <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Choose your role</h1>
+        <p class="text-slate-600 text-sm mt-2">We use this to configure your dashboard and onboarding flow.</p>
+
+        <form method="post" class="mt-6 space-y-4">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            {% for value, label in form.fields.role.choices %}
+            <label class="block rounded-xl border border-slate-200 p-4 hover:border-indigo-300 cursor-pointer">
+                <input type="radio" name="role" value="{{ value }}" class="mr-2"
+                       {% if form.data.get('role') == value or (not form.data and form.initial.get('role') == value) %}checked{% endif %}>
+                <span class="font-bold text-slate-800">{{ label }}</span>
+            </label>
+            {% endfor %}
+            {% if form.errors %}
+            <p class="text-rose-700 text-sm font-semibold">Please choose a role to continue.</p>
+            {% endif %}
+            <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-white text-sm font-black hover:bg-indigo-500">
+                Continue
+            </button>
+        </form>
+    </div>
+</section>
+{% endblock %}

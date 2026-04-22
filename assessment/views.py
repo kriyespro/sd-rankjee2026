@@ -1,5 +1,6 @@
 import random
 from urllib.parse import urlencode
+from django.utils.text import slugify
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -20,6 +21,7 @@ from .models import (
     SkillTestEntitlement,
 )
 from users.gamification import on_test_submitted
+from core.hometutor_data import PILOT_CITY
 
 @login_required
 def test_index(request):
@@ -36,7 +38,77 @@ def test_index(request):
         'attempted_ids': list(attempts),
         'pro_locked_skill_ids': pro_locked_skill_ids,
         'is_premium_user': is_premium_user,
+        'seo_noindex': True,
     })
+
+
+def mock_test_landing(request, exam_slug, city_slug=None):
+    exam_label = (exam_slug or "").replace("-", " ").strip().upper()
+    city_label = (city_slug or PILOT_CITY).replace("-", " ").strip().title()
+
+    exam_tokens = [t for t in exam_label.split() if t]
+    exam_qs = Skill.objects.filter(is_active=True)
+    if exam_tokens:
+        from django.db.models import Q
+
+        query = Q()
+        for token in exam_tokens:
+            query |= Q(name__icontains=token) | Q(description__icontains=token)
+        exam_qs = exam_qs.filter(query)
+    exam_skills = exam_qs.order_by("order", "id")[:18]
+
+    related_cities = [
+        "Ahmedabad",
+        "Surat",
+        "Vadodara",
+        "Rajkot",
+        "Mumbai",
+        "Delhi",
+        "Pune",
+        "Bangalore",
+    ]
+    related_cities = [c for c in related_cities if c.lower() != city_label.lower()][:6]
+
+    seo_title = f"Free {exam_label} Mock Test in {city_label} | RankJee"
+    seo_description = (
+        f"Practice {exam_label} mock tests in {city_label} with timed quizzes, "
+        "topic diagnostics, and instant result insights on RankJee."
+    )[:160]
+
+    faq_items = [
+        {
+            "q": f"Is this {exam_label} mock test free for students in {city_label}?",
+            "a": "Yes, students can start with available free attempts and then continue with wallet or premium access.",
+        },
+        {
+            "q": f"How often should I practice {exam_label} mock tests?",
+            "a": "For steady improvement, attempt 3-5 tests weekly and review weak concepts after each result.",
+        },
+        {
+            "q": "Do I get topic-wise feedback after the test?",
+            "a": "Yes, RankJee highlights weak concepts and helps you revise using targeted learning resources.",
+        },
+    ]
+
+    canonical_name = "assessment:mock_test_city_landing" if city_slug else "assessment:mock_test_landing"
+    canonical_kwargs = {"exam_slug": slugify(exam_label)}
+    if city_slug:
+        canonical_kwargs["city_slug"] = slugify(city_label)
+
+    return render(
+        request,
+        "assessment/mock_test_landing.jinja",
+        {
+            "exam_label": exam_label,
+            "city_label": city_label,
+            "exam_skills": exam_skills,
+            "related_cities": related_cities,
+            "seo_title": seo_title,
+            "seo_description": seo_description,
+            "canonical_url": request.build_absolute_uri(reverse(canonical_name, kwargs=canonical_kwargs)),
+            "faq_items": faq_items,
+        },
+    )
 
 @login_required
 def jackpot_lobby(request):
@@ -45,7 +117,7 @@ def jackpot_lobby(request):
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
     
     if not jackpot:
-        return render(request, 'assessment/jackpot_lobby.jinja', {'no_jackpot': True})
+        return render(request, 'assessment/jackpot_lobby.jinja', {'no_jackpot': True, 'seo_noindex': True})
 
     # AUTO-SETTLE: If jackpot was scheduled more than 1 hour ago and not completed, settle it
     if now > (jackpot.scheduled_time + timezone.timedelta(hours=1)) and not jackpot.is_completed:
@@ -68,6 +140,7 @@ def jackpot_lobby(request):
         'time_to_go': int(time_to_go),
         'already_played': already_played,
         'recent_winners': recent_winners,
+        'seo_noindex': True,
     })
 
 def settle_jackpot(jackpot):
@@ -117,6 +190,9 @@ def take_test(request, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id, is_active=True)
     concept = (request.GET.get("concept") or "").strip()
     video_id = request.GET.get("video_id")
+    selected_video = None
+    if str(video_id or "").isdigit():
+        selected_video = skill.videos.filter(id=int(video_id)).first()
 
     def _learning_redirect():
         base = reverse("learning:index")
@@ -229,6 +305,7 @@ def take_test(request, skill_id):
     # Store the question IDs in session so we know which ones were in THIS test
     request.session[f'test_questions_{skill.id}'] = [q.id for q in questions]
     request.session[f'test_set_id_{skill.id}'] = current_set.id if current_set else None
+    request.session[f'test_video_id_{skill.id}'] = int(video_id) if str(video_id or "").isdigit() else None
 
     if not questions:
         return redirect('assessment:index')
@@ -236,7 +313,9 @@ def take_test(request, skill_id):
         'skill': skill,
         'current_set': current_set,
         'concept': concept,
+        'selected_video': selected_video,
         'questions': questions,
+        'seo_noindex': True,
     })
 
 
@@ -247,6 +326,10 @@ def submit_test(request, skill_id):
     skill = get_object_or_404(Skill, pk=skill_id)
     set_id = request.POST.get('set_id') or request.session.get(f'test_set_id_{skill.id}')
     current_set = QuestionSet.objects.filter(id=set_id).first() if set_id else None
+    attempted_video_id = request.session.get(f'test_video_id_{skill.id}')
+    attempted_video = None
+    if attempted_video_id:
+        attempted_video = skill.videos.filter(id=attempted_video_id).first()
 
     session_key = f'active_test_paid_{skill.id}'
     if session_key in request.session:
@@ -264,6 +347,8 @@ def submit_test(request, skill_id):
     # Cleanup session set tracking
     if f'test_set_id_{skill.id}' in request.session: 
         del request.session[f'test_set_id_{skill.id}']
+    if f'test_video_id_{skill.id}' in request.session:
+        del request.session[f'test_video_id_{skill.id}']
 
     time_taken_seconds = 0
     try:
@@ -299,6 +384,7 @@ def submit_test(request, skill_id):
     UserAttempt.objects.create(
         user=request.user,
         skill=skill,
+        attempted_video=attempted_video,
         score=score,
         time_taken_seconds=time_taken_seconds,
         passed=passed,
@@ -350,6 +436,7 @@ def submit_test(request, skill_id):
         'total': total,
         'submitted_answers': submitted_answers,
         'time_taken_seconds': time_taken_seconds,
+        'seo_noindex': True,
     })
 
 from django.http import FileResponse
@@ -359,7 +446,7 @@ from .models import Certificate
 @login_required
 def view_certificate(request, certificate_id):
     cert = get_object_or_404(Certificate, certificate_id=certificate_id, user=request.user)
-    return render(request, 'assessment/certificate_view.jinja', {'cert': cert})
+    return render(request, 'assessment/certificate_view.jinja', {'cert': cert, 'seo_noindex': True})
 
 @login_required
 def download_certificate(request, certificate_id):

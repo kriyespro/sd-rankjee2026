@@ -1,12 +1,72 @@
 {% extends "base.jinja" %}
 {% block title %}Find home tutors · {{ hometutor_pilot_city }} · RankJee{% endblock %}
+{% block schema %}
+{% if is_seo_landing %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "RankJee Home Tutors - {{ landing_city|e }}",
+  "description": "Verified home tutors in {{ landing_city|e }} for subject and class-specific learning support.",
+  "areaServed": {
+    "@type": "City",
+    "name": "{{ landing_city|e }}"
+  },
+  "serviceType": "Home Tutor Services",
+  "url": "{{ canonical_url if canonical_url is defined else request.build_absolute_uri(request.path) }}",
+  "provider": {
+    "@type": "Organization",
+    "name": "RankJee"
+  }
+}
+</script>
+{% endif %}
+{% if is_seo_landing and faq_items %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% for item in faq_items %}
+    {
+      "@type": "Question",
+      "name": "{{ item.q|e }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ item.a|e }}"
+      }
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <section class="bg-slate-100 border-b border-slate-200/80 pt-8 pb-10 px-4">
     <div class="max-w-6xl mx-auto">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Home tutors</p>
-        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">Browse verified tutors</h1>
-        <p class="text-slate-600 text-sm md:text-base max-w-2xl">Pilot: <strong>{{ hometutor_pilot_city }}</strong>. Filter by subject, area, or class.</p>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
+            {% if is_seo_landing %}{{ seo_heading }}{% else %}Browse verified tutors{% endif %}
+        </h1>
+        <p class="text-slate-600 text-sm md:text-base max-w-2xl">
+            {% if is_seo_landing %}
+            Discover verified tutor profiles, compare class fit, and request a free demo.
+            {% else %}
+            Pilot: <strong>{{ hometutor_pilot_city }}</strong>. Filter by subject, area, or class.
+            {% endif %}
+        </p>
+        {% if is_seo_landing and related_subjects %}
+        <div class="mt-4 flex flex-wrap gap-2">
+            {% for s in related_subjects %}
+            <a href="{{ url('hometutor:tutor_city_subject_landing', city_slug=landing_city|lower|replace(' ', '-'), subject_slug=s.slug) }}"
+               class="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-50">
+                {{ s.label }} tutors in {{ landing_city }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 </section>
 
@@ -99,4 +159,19 @@
         </div>
     </div>
 </section>
+{% if is_seo_landing and faq_items %}
+<section class="max-w-6xl mx-auto px-4 pb-10">
+    <div class="rounded-2xl border border-slate-200 bg-white p-6">
+        <h2 class="text-lg font-black text-slate-900 mb-4">Frequently asked questions</h2>
+        <div class="space-y-4">
+            {% for item in faq_items %}
+            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <h3 class="text-sm font-black text-slate-800">{{ item.q }}</h3>
+                <p class="mt-1 text-sm text-slate-600">{{ item.a }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

@@ -65,6 +65,11 @@ class CustomUser(AbstractUser):
         blank=True,
         help_text="Set when the one-time signup Pro trial was applied (payments module).",
     )
+    onboarding_completed = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Role/profile onboarding completion gate for login redirects.",
+    )
 
     def add_xp(self, points):
         self.xp_points += points

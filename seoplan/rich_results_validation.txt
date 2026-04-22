@@ -1,0 +1,54 @@
+# Rich Results Validation Log
+
+## Objective
+Validate structured data implementation for:
+- Course pages (`Course` schema)
+- City tutor pages (`LocalBusiness` + `FAQPage`)
+- Mock test pages (`FAQPage`)
+
+## Validation URLs (Production Domain)
+
+- Home tutor city page:
+  - https://ranjee.com/hometutor/city/ahmedabad/
+- Home tutor city+subject page:
+  - https://ranjee.com/hometutor/city/ahmedabad/subject/maths/
+- Mock test exam page:
+  - https://ranjee.com/assessment/mock-test/jee-main/
+- Mock test exam+city page:
+  - https://ranjee.com/assessment/mock-test/jee-main/ahmedabad/
+- Course detail page:
+  - https://ranjee.com/courses/<course-slug>/
+- Course city landing:
+  - https://ranjee.com/courses/<course-slug>/ahmedabad/
+
+## Tooling
+
+- Google Rich Results Test:
+  - https://search.google.com/test/rich-results
+- Schema.org Validator:
+  - https://validator.schema.org/
+
+## Pass Criteria
+
+- No critical parsing errors
+- JSON-LD detected on each target page
+- Required fields present for each schema type
+- Canonical URL matches SEO landing URL
+
+## Execution Checklist
+
+- [ ] Run Rich Results Test on all validation URLs
+- [ ] Capture result screenshot for each URL
+- [ ] Record issues (if any): missing field, invalid type, parse error
+- [ ] Fix schema errors in template/view code
+- [ ] Re-run tests after fixes
+- [ ] Mark `seoplan/seo_action.txt` validation item as complete
+
+## Notes Template (Fill While Testing)
+
+- URL:
+- Schema detected:
+- Status: PASS / FAIL
+- Issue:
+- Fix applied:
+- Re-test status:

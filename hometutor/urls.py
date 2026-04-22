@@ -6,6 +6,22 @@ app_name = 'hometutor'
 
 urlpatterns = [
     path('', views.tutor_list, name='tutor_list'),
+    path('city/<slug:city_slug>/', views.tutor_city_landing, name='tutor_city_landing'),
+    path(
+        'city/<slug:city_slug>/subject/<slug:subject_slug>/',
+        views.tutor_city_landing,
+        name='tutor_city_subject_landing',
+    ),
+    path(
+        'city/<slug:city_slug>/subject/<slug:subject_slug>/class-<int:grade>/',
+        views.tutor_city_landing,
+        name='tutor_city_subject_class_landing',
+    ),
+    path(
+        'city/<slug:city_slug>/subject/<slug:subject_slug>/class-<int:grade>/<slug:location_slug>/',
+        views.tutor_city_landing,
+        name='tutor_city_subject_class_location_landing',
+    ),
     path('search/quick/', views.quick_tutor_search, name='quick_tutor_search'),
     path('compare/', views.compare_tutors, name='compare_tutors'),
     path('my/profile/', views.tutor_profile_edit, name='my_profile'),
