@@ -28,6 +28,7 @@ from .forms import (
     SkillPathForm,
     VideoQuestionImportForm,
 )
+from .models import SeoTarget
 
 User = get_user_model()
 logger = logging.getLogger("rankjee.dashboard")
@@ -549,6 +550,96 @@ def _staff_only(request):
     return request.user.is_staff or request.user.is_superuser
 
 
+def _superuser_only(request):
+    return request.user.is_superuser
+
+
+def _seed_default_seo_targets():
+    if SeoTarget.objects.exists():
+        return
+    defaults = [
+        ("Phase 1: Technical Foundation", "Verify domain in Google Search Console", "HIGH", 10),
+        ("Phase 1: Technical Foundation", "Submit /sitemap.xml and validate robots.txt", "HIGH", 20),
+        ("Phase 1: Technical Foundation", "Add unique dynamic title + meta description", "HIGH", 30),
+        ("Phase 1: Technical Foundation", "Ship canonical tags on all indexable pages", "HIGH", 40),
+        ("Phase 2: Keyword Mapping", "Finalize keyword-to-URL map for tutor/mock/course", "HIGH", 50),
+        ("Phase 2: Keyword Mapping", "Pick top 10 cities + 10 exams + 10 monetizable courses", "HIGH", 60),
+        ("Phase 3: Programmatic SEO", "Launch first 50 city tutor pages", "MEDIUM", 70),
+        ("Phase 3: Programmatic SEO", "Launch first 20 exam mock pages", "MEDIUM", 80),
+        ("Phase 3: Programmatic SEO", "Launch first 20 course-city pages", "MEDIUM", 90),
+        ("Phase 4: Content Engine", "Publish 3 long-tail SEO blogs per week", "MEDIUM", 100),
+        ("Phase 5: Authority", "Build internal hub linking for city/exam/course pages", "MEDIUM", 110),
+        ("Phase 6: Revenue Layer", "Add strong CTA + lead forms on all money pages", "HIGH", 120),
+        ("Phase 7: Governance", "Run weekly SEO review and monthly SEO audit", "MEDIUM", 130),
+    ]
+    SeoTarget.objects.bulk_create(
+        [
+            SeoTarget(phase=phase, title=title, priority=priority, sort_order=order)
+            for phase, title, priority, order in defaults
+        ]
+    )
+
+
+@login_required
+def seo_smart_view(request):
+    if not _superuser_only(request):
+        messages.error(request, "Only superusers can access SEO Smart View.")
+        return redirect("dashboard:index")
+
+    _seed_default_seo_targets()
+
+    if request.method == "POST":
+        target_id = request.POST.get("target_id")
+        new_status = request.POST.get("status")
+        allowed_statuses = {choice[0] for choice in SeoTarget.Status.choices}
+        if target_id and new_status in allowed_statuses:
+            target = SeoTarget.objects.filter(pk=target_id).first()
+            if target:
+                target.status = new_status
+                target.save(update_fields=["status", "updated_at"])
+                messages.success(request, f"Updated target: {target.title}")
+        return redirect("dashboard:seo_smart_view")
+
+    status_filter = (request.GET.get("status") or "").strip()
+    phase_filter = (request.GET.get("phase") or "").strip()
+    q = (request.GET.get("q") or "").strip()
+
+    targets = SeoTarget.objects.all()
+    if status_filter:
+        targets = targets.filter(status=status_filter)
+    if phase_filter:
+        targets = targets.filter(phase=phase_filter)
+    if q:
+        targets = targets.filter(Q(title__icontains=q) | Q(notes__icontains=q))
+
+    total_targets = targets.count()
+    done_count = targets.filter(status=SeoTarget.Status.DONE).count()
+    in_progress_count = targets.filter(status=SeoTarget.Status.IN_PROGRESS).count()
+    blocked_count = targets.filter(status=SeoTarget.Status.BLOCKED).count()
+    todo_count = targets.filter(status=SeoTarget.Status.TODO).count()
+    progress_percent = int((done_count / total_targets) * 100) if total_targets else 0
+    phases = SeoTarget.objects.values_list("phase", flat=True).distinct().order_by("phase")
+
+    return render(
+        request,
+        "dashboard/seo_smart_view.jinja",
+        {
+            "targets": targets,
+            "total_targets": total_targets,
+            "done_count": done_count,
+            "in_progress_count": in_progress_count,
+            "blocked_count": blocked_count,
+            "todo_count": todo_count,
+            "progress_percent": progress_percent,
+            "status_filter": status_filter,
+            "phase_filter": phase_filter,
+            "search_query": q,
+            "phases": phases,
+            "status_choices": SeoTarget.Status.choices,
+        },
+    )
+
+
 @login_required
 def students_score_table(request):
     if not _staff_only(request):
@@ -753,9 +844,13 @@ def index(request):
             )
 
     # Student dashboard (learning + marketplace)
-    latest_attempt = UserAttempt.objects.filter(
-        user=request.user
-    ).order_by('-attempt_date').first()
+    user_exam_attempts = (
+        UserAttempt.objects.filter(user=request.user)
+        .select_related("skill")
+        .order_by("-attempt_date")
+    )
+    latest_attempt = user_exam_attempts.first()
+    my_exam_performance = user_exam_attempts[:10]
 
     attempts_count = UserAttempt.objects.filter(user=request.user).count()
     passed_count = UserAttempt.objects.filter(user=request.user, passed=True).count()
@@ -986,6 +1081,7 @@ def index(request):
         'total_earned': total_earned,
         'weak_areas': weak_areas,
         'latest_attempt': latest_attempt,
+        'my_exam_performance': my_exam_performance,
         'streak_days': request.user.streak_days,
         'user_badges': user_badges,
         'user_certificates': user_certificates, # Added
