@@ -1,0 +1,18 @@
+Here's your complete SEO game plan for ranjee.com. Let me walk you through the biggest levers:
+
+**The #1 move: City × Service pages at scale.** "Home tutor in Ahmedabad for Maths class 10" gets searched thousands of times monthly with almost no competition. Django makes it trivial — one URL pattern generates thousands of unique city pages. Use the AI content generator (Tab 3) to fill each page with unique, meaningful content in hours, not months.
+
+**Django's superpower here is programmatic SEO.** A single view function + model + template creates 500 city pages, 100 exam pages, and 50 course pages automatically. No WordPress can match this.
+
+**Mock tests are your fastest traffic driver.** "Free JEE mock test 2025" has enormous search volume. Make the tests truly free for the first 3, then gate subsequent ones — this gets you ranked and converts traffic.
+
+**Your referral system is an accidental SEO goldmine.** Every student's referral page (`ranjee.com/ref/priya-ahmedabad`) gets indexed by Google, creates internal links, and when students share it on WhatsApp groups, those shares create social signals Google notices. 1,000 students = 1,000 free indexed pages.
+
+**Priority order for first 30 days:**
+1. Technical setup (sitemap, meta tags, schema) — 3 days
+2. Build 5 city tutor pages for your home city manually, measure what ranks
+3. Automate the rest with the AI content generator
+4. Launch referral sharing, submit to JustDial/UrbanPro for local backlinks
+5. Weekly AI-generated blog posts targeting exam prep questions
+
+Want me to write the actual Django code for any specific piece — the city page views, the AI content generator management command, or the referral SEO system?

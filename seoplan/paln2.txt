@@ -1,0 +1,286 @@
+Django Technical SEO Setup
+1. Sitemap + Robots with django-sitemaps
+Auto-generate XML sitemap for all pages — courses, tutors, mock tests, city pages
+pip install django-sitemaps
+
+# sitemaps.py
+from django.contrib.sitemaps import Sitemap
+from .models import Course, TutorProfile, CityPage
+
+class CourseSitemap(Sitemap):
+    changefreq = "weekly"
+    priority = 0.9
+    def items(self):
+        return Course.objects.filter(is_active=True)
+
+class CityTutorSitemap(Sitemap):
+    changefreq = "daily"
+    priority = 0.95  # highest priority
+    def items(self):
+        return CityPage.objects.all()
+
+# urls.py
+sitemaps = {
+  'courses': CourseSitemap,
+  'city': CityTutorSitemap,
+}
+path('sitemap.xml', sitemap, {'sitemaps': sitemaps})
+2. Meta Tags — Dynamic per Page
+{% block meta %}
+<title>{{ page.meta_title }} | Ranjee</title>
+<meta name="description" content="{{ page.meta_description }}">
+<meta property="og:title" content="{{ page.meta_title }}">
+<link rel="canonical" href="{{ request.build_absolute_uri }}">
+{% endblock %}
+3. Schema Markup (JSON-LD) for Rich Results
+Add schema to get stars, FAQs, and course info directly in Google results
+{% block schema %}
+<script type="application/ld+json">
+{
+  "@type": "Course",
+  "name": "{{ course.name }}",
+  "provider": {"@type": "Organization", "name": "Ranjee"},
+  "offers": {"price": "{{ course.price }}", "priceCurrency": "INR"},
+  "aggregateRating": {"ratingValue": "{{ course.rating }}"}
+}
+</script>
+{% endblock %}
+Course schema LocalBusiness schema FAQ schema Review schema
+4. django-robots + Canonical URLs
+INSTALLED_APPS += ['robots']
+
+# Canonical middleware to avoid duplicate pages
+MIDDLEWARE += ['yourapp.middleware.CanonicalURLMiddleware']
+
+# Block useless URL params from Google
+User-agent: *
+Disallow: ?sort=
+Disallow: ?page=
+Allow: /
+
+
+City-Based Landing Pages — The Biggest Traffic Lever
+Target These Cities First (High Search Volume)
+Mumbai
+Home tutor
+Delhi
+Mock test
+Bangalore
+Courses
+Ahmedabad
+All 3
+Pune
+Courses
+Chennai
+Tutor
+Surat
+Tutor
+Jaipur
+Mock test
+Hyderabad
+All 3
+Lucknow
+Tutor
+Indore
+Courses
+Nagpur
+Tutor
+URL Structure That Ranks Fast
+ranjee.com/home-tutor/ahmedabad/
+ranjee.com/home-tutor/ahmedabad/maths-class-10/
+ranjee.com/mock-test/jee-main/
+ranjee.com/mock-test/jee-main/delhi/
+ranjee.com/courses/digital-marketing/online/
+ranjee.com/courses/python/ahmedabad/
+Django URL Pattern for 1000s of City Pages Automatically
+urlpatterns = [
+  path('home-tutor/<str:city>/', views.city_tutor, name='city_tutor'),
+  path('home-tutor/<str:city>/<str:subject>/', views.city_subject),
+  path('mock-test/<str:exam>/', views.mock_test_city),
+  path('courses/<str:slug>/<str:city>/', views.course_city),
+]
+
+def city_tutor(request, city):
+    context = {
+      'city': city.title(),
+      'tutors': Tutor.objects.filter(city__iexact=city)[:10],
+      'meta_title': f'Home Tutor in {city.title()} | Ranjee',
+    }
+    return render(request, 'city_tutor.html', context)
+Target Keywords Per Page Type
+Home Tutor Pages
+home tutor in [city] maths tutor [city] science home teacher [city] tuition classes near me
+Mock Test Pages
+free JEE mock test 2025 NEET practice test SSC CGL mock test online exam practice
+Course Pages
+short term courses [city] digital marketing course online Python certification India
+
+AI-Powered Content at Scale with Django
+Strategy: Use Claude/OpenAI API to generate city-specific content
+Create unique, SEO-rich content for every city × subject × exam combination automatically. 500 cities × 10 subjects = 5,000 unique pages in days.
+Django Management Command — Bulk AI Content Generator
+python manage.py generate_city_content --city=Ahmedabad
+
+# management/commands/generate_city_content.py
+import anthropic
+client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
+
+def generate_tutor_content(city, subject):
+    prompt = f"""Write SEO content for home tutors in {city} for {subject}.
+    Include: local relevance, parent pain points, Ranjee benefits.
+    Format: H2 intro, 3 paragraphs, FAQ section (5 Q&A).
+    Target keyword: 'home tutor in {city} for {subject}'"""
+    
+    msg = client.messages.create(
+        model="claude-opus-4-5",
+        max_tokens=1500,
+        messages=[{"role":"user","content":prompt}]
+    )
+    CityPage.objects.update_or_create(
+        city=city, subject=subject,
+        defaults={'content': msg.content[0].text}
+    )
+AI for Mock Test SEO Content
+def generate_mock_test_page(exam, year):
+    # Generate: exam analysis, strategy, syllabus topics,
+    # previous year questions summary, tips
+    prompt = f"""Create SEO page for {exam} {year} mock test.
+    Include: exam pattern, important topics, preparation tips,
+    why practice tests help. Target: '{exam} mock test online free'"""
+Also automate with AI:
+FAQ pages for each exam • Tutor profile descriptions • Course benefit pages • Blog posts targeting "how to prepare for [exam] in [city]"
+AI Blog Engine — 10 Posts/Week Auto-Published
+def weekly_blog_topics():
+    trending = google_trends_api.fetch(geo='IN', category='education')
+    topics = [
+      f"How to prepare for {exam} in 30 days",
+      f"Best home tutors in {city} — parent guide",
+      f"Free vs paid mock tests: which is better?",
+    ]
+    for topic in topics:
+        content = claude_generate(topic)
+        BlogPost.objects.create(
+            title=topic, content=content,
+            published=True, auto_generated=True
+        )
+
+Student Referral System as an SEO Multiplier
+Referral = Free Backlinks + User Generated Content
+Every referred student creates a shareable page that Google indexes
+1
+Shareable referral landing page: ranjee.com/ref/priya-sharma — Each student gets a unique page with their name, city, course. Google indexes thousands of these.
+2
+Auto-generated review pages: After completing a course, trigger AI to create a testimonial page — "Priya from Ahmedabad completed Python course"
+3
+WhatsApp share button on every referral page — students share to groups. Each share = traffic + social signal to Google.
+4
+Referral leaderboard page: ranjee.com/top-students/ahmedabad — ranks top referrers. Students share it. More organic backlinks.
+Django Referral Model
+class ReferralPage(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    ref_code = models.CharField(max_length=20, unique=True)
+    city = models.CharField(max_length=50)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
+    # SEO fields (AI-generated)
+    meta_title = models.CharField(max_length=160)
+    og_description = models.TextField()
+    share_count = models.IntegerField(default=0)
+    
+    def get_absolute_url(self):
+        return f"/ref/{self.student.username}-{self.city}/"
+
+# Auto-create SEO content on referral signup
+@receiver(post_save, sender=ReferralPage)
+def generate_ref_content(sender, instance, created, **kwargs):
+    if created:
+        generate_referral_seo(instance)
+Backlink Strategy Through Referrals
+5,000
+referral pages indexed
+50K+
+internal links created
+Each referral page links back to: the course page, the city tutor page, and the student's profile — creating a massive internal link web that boosts all pages.
+
+
+Student Referral System as an SEO Multiplier
+Referral = Free Backlinks + User Generated Content
+Every referred student creates a shareable page that Google indexes
+1
+Shareable referral landing page: ranjee.com/ref/priya-sharma — Each student gets a unique page with their name, city, course. Google indexes thousands of these.
+2
+Auto-generated review pages: After completing a course, trigger AI to create a testimonial page — "Priya from Ahmedabad completed Python course"
+3
+WhatsApp share button on every referral page — students share to groups. Each share = traffic + social signal to Google.
+4
+Referral leaderboard page: ranjee.com/top-students/ahmedabad — ranks top referrers. Students share it. More organic backlinks.
+Django Referral Model
+class ReferralPage(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE)
+    ref_code = models.CharField(max_length=20, unique=True)
+    city = models.CharField(max_length=50)
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True)
+    # SEO fields (AI-generated)
+    meta_title = models.CharField(max_length=160)
+    og_description = models.TextField()
+    share_count = models.IntegerField(default=0)
+    
+    def get_absolute_url(self):
+        return f"/ref/{self.student.username}-{self.city}/"
+
+# Auto-create SEO content on referral signup
+@receiver(post_save, sender=ReferralPage)
+def generate_ref_content(sender, instance, created, **kwargs):
+    if created:
+        generate_referral_seo(instance)
+Backlink Strategy Through Referrals
+5,000
+referral pages indexed
+50K+
+internal links created
+Each referral page links back to: the course page, the city tutor page, and the student's profile — creating a massive internal link web that boosts all pages.
+
+
+
+Quick Wins — Get Traffic in 30 Days
+Week 1: Technical Foundation
+1
+Install django-sitemaps, submit to Google Search Console
+2
+Add dynamic meta tags to all page templates
+3
+Enable WhiteNoise for static files — improves Core Web Vitals score
+4
+Set up Google Analytics 4 + Search Console integration
+Week 2: City Pages Blitz
+1
+Create 50 city × subject tutor pages using AI content generator
+2
+Build 10 exam mock test landing pages (JEE, NEET, SSC, UPSC, GMAT)
+3
+Add FAQ schema to every page — targets featured snippets in Google
+Week 3–4: Content + Links
+1
+Publish 20 blog posts via AI engine on exam prep, city guides, course reviews
+2
+List on JustDial, Sulekha, UrbanPro with your website URL — instant local backlinks
+3
+Create Google Business Profile for your top 3 cities
+4
+Launch referral program — get students to share, each share = SEO signal
+Performance: Django Speed for Core Web Vitals
+CACHES = {
+  "default": {
+    "BACKEND": "django.core.cache.backends.redis.RedisCache",
+    "LOCATION": "redis://localhost:6379",
+  }
+}
+
+# Cache city pages for 24 hours (they don't change often)
+@cache_page(60 * 60 * 24)
+def city_tutor(request, city):
+    ...
+
+# Use django-compressor for CSS/JS minification
+INSTALLED_APPS += ['compressor']
+COMPRESS_ENABLED = True
+Redis caching Image lazy loading CDN for static assets Target: <2s load 
