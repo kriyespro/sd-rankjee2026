@@ -1,10 +1,12 @@
 import logging
+import ipaddress
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.core.cache import cache
-from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max
+from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max, OuterRef, Subquery
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.utils import timezone
@@ -19,6 +21,7 @@ from django.db import transaction
 import csv
 import io
 import os
+import requests
 
 from .forms import (
     EarningTaskForm,
@@ -32,9 +35,47 @@ try:
     from .models import SeoTarget
 except ImportError:
     SeoTarget = None
+try:
+    from axes.models import AccessLog
+except ImportError:
+    AccessLog = None
 
 User = get_user_model()
 logger = logging.getLogger("rankjee.dashboard")
+
+
+def _location_from_ip(ip_address):
+    if not ip_address:
+        return ""
+    try:
+        ip_obj = ipaddress.ip_address(ip_address)
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_reserved:
+            return "Private/Local IP"
+    except ValueError:
+        return ""
+
+    cache_key = f"geoip:ip:{ip_address}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    location = ""
+    try:
+        resp = requests.get(
+            "https://ipwho.is/" + ip_address,
+            timeout=1.5,
+        )
+        data = resp.json() if resp.ok else {}
+        if data.get("success"):
+            city = (data.get("city") or "").strip()
+            region = (data.get("region") or "").strip()
+            country = (data.get("country") or "").strip()
+            location = ", ".join([p for p in [city, region, country] if p])
+    except Exception:
+        location = ""
+
+    cache.set(cache_key, location, 60 * 60 * 24)
+    return location
 
 
 def _role_dashboard_context(request):
@@ -739,12 +780,56 @@ def users_referral_table(request):
             | Q(referred_by__email__icontains=q)
         )
 
-    referral_qs = (
-        user_qs.annotate(referrals_count=Count("referrals", distinct=True))
-        .order_by("-date_joined")
-    )
+    referral_qs = user_qs.annotate(referrals_count=Count("referrals", distinct=True))
+    if AccessLog is not None:
+        latest_ip_subquery = (
+            AccessLog.objects.filter(username=OuterRef("username"))
+            .order_by("-attempt_time")
+            .values("ip_address")[:1]
+        )
+        referral_qs = referral_qs.annotate(last_login_ip=Subquery(latest_ip_subquery))
+    referral_qs = referral_qs.order_by("-date_joined")
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="users_referrals.csv"'
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "Username",
+                "Email",
+                "Role",
+                "Referral Code",
+                "Referred By Username",
+                "Referred By Email",
+                "Total Referrals",
+                "Last Login IP",
+                "Location",
+                "Joined At",
+            ]
+        )
+        for u in referral_qs:
+            ip_location = _location_from_ip(getattr(u, "last_login_ip", "") or "")
+            writer.writerow(
+                [
+                    u.username,
+                    u.email,
+                    u.get_role_display(),
+                    u.referral_code,
+                    u.referred_by.username if u.referred_by else "",
+                    u.referred_by.email if u.referred_by else "",
+                    u.referrals_count,
+                    getattr(u, "last_login_ip", "") or "",
+                    ip_location or (u.get_state_display() if u.state else "Unknown"),
+                    timezone.localtime(u.date_joined).strftime("%Y-%m-%d %H:%M:%S"),
+                ]
+            )
+        return response
+
     paginator = Paginator(referral_qs, 30)
     users_page = paginator.get_page(request.GET.get("page", 1))
+    for user in users_page.object_list:
+        user.ip_location = _location_from_ip(getattr(user, "last_login_ip", "") or "")
 
     return render(
         request,
