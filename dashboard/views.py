@@ -723,6 +723,40 @@ def students_score_table(request):
 
 
 @login_required
+def users_referral_table(request):
+    if not _superuser_only(request):
+        messages.error(request, "Only superadmin can access referral table.")
+        return redirect("dashboard:index")
+
+    q = (request.GET.get("q") or "").strip()
+    user_qs = User.objects.select_related("referred_by")
+    if q:
+        user_qs = user_qs.filter(
+            Q(username__icontains=q)
+            | Q(email__icontains=q)
+            | Q(referral_code__icontains=q)
+            | Q(referred_by__username__icontains=q)
+            | Q(referred_by__email__icontains=q)
+        )
+
+    referral_qs = (
+        user_qs.annotate(referrals_count=Count("referrals", distinct=True))
+        .order_by("-date_joined")
+    )
+    paginator = Paginator(referral_qs, 30)
+    users_page = paginator.get_page(request.GET.get("page", 1))
+
+    return render(
+        request,
+        "dashboard/users_referral_table.jinja",
+        {
+            "users_page": users_page,
+            "search_query": q,
+        },
+    )
+
+
+@login_required
 def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
         return redirect('users:onboarding_role')

@@ -1,0 +1,89 @@
+{% extends "base.jinja" %}
+{% block title %}Users Referral Table - Superadmin{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900">Users and Referrals</h1>
+            <p class="text-sm text-slate-600 font-medium">Superadmin view for referral mapping and growth tracking.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url('dashboard:index') }}" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 uppercase tracking-widest">Back</a>
+            <a href="/sd/users/customuser/" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg bg-slate-900 hover:bg-indigo-600 text-white uppercase tracking-widest">Open /sd/users</a>
+        </div>
+    </div>
+
+    <form method="GET" class="mb-4">
+        <div class="flex gap-2">
+            <input
+                type="text"
+                name="q"
+                value="{{ search_query }}"
+                placeholder="Search user, email, code, referrer..."
+                class="w-full md:w-[460px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500"
+            >
+            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-lg uppercase tracking-widest">Search</button>
+        </div>
+    </form>
+
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr class="text-xs font-black uppercase tracking-widest text-slate-600">
+                        <th class="px-4 py-3">User</th>
+                        <th class="px-4 py-3">Role</th>
+                        <th class="px-4 py-3">Referral Code</th>
+                        <th class="px-4 py-3">Referred By</th>
+                        <th class="px-4 py-3 text-right">Total Referrals</th>
+                        <th class="px-4 py-3">Joined</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for u in users_page %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-4 py-3">
+                            <p class="text-sm font-black text-slate-900">{{ u.username }}</p>
+                            <p class="text-xs text-slate-600">{{ u.email }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-xs font-bold text-slate-700">{{ u.get_role_display() }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-md px-2 py-1 text-xs font-black">{{ u.referral_code }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if u.referred_by %}
+                                <p class="text-sm font-bold text-slate-900">{{ u.referred_by.username }}</p>
+                                <p class="text-xs text-slate-600">{{ u.referred_by.email }}</p>
+                            {% else %}
+                                <span class="text-xs font-bold text-slate-400">Direct signup</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm font-black text-slate-900">{{ u.referrals_count }}</td>
+                        <td class="px-4 py-3 text-xs font-medium text-slate-600">{{ u.date_joined.strftime('%d %b %Y %I:%M %p') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-8 text-center text-sm font-bold text-slate-500">No users found for this filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <p class="text-xs font-bold text-slate-600">
+                Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}
+            </p>
+            <div class="flex items-center gap-2">
+                {% if users_page.has_previous() %}
+                    <a href="?page={{ users_page.previous_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 text-xs font-black border border-slate-200 rounded-md bg-white hover:bg-slate-50">Prev</a>
+                {% endif %}
+                {% if users_page.has_next() %}
+                    <a href="?page={{ users_page.next_page_number() }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-3 py-1.5 text-xs font-black border border-slate-200 rounded-md bg-white hover:bg-slate-50">Next</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

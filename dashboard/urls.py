@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('seo/smart-view/', views.seo_smart_view, name='seo_smart_view'),
     path('students/scores/', views.students_score_table, name='students_score_table'),
+    path('users/referrals/', views.users_referral_table, name='users_referral_table'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('notifications/', views.notifications, name='notifications'),
     path('notifications/<int:note_id>/read/', views.mark_notification_read, name='mark_read'),
