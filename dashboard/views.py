@@ -505,6 +505,11 @@ def _role_dashboard_context(request):
             status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW]
         ).select_related('engagement__student', 'engagement__tutor_profile').order_by('-updated_at')[:10]
         latest_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').select_related('user').order_by('-requested_at')[:10]
+        recent_failed_attempts = (
+            UserAttempt.objects.filter(passed=False)
+            .select_related("user", "skill")
+            .order_by("-attempt_date")[:12]
+        )
         global_verification_sla_risk_ids = [
             t.pk for t in latest_pending_tutors if (now - t.updated_at).total_seconds() > (48 * 3600)
         ]
@@ -583,6 +588,7 @@ def _role_dashboard_context(request):
                 + len(global_dispute_sla_risk_ids)
                 + len(global_withdrawal_sla_risk_ids)
             ),
+            'recent_failed_attempts': recent_failed_attempts,
             'activity_timeline': activity_timeline,
             'template_name': 'dashboard/role_global_admin.jinja',
         }
