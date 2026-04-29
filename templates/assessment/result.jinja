@@ -75,7 +75,7 @@
             {% endif %}
             <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
                 {% if attempted_video %}
-                <a href="{{ attempted_video.video_url }}" target="_blank" rel="noopener noreferrer" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Watch Video Lecture</a>
+                <a href="{{ url('learning:index') }}?skill={{ skill.id }}&video_id={{ attempted_video.id }}{% if attempted_concept %}&concept={{ attempted_concept|urlencode }}{% endif %}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Watch Video Lecture</a>
                 {% else %}
                 <a href="{{ url('learning:index') }}?skill={{ skill.id }}{% if attempted_concept %}&concept={{ attempted_concept|urlencode }}{% endif %}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Study Weak Areas</a>
                 {% endif %}

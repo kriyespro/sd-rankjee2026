@@ -978,6 +978,11 @@ def index(request):
             'user'
         ).order_by('-requested_at')[:10]
         pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
+        recent_failed_attempts = (
+            UserAttempt.objects.filter(passed=False)
+            .select_related("user", "skill")
+            .order_by("-attempt_date")[:12]
+        )
 
         return render(request, 'dashboard/admin_dashboard.jinja', {
             'admin_role': role,
@@ -999,6 +1004,7 @@ def index(request):
             'total_payouts': total_payouts,
             'pending_withdrawals': pending_withdrawals,
             'pending_withdrawals_count': pending_withdrawals_count,
+            'recent_failed_attempts': recent_failed_attempts,
         })
 
     # Role-dedicated dashboards for non-staff roles.
