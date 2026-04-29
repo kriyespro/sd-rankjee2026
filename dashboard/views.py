@@ -749,6 +749,7 @@ def students_score_table(request):
                 "latest_skill_name": latest_skill_name,
                 "latest_score": latest_score,
                 "weak_preview": weak_preview,
+                "latest_attempt_id": latest_attempt.id if latest_attempt else None,
             }
         )
 
@@ -837,6 +838,61 @@ def users_referral_table(request):
         {
             "users_page": users_page,
             "search_query": q,
+        },
+    )
+
+
+@login_required
+def student_attempt_review(request, attempt_id):
+    if not _staff_only(request):
+        return redirect("dashboard:index")
+
+    attempt = get_object_or_404(
+        UserAttempt.objects.select_related("skill", "attempted_video", "user"),
+        pk=attempt_id,
+    )
+    if not attempt.skill:
+        messages.warning(request, "Attempt details unavailable for this test.")
+        return redirect("dashboard:students_score_table")
+
+    questions_qs = Question.objects.filter(skill=attempt.skill)
+    if attempt.attempted_video_id:
+        questions_qs = questions_qs.filter(
+            source_video_id=attempt.attempted_video_id,
+            is_video_import=True,
+        )
+
+    weak_tags = [str(tag).strip() for tag in (attempt.weak_concepts or []) if str(tag).strip()]
+    if weak_tags:
+        concept_q = Q()
+        for tag in weak_tags:
+            concept_q |= Q(concept_tag__iexact=tag) | Q(concept_tag__icontains=tag)
+        questions_qs = questions_qs.filter(concept_q)
+
+    question_rows = []
+    for q in questions_qs.order_by("id")[:40]:
+        if q.correct_option == "A":
+            correct_text = q.option_a
+        elif q.correct_option == "B":
+            correct_text = q.option_b
+        elif q.correct_option == "C":
+            correct_text = q.option_c
+        else:
+            correct_text = q.option_d
+        question_rows.append(
+            {
+                "question": q,
+                "correct_text": correct_text,
+            }
+        )
+
+    return render(
+        request,
+        "dashboard/attempt_review.jinja",
+        {
+            "attempt": attempt,
+            "question_rows": question_rows,
+            "is_staff_review": True,
         },
     )
 
@@ -1284,6 +1340,58 @@ def notifications(request):
     # Mark all as read when viewed
     notes.filter(is_read=False).update(is_read=True)
     return render(request, 'dashboard/notifications.jinja', {'notifications': notes})
+
+
+@login_required
+def attempt_review(request, attempt_id):
+    attempt = get_object_or_404(
+        UserAttempt.objects.select_related("skill", "attempted_video"),
+        pk=attempt_id,
+        user=request.user,
+    )
+    if not attempt.skill:
+        messages.warning(request, "Attempt details unavailable for this test.")
+        return redirect("dashboard:index")
+
+    questions_qs = Question.objects.filter(skill=attempt.skill)
+    if attempt.attempted_video_id:
+        questions_qs = questions_qs.filter(
+            source_video_id=attempt.attempted_video_id,
+            is_video_import=True,
+        )
+
+    weak_tags = [str(tag).strip() for tag in (attempt.weak_concepts or []) if str(tag).strip()]
+    if weak_tags:
+        concept_q = Q()
+        for tag in weak_tags:
+            concept_q |= Q(concept_tag__iexact=tag) | Q(concept_tag__icontains=tag)
+        questions_qs = questions_qs.filter(concept_q)
+
+    question_rows = []
+    for q in questions_qs.order_by("id")[:40]:
+        if q.correct_option == "A":
+            correct_text = q.option_a
+        elif q.correct_option == "B":
+            correct_text = q.option_b
+        elif q.correct_option == "C":
+            correct_text = q.option_c
+        else:
+            correct_text = q.option_d
+        question_rows.append(
+            {
+                "question": q,
+                "correct_text": correct_text,
+            }
+        )
+
+    return render(
+        request,
+        "dashboard/attempt_review.jinja",
+        {
+            "attempt": attempt,
+            "question_rows": question_rows,
+        },
+    )
 
 
 @login_required

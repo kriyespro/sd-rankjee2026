@@ -74,8 +74,12 @@
             </div>
             {% endif %}
             <div class="mt-6 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ url('learning:index') }}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Study Weak Areas</a>
-                <a href="{{ url('assessment:take_test', skill.id) }}" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition">Retry Test</a>
+                {% if attempted_video %}
+                <a href="{{ attempted_video.video_url }}" target="_blank" rel="noopener noreferrer" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Watch Video Lecture</a>
+                {% else %}
+                <a href="{{ url('learning:index') }}?skill={{ skill.id }}{% if attempted_concept %}&concept={{ attempted_concept|urlencode }}{% endif %}" class="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition">Study Weak Areas</a>
+                {% endif %}
+                <a href="{{ url('assessment:take_test', skill.id) }}{% if attempted_concept or attempted_video %}?{% endif %}{% if attempted_concept %}concept={{ attempted_concept|urlencode }}{% endif %}{% if attempted_concept and attempted_video %}&{% endif %}{% if attempted_video %}video_id={{ attempted_video.id }}{% endif %}" class="bg-white border border-gray-300 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition">Retry Test</a>
             </div>
         {% endif %}
         <p class="mt-6 text-sm text-gray-400">{{ correct }}/{{ total }} correct</p>

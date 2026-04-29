@@ -78,6 +78,7 @@
                         <th class="px-3 py-2">Video Title</th>
                         <th class="px-3 py-2 text-right">Score</th>
                         <th class="px-3 py-2 text-right">Result</th>
+                        <th class="px-3 py-2 text-right">Review</th>
                         <th class="px-3 py-2 text-right">Retry</th>
                     </tr>
                 </thead>
@@ -103,6 +104,18 @@
                             </span>
                         </td>
                         <td class="px-3 py-2 text-right">
+                            {% if not attempt.passed %}
+                            <a
+                                href="{{ url('dashboard:attempt_review', attempt.id) }}"
+                                class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100"
+                            >
+                                Wrong Q&A
+                            </a>
+                            {% else %}
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 text-right">
                             {% if attempt.skill %}
                             <a
                                 href="{{ url('assessment:take_test', attempt.skill.id) }}{% if row.video_id %}?video_id={{ row.video_id }}{% endif %}"
@@ -117,7 +130,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="px-3 py-8 text-center text-sm font-bold text-slate-500">
+                        <td colspan="7" class="px-3 py-8 text-center text-sm font-bold text-slate-500">
                             No exam attempts yet. Take your first test to see performance here.
                         </td>
                     </tr>

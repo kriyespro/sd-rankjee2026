@@ -32,6 +32,7 @@
                     <th class="text-left px-4 py-3">Best score</th>
                     <th class="text-left px-4 py-3">Latest attempt</th>
                     <th class="text-left px-4 py-3">Weak topics</th>
+                    <th class="text-left px-4 py-3">Review</th>
                     <th class="text-left px-4 py-3">Wallet</th>
                     <th class="text-left px-4 py-3">XP</th>
                 </tr>
@@ -65,12 +66,21 @@
                     <td class="px-4 py-3 text-xs text-slate-600 max-w-[240px]">
                         {{ row.weak_preview or '—' }}
                     </td>
+                    <td class="px-4 py-3">
+                        {% if row.latest_attempt_id and row.latest_score is not none and row.latest_score < 80 %}
+                        <a href="{{ url('dashboard:student_attempt_review', row.latest_attempt_id) }}" class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">
+                            Wrong Q&A
+                        </a>
+                        {% else %}
+                        <span class="text-xs text-slate-400">—</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3 font-semibold text-emerald-700">₹{{ row.student.wallet_balance|float }}</td>
                     <td class="px-4 py-3 font-semibold text-indigo-700">{{ row.student.xp_points }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="px-4 py-12 text-center text-slate-500 font-semibold">No students found for this filter.</td>
+                    <td colspan="10" class="px-4 py-12 text-center text-slate-500 font-semibold">No students found for this filter.</td>
                 </tr>
                 {% endfor %}
             </tbody>

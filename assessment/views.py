@@ -306,6 +306,7 @@ def take_test(request, skill_id):
     request.session[f'test_questions_{skill.id}'] = [q.id for q in questions]
     request.session[f'test_set_id_{skill.id}'] = current_set.id if current_set else None
     request.session[f'test_video_id_{skill.id}'] = int(video_id) if str(video_id or "").isdigit() else None
+    request.session[f'test_concept_{skill.id}'] = concept or ""
 
     if not questions:
         return redirect('assessment:index')
@@ -327,6 +328,7 @@ def submit_test(request, skill_id):
     set_id = request.POST.get('set_id') or request.session.get(f'test_set_id_{skill.id}')
     current_set = QuestionSet.objects.filter(id=set_id).first() if set_id else None
     attempted_video_id = request.session.get(f'test_video_id_{skill.id}')
+    attempted_concept = (request.session.get(f'test_concept_{skill.id}') or "").strip()
     attempted_video = None
     if attempted_video_id:
         attempted_video = skill.videos.filter(id=attempted_video_id).first()
@@ -349,6 +351,8 @@ def submit_test(request, skill_id):
         del request.session[f'test_set_id_{skill.id}']
     if f'test_video_id_{skill.id}' in request.session:
         del request.session[f'test_video_id_{skill.id}']
+    if f'test_concept_{skill.id}' in request.session:
+        del request.session[f'test_concept_{skill.id}']
 
     time_taken_seconds = 0
     try:
@@ -427,6 +431,8 @@ def submit_test(request, skill_id):
     return render(request, 'assessment/result.jinja', {
         'skill': skill,
         'current_set': current_set,
+        'attempted_video': attempted_video,
+        'attempted_concept': attempted_concept,
         'next_set': next_set,
         'next_skill': next_skill,
         'score': score,
