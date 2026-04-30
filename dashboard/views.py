@@ -1,5 +1,6 @@
 import logging
 import ipaddress
+import calendar
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -10,7 +11,7 @@ from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max, 
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 from assessment.models import UserAttempt, Question, Skill, UserSetAttempt
 from assessment.models import SkillPath
 from core.models import UserTaskSubmission
@@ -45,6 +46,63 @@ except ImportError:
 
 User = get_user_model()
 logger = logging.getLogger("rankjee.dashboard")
+
+
+def _calendar_view_context(logs_qs, month_raw):
+    today = timezone.localdate()
+    month_value = (month_raw or "").strip()
+    try:
+        year_str, month_str = month_value.split("-", 1)
+        year = int(year_str)
+        month = int(month_str)
+        current_month_date = date(year, month, 1)
+    except Exception:
+        current_month_date = date(today.year, today.month, 1)
+        month_value = current_month_date.strftime("%Y-%m")
+
+    month_logs = list(
+        logs_qs.filter(
+            log_date__year=current_month_date.year,
+            log_date__month=current_month_date.month,
+        ).order_by("log_date", "id")
+    )
+    logs_by_date = {}
+    for row in month_logs:
+        logs_by_date.setdefault(row.log_date, []).append(row)
+
+    cal = calendar.Calendar(firstweekday=0)
+    calendar_weeks = []
+    for week in cal.monthdatescalendar(current_month_date.year, current_month_date.month):
+        calendar_weeks.append(
+            [
+                {
+                    "date": day,
+                    "in_month": day.month == current_month_date.month,
+                    "logs": logs_by_date.get(day, []),
+                }
+                for day in week
+            ]
+        )
+
+    prev_month = date(
+        current_month_date.year - 1 if current_month_date.month == 1 else current_month_date.year,
+        12 if current_month_date.month == 1 else current_month_date.month - 1,
+        1,
+    )
+    next_month = date(
+        current_month_date.year + 1 if current_month_date.month == 12 else current_month_date.year,
+        1 if current_month_date.month == 12 else current_month_date.month + 1,
+        1,
+    )
+
+    return {
+        "calendar_weeks": calendar_weeks,
+        "calendar_month_label": current_month_date.strftime("%B %Y"),
+        "calendar_month_value": month_value,
+        "calendar_prev_month": prev_month.strftime("%Y-%m"),
+        "calendar_next_month": next_month.strftime("%Y-%m"),
+        "calendar_total_logs": len(month_logs),
+    }
 
 
 def _location_from_ip(ip_address):
@@ -916,6 +974,10 @@ def daily_class_log(request):
         return redirect("dashboard:index")
 
     logs_qs = StudentDailyClassLog.objects.filter(user=request.user).order_by("-log_date", "-id")
+    view_mode = request.GET.get("view", "list").strip().lower()
+    if view_mode not in {"list", "calendar"}:
+        view_mode = "list"
+    month_value = request.GET.get("month", "").strip()
     paginator = Paginator(logs_qs, 20)
     logs_page = paginator.get_page(request.GET.get("page", 1))
 
@@ -943,6 +1005,8 @@ def daily_class_log(request):
         {
             "form": form,
             "logs_page": logs_page,
+            "view_mode": view_mode,
+            **_calendar_view_context(logs_qs, month_value),
         },
     )
 
@@ -974,6 +1038,10 @@ def admin_student_daily_logs(request):
 
     paginator = Paginator(logs_qs, 25)
     logs_page = paginator.get_page(request.GET.get("page", 1))
+    view_mode = request.GET.get("view", "list").strip().lower()
+    if view_mode not in {"list", "calendar"}:
+        view_mode = "list"
+    month_value = request.GET.get("month", "").strip()
 
     student_options = User.objects.filter(role=User.Role.STUDENT).order_by("username")
     if is_city_admin and getattr(request.user, "state", None):
@@ -987,6 +1055,10 @@ def admin_student_daily_logs(request):
         filter_params["q"] = search_query
     if student_filter_id:
         filter_params["student_id"] = student_filter_id
+    if view_mode != "list":
+        filter_params["view"] = view_mode
+    if month_value:
+        filter_params["month"] = month_value
     filter_querystring = f"&{urlencode(filter_params)}" if filter_params else ""
 
     return render(
@@ -998,6 +1070,8 @@ def admin_student_daily_logs(request):
             "student_filter_id": student_filter_id,
             "student_options": student_options,
             "filter_querystring": filter_querystring,
+            "view_mode": view_mode,
+            **_calendar_view_context(logs_qs, month_value),
         },
     )
 

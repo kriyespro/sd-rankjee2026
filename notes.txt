@@ -1,0 +1,19 @@
+git add .
+git commit -m "Compact "
+git push origin main
+
+
+git pull origin main
+
+
+docker compose down
+docker compose up --build -d
+
+
+docker compose ps
+docker compose logs web --tail=120
+curl -I http://127.0.0.1:8889/
+
+
+
+docker compose up --build -d web celery celery-beat
