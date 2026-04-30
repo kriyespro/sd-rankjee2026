@@ -56,6 +56,9 @@ if not ALLOWED_HOSTS:
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     USE_X_FORWARDED_HOST = True
+    _secure_ssl_host = os.environ.get('SECURE_SSL_HOST', '').strip()
+    if _secure_ssl_host:
+        SECURE_SSL_HOST = _secure_ssl_host
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
