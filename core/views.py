@@ -122,7 +122,7 @@ def request_tutor(request):
             item.requester = request.user
             item.save()
             messages.success(request, "Your tutor request was submitted. Our team will contact you shortly.")
-            return redirect("core:request_tutor")
+            return redirect(f"{reverse('core:request_tutor')}?submitted=1")
     else:
         form = TutorLeadRequestForm(initial=initial)
 

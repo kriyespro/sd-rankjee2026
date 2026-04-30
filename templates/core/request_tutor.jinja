@@ -13,6 +13,14 @@
 </section>
 
 <section class="max-w-5xl mx-auto px-4 py-8">
+    {% if request.GET.get('submitted') == '1' %}
+    <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+        <p class="text-sm font-black text-emerald-800">
+            Success: Your tutor request has been submitted. Our team will contact you shortly.
+        </p>
+    </div>
+    {% endif %}
+
     <form method="post" class="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm">
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
