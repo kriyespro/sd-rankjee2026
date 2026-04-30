@@ -21,31 +21,34 @@
         </div>
         {% endif %}
 
-        <form method="post" class="mt-4 space-y-3">
+        <form method="post" class="mt-3 space-y-2.5">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <div class="grid gap-3 md:grid-cols-3">
                 <div>
                     <label for="{{ form.log_date.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Date</label>
-                    {{ form.log_date }}
+                    <input type="date" name="{{ form.log_date.name }}" id="{{ form.log_date.id_for_label }}" value="{{ form.log_date.value() or '' }}" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
                     {% if form.log_date.errors %}<div class="mt-1 text-xs font-bold text-rose-600">{% for err in form.log_date.errors %}{{ err }}{% endfor %}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.topic.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Topic</label>
-                    {{ form.topic }}
+                    <input type="text" name="{{ form.topic.name }}" id="{{ form.topic.id_for_label }}" value="{{ form.topic.value() or '' }}" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
                     {% if form.topic.errors %}<div class="mt-1 text-xs font-bold text-rose-600">{% for err in form.topic.errors %}{{ err }}{% endfor %}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.attendance.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Attendance</label>
-                    {{ form.attendance }}
+                    <select name="{{ form.attendance.name }}" id="{{ form.attendance.id_for_label }}" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
+                        <option value="PRESENT" {% if form.attendance.value() == 'PRESENT' %}selected{% endif %}>Present</option>
+                        <option value="ABSENT" {% if form.attendance.value() == 'ABSENT' %}selected{% endif %}>Absent</option>
+                    </select>
                     {% if form.attendance.errors %}<div class="mt-1 text-xs font-bold text-rose-600">{% for err in form.attendance.errors %}{{ err }}{% endfor %}</div>{% endif %}
                 </div>
             </div>
             <div>
                 <label for="{{ form.details.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-widest text-slate-400">Details</label>
-                <textarea name="{{ form.details.name }}" id="{{ form.details.id_for_label }}" rows="2" class="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">{{ form.details.value() or '' }}</textarea>
+                <textarea name="{{ form.details.name }}" id="{{ form.details.id_for_label }}" rows="2" class="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">{{ form.details.value() or '' }}</textarea>
                 {% if form.details.errors %}<div class="mt-1 text-xs font-bold text-rose-600">{% for err in form.details.errors %}{{ err }}{% endfor %}</div>{% endif %}
             </div>
-            <button type="submit" class="w-full rounded-xl bg-indigo-600 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 sm:w-auto sm:px-8">
+            <button type="submit" class="w-full rounded-xl bg-indigo-600 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 sm:w-auto sm:px-8">
                 Save log
             </button>
         </form>
@@ -73,9 +76,9 @@
                         <td class="px-2.5 py-1.5 text-xs font-black text-slate-900">{{ row.topic }}</td>
                         <td class="px-2.5 py-1.5 whitespace-nowrap">
                             {% if row.attendance == 'PRESENT' %}
-                            <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-green-700">Present</span>
+                            <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-green-700 shadow-[0_0_0_1px_rgba(34,197,94,0.25),0_0_10px_rgba(34,197,94,0.25)]">Present</span>
                             {% else %}
-                            <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-red-700">Absent</span>
+                            <span class="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-red-700 shadow-[0_0_0_1px_rgba(239,68,68,0.25),0_0_10px_rgba(239,68,68,0.25)]">Absent</span>
                             {% endif %}
                         </td>
                         <td class="px-2.5 py-1.5 text-[11px] text-slate-600 max-w-xs">{{ row.details|truncate(120) if row.details else '—' }}</td>
