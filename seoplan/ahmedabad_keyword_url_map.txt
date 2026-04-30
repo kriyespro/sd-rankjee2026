@@ -1,0 +1,85 @@
+# Ahmedabad Keyword -> URL Map (Revenue-First)
+
+Use one primary keyword per URL to avoid cannibalization.
+
+## Tier 1 - City Intent (Highest Priority)
+
+- Primary: home tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/
+  - Secondary: private tutor ahmedabad, verified home tutor ahmedabad, tuition teacher ahmedabad
+
+- Primary: cbse home tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/cbse/
+  - Secondary: cbse tuition teacher ahmedabad, class wise cbse tutor ahmedabad
+
+- Primary: maths tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/maths/
+  - Secondary: class 10 maths tutor ahmedabad, board exam maths tutor ahmedabad
+
+- Primary: science tutor in ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/science/
+  - Secondary: class 9 science tutor ahmedabad, cbse science tutor ahmedabad
+
+## Tier 2 - Area Intent (Commercial High Intent)
+
+- Primary: home tutor satellite ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/maths/class-10/satellite/
+  - Secondary: private tutor in satellite, tuition classes satellite ahmedabad
+
+- Primary: cbse tutor vastrapur
+  - URL: /hometutor/city/ahmedabad/subject/cbse/class-10/vastrapur/
+  - Secondary: cbse tuition vastrapur, class 10 tutor vastrapur
+
+- Primary: home tutor navrangpura ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/science/class-9/navrangpura/
+  - Secondary: private teacher navrangpura, science tuition navrangpura
+
+- Primary: maths tutor maninagar ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/maths/class-10/maninagar/
+  - Secondary: cbse maths tuition maninagar, board maths tutor maninagar
+
+- Primary: home tutor bopal ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/english/class-8/bopal/
+  - Secondary: english tutor bopal, tuition teacher bopal ahmedabad
+
+## Tier 3 - Subject + Class + Area (Best Conversion)
+
+- Primary: class 12 physics tutor satellite ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/physics/class-12/satellite/
+  - Secondary: jee physics tutor satellite, science stream tutor satellite
+
+- Primary: class 12 chemistry tutor vastrapur ahmedabad
+  - URL: /hometutor/city/ahmedabad/subject/chemistry/class-12/vastrapur/
+  - Secondary: board chemistry tutor vastrapur, jee chemistry tutor vastrapur
+
+- Primary: class 10 cbse maths tutor navrangpura
+  - URL: /hometutor/city/ahmedabad/subject/maths/class-10/navrangpura/
+  - Secondary: cbse board maths tutor navrangpura
+
+- Primary: class 9 science tutor maninagar
+  - URL: /hometutor/city/ahmedabad/subject/science/class-9/maninagar/
+  - Secondary: school science tuition maninagar
+
+- Primary: class 8 english home tutor bopal
+  - URL: /hometutor/city/ahmedabad/subject/english/class-8/bopal/
+  - Secondary: spoken english tutor bopal, grammar tutor bopal
+
+## SEO Rules for This Map
+
+- One primary keyword must map to one canonical URL only.
+- Do not target same exact keyword on blog + landing page together.
+- Every mapped URL must include unique intro, local context, FAQ, and CTA.
+- Publish tier order: Tier 1 -> Tier 2 -> Tier 3.
+
+## Publish Queue Suggestion (First 10)
+
+1. /hometutor/city/ahmedabad/
+2. /hometutor/city/ahmedabad/subject/maths/
+3. /hometutor/city/ahmedabad/subject/science/
+4. /hometutor/city/ahmedabad/subject/maths/class-10/satellite/
+5. /hometutor/city/ahmedabad/subject/cbse/class-10/vastrapur/
+6. /hometutor/city/ahmedabad/subject/physics/class-12/satellite/
+7. /hometutor/city/ahmedabad/subject/chemistry/class-12/vastrapur/
+8. /hometutor/city/ahmedabad/subject/science/class-9/navrangpura/
+9. /hometutor/city/ahmedabad/subject/maths/class-10/maninagar/
+10. /hometutor/city/ahmedabad/subject/english/class-8/bopal/

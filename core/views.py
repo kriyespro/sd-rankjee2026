@@ -7,7 +7,9 @@ from django.core.cache import cache
 from django.http import HttpResponse
 from django.conf import settings
 from django.urls import reverse
-from .models import Course, CourseReferral, EarningTask, UserTaskSubmission
+from allauth.socialaccount.models import SocialAccount
+from .forms import TutorLeadRequestForm
+from .models import Course, CourseReferral, EarningTask, TutorLeadRequest, UserTaskSubmission
 from assessment.models import UserAttempt
 from django.utils import timezone
 from assessment.models import DailyJackpot
@@ -69,6 +71,71 @@ def home(request):
         'seo_title': "RankJee - Home Tutors, Courses and Mock Tests",
         'seo_description': "Find trusted home tutors, explore job-ready courses, and practice with mock tests on RankJee.",
     })
+
+
+def request_tutor(request):
+    next_url = request.build_absolute_uri(reverse("core:request_tutor"))
+    google_login_url = f"/accounts/google/login/?process=login&next={next_url}"
+
+    if not request.user.is_authenticated:
+        next_url = request.build_absolute_uri(reverse("core:request_tutor"))
+        return render(
+            request,
+            "core/request_tutor_login_gate.jinja",
+            {
+                "google_login_url": google_login_url,
+                "google_only_mode": True,
+                "seo_title": "Login to Request a Tutor | RankJee",
+                "seo_description": "Login with Google to submit your tutor requirement and prevent spam requests.",
+                "canonical_url": request.build_absolute_uri(request.path),
+            },
+        )
+
+    has_google_login = SocialAccount.objects.filter(user=request.user, provider="google").exists()
+    if not has_google_login:
+        messages.info(request, "For anti-spam protection, tutor requests require Google login.")
+        return render(
+            request,
+            "core/request_tutor_login_gate.jinja",
+            {
+                "google_login_url": google_login_url,
+                "google_only_mode": True,
+                "seo_title": "Google Login Required | RankJee",
+                "seo_description": "Connect or login with Google to submit tutor requirements and reduce spam.",
+                "canonical_url": request.build_absolute_uri(request.path),
+            },
+        )
+
+    initial = {"city": PILOT_CITY}
+    role = getattr(request.user, "role", "")
+    if role == "PARENT":
+        initial["requester_type"] = TutorLeadRequest.RequesterType.PARENT
+    else:
+        initial["requester_type"] = TutorLeadRequest.RequesterType.STUDENT
+    initial["full_name"] = (request.user.get_full_name() or "").strip() or request.user.username
+    initial["email"] = request.user.email or ""
+
+    if request.method == "POST":
+        form = TutorLeadRequestForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.requester = request.user
+            item.save()
+            messages.success(request, "Your tutor request was submitted. Our team will contact you shortly.")
+            return redirect("core:request_tutor")
+    else:
+        form = TutorLeadRequestForm(initial=initial)
+
+    return render(
+        request,
+        "core/request_tutor.jinja",
+        {
+            "form": form,
+            "seo_title": "Request a Home Tutor | RankJee",
+            "seo_description": "Submit your tutor requirement and get matched with verified home tutors quickly.",
+            "canonical_url": request.build_absolute_uri(request.path),
+        },
+    )
 
 
 def courses(request):

@@ -98,3 +98,44 @@ class CourseReferral(models.Model):
 
     def __str__(self):
         return f"{self.referrer} → {self.course.title} ({self.status})"
+
+
+class TutorLeadRequest(models.Model):
+    class RequesterType(models.TextChoices):
+        STUDENT = "STUDENT", "Student"
+        PARENT = "PARENT", "Parent"
+
+    class Status(models.TextChoices):
+        NEW = "NEW", "New"
+        CONTACTED = "CONTACTED", "Contacted"
+        CLOSED = "CLOSED", "Closed"
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tutor_lead_requests",
+    )
+    requester_type = models.CharField(max_length=12, choices=RequesterType.choices)
+    full_name = models.CharField(max_length=120)
+    phone = models.CharField(max_length=20)
+    email = models.EmailField(blank=True)
+    city = models.CharField(max_length=80, db_index=True)
+    area = models.CharField(max_length=120, blank=True)
+    class_grade = models.CharField(max_length=20, blank=True, help_text="e.g. 8, 10, 12")
+    board = models.CharField(max_length=40, blank=True, help_text="CBSE / ICSE / GSEB / IB / Other")
+    subjects = models.CharField(max_length=250, help_text="Comma-separated subjects")
+    teaching_mode = models.CharField(max_length=20, blank=True, help_text="Online / Offline / Hybrid")
+    budget_inr = models.PositiveIntegerField(null=True, blank=True)
+    start_date_text = models.CharField(max_length=60, blank=True, help_text="When to start")
+    schedule_notes = models.CharField(max_length=250, blank=True)
+    additional_notes = models.TextField(blank=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.NEW, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.full_name} - {self.city} ({self.get_requester_type_display()})"

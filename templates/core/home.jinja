@@ -56,17 +56,17 @@
                    class="w-full sm:w-auto bg-white text-slate-900 font-black px-8 py-4 rounded-2xl hover:bg-slate-100 transition-all shadow-xl text-sm tracking-wide active:scale-95 uppercase text-center">
                     Browse tutors
                 </a>
+                <a href="{{ url('core:request_tutor') }}"
+                   class="w-full sm:w-auto bg-emerald-500 text-white font-black px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
+                    Request a tutor
+                </a>
                 <a href="{{ url('assessment:index') }}"
                    class="w-full sm:w-auto bg-indigo-500 text-white font-black px-8 py-4 rounded-2xl hover:bg-indigo-400 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
                     Practice online (exams)
                 </a>
                 <a href="{{ url('users:signup') }}"
-                   class="w-full sm:w-auto bg-white/10 text-white border border-white/25 font-black px-8 py-4 rounded-2xl hover:bg-white/20 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
-                    {{ uil.get_started }}
-                </a>
-                <a href="{{ url('hometutor:my_profile') }}"
                    class="w-full sm:w-auto text-indigo-200 border border-indigo-400/40 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-500/20 transition-all text-sm tracking-wide text-center">
-                    I&apos;m a tutor — list me
+                    Join as tutor
                 </a>
             </div>
             <p class="text-center text-xs text-slate-400 mt-4 font-medium">

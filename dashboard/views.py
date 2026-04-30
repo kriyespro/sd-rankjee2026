@@ -14,7 +14,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 from assessment.models import UserAttempt, Question, Skill, UserSetAttempt
 from assessment.models import SkillPath
-from core.models import UserTaskSubmission
+from core.models import TutorLeadRequest, UserTaskSubmission
 from core.models import EarningTask
 from learning.models import ConceptVideo
 from users.models import Notification, WithdrawalRequest
@@ -665,6 +665,28 @@ def _superuser_only(request):
     return request.user.is_superuser
 
 
+@login_required
+def update_tutor_request_status(request, request_id):
+    if request.method != "POST" or not _staff_only(request):
+        return redirect("dashboard:index")
+
+    item = TutorLeadRequest.objects.filter(pk=request_id).first()
+    if not item:
+        messages.error(request, "Tutor request not found.")
+        return redirect("dashboard:index")
+
+    new_status = (request.POST.get("status") or "").strip().upper()
+    allowed = {choice[0] for choice in TutorLeadRequest.Status.choices}
+    if new_status not in allowed:
+        messages.error(request, "Invalid tutor request status.")
+        return redirect("dashboard:index")
+
+    item.status = new_status
+    item.save(update_fields=["status"])
+    messages.success(request, f"Updated tutor request status: {item.full_name} -> {item.get_status_display()}")
+    return redirect("dashboard:index")
+
+
 def _seed_default_seo_targets():
     if SeoTarget.objects.exists():
         return
@@ -1157,6 +1179,8 @@ def index(request):
             'user'
         ).order_by('-requested_at')[:10]
         pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
+        latest_tutor_requests = TutorLeadRequest.objects.select_related('requester').order_by('-created_at')[:12]
+        tutor_requests_count = TutorLeadRequest.objects.count()
         recent_failed_attempts = (
             UserAttempt.objects.filter(passed=False)
             .select_related("user", "skill")
@@ -1190,6 +1214,8 @@ def index(request):
             'total_payouts': total_payouts,
             'pending_withdrawals': pending_withdrawals,
             'pending_withdrawals_count': pending_withdrawals_count,
+            'latest_tutor_requests': latest_tutor_requests,
+            'tutor_requests_count': tutor_requests_count,
             'recent_failed_attempts': recent_failed_attempts,
             'recent_daily_class_logs': recent_daily_class_logs,
         })

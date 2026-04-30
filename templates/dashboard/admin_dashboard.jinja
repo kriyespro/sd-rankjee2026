@@ -137,6 +137,74 @@
         </div>
 
         {# Core Performance Cards #}
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <div class="p-4 border-b border-slate-100 bg-emerald-50/40 flex justify-between items-center">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Tutor Requirement Requests
+                </h3>
+                <span class="text-xs font-black text-slate-600">{{ tutor_requests_count }} total</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[880px]">
+                    <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                        <tr>
+                            <th class="px-5 py-3">Created</th>
+                            <th class="px-5 py-3">Requester</th>
+                            <th class="px-5 py-3">Type</th>
+                            <th class="px-5 py-3">Location</th>
+                            <th class="px-5 py-3">Requirement</th>
+                            <th class="px-5 py-3">Budget</th>
+                            <th class="px-5 py-3">Status</th>
+                            <th class="px-5 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in latest_tutor_requests %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-5 py-3 text-xs font-bold text-slate-600 whitespace-nowrap">{{ row.created_at.strftime('%d %b %Y · %H:%M') }}</td>
+                            <td class="px-5 py-3">
+                                <p class="text-xs font-black text-slate-900">{{ row.full_name }}</p>
+                                <p class="text-[11px] text-slate-500">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
+                            </td>
+                            <td class="px-5 py-3 text-xs font-bold text-slate-700">{{ row.get_requester_type_display() }}</td>
+                            <td class="px-5 py-3 text-xs font-bold text-slate-700">{{ row.city }}{% if row.area %} · {{ row.area }}{% endif %}</td>
+                            <td class="px-5 py-3 text-xs text-slate-700">
+                                {{ row.subjects }}{% if row.class_grade %} · Class {{ row.class_grade }}{% endif %}{% if row.board %} · {{ row.board }}{% endif %}
+                            </td>
+                            <td class="px-5 py-3 text-xs font-black text-emerald-700">{% if row.budget_inr %}₹{{ row.budget_inr }}{% else %}N/A{% endif %}</td>
+                            <td class="px-5 py-3">
+                                <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-black bg-indigo-100 text-indigo-700">{{ row.get_status_display() }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="NEW">
+                                        <button type="submit" class="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">New</button>
+                                    </form>
+                                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="CONTACTED">
+                                        <button type="submit" class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">Contacted</button>
+                                    </form>
+                                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="CLOSED">
+                                        <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Closed</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No tutor requirement requests yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col hover:shadow-md transition-shadow group">
                 <div class="flex justify-between items-center mb-3">

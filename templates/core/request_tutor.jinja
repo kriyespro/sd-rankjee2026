@@ -1,0 +1,94 @@
+{% extends "base.jinja" %}
+{% block title %}Request a Tutor - RankJee{% endblock %}
+
+{% block content %}
+<section class="bg-slate-100 border-b border-slate-200/80 pt-10 pb-10 px-4">
+    <div class="max-w-5xl mx-auto">
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Home tutor requirement</p>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">Request a Tutor</h1>
+        <p class="text-slate-600 text-sm md:text-base max-w-2xl">
+            Share your full requirement. Our team will match you with verified tutors based on class, board, subject, location, and mode.
+        </p>
+    </div>
+</section>
+
+<section class="max-w-5xl mx-auto px-4 py-8">
+    <form method="post" class="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+        {% if form.non_field_errors() %}
+        <div class="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-bold text-rose-700">
+            {{ form.non_field_errors()|join(", ") }}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">I am a</label>
+                {{ form.requester_type }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Full name</label>
+                {{ form.full_name }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Phone</label>
+                {{ form.phone }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Email (optional)</label>
+                {{ form.email }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">City</label>
+                {{ form.city }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Area / Locality</label>
+                {{ form.area }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Class</label>
+                {{ form.class_grade }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Board</label>
+                {{ form.board }}
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Subjects needed</label>
+                {{ form.subjects }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Mode</label>
+                {{ form.teaching_mode }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Monthly budget (INR)</label>
+                {{ form.budget_inr }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Expected start</label>
+                {{ form.start_date_text }}
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Preferred schedule</label>
+                {{ form.schedule_notes }}
+            </div>
+            <div class="md:col-span-2">
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Additional details</label>
+                {{ form.additional_notes }}
+            </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap gap-3">
+            <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+                Submit tutor request
+            </button>
+            <a href="{{ url('users:signup') }}" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">
+                Join as tutor
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}

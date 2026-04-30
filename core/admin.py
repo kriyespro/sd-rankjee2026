@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import Course, CourseReferral, EarningTask, UserTaskSubmission
+from .models import Course, CourseReferral, EarningTask, TutorLeadRequest, UserTaskSubmission
 
 @admin.register(EarningTask)
 class EarningTaskAdmin(admin.ModelAdmin):
@@ -78,3 +78,19 @@ class CourseReferralAdmin(admin.ModelAdmin):
     list_filter = ("status", "course", "commission_paid_at")
     search_fields = ("lead_email", "lead_name", "referrer__username", "referrer__email")
     actions = (mark_referral_success_and_pay, mark_referral_rejected)
+
+
+@admin.register(TutorLeadRequest)
+class TutorLeadRequestAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "full_name",
+        "requester_type",
+        "phone",
+        "city",
+        "subjects",
+        "budget_inr",
+        "status",
+    )
+    list_filter = ("status", "requester_type", "city")
+    search_fields = ("full_name", "phone", "email", "city", "area", "subjects")
