@@ -4,6 +4,8 @@ from assessment.models import Question, Skill, SkillPath
 from core.models import EarningTask
 from learning.models import ConceptVideo
 
+from .models import StudentDailyClassLog
+
 
 BASE_INPUT_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
 BASE_TEXTAREA_CLASS = "w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"
@@ -98,6 +100,15 @@ class VideoQuestionImportForm(forms.Form):
         if not csv_file and not csv_text:
             raise forms.ValidationError("Provide either a CSV file upload or pasted CSV text.")
         return cleaned
+
+
+class StudentDailyClassLogForm(_StyledModelForm):
+    class Meta:
+        model = StudentDailyClassLog
+        fields = ("log_date", "topic", "details", "attendance")
+        widgets = {
+            "log_date": forms.DateInput(attrs={"type": "date"}),
+        }
 
 
 class EarningTaskForm(_StyledModelForm):

@@ -1,4 +1,37 @@
+from django.conf import settings
 from django.db import models
+
+
+class StudentDailyClassLog(models.Model):
+    class Attendance(models.TextChoices):
+        PRESENT = "PRESENT", "Present"
+        ABSENT = "ABSENT", "Absent"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="daily_class_logs",
+    )
+    log_date = models.DateField(db_index=True)
+    topic = models.CharField(max_length=255)
+    details = models.TextField(blank=True)
+    attendance = models.CharField(
+        max_length=10,
+        choices=Attendance.choices,
+        default=Attendance.ABSENT,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-log_date", "-id"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "log_date"], name="uniq_daily_class_log_per_user_date"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} {self.log_date} — {self.topic}"
 
 
 class SeoTarget(models.Model):

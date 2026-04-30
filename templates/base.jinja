@@ -125,6 +125,7 @@
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
                 {% else %}
+                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
@@ -140,7 +141,8 @@
                         <span>{{ uil.pro }}</span>
                     </a>
                     {% endif %}
-                    <a href="{{ url('dashboard:index') }}" class="hidden md:block text-sm font-black text-slate-700 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.dashboard }}</a>
+                    {# Student: Dashboard is already in center nav on md+; only repeat here on small screens. #}
+                    <a href="{{ url('dashboard:index') }}" class="{% if current_role == 'STUDENT' %}inline-flex md:hidden{% else %}hidden md:inline-flex{% endif %} items-center text-sm font-black text-slate-700 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.dashboard }}</a>
                     <form action="{{ url('users:logout') }}" method="post" class="inline m-0">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                         <button type="submit" class="bg-slate-900 text-white text-xs md:text-sm font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 uppercase tracking-widest active:scale-95">{{ uil.logout }}</button>
@@ -160,24 +162,32 @@
 
     <!-- Mobile Bottom Tab Bar -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 md:hidden mobile-nav-shadow px-4 py-2">
-        <div class="flex justify-between items-center max-w-sm mx-auto">
-            <a href="{{ url('core:home') }}" class="flex flex-col items-center gap-1 p-2 group">
-                <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
-                <span class="text-xs font-black uppercase tracking-widest {% if request.path == '/' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.home }}</span>
+        <div class="flex items-center justify-between gap-1 w-full max-w-lg mx-auto">
+            <a href="{{ url('core:home') }}" class="flex flex-shrink-0 flex-col items-center gap-1 p-1.5 group">
+                <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
+                <span class="text-[10px] font-black uppercase tracking-wider {% if request.path == '/' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.home }}</span>
             </a>
             {% if not request.user.is_authenticated or current_role == 'STUDENT' %}
-                <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.test }}</span>
+                <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
+                <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.test }}</span>
                 </a>
-                <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
+                <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
                 </a>
-                <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'earnings' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">💰</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.earn }}</span>
+                {% if request.user.is_authenticated and current_role == 'STUDENT' %}
+                <a href="{{ url('dashboard:daily_class_log') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'daily-class-log' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📓</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'daily-class-log' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Class log</span>
                 </a>
+                {% endif %}
+                <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'earnings' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">💰</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'earnings' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.earn }}</span>
+                </a>
+                </div>
             {% elif current_role == 'TUTOR' %}
                 <a href="{{ url('hometutor:tutor_demos') }}" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/demos' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📥</div>

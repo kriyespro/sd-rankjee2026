@@ -1,0 +1,92 @@
+{% extends "base.jinja" %}
+{% block title %}Daily class log - RankJee{% endblock %}
+
+{% block content %}
+<div class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-5 pb-12 pt-8 sm:px-8">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Dashboard</a>
+            <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Daily class log</h1>
+            <p class="mt-1 text-sm text-slate-600">Record what you covered each day and whether you attended.</p>
+        </div>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">New entry</h2>
+        <p class="mt-1 text-xs text-slate-500">One entry per calendar day. Submitting again for the same date updates that entry.</p>
+
+        {% if form.non_field_errors() %}
+        <div class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
+            {% for err in form.non_field_errors() %}<p>{{ err }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" class="mt-6 space-y-4">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            {% for field in form %}
+            <div>
+                <label for="{{ field.id_for_label }}" class="mb-2 block text-xs font-black uppercase tracking-widest text-slate-400">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}<p class="mt-1 text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+                {% if field.errors %}
+                <div class="mt-2 text-xs font-bold text-rose-600">{% for err in field.errors %}{{ err }}{% endfor %}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="w-full rounded-xl bg-indigo-600 py-3 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-500 sm:w-auto sm:px-8">
+                Save log
+            </button>
+        </form>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Your recent logs</h2>
+            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-slate-600">{{ logs_page.paginator.count }} total</span>
+        </div>
+        <div class="mt-4 overflow-x-auto">
+            <table class="w-full min-w-[560px] border-collapse text-left">
+                <thead class="bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                    <tr>
+                        <th class="px-3 py-2">Date</th>
+                        <th class="px-3 py-2">Topic</th>
+                        <th class="px-3 py-2">Attendance</th>
+                        <th class="px-3 py-2">Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in logs_page %}
+                    <tr class="align-top hover:bg-slate-50">
+                        <td class="px-3 py-2 text-xs font-bold text-slate-600 whitespace-nowrap">{{ row.log_date.strftime('%d %b %Y') }}</td>
+                        <td class="px-3 py-2 text-sm font-black text-slate-900">{{ row.topic }}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                            {% if row.attendance == 'PRESENT' %}
+                            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-700">Present</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-rose-700">Absent</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2 text-xs text-slate-600 max-w-xs">{{ row.details|truncate(160) if row.details else '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-3 py-10 text-center text-sm font-bold text-slate-500">No entries yet. Add your first log above.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if logs_page.has_other_pages() %}
+        <div class="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4 text-xs font-bold text-slate-600">
+            {% if logs_page.has_previous() %}
+            <a href="?page={{ logs_page.previous_page_number() }}" class="rounded-lg border border-slate-200 px-3 py-1.5 hover:bg-slate-50">Previous</a>
+            {% endif %}
+            <span>Page {{ logs_page.number }} of {{ logs_page.paginator.num_pages }}</span>
+            {% if logs_page.has_next() %}
+            <a href="?page={{ logs_page.next_page_number() }}" class="rounded-lg border border-slate-200 px-3 py-1.5 hover:bg-slate-50">Next</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import SeoTarget
+from .models import SeoTarget, StudentDailyClassLog
+
+
+@admin.register(StudentDailyClassLog)
+class StudentDailyClassLogAdmin(admin.ModelAdmin):
+    list_display = ("log_date", "user", "topic", "attendance", "created_at")
+    list_filter = ("attendance", "log_date")
+    search_fields = ("topic", "details", "user__username", "user__email")
+    autocomplete_fields = ("user",)
+    date_hierarchy = "log_date"
 
 
 @admin.register(SeoTarget)
