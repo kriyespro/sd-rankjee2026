@@ -165,6 +165,7 @@ HOMETUTOR_PLATFORM_FEE_PERCENT = os.environ.get('HOMETUTOR_PLATFORM_FEE_PERCENT'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.CanonicalHostRedirectMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -326,6 +327,11 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
 SITE_ID = int(os.environ.get('SITE_ID', '1'))
+CANONICAL_HOST = os.environ.get('CANONICAL_HOST', '').strip().lower()
+CANONICAL_HOST_REDIRECT_ENABLED = _env_bool(
+    'CANONICAL_HOST_REDIRECT_ENABLED',
+    default=bool(CANONICAL_HOST and not DEBUG),
+)
 
 # django-allauth account settings
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
