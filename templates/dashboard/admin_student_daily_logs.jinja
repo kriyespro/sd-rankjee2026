@@ -66,15 +66,12 @@
                             {% for day in week %}
                             <td class="h-28 align-top border border-slate-100 p-1.5 {{ 'bg-white' if day.in_month else 'bg-slate-50/60' }}">
                                 <p class="text-[11px] font-black {{ 'text-slate-800' if day.in_month else 'text-slate-400' }}">{{ day.date.day }}</p>
-                                <div class="mt-1 space-y-1">
-                                    {% for row in day.logs[:3] %}
+                                <div class="mt-1 max-h-24 space-y-1 overflow-y-auto pr-1">
+                                    {% for row in day.logs %}
                                     <div class="rounded border px-1.5 py-0.5 text-[10px] font-bold {{ 'border-green-200 bg-green-50 text-green-700' if row.attendance == 'PRESENT' else 'border-red-200 bg-red-50 text-red-700' }}">
                                         {{ row.user.username|truncate(10) }} · {{ row.topic|truncate(14) }}
                                     </div>
                                     {% endfor %}
-                                    {% if day.logs|length > 3 %}
-                                    <p class="text-[10px] font-black text-slate-500">+{{ day.logs|length - 3 }} more</p>
-                                    {% endif %}
                                 </div>
                             </td>
                             {% endfor %}
