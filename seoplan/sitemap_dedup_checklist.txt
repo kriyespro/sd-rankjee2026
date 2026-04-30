@@ -1,0 +1,80 @@
+# Django Sitemap Dedupe Checklist (Pre-Submit)
+
+Use this before submitting `/sitemap.xml` in Google Search Console.
+
+## 1) Domain and Protocol
+
+- [ ] All `<loc>` URLs use production domain only: `https://rankjee.com/...`
+- [ ] No `example.com`, localhost, staging, or IP-based URLs
+- [ ] No mixed `http://` and `https://` URLs
+- [ ] No mixed trailing slash variants for same page
+
+## 2) Canonical URL Hygiene
+
+- [ ] Each sitemap URL matches the page canonical URL
+- [ ] No query-string URLs (`?page=`, `?sort=`, `?utm=...`)
+- [ ] No utility/auth URLs (login/signup/admin/dashboard internals)
+- [ ] No thin/placeholder pages
+
+## 3) Duplicate Protection
+
+- [ ] Every URL appears only once in sitemap
+- [ ] City pages are unique by slug (`/hometutor/city/surat/` once only)
+- [ ] Subject pages are unique by full path
+- [ ] Course-city pages are unique by course+city pair
+- [ ] Mock-city pages are unique by exam+city pair
+
+## 4) HTTP Validation
+
+- [ ] Random sample (30 URLs) returns HTTP 200
+- [ ] No 404 URLs in sitemap
+- [ ] No redirect chains in sitemap URLs
+- [ ] No blocked-by-robots URLs in sitemap
+- [ ] No `noindex` URLs in sitemap
+
+## 5) XML Quality
+
+- [ ] Root uses valid sitemap namespace
+- [ ] XML is well-formed and readable
+- [ ] Optional: `<lastmod>` included for key templates
+- [ ] Keep sitemap under limits (50,000 URLs / 50MB uncompressed)
+
+## 6) Django Implementation Guardrails
+
+- [ ] `Sitemap.items()` returns deterministic unique queryset/list
+- [ ] For dynamic URL lists, dedupe in Python before returning
+- [ ] Use stable slug generation (lowercase + hyphenated)
+- [ ] Ensure `SITE_BASE_URL` is production in prod settings
+
+## 7) Post-Deploy Verification
+
+- [ ] Open `https://rankjee.com/sitemap.xml` and spot-check paths
+- [ ] Submit sitemap in Search Console
+- [ ] URL Inspect top 20 money pages and request indexing
+- [ ] Check Search Console coverage in 48-72 hours for exclusions
+
+---
+
+## Quick Python Dedupe Snippet (if needed)
+
+Use this pattern when building list-based sitemap items:
+
+```python
+def unique_items(items):
+    seen = set()
+    out = []
+    for item in items:
+        key = str(item)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(item)
+    return out
+```
+
+## Priority Rule
+
+Submit high-revenue URLs first:
+1. `/hometutor/city/<city>/...`
+2. `/assessment/mock-test/<exam>/<city>/`
+3. `/courses/<course>/<city>/`

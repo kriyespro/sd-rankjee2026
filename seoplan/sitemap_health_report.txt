@@ -1,0 +1,46 @@
+Sitemap Health Report
+
+Sitemap URL: https://rankjee.com/sitemap.xml
+Total URLs: 279
+Unique URLs: 239
+Duplicate URL entries: 10
+Contains non-HTTPS URLs: no
+Contains example.com URLs: yes
+Checked URL count: 10
+Non-200 in checked set: 10
+
+Top duplicate URLs:
+- 6x https://example.com/hometutor/city/ahmedabad/
+- 5x https://example.com/hometutor/city/bengaluru/
+- 5x https://example.com/hometutor/city/chennai/
+- 5x https://example.com/hometutor/city/delhi/
+- 5x https://example.com/hometutor/city/hyderabad/
+- 5x https://example.com/hometutor/city/jaipur/
+- 5x https://example.com/hometutor/city/kolkata/
+- 5x https://example.com/hometutor/city/mumbai/
+- 5x https://example.com/hometutor/city/pune/
+- 4x https://example.com/hometutor/city/surat/
+
+Non-200 URL checks:
+- 404 https://example.com/hometutor/city/delhi/subject/business-studies/ (http-error)
+- 404 https://example.com/courses/prompt-engineering-mastery-pem/ahmedabad/ (http-error)
+- 404 https://example.com/courses/digital-marketing-growth-sprint/ (http-error)
+- 404 https://example.com/hometutor/city/hyderabad/subject/sst/ (http-error)
+- 404 https://example.com/hometutor/city/bengaluru/ (http-error)
+- 404 https://example.com/courses/sales-communication-mastery/vadodara/ (http-error)
+- 404 https://example.com/courses/ai-tools-for-freelancers/delhi/ (http-error)
+- 404 https://example.com/courses/prompt-engineering-mastery-pem/bangalore/ (http-error)
+- 404 https://example.com/hometutor/city/delhi/subject/science/ (http-error)
+- 404 https://example.com/courses/digital-marketing-growth-sprint/pune/ (http-error)
+
+Checked URL status rows:
+- 404 https://example.com/hometutor/city/delhi/subject/business-studies/ (http-error)
+- 404 https://example.com/courses/prompt-engineering-mastery-pem/ahmedabad/ (http-error)
+- 404 https://example.com/courses/digital-marketing-growth-sprint/ (http-error)
+- 404 https://example.com/hometutor/city/hyderabad/subject/sst/ (http-error)
+- 404 https://example.com/hometutor/city/bengaluru/ (http-error)
+- 404 https://example.com/courses/sales-communication-mastery/vadodara/ (http-error)
+- 404 https://example.com/courses/ai-tools-for-freelancers/delhi/ (http-error)
+- 404 https://example.com/courses/prompt-engineering-mastery-pem/bangalore/ (http-error)
+- 404 https://example.com/hometutor/city/delhi/subject/science/ (http-error)
+- 404 https://example.com/courses/digital-marketing-growth-sprint/pune/ (http-error)

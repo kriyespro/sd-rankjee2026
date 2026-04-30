@@ -3,9 +3,10 @@ from django.urls import reverse
 from django.utils.text import slugify
 
 from .models import Course
+from .sitemap_utils import CanonicalHostSitemap
 
 
-class StaticViewSitemap(Sitemap):
+class StaticViewSitemap(CanonicalHostSitemap):
     changefreq = "weekly"
     priority = 0.8
 
@@ -16,7 +17,7 @@ class StaticViewSitemap(Sitemap):
         return reverse(item)
 
 
-class CourseSitemap(Sitemap):
+class CourseSitemap(CanonicalHostSitemap):
     changefreq = "weekly"
     priority = 0.9
 
@@ -27,7 +28,7 @@ class CourseSitemap(Sitemap):
         return reverse("core:course_detail", kwargs={"slug": obj.slug})
 
 
-class CourseCitySitemap(Sitemap):
+class CourseCitySitemap(CanonicalHostSitemap):
     changefreq = "weekly"
     priority = 0.95
 

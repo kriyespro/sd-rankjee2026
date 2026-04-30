@@ -2,8 +2,10 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils.text import slugify
 
+from core.sitemap_utils import CanonicalHostSitemap
 
-class MockTestLandingSitemap(Sitemap):
+
+class MockTestLandingSitemap(CanonicalHostSitemap):
     changefreq = "daily"
     priority = 0.9
 
@@ -14,7 +16,7 @@ class MockTestLandingSitemap(Sitemap):
         return reverse("assessment:mock_test_landing", kwargs={"exam_slug": exam_slug})
 
 
-class MockTestCityLandingSitemap(Sitemap):
+class MockTestCityLandingSitemap(CanonicalHostSitemap):
     changefreq = "daily"
     priority = 0.95
 

@@ -2,27 +2,40 @@ from django.contrib.sitemaps import Sitemap
 from django.urls import reverse
 from django.utils.text import slugify
 
+from core.sitemap_utils import CanonicalHostSitemap
 from .models import TutorProfile
 
 
-class TutorCityLandingSitemap(Sitemap):
+class TutorCityLandingSitemap(CanonicalHostSitemap):
     changefreq = "daily"
     priority = 0.9
 
     def items(self):
-        return (
+        cities = (
             TutorProfile.objects.filter(
                 verification_status=TutorProfile.VerificationStatus.APPROVED
             )
             .values_list("city", flat=True)
-            .distinct()[:50]
+            .distinct()[:200]
         )
+        deduped = []
+        seen = set()
+        for raw_city in cities:
+            city = (raw_city or "").strip()
+            city_slug = slugify(city)
+            if not city_slug or city_slug in seen:
+                continue
+            seen.add(city_slug)
+            deduped.append(city)
+            if len(deduped) >= 50:
+                break
+        return deduped
 
     def location(self, city):
         return reverse("hometutor:tutor_city_landing", kwargs={"city_slug": slugify(city)})
 
 
-class TutorCitySubjectLandingSitemap(Sitemap):
+class TutorCitySubjectLandingSitemap(CanonicalHostSitemap):
     changefreq = "daily"
     priority = 0.95
 
@@ -40,7 +53,7 @@ class TutorCitySubjectLandingSitemap(Sitemap):
                 subject = token.strip()
                 if not subject:
                     continue
-                key = (city.lower(), subject.lower())
+                key = (slugify(city), slugify(subject))
                 if key in seen:
                     continue
                 seen.add(key)
