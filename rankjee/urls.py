@@ -57,6 +57,7 @@ urlpatterns = [
     path('hometutor/payments/', include('hometutor_payments.urls')),
     path('sw.js', core_views.service_worker, name='service_worker'),
     path('', include('core.urls')),
+    path('<slug:city_slug>/', core_views.city_tutor_redirect, name='city_tutor_redirect'),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,154 @@
+# 7-Day SEO Execution Plan (RankJee)
+
+Goal: move from setup to measurable indexing and first qualified organic leads.
+Rule: prioritize revenue pages first (home tutor city pages, mock-test city pages, course-city pages).
+
+---
+
+## Day 1 - Search Console + Sitemap + Baseline
+
+- Verify `rankjee.com` in Google Search Console (Domain property via DNS TXT).
+- Submit sitemap: `https://rankjee.com/sitemap.xml`.
+- Confirm live:
+  - `https://rankjee.com/robots.txt`
+  - `https://rankjee.com/sitemap.xml`
+  - `https://rankjee.com/surat` (should resolve to tutor city landing)
+- Request indexing for first 20 priority URLs from `seoplan/seo_publish_queue.csv`.
+- Save baseline metrics:
+  - impressions
+  - clicks
+  - CTR
+  - average position
+
+Deliverable:
+- Search Console verified + sitemap submitted + baseline note.
+
+---
+
+## Day 2 - Rich Results Validation Sprint
+
+- Open `seoplan/rich_results_validation.txt`.
+- Validate template URLs in Google Rich Results Test:
+  - Tutor city page
+  - Tutor city-subject page
+  - Mock test page
+  - Mock test city page
+  - Course city page
+- Log PASS/FAIL and issue details in `seoplan/rich_results_validation.txt`.
+- Fix any critical schema errors before publishing more URLs.
+
+Deliverable:
+- Validation sheet updated with current status for all template types.
+
+---
+
+## Day 3 - Quality Gate First Batch (20 URLs)
+
+- Open `seoplan/seo_publish_queue.csv` and filter `status=needs-content`.
+- For the first 20 URLs, enforce `seoplan/programmatic_quality_checklist.txt`:
+  - unique title
+  - unique meta description
+  - one H1
+  - unique intro
+  - FAQ (3+)
+  - visible CTA
+  - internal links
+  - canonical
+  - HTTP 200
+- Mark qualified rows as `ready`, then publish and mark `live`.
+
+Deliverable:
+- 20 high-quality URLs live.
+
+---
+
+## Day 4 - Internal Linking + Cannibalization Check
+
+- Audit live SEO pages against `seoplan/keyword_url_map.txt`.
+- Ensure one primary keyword maps to one canonical URL.
+- Add/confirm related internal links on live pages:
+  - city tutor -> mock city + relevant courses
+  - mock city -> related tutor city + exam hub
+  - course city -> tutor city + mock pages
+- Fix any orphan or duplicate-intent pages.
+
+Deliverable:
+- Internal link graph strengthened for first live set.
+
+---
+
+## Day 5 - Publish Batch 2 (Next 20 URLs)
+
+- Repeat quality gate workflow for next 20 URLs from queue.
+- Publish only pages passing checklist.
+- Request indexing in Search Console for newly live URLs.
+- Re-check top 5 money pages manually for content quality and CTA clarity.
+
+Deliverable:
+- Additional 20 URLs live and submitted for indexing.
+
+---
+
+## Day 6 - Measurement + CTR Optimization
+
+- In Search Console, check:
+  - indexed vs excluded trend
+  - soft-404 or duplicate warnings
+  - low-CTR, high-impression URLs
+- Improve title/meta for top 5 low-CTR pages.
+- Verify no accidental `noindex` on money pages.
+- Prepare weekly snapshot:
+  - total live URLs
+  - total submitted URLs
+  - indexing trend
+  - early clicks/leads
+
+Deliverable:
+- First optimization cycle completed on real data.
+
+---
+
+## Day 7 - Ops System Lock-In
+
+- Run weekly review using template from `seoplan/live_ops_runbook.txt`.
+- Finalize next 2-week queue:
+  - top tutor city-subject pages
+  - top mock city pages
+  - top course-city pages
+- Define recurring cadence:
+  - 20 pages/week quality-passed
+  - 1 weekly SEO review
+  - 1 monthly technical audit
+- Update `seoplan/seo_action.txt` checkboxes based on real completion.
+
+Deliverable:
+- Repeatable SEO operating rhythm in place.
+
+---
+
+## Non-Negotiable Rules
+
+- Do not publish thin or duplicate pages.
+- Every page must have unique metadata + unique intro + FAQ + CTA + internal links.
+- Publish fewer pages with high quality instead of bulk low-quality pages.
+- Revenue-first order:
+  1) Tutor city/subject pages
+  2) Mock-test city pages
+  3) Course-city pages
+
+---
+
+## Daily KPI Tracker (fill daily)
+
+Day:
+- URLs reviewed:
+- URLs moved to live:
+- URLs submitted for indexing:
+- Indexed pages (Search Console):
+- Impressions:
+- Clicks:
+- CTR:
+- Avg position:
+- Organic leads/signups:
+- Top blocker:
+- Next action:

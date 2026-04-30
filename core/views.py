@@ -47,6 +47,14 @@ def robots_txt(request):
     return HttpResponse(body, content_type="text/plain")
 
 
+def city_tutor_redirect(request, city_slug):
+    """
+    Keep short city URLs SEO-friendly by resolving to the canonical tutor city landing.
+    Example: /surat -> /hometutor/city/surat/
+    """
+    return redirect("hometutor:tutor_city_landing", city_slug=city_slug, permanent=True)
+
+
 def home(request):
     now = timezone.now()
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
