@@ -125,12 +125,12 @@
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
                 {% else %}
-                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                 {% endif %}
             </div>
             
