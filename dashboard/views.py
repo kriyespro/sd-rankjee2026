@@ -22,6 +22,7 @@ import csv
 import io
 import os
 import requests
+from urllib.parse import urlencode
 
 from .forms import (
     EarningTaskForm,
@@ -29,12 +30,14 @@ from .forms import (
     QuestionForm,
     SkillForm,
     SkillPathForm,
+    StudentDailyClassLogForm,
     VideoQuestionImportForm,
 )
 try:
     from .models import SeoTarget
 except ImportError:
     SeoTarget = None
+from .models import StudentDailyClassLog
 try:
     from axes.models import AccessLog
 except ImportError:
@@ -904,6 +907,102 @@ def student_attempt_review(request, attempt_id):
 
 
 @login_required
+def daily_class_log(request):
+    role = getattr(request.user, "role", "STUDENT")
+    if request.user.is_staff or request.user.is_superuser:
+        return redirect("dashboard:admin_student_daily_logs")
+    if role != "STUDENT":
+        messages.info(request, "Daily class log is available for student accounts.")
+        return redirect("dashboard:index")
+
+    logs_qs = StudentDailyClassLog.objects.filter(user=request.user).order_by("-log_date", "-id")
+    paginator = Paginator(logs_qs, 20)
+    logs_page = paginator.get_page(request.GET.get("page", 1))
+
+    if request.method == "POST":
+        form = StudentDailyClassLogForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            StudentDailyClassLog.objects.update_or_create(
+                user=request.user,
+                log_date=cd["log_date"],
+                defaults={
+                    "topic": cd["topic"],
+                    "details": cd["details"],
+                    "attendance": cd["attendance"],
+                },
+            )
+            messages.success(request, "Class log saved for this date.")
+            return redirect("dashboard:daily_class_log")
+    else:
+        form = StudentDailyClassLogForm(initial={"log_date": timezone.localdate()})
+
+    return render(
+        request,
+        "dashboard/daily_class_log.jinja",
+        {
+            "form": form,
+            "logs_page": logs_page,
+        },
+    )
+
+
+@login_required
+def admin_student_daily_logs(request):
+    if not _staff_only(request):
+        messages.error(request, "You do not have access to this page.")
+        return redirect("dashboard:index")
+
+    role = getattr(request.user, "role", "STUDENT")
+    is_city_admin = role == "CITY_ADMIN"
+
+    logs_qs = StudentDailyClassLog.objects.select_related("user").order_by("-log_date", "-id")
+    if is_city_admin and getattr(request.user, "state", None):
+        logs_qs = logs_qs.filter(user__state=request.user.state)
+
+    student_id_raw = request.GET.get("student_id", "").strip()
+    if student_id_raw.isdigit():
+        logs_qs = logs_qs.filter(user_id=int(student_id_raw))
+
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        logs_qs = logs_qs.filter(
+            Q(user__username__icontains=search_query)
+            | Q(user__email__icontains=search_query)
+            | Q(topic__icontains=search_query)
+        )
+
+    paginator = Paginator(logs_qs, 25)
+    logs_page = paginator.get_page(request.GET.get("page", 1))
+
+    student_options = User.objects.filter(role=User.Role.STUDENT).order_by("username")
+    if is_city_admin and getattr(request.user, "state", None):
+        student_options = student_options.filter(state=request.user.state)
+    student_options = student_options[:500]
+
+    student_filter_id = int(student_id_raw) if student_id_raw.isdigit() else None
+
+    filter_params = {}
+    if search_query:
+        filter_params["q"] = search_query
+    if student_filter_id:
+        filter_params["student_id"] = student_filter_id
+    filter_querystring = f"&{urlencode(filter_params)}" if filter_params else ""
+
+    return render(
+        request,
+        "dashboard/admin_student_daily_logs.jinja",
+        {
+            "logs_page": logs_page,
+            "search_query": search_query,
+            "student_filter_id": student_filter_id,
+            "student_options": student_options,
+            "filter_querystring": filter_querystring,
+        },
+    )
+
+
+@login_required
 def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
         return redirect('users:onboarding_role')
@@ -990,6 +1089,13 @@ def index(request):
             .order_by("-attempt_date")[:12]
         )
 
+        recent_daily_class_logs_qs = StudentDailyClassLog.objects.select_related("user").order_by(
+            "-log_date", "-id"
+        )
+        if is_city_admin and getattr(request.user, "state", None):
+            recent_daily_class_logs_qs = recent_daily_class_logs_qs.filter(user__state=request.user.state)
+        recent_daily_class_logs = list(recent_daily_class_logs_qs[:12])
+
         return render(request, 'dashboard/admin_dashboard.jinja', {
             'admin_role': role,
             'admin_scope_label': admin_scope_label,
@@ -1011,6 +1117,7 @@ def index(request):
             'pending_withdrawals': pending_withdrawals,
             'pending_withdrawals_count': pending_withdrawals_count,
             'recent_failed_attempts': recent_failed_attempts,
+            'recent_daily_class_logs': recent_daily_class_logs,
         })
 
     # Role-dedicated dashboards for non-staff roles.
