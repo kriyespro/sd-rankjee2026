@@ -23,27 +23,13 @@
     <meta name="twitter:description" content="{{ _seo_description }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: { 
-                sans: ['Inter', 'sans-serif'],
-                heading: ['Outfit', 'sans-serif']
-            },
-            colors: {
-              primary: '#4f46e5',
-              'primary-dark': '#4338ca',
-              slate: { 50: '#f8fafc', 900: '#0f172a' }
-            }
-          }
-        }
-      }
-    </script>
+    {# Async font CSS: avoids render-blocking chain on fonts.googleapis.com → gstatic woff2 #}
+    {% set _gf = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" %}
+    <link rel="preload" as="style" href="{{ _gf }}" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{{ _gf }}"></noscript>
+    <link rel="stylesheet" href="{{ static('css/app.css') }}">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="{{ static('js/htmx.min.js') }}"></script>
     <style>
         [x-cloak] { display: none !important; }
         body { font-family: 'Inter', sans-serif; }
@@ -108,16 +94,19 @@
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('blog:index') }}" class="nav-link">Blog</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% elif current_role == 'TUTOR' %}
                     <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                     <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
+                    <a href="{{ url('study:tutor_dashboard') }}" class="nav-link">Study</a>
                     <a href="{{ url('hometutor:my_profile') }}" class="nav-link">My Listing</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
                 {% elif current_role == 'PARENT' %}
                     <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     <a href="{{ url('hometutor:my_demo_requests') }}" class="nav-link">My Demos</a>
+                    <a href="{{ url('study:student_hub') }}" class="nav-link">Study</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
                 {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
                     <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
@@ -129,6 +118,8 @@
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('blog:index') }}" class="nav-link">Blog</a>
+                    <a href="{{ url('study:student_hub') }}" class="nav-link">Study</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                     <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
                 {% endif %}
@@ -177,6 +168,12 @@
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
                 </a>
+                {% if request.user.is_authenticated and current_role == 'STUDENT' %}
+                <a href="{{ url('study:student_hub') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.startswith('/study/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.startswith('/study/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
+                </a>
+                {% endif %}
                 {% if request.user.is_authenticated and current_role == 'STUDENT' %}
                 <a href="{{ url('dashboard:daily_class_log') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'daily-class-log' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📓</div>
