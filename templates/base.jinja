@@ -73,74 +73,160 @@
         .mobile-nav-shadow {
             box-shadow: 0 -4px 20px -5px rgba(0, 0, 0, 0.08);
         }
+        /* Top utility strip — explicit flex/gap (does not rely on Tailwind purge for spacing) */
+        .nav-top-bar {
+            background: linear-gradient(90deg, #0f172a 0%, #1e293b 45%, #1e1b4b 55%, #0f172a 100%);
+            border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+        }
+        .nav-top-bar-inner {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            column-gap: 0.75rem;
+            row-gap: 0.25rem;
+            max-width: 80rem;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0.28rem 0.75rem;
+        }
+        @media (min-width: 768px) {
+            .nav-top-bar-inner { padding: 0.32rem 1.25rem; }
+        }
+        .nav-top-bar-links {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0 0.85rem;
+        }
+        .nav-top-bar-links > a {
+            color: #e2e8f0;
+            font-size: 0.625rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            padding: 0.15rem 0;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        @media (min-width: 768px) {
+            .nav-top-bar-links > a { font-size: 0.6875rem; letter-spacing: 0.12em; }
+        }
+        .nav-top-bar-links > a:hover {
+            color: #fff;
+            border-bottom-color: rgba(129, 140, 248, 0.6);
+        }
+        .nav-top-sep {
+            color: #64748b;
+            font-size: 0.55rem;
+            opacity: 0.9;
+            line-height: 1;
+            user-select: none;
+            pointer-events: none;
+            padding: 0 0.0625rem;
+        }
+        .nav-top-bar-actions {
+            display: inline-flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem 0.45rem;
+        }
+        .nav-top-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.625rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            padding: 0.22rem 0.55rem;
+            min-height: 1.5rem;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        }
+        @media (min-width: 768px) {
+            .nav-top-btn { font-size: 0.6875rem; padding: 0.25rem 0.65rem; min-height: 1.55rem; }
+        }
+        .nav-top-btn--login {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(148, 163, 184, 0.45);
+        }
+        .nav-top-btn--login:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(199, 210, 254, 0.5);
+        }
+        .nav-top-btn--join {
+            color: #fff;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border: 1px solid rgba(129, 140, 248, 0.5);
+            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 2px 8px rgba(79, 70, 229, 0.35);
+        }
+        .nav-top-btn--join:hover {
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+        }
+        .nav-top-btn--logout {
+            color: #f8fafc;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .nav-top-btn--logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(248, 113, 113, 0.55);
+            color: #fecaca;
+        }
     </style>
     {% block schema %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pb-20 md:pb-0">
     {% set current_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
+    {% if request.user.is_authenticated and current_role == 'TUTOR' %}
+        {% set top_study_href = url('study:tutor_dashboard') %}
+    {% else %}
+        {% set top_study_href = url('study:student_hub') %}
+    {% endif %}
 
-    <nav class="nav-glass sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex justify-between items-center">
-            <a href="{{ url('core:home') }}" class="flex items-center gap-2 md:gap-3 group">
-                <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-xl shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
-                <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
-            </a>
-            
-            <!-- Desktop Nav -->
-            <div class="hidden md:flex items-center gap-12 text-sm font-black text-slate-600 uppercase tracking-[0.2em]">
-                {% if not request.user.is_authenticated %}
-                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
-                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
-                    <a href="{{ url('blog:index') }}" class="nav-link">Blog</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
-                {% elif current_role == 'TUTOR' %}
-                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
-                    <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
-                    <a href="{{ url('study:tutor_dashboard') }}" class="nav-link">Study</a>
-                    <a href="{{ url('hometutor:my_profile') }}" class="nav-link">My Listing</a>
-                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
-                {% elif current_role == 'PARENT' %}
-                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
-                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                    <a href="{{ url('hometutor:my_demo_requests') }}" class="nav-link">My Demos</a>
-                    <a href="{{ url('study:student_hub') }}" class="nav-link">Study</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
-                {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
-                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
-                    <a href="/sd/" class="nav-link">Admin</a>
-                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
-                {% else %}
-                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
-                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
-                    <a href="{{ url('blog:index') }}" class="nav-link">Blog</a>
-                    <a href="{{ url('study:student_hub') }}" class="nav-link">Study</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
-                    <a href="{{ url('dashboard:index') }}" class="nav-link">{{ uil.dashboard }}</a>
-                {% endif %}
-            </div>
-            
-            <div class="flex items-center gap-4 md:gap-6">
-                {% if request.user.is_authenticated %}
-                    {% if not request.user.is_premium %}
-                    <a href="{{ url('payments:plans') }}" class="hidden lg:flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-orange-200 hover:scale-105 transition-all uppercase tracking-widest">
-                        <span>{{ uil.pro }}</span>
-                    </a>
+    <header class="sticky top-0 z-50">
+        {# Slim utility row: quick account + blog — always visible above primary nav #}
+        <div class="nav-top-bar">
+            <div class="nav-top-bar-inner">
+                <nav class="nav-top-bar-links" aria-label="Quick links">
+                    <a href="{{ top_study_href }}">Study</a>
+                    <span class="nav-top-sep" aria-hidden="true">·</span>
+                    <a href="{{ url('blog:index') }}">Blog</a>
+                </nav>
+                <div class="nav-top-bar-actions">
+                    {% if request.user.is_authenticated %}
+                        <form action="{{ url('users:logout') }}" method="post" class="m-0">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                            <button type="submit" class="nav-top-btn nav-top-btn--logout">{{ uil.logout }}</button>
+                        </form>
+                    {% else %}
+                        <a href="{{ url('users:login') }}" class="nav-top-btn nav-top-btn--login">{{ uil.login }}</a>
+                        <a href="{{ url('users:signup') }}" class="nav-top-btn nav-top-btn--join">{{ uil.join }}</a>
                     {% endif %}
-                    {# Student: Dashboard is already in center nav on md+; only repeat here on small screens. #}
-                    <a href="{{ url('dashboard:index') }}" class="{% if current_role == 'STUDENT' %}inline-flex md:hidden{% else %}hidden md:inline-flex{% endif %} items-center text-sm font-black text-slate-700 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.dashboard }}</a>
-                    <form action="{{ url('users:logout') }}" method="post" class="inline m-0">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <button type="submit" class="bg-slate-900 text-white text-xs md:text-sm font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-600 transition-all shadow-xl shadow-slate-200 uppercase tracking-widest active:scale-95">{{ uil.logout }}</button>
-                    </form>
-                {% else %}
-                    <a href="{{ url('users:login') }}" class="text-xs md:text-sm font-black text-slate-600 hover:text-indigo-600 uppercase tracking-widest px-2 transition-colors">{{ uil.login }}</a>
-                    <a href="{{ url('users:signup') }}" class="bg-indigo-600 text-white text-xs md:text-sm font-black px-5 md:px-8 py-2.5 md:py-3.5 rounded-xl md:rounded-2xl hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 uppercase tracking-widest active:scale-95">{{ uil.join }}</a>
+                </div>
+            </div>
+        </div>
+
+    <nav class="nav-glass border-t-0">
+        <div class="max-w-7xl mx-auto px-4 md:px-8 h-12 md:h-14 flex justify-between items-center">
+            <a href="{{ url('core:home') }}" class="flex items-center gap-2 md:gap-2.5 group">
+                <div class="w-8 h-8 md:w-9 md:h-9 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-lg md:text-xl shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
+                <span class="text-lg md:text-xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
+            </a>
+            <div class="flex items-center justify-end gap-3 min-w-0">
+                {% if request.user.is_authenticated and not request.user.is_premium %}
+                <a href="{{ url('payments:plans') }}" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] md:text-xs font-black px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md shadow-orange-200/80 hover:scale-[1.02] transition-all uppercase tracking-widest">
+                    <span>{{ uil.pro }}</span>
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -150,6 +236,7 @@
         </div>
         {% endif %}
     </nav>
+    </header>
 
     <!-- Mobile Bottom Tab Bar -->
     <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 md:hidden mobile-nav-shadow px-4 py-2">
@@ -194,10 +281,6 @@
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/profile' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🧑</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if 'my/profile' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Profile</span>
                 </a>
-                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
-                </a>
             {% elif current_role == 'PARENT' %}
                 <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
@@ -207,10 +290,6 @@
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/requests' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📅</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if 'my/requests' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Demos</span>
                 </a>
-                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
-                </a>
             {% else %}
                 <a href="/sd/" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/sd/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🛡️</div>
@@ -219,10 +298,6 @@
                 <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
-                </a>
-                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
             {% endif %}
         </div>
