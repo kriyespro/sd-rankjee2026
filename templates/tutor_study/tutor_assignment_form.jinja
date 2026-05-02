@@ -1,0 +1,25 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+    <a href="{{ url('study:tutor_dashboard') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Tutor study</a>
+    <h1 class="text-2xl font-black text-slate-900 mt-6 mb-2">{% if assignment %}Edit assignment{% else %}New assignment{% endif %}</h1>
+    <p class="text-sm text-slate-600 mb-6">Optionally link a RankJee skill so students see the same style of quiz as Learn → Take assessment.</p>
+    <form method="post" class="space-y-5">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {% for field in form %}
+        <div>
+            <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ field.errors[0] }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-wider text-sm hover:bg-indigo-700">Save</button>
+    </form>
+</div>
+{% endblock %}

@@ -11,7 +11,14 @@ class StaticViewSitemap(CanonicalHostSitemap):
     priority = 0.8
 
     def items(self):
-        return ["core:home", "core:courses", "assessment:index", "learning:index", "hometutor:tutor_list"]
+        return [
+            "core:home",
+            "core:courses",
+            "assessment:index",
+            "learning:index",
+            "hometutor:tutor_list",
+            "blog:index",
+        ]
 
     def location(self, item):
         return reverse(item)

@@ -17,3 +17,4 @@ razorpay==1.4.1
 reportlab==4.2.2
 django-axes==7.1.0
 django-allauth==0.57.0
+Markdown==3.10

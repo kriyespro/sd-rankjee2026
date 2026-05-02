@@ -142,6 +142,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     # Local Apps
     'core',
+    'blog',
+    'tutor_study',
     'users',
     'dashboard',
     'assessment',

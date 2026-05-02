@@ -1,0 +1,53 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Study room</h1>
+    <p class="text-slate-600 mt-2">Notes and assignments from tutors you have an active engagement with.</p>
+
+    {% if not has_tutors %}
+    <div class="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+        <p class="font-bold text-amber-900">No active tutor engagements yet.</p>
+        <p class="text-sm text-amber-800 mt-2">Book a demo and complete mutual confirmation to unlock materials.</p>
+        <a href="{{ url('hometutor:tutor_list') }}" class="inline-block mt-4 font-black text-indigo-600 uppercase tracking-wider text-sm hover:underline">Find tutors →</a>
+    </div>
+    {% else %}
+
+    <section class="mt-10">
+        <h2 class="text-xl font-black text-slate-900 mb-4">Assignments</h2>
+        {% if assignments %}
+        <ul class="space-y-3">
+            {% for a in assignments %}
+            <li class="rounded-xl border border-slate-200 bg-white p-4 flex flex-wrap justify-between gap-3 items-start">
+                <div>
+                    <a href="{{ url('study:student_assignment', pk=a.pk) }}" class="font-black text-indigo-700 hover:underline">{{ a.title }}</a>
+                    {% if a.due_at %}
+                    <p class="text-xs text-slate-500 mt-1">Due {{ a.due_at.strftime('%d %b %Y, %H:%M') }}</p>
+                    {% endif %}
+                </div>
+                <a href="{{ url('study:student_assignment', pk=a.pk) }}" class="text-xs font-black uppercase tracking-wider text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:border-indigo-300">Open</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-600 text-sm">No assignments yet.</p>
+        {% endif %}
+    </section>
+
+    <section class="mt-12">
+        <h2 class="text-xl font-black text-slate-900 mb-4">Notes</h2>
+        {% if materials %}
+        <ul class="grid gap-3 sm:grid-cols-2">
+            {% for m in materials %}
+            <li class="rounded-xl border border-slate-200 bg-white p-4">
+                <a href="{{ url('study:student_material', pk=m.pk) }}" class="font-bold text-slate-900 hover:text-indigo-700">{{ m.title }}</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-600 text-sm">No published notes yet.</p>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+{% endblock %}

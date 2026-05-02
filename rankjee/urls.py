@@ -23,6 +23,7 @@ from core import views as core_views
 from core.sitemaps import StaticViewSitemap, CourseSitemap, CourseCitySitemap
 from hometutor.sitemaps import TutorCityLandingSitemap, TutorCitySubjectLandingSitemap
 from assessment.sitemaps import MockTestLandingSitemap, MockTestCityLandingSitemap
+from blog.sitemaps import BlogPostSitemap
 
 admin.site.site_header = "RankJee Admin Control"
 admin.site.site_title = "RankJee Admin"
@@ -44,6 +45,7 @@ urlpatterns = [
                 'tutor_city_subjects': TutorCitySubjectLandingSitemap,
                 'mock_tests': MockTestLandingSitemap,
                 'mock_test_cities': MockTestCityLandingSitemap,
+                'blog_posts': BlogPostSitemap,
             }
         },
         name='django.contrib.sitemaps.views.sitemap',
@@ -52,6 +54,8 @@ urlpatterns = [
     path('users/', include('users.urls')),
     path('assessment/', include('assessment.urls')),
     path('learning/', include('learning.urls')),
+    path('blog/', include('blog.urls')),
+    path('study/', include('tutor_study.urls')),
     path('payments/', include('payments.urls')),
     path('hometutor/', include('hometutor.urls')),
     path('hometutor/payments/', include('hometutor_payments.urls')),

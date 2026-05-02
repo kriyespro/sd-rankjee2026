@@ -1,0 +1,14 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+    <a href="{{ url('study:student_hub') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Study room</a>
+    <article class="mt-6">
+        <h1 class="text-3xl font-black text-slate-900">{{ material.title }}</h1>
+        {% if material.attachment %}
+        <a href="{{ material.attachment.url }}" class="inline-flex mt-4 text-sm font-black text-indigo-600 uppercase tracking-wider hover:underline" download>Download attachment</a>
+        {% endif %}
+        <div class="mt-8">{{ body_html }}</div>
+    </article>
+</div>
+{% endblock %}

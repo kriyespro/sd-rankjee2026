@@ -1,0 +1,58 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-10">
+    <header class="mb-10">
+        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Blog</p>
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Guides & exam tips</h1>
+        <p class="text-slate-600 mt-3 max-w-2xl">Long-tail prep ideas and links to tutors, mock tests, and courses on RankJee.</p>
+    </header>
+
+    <div class="grid gap-6 md:grid-cols-2">
+        {% for post in posts %}
+        <article class="rounded-2xl border p-4 md:p-5 shadow-sm hover:shadow-md transition-all flex flex-col {% if loop.index0 % 3 == 0 %}bg-indigo-50/70 border-indigo-100 hover:border-indigo-200{% elif loop.index0 % 3 == 1 %}bg-sky-50/70 border-sky-100 hover:border-sky-200{% else %}bg-emerald-50/70 border-emerald-100 hover:border-emerald-200{% endif %}">
+            <a href="{{ url('blog:detail', slug=post.slug) }}" class="block mb-4 overflow-hidden rounded-xl bg-slate-100">
+                {% if post.hero_image %}
+                <img src="{{ post.hero_image.url }}" alt="{{ post.title }}" class="w-full h-44 object-cover transition-transform duration-300 hover:scale-[1.02]" loading="lazy" decoding="async">
+                {% elif default_blog_og_image_url %}
+                <img src="{{ default_blog_og_image_url }}" alt="{{ post.title }}" class="w-full h-44 object-cover transition-transform duration-300 hover:scale-[1.02]" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                {% endif %}
+            </a>
+            {% if post.category %}
+            <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">{{ post.category.name }}</span>
+            {% endif %}
+            <h2 class="text-xl font-black text-slate-900 mt-2 mb-2">
+                <a href="{{ url('blog:detail', slug=post.slug) }}" class="hover:text-indigo-700">{{ post.title }}</a>
+            </h2>
+            {% if post.excerpt %}
+            <p class="text-slate-600 text-sm flex-1">
+                {% if post.excerpt|length > 140 %}
+                    {{ post.excerpt[:140] }}...
+                {% else %}
+                    {{ post.excerpt }}
+                {% endif %}
+            </p>
+            {% endif %}
+            {% if post.published_at %}
+            <time class="text-xs text-slate-400 mt-4 block" datetime="{{ post.published_at.isoformat() }}">{{ post.published_at.strftime('%d %b %Y') }}</time>
+            {% endif %}
+            <a href="{{ url('blog:detail', slug=post.slug) }}" class="mt-4 inline-flex text-sm font-black text-indigo-600 uppercase tracking-wider hover:text-indigo-800">Read →</a>
+        </article>
+        {% else %}
+        <p class="text-slate-600 col-span-full">New guides coming soon.</p>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <nav class="mt-10 flex justify-center gap-4 items-center text-sm font-bold">
+        {% if page_obj.has_previous() %}
+        <a href="{{ url('blog:index') }}?page={{ page_obj.previous_page_number() }}" class="text-indigo-600 hover:underline">← Newer</a>
+        {% endif %}
+        <span class="text-slate-500">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next() %}
+        <a href="{{ url('blog:index') }}?page={{ page_obj.next_page_number() }}" class="text-indigo-600 hover:underline">Older →</a>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+{% block extra_head %}
+<meta property="og:type" content="article">
+{% if blog_image_url %}
+<meta property="og:image" content="{{ blog_image_url }}">
+<meta name="twitter:image" content="{{ blog_image_url }}">
+{% endif %}
+<style>
+  .blog-content {
+    font-size: 1.06rem;
+    line-height: 1.9;
+    color: #334155;
+  }
+  .blog-content h1,
+  .blog-content h2,
+  .blog-content h3,
+  .blog-content h4 {
+    font-family: Outfit, Inter, sans-serif;
+    letter-spacing: -0.01em;
+    color: #0f172a;
+    margin-top: 2.25rem;
+    margin-bottom: 0.9rem;
+    line-height: 1.25;
+  }
+  .blog-content h1 { font-size: 2rem; font-weight: 900; }
+  .blog-content h2 { font-size: 1.5rem; font-weight: 850; }
+  .blog-content h3 { font-size: 1.22rem; font-weight: 800; }
+  .blog-content h4 { font-size: 1.08rem; font-weight: 800; }
+  .blog-content p { margin: 0.8rem 0; }
+  .blog-content strong {
+    color: #0f172a;
+    font-weight: 800;
+  }
+  .blog-content em { color: #1e293b; }
+  .blog-content ul,
+  .blog-content ol {
+    margin: 0.9rem 0 1rem 1.25rem;
+    padding-left: 1rem;
+  }
+  .blog-content li { margin: 0.4rem 0; }
+  .blog-content hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 1.7rem 0;
+  }
+  .blog-content blockquote {
+    margin: 1.2rem 0;
+    padding: 0.9rem 1rem;
+    border-left: 4px solid #6366f1;
+    background: #eef2ff;
+    color: #312e81;
+    border-radius: 0.5rem;
+  }
+  .blog-content a {
+    color: #4f46e5;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .blog-content code {
+    background: #f1f5f9;
+    color: #0f172a;
+    padding: 0.1rem 0.35rem;
+    border-radius: 0.35rem;
+    font-size: 0.9em;
+  }
+  .blog-content pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 0.8rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1.1rem 0;
+  }
+</style>
+{% endblock %}
+{% block schema %}
+<script type="application/ld+json">{{ blog_posting_ld_json }}</script>
+<script type="application/ld+json">{{ breadcrumb_ld_json }}</script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+    <nav class="text-xs font-black uppercase tracking-wider text-slate-500 mb-6">
+        <a href="{{ url('blog:index') }}" class="text-indigo-600 hover:underline">Blog</a>
+        <span class="mx-2">/</span>
+        <span class="text-slate-800">{{ post.title }}</span>
+    </nav>
+
+    <article>
+        {% if post.category %}
+        <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">{{ post.category.name }}</span>
+        {% endif %}
+        <h1 class="text-3xl md:text-4xl font-black text-slate-900 mt-2 mb-4 tracking-tight">{{ post.title }}</h1>
+        {% if post.published_at %}
+        <time class="text-sm text-slate-500 block mb-8" datetime="{{ post.published_at.isoformat() }}">{{ post.published_at.strftime('%d %B %Y') }}</time>
+        {% endif %}
+
+        {% if blog_image_url %}
+        <img src="{{ blog_image_url }}" alt="{{ post.title }}" class="w-full rounded-2xl mb-8 object-cover max-h-96 bg-slate-100" loading="eager" decoding="async"{% if not blog_hero_is_upload %} referrerpolicy="no-referrer"{% endif %}>
+        {% endif %}
+
+        <div class="blog-content max-w-none text-base">
+            {{ body_html }}
+        </div>
+
+        <aside class="mt-12 rounded-2xl border border-indigo-100 bg-indigo-50/80 p-6">
+            <h2 class="text-lg font-black text-indigo-950 mb-3">Explore RankJee</h2>
+            <ul class="space-y-2 text-sm font-semibold text-indigo-900">
+                <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='ahmedabad') }}" class="underline hover:no-underline">Home tutors in Ahmedabad</a></li>
+                <li><a href="{{ url('assessment:mock_test_landing', exam_slug='jee-main') }}" class="underline hover:no-underline">Free JEE Main mock test</a></li>
+                <li><a href="{{ url('core:courses') }}" class="underline hover:no-underline">Job-ready courses</a></li>
+                <li><a href="{{ url('learning:index') }}" class="underline hover:no-underline">Micro-learning videos & quizzes</a></li>
+            </ul>
+        </aside>
+
+        {% if related_posts %}
+        <section class="mt-10">
+            <h2 class="text-xl font-black text-slate-900 mb-4">Related Posts</h2>
+            <div class="grid gap-3">
+                {% for related in related_posts %}
+                <a href="{{ url('blog:detail', slug=related.slug) }}" class="block rounded-xl border border-slate-200 bg-white px-4 py-4 hover:border-indigo-300 hover:shadow-sm transition-all">
+                    {% if related.category %}
+                    <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">{{ related.category.name }}</span>
+                    {% endif %}
+                    <p class="font-bold text-slate-900 mt-1">{{ related.title }}</p>
+                    {% if related.excerpt %}
+                    <p class="text-sm text-slate-600 mt-1">{{ related.excerpt }}</p>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

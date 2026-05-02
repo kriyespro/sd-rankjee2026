@@ -44,6 +44,7 @@ def robots_txt(request):
         "Disallow: /sd/\n"
         "Disallow: /admin/\n"
         "Disallow: /accounts/\n"
+        "Disallow: /study/\n"
         "Sitemap: " + sitemap_url + "\n"
     )
     return HttpResponse(body, content_type="text/plain")
