@@ -1,53 +1,78 @@
-{% extends "base.jinja" %}
+{% extends "tutor_study/layout_lms.jinja" %}
 {% block title %}{{ seo_title }}{% endblock %}
-{% block content %}
-<div class="max-w-4xl mx-auto px-4 py-10">
-    <h1 class="text-3xl font-black text-slate-900 tracking-tight">Study room</h1>
-    <p class="text-slate-600 mt-2">Notes and assignments from tutors you have an active engagement with.</p>
+{% block study_content %}
+<header class="bg-white border-b border-[#dadce0]">
+    <div class="px-4 sm:px-8 py-6 lg:py-8">
+        <h1 class="text-2xl font-semibold text-[#202124] tracking-tight">Study workspace</h1>
+        {% if dashboard_study_embedded %}
+        <p class="text-sm text-[#5f6368] mt-2 max-w-2xl">Materials from RankJee and your tutors, assignments with due dates, and linked practice quizzes — organized by topic.</p>
+        {% endif %}
 
-    {% if not has_tutors %}
-    <div class="mt-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <p class="font-bold text-amber-900">No active tutor engagements yet.</p>
-        <p class="text-sm text-amber-800 mt-2">Book a demo and complete mutual confirmation to unlock materials.</p>
-        <a href="{{ url('hometutor:tutor_list') }}" class="inline-block mt-4 font-black text-indigo-600 uppercase tracking-wider text-sm hover:underline">Find tutors →</a>
+        {% if not show_study_empty %}
+        <dl class="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="study-lms-card px-4 py-3">
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-[#5f6368]">Materials</dt>
+                <dd class="text-2xl font-semibold text-[#202124] tabular-nums mt-1">{{ study_summary_materials }}</dd>
+            </div>
+            <div class="study-lms-card px-4 py-3">
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-[#5f6368]">Assignments</dt>
+                <dd class="text-2xl font-semibold text-[#202124] tabular-nums mt-1">{{ study_summary_assignments }}</dd>
+            </div>
+            <div class="study-lms-card px-4 py-3">
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-[#5f6368]">Practice quizzes</dt>
+                <dd class="text-2xl font-semibold text-[#202124] tabular-nums mt-1">{{ study_summary_exams }}</dd>
+            </div>
+            <div class="study-lms-card px-4 py-3 border-[#c7d7f7] bg-[#f8f9ff]">
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-[#1967d2]">Tutor links</dt>
+                <dd class="text-2xl font-semibold text-[#1967d2] tabular-nums mt-1">{{ engaged_tutor_count }}</dd>
+            </div>
+        </dl>
+        {% endif %}
+    </div>
+</header>
+
+<div class="px-4 sm:px-8 py-8 lg:py-10 space-y-10">
+    {% if show_study_empty %}
+    <div class="study-lms-card max-w-lg mx-auto text-center px-6 py-14">
+        <h2 class="text-lg font-semibold text-[#202124]">Nothing here yet</h2>
+        <p class="mt-2 text-sm text-[#5f6368] leading-relaxed">When staff publishes notes or you connect with a tutor, topics will appear in the sidebar.</p>
+        <div class="mt-8 flex flex-col sm:flex-row items-stretch justify-center gap-2">
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex justify-center rounded-full bg-[#1a73e8] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1557b0]">Find tutors</a>
+            <a href="{{ url('assessment:index') }}" class="inline-flex justify-center rounded-full border border-[#dadce0] bg-white px-5 py-2.5 text-sm font-semibold text-[#1a73e8] hover:bg-[#f8f9fa]">Assessments</a>
+        </div>
     </div>
     {% else %}
-
-    <section class="mt-10">
-        <h2 class="text-xl font-black text-slate-900 mb-4">Assignments</h2>
-        {% if assignments %}
-        <ul class="space-y-3">
-            {% for a in assignments %}
-            <li class="rounded-xl border border-slate-200 bg-white p-4 flex flex-wrap justify-between gap-3 items-start">
-                <div>
-                    <a href="{{ url('study:student_assignment', pk=a.pk) }}" class="font-black text-indigo-700 hover:underline">{{ a.title }}</a>
-                    {% if a.due_at %}
-                    <p class="text-xs text-slate-500 mt-1">Due {{ a.due_at.strftime('%d %b %Y, %H:%M') }}</p>
+    <section aria-labelledby="study-topics-heading">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <h2 id="study-topics-heading" class="text-sm font-semibold text-[#5f6368] uppercase tracking-wide">Open a topic</h2>
+            <p class="text-xs text-[#5f6368]">Each topic groups notes, tasks, and quizzes.</p>
+        </div>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            {% for item in study_nav_items %}
+            {% if item.kind == 'topic' %}
+            <a href="{{ item.href }}" class="study-lms-card block p-5 sm:p-6 hover:border-[#aecbfa] hover:shadow-md transition-all group text-left">
+                <div class="flex items-start justify-between gap-3">
+                    <h3 class="text-base font-semibold text-[#202124] group-hover:text-[#1967d2] leading-snug" {% if item.depth %}style="margin-left: {{ item.depth * 8 }}px"{% endif %}>{{ item.label }}</h3>
+                    <span class="shrink-0 text-[#1a73e8] opacity-0 group-hover:opacity-100 transition-opacity text-lg" aria-hidden="true">→</span>
+                </div>
+                <div class="mt-5 flex flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-full border border-teal-200 bg-teal-50 px-2.5 py-0.5 text-[11px] font-semibold text-teal-900">{{ item.count_materials }} notes</span>
+                    <span class="inline-flex items-center rounded-full border border-[#d2e3fc] bg-[#e8f0fe] px-2.5 py-0.5 text-[11px] font-semibold text-[#1967d2]">{{ item.count_assignments }} tasks</span>
+                    {% if item.count_exams %}
+                    <span class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-[11px] font-semibold text-violet-900">{{ item.count_exams }} quiz</span>
                     {% endif %}
                 </div>
-                <a href="{{ url('study:student_assignment', pk=a.pk) }}" class="text-xs font-black uppercase tracking-wider text-slate-600 border border-slate-200 rounded-lg px-3 py-2 hover:border-indigo-300">Open</a>
-            </li>
+            </a>
+            {% endif %}
             {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-slate-600 text-sm">No assignments yet.</p>
-        {% endif %}
+        </div>
     </section>
 
-    <section class="mt-12">
-        <h2 class="text-xl font-black text-slate-900 mb-4">Notes</h2>
-        {% if materials %}
-        <ul class="grid gap-3 sm:grid-cols-2">
-            {% for m in materials %}
-            <li class="rounded-xl border border-slate-200 bg-white p-4">
-                <a href="{{ url('study:student_material', pk=m.pk) }}" class="font-bold text-slate-900 hover:text-indigo-700">{{ m.title }}</a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-slate-600 text-sm">No published notes yet.</p>
-        {% endif %}
-    </section>
+    <div class="flex flex-wrap justify-center gap-x-8 gap-y-2 pt-4 border-t border-[#dadce0] text-sm font-medium text-[#1a73e8]">
+        <a href="{{ url('hometutor:tutor_list') }}" class="hover:underline">Find tutors</a>
+        <a href="{{ url('learning:index') }}" class="hover:underline">Learning</a>
+        <a href="{{ url('assessment:index') }}" class="hover:underline">Assessments</a>
+    </div>
     {% endif %}
 </div>
 {% endblock %}

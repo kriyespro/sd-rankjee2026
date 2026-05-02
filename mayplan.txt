@@ -1,0 +1,108 @@
+# May Plan — SEO Blog + Tutor Notes / Assignments / Exams
+
+This document is the execution roadmap only. Implement in small, additive steps so existing URLs, payments, and programmatic SEO pages keep behaving unchanged.
+
+References (do not drift from these):
+- seoplan/seo_action.txt — Phase 4 content engine, internal linking, quality rules
+- seoplan/programmatic_quality_checklist.txt — baseline for “good page” bar (adapt for articles)
+- seoplan/keyword_url_map.txt — clusters to link *from* blog posts (tutor / mock-test / course URLs)
+- Existing patterns: templates/base.jinja (seo_title, seo_description, canonical_url, seo_noindex), core/sitemaps.py, learning/ + assessment/ apps
+
+---
+
+## Guiding principles
+
+1. **Additive apps** — Prefer new Django apps (e.g. `blog`, `tutor_study`) over rewriting `learning`, `assessment`, or `hometutor`.
+2. **Reuse, don’t fork** — “Exam like video + exam” means **link to** `assessment:take_test` for a `Skill` that already has `Question`s / sets, same as today’s learning flow — not a second quiz engine.
+3. **Permissions** — `users.CustomUser.Role`: tutors vs students already exists; gate tutor CRUD with role + (where applicable) active `hometutor.models.TutorEngagement` so only paired students see materials.
+4. **Stack** — Jinja2, HTMX, Tailwind, thin views + services.py per user rules.
+
+---
+
+## Track A — SEO-friendly blog (public)
+
+**Goal:** Satisfy seoplan Phase 4.1–4.3: 2–3 posts/week cadence, long-tail intent, CTR/internal links to money pages — without cannibalizing programmatic URLs.
+
+### A1. App skeleton
+- Create app `blog` (name fixed for clarity). Register in `INSTALLED_APPS`.
+- URLs: `path('blog/', include('blog.urls'))` in `rankjee/urls.py` (comment there already hints at this).
+- Public routes only: listing (paginated), detail by stable slug, optional category/tag filter via path or query (pick one pattern and keep canonicals clean).
+
+### A2. Models (minimal)
+- `BlogPost`: slug (unique), title, excerpt, body (store Markdown or HTML — if HTML, sanitize on save), author FK → User, `published_at` (null = draft), `updated_at`, optional `hero_image`, `meta_title` / `meta_description` overrides.
+- Optional `BlogCategory` aligned to keyword *themes* (Exam prep, City guides, Strategy) for hub pages — not 1:1 with every city URL (avoid thin duplicates).
+
+### A3. SEO wiring (must match project conventions)
+- Each detail view passes `seo_title`, `seo_description`, `canonical_url` into template context (fallbacks from post fields).
+- One logical H1 = post title; hierarchy for sections (H2/H3).
+- JSON-LD: `BlogPosting` (+ `BreadcrumbList` if cheap); validate against `seoplan/rich_results_validation.txt` workflow.
+- Sitemap: new `BlogSitemap` in `blog/sitemaps.py`, register next to existing sitemaps in `rankjee/urls.py` — **only** published posts, `lastmod` from `updated_at`.
+- Internal linking module in template: “Related” links generated from category + hard-coded hubs pointing into `/hometutor/...`, `/assessment/mock-test/...`, `/courses/...` per `keyword_url_map.txt` (rotating or manual picks per post via admin).
+
+### A4. Authoring
+- Phase 1: Django admin (`/sd/`) only for MVP — staff/editor publishes.
+- Phase 2 (optional): dashboard-only editor for `GLOBAL_ADMIN` / marketing role — only if needed.
+
+### A5. Quality bar (from seoplan)
+- No thin posts: unique meta, unique intro, useful FAQ block on pillar posts, CTA, internal links — mirror checklist mentally before publish.
+
+---
+
+## Track B — Tutor notes, assignments (Drive link), in-flow exams
+
+**Goal:** Tutors publish notes (upload + paste); engaged students read fast and submit assignment answers as Google Drive links; optional quiz uses existing assessment pipeline like `/learning/` + skill quiz.
+
+### B1. App skeleton
+- New app e.g. `tutor_study` (name TBD at implementation; keeps `hometutor` marketplace models untouched).
+- All routes **login_required**; default **noindex** for private classroom surfaces unless you later add a deliberate “public resource” type.
+
+### B2. Access model (critical — use existing data)
+- **Student visibility:** Only users who have `TutorEngagement` with `status=ACTIVE` and `tutor_profile.user_id == tutor` (or equivalent FK on `TutorProfile` → `CustomUser`) see that tutor’s materials. Reuse `TutorProfile` / engagement queries in a single `services.py` helper to avoid scattered bugs.
+- **Tutor write:** `Role.TUTOR` (and staff roles) for create/update/delete of their own materials.
+
+### B3. Models (minimal)
+- `StudyMaterial`: tutor FK, title, body text (paste), optional `FileField` (notes PDF/image — respect upload limits), `created_at`, `updated_at`, `is_published` flag.
+- `StudyAssignment`: tutor FK, title, instructions (text), optional FK → `StudyMaterial` (“read this first”), `due_at`, optional **`skill` FK → `assessment.Skill`** (“take quiz after reading”).
+- `AssignmentSubmission`: assignment FK, student FK, `drive_url` (URLField), `submitted_at`, optional `tutor_feedback` text / status enum.
+
+### B4. Views / UX
+- Tutor: list/create/edit materials and assignments (HTMX partials where it helps); reuse components from `templates/components/` patterns.
+- Student: single-column readable note view (typography-focused); assignment detail with prominent “Submit Drive link” form (validate URL pattern loosely for google domains); show submission confirmation.
+- **Exam reuse:** If assignment has `skill` set, show CTA button → existing named URL `assessment:take_test` with that `skill_id` (same as `templates/learning/index.jinja` “Take Assessment”). No duplicate grading logic.
+
+### B5. Safety
+- Sanitize rich text; strip scripts.
+- File uploads: whitelist MIME/size; serve via existing `MEDIA` pattern in DEBUG; production storage unchanged from project norm.
+- Rate-limit submissions if abuse becomes an issue (later).
+
+---
+
+## Implementation order (recommended)
+
+| Phase | Deliverable | Risk if skipped |
+|-------|-------------|-----------------|
+| 1 | `blog` models + admin + one published post + sitemap + meta | No indexed content |
+| 2 | Blog templates + BlogPosting schema + internal links block | Weak SERP / orphaned posts |
+| 3 | `tutor_study` models + engagement-scoped queries in services | Wrong users seeing data |
+| 4 | Tutor CRUD + student read/submit + assessment CTA | Broken tutor workflow |
+| 5 | Polish: HTMX indicators, email/notifications (optional), dashboard widgets | UX only |
+
+---
+
+## Explicit non-goals (for this plan cycle)
+
+- Replacing WordPress-style mega CMS inside Django for blog — admin-first MVP.
+- Building Google Drive OAuth upload — students paste/share links only.
+- Duplicating `Question` / `UserAttempt` logic outside `assessment`.
+- Changing existing programmatic landing views or slug schemes in `hometutor` / `assessment` / `courses`.
+
+---
+
+## What I will do when you approve implementation
+
+1. Scaffold `blog` and wire URLs + sitemap + one listing/detail Jinja template extending `base.jinja` with correct SEO context.
+2. Scaffold `tutor_study` with migrations, services for engagement checks, and minimal CRUD flows (role-gated).
+3. Manually verify: logged-out blog reads OK and indexes; classroom routes 403/redirect appropriately; quiz CTA hits existing `take_test` flow.
+4. Update `seoplan/seo_action.txt` progress checkboxes for blog/sitemap only after live verification (optional housekeeping).
+
+No existing behavior is removed; only new paths and models are added unless a tiny hook is needed (e.g. nav link to `/blog/`).

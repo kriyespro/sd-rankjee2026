@@ -2,16 +2,42 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from users.models import CustomUser
 
 from .forms import AssignmentSubmissionForm, StudyAssignmentForm, StudyMaterialForm
-from .models import AssignmentSubmission, StudyAssignment, StudyMaterial
-from .services import engaged_tutor_user_ids, get_tutor_profile, student_can_access_tutor
+from .models import AssignmentSubmission, StudyAssignment, StudyMaterial, StudyTopic
+from .services import (
+    build_lms_flat_nav,
+    build_lms_topic_page_cards,
+    engaged_tutor_user_ids,
+    get_tutor_profile,
+    platform_study_material_q,
+    student_can_access_study_material,
+    student_can_access_tutor,
+    topic_breadcrumb_labels,
+)
+
+STUDY_URLS_STANDALONE = {
+    'hub': 'study:student_hub',
+    'material': 'study:student_material',
+    'assignment': 'study:student_assignment',
+    'topic': 'study:student_topic',
+    'topic_general': 'study:student_topic_general',
+}
+STUDY_URLS_DASHBOARD = {
+    'hub': 'dashboard:study',
+    'material': 'dashboard:study_material',
+    'assignment': 'dashboard:study_assignment',
+    'topic': 'dashboard:study_topic',
+    'topic_general': 'dashboard:study_topic_general',
+}
 
 
 def _format_note_body(text: str):
@@ -21,7 +47,7 @@ def _format_note_body(text: str):
     parts = []
     for p in paras:
         inner = escape(p).replace('\n', '<br>')
-        parts.append(f'<p class="mb-4 text-slate-700 leading-relaxed">{inner}</p>')
+        parts.append(f'<p class="study-prose">{inner}</p>')
     return mark_safe(''.join(parts))
 
 
@@ -30,7 +56,7 @@ def _study_seo_ctx(request):
         'seo_noindex': True,
         'canonical_url': request.build_absolute_uri(request.path),
         'seo_title': 'Study room — RankJee',
-        'seo_description': 'Tutor notes and assignments for your active engagements.',
+        'seo_description': 'Study hub — materials, assignments, and exams by topic.',
     }
 
 
@@ -39,7 +65,7 @@ def tutor_required(view_fn):
     def _inner(request, *args, **kwargs):
         if request.user.role != CustomUser.Role.TUTOR:
             messages.warning(request, 'That area is for tutors.')
-            return redirect('study:student_hub')
+            return redirect('dashboard:study')
         if not get_tutor_profile(request.user):
             messages.warning(request, 'Create your tutor listing first.')
             return redirect('hometutor:my_profile')
@@ -48,39 +74,198 @@ def tutor_required(view_fn):
     return _inner
 
 
-@login_required
-def student_hub(request):
-    if request.user.role == CustomUser.Role.TUTOR:
-        return redirect('study:tutor_dashboard')
+def _student_study_data(request):
     tutors = engaged_tutor_user_ids(request.user)
-    materials = []
+    materials_visibility = (
+        Q(tutor_id__in=tutors) | platform_study_material_q()
+        if tutors
+        else platform_study_material_q()
+    )
+    materials = list(
+        StudyMaterial.objects.filter(is_published=True)
+        .filter(materials_visibility)
+        .select_related('tutor', 'study_topic', 'study_topic__parent')
+        .distinct()
+        .order_by('-updated_at')[:80]
+    )
     assignments = []
+    submitted_ids = set()
     if tutors:
-        materials = list(
-            StudyMaterial.objects.filter(tutor_id__in=tutors, is_published=True).select_related('tutor')[:50]
-        )
         assignments = list(
-            StudyAssignment.objects.filter(tutor_id__in=tutors).select_related('tutor', 'skill', 'material')[:50]
+            StudyAssignment.objects.filter(tutor_id__in=tutors).select_related(
+                'tutor', 'skill', 'material', 'study_topic', 'study_topic__parent'
+            )[:80]
         )
-    ctx = {
-        **_study_seo_ctx(request),
+        if assignments:
+            aid = [a.pk for a in assignments]
+            submitted_ids = set(
+                AssignmentSubmission.objects.filter(
+                    student=request.user, assignment_id__in=aid
+                ).values_list('assignment_id', flat=True)
+            )
+    return {
+        'tutors': tutors,
         'materials': materials,
         'assignments': assignments,
-        'has_tutors': bool(tutors),
+        'submitted_ids': submitted_ids,
+    }
+
+
+def _study_lms_shell(
+    request,
+    study_urls,
+    *,
+    active_nav,
+    topic_pk=None,
+    highlight_topic_pk=None,
+    study_data=None,
+):
+    data = study_data or _student_study_data(request)
+    hub_url = reverse(study_urls['hub'])
+    study_nav_items = build_lms_flat_nav(
+        data['materials'],
+        data['assignments'],
+        hub_url=hub_url,
+        topic_url_name=study_urls['topic'],
+        topic_general_url_name=study_urls['topic_general'],
+    )
+    dashboard_embedded = study_urls['hub'] == 'dashboard:study'
+    active_topic_for_nav = topic_pk if active_nav == 'topic' else None
+    return {
+        'tutors': data['tutors'],
+        'materials': data['materials'],
+        'assignments': data['assignments'],
+        'submitted_ids': data['submitted_ids'],
+        'study_nav_items': study_nav_items,
+        'lms_active_nav': active_nav,
+        'lms_active_topic_pk': active_topic_for_nav,
+        'lms_highlight_topic_pk': highlight_topic_pk,
+        'study_route_hub': study_urls['hub'],
+        'study_route_material': study_urls['material'],
+        'study_route_assignment': study_urls['assignment'],
+        'study_route_topic': study_urls['topic'],
+        'study_route_topic_general': study_urls['topic_general'],
+        'dashboard_study_embedded': dashboard_embedded,
+        'has_tutors': bool(data['tutors']),
+        'engaged_tutor_count': len(data['tutors']),
+    }
+
+
+@login_required
+def student_hub(request, study_urls=None):
+    if request.user.role == CustomUser.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    urls = study_urls or STUDY_URLS_STANDALONE
+    if study_urls is None and request.user.role in (
+        CustomUser.Role.STUDENT,
+        CustomUser.Role.PARENT,
+    ):
+        return redirect('dashboard:study')
+    bundle = _student_study_data(request)
+    show_study_empty = not bundle['materials'] and not bundle['assignments']
+    seen_skill = set()
+    n_exams = 0
+    for a in bundle['assignments']:
+        if a.skill_id and a.skill_id not in seen_skill:
+            seen_skill.add(a.skill_id)
+            n_exams += 1
+    shell = _study_lms_shell(
+        request,
+        urls,
+        active_nav='hub',
+        study_data=bundle,
+    )
+    ctx = {
+        **_study_seo_ctx(request),
+        **shell,
+        'show_study_empty': show_study_empty,
+        'study_summary_materials': len(bundle['materials']),
+        'study_summary_assignments': len(bundle['assignments']),
+        'study_summary_exams': n_exams,
     }
     return render(request, 'tutor_study/student_hub.jinja', ctx)
 
 
-@login_required
-def student_material_detail(request, pk):
+def _render_student_topic_page(request, topic_pk, urls):
     if request.user.role == CustomUser.Role.TUTOR:
         return redirect('study:tutor_dashboard')
-    material = get_object_or_404(StudyMaterial.objects.select_related('tutor'), pk=pk)
-    if not material.is_published or not student_can_access_tutor(request.user, material.tutor_id):
-        messages.error(request, 'You do not have access to these notes.')
-        return redirect('study:student_hub')
+    merged_urls = urls or STUDY_URLS_STANDALONE
+    if urls is None and request.user.role in (
+        CustomUser.Role.STUDENT,
+        CustomUser.Role.PARENT,
+    ):
+        if topic_pk is None:
+            return redirect(STUDY_URLS_DASHBOARD['topic_general'])
+        return redirect(STUDY_URLS_DASHBOARD['topic'], topic_pk=topic_pk)
+
+    bundle = _student_study_data(request)
+    topic_obj = None
+    if topic_pk is not None:
+        topic_obj = get_object_or_404(StudyTopic, pk=topic_pk)
+
+    cards = build_lms_topic_page_cards(
+        bundle['materials'],
+        bundle['assignments'],
+        bundle['submitted_ids'],
+        now=timezone.now(),
+        root_topic_pk=topic_pk,
+        material_url_name=merged_urls['material'],
+        assignment_url_name=merged_urls['assignment'],
+    )
+    labels = topic_breadcrumb_labels(topic_obj)
+    shell = _study_lms_shell(
+        request,
+        merged_urls,
+        active_nav='topic',
+        topic_pk=topic_pk,
+        highlight_topic_pk=topic_pk,
+        study_data=bundle,
+    )
     ctx = {
         **_study_seo_ctx(request),
+        **shell,
+        'lms_topic_pk': topic_pk,
+        'lms_topic_title': labels[-1] if labels else 'Topic',
+        'lms_topic_trail': labels,
+        'topic_cards': cards,
+        'seo_title': f'{labels[-1]} — Study',
+        'seo_description': 'Materials, assignments, and practice for this topic.',
+    }
+    return render(request, 'tutor_study/student_topic.jinja', ctx)
+
+
+@login_required
+def student_topic_workspace_general(request, study_urls=None):
+    return _render_student_topic_page(request, None, study_urls)
+
+
+@login_required
+def student_topic_workspace(request, topic_pk, study_urls=None):
+    return _render_student_topic_page(request, topic_pk, study_urls)
+
+
+@login_required
+def student_material_detail(request, pk, study_urls=None):
+    urls = study_urls or STUDY_URLS_STANDALONE
+    if request.user.role == CustomUser.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    material = get_object_or_404(
+        StudyMaterial.objects.select_related('tutor', 'study_topic', 'study_topic__parent'), pk=pk
+    )
+    if not student_can_access_study_material(request.user, material):
+        messages.error(request, 'You do not have access to these notes.')
+        return redirect(reverse(urls['hub']))
+    bundle = _student_study_data(request)
+    shell = _study_lms_shell(
+        request,
+        urls,
+        active_nav='material',
+        highlight_topic_pk=material.study_topic_id,
+        study_data=bundle,
+    )
+    ctx = {
+        **_study_seo_ctx(request),
+        **shell,
         'material': material,
         'body_html': _format_note_body(material.body),
         'seo_title': f'{material.title} — Study room',
@@ -89,15 +274,19 @@ def student_material_detail(request, pk):
 
 
 @login_required
-def student_assignment_detail(request, pk):
+def student_assignment_detail(request, pk, study_urls=None):
+    urls = study_urls or STUDY_URLS_STANDALONE
     if request.user.role == CustomUser.Role.TUTOR:
         return redirect('study:tutor_dashboard')
     assignment = get_object_or_404(
-        StudyAssignment.objects.select_related('tutor', 'skill', 'material'), pk=pk
+        StudyAssignment.objects.select_related(
+            'tutor', 'skill', 'material', 'study_topic', 'study_topic__parent'
+        ),
+        pk=pk,
     )
     if not student_can_access_tutor(request.user, assignment.tutor_id):
         messages.error(request, 'You do not have access to this assignment.')
-        return redirect('study:student_hub')
+        return redirect(reverse(urls['hub']))
 
     existing = AssignmentSubmission.objects.filter(assignment=assignment, student=request.user).first()
     if request.method == 'POST':
@@ -108,12 +297,21 @@ def student_assignment_detail(request, pk):
             sub.student = request.user
             sub.save()
             messages.success(request, 'Your Drive link was submitted.')
-            return redirect('study:student_assignment', pk=assignment.pk)
+            return redirect(reverse(urls['assignment'], kwargs={'pk': assignment.pk}))
     else:
         form = AssignmentSubmissionForm(instance=existing)
 
+    bundle = _student_study_data(request)
+    shell = _study_lms_shell(
+        request,
+        urls,
+        active_nav='assignment',
+        highlight_topic_pk=assignment.study_topic_id,
+        study_data=bundle,
+    )
     ctx = {
         **_study_seo_ctx(request),
+        **shell,
         'assignment': assignment,
         'form': form,
         'submission': existing,
@@ -140,7 +338,7 @@ def tutor_dashboard(request):
 @tutor_required
 def tutor_material_create(request):
     if request.method == 'POST':
-        form = StudyMaterialForm(request.POST, request.FILES)
+        form = StudyMaterialForm(request.POST, request.FILES, tutor_user=request.user)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.tutor = request.user
@@ -148,7 +346,7 @@ def tutor_material_create(request):
             messages.success(request, 'Notes saved.')
             return redirect('study:tutor_dashboard')
     else:
-        form = StudyMaterialForm()
+        form = StudyMaterialForm(tutor_user=request.user)
     ctx = {**_study_seo_ctx(request), 'form': form, 'seo_title': 'New notes — Tutor study'}
     return render(request, 'tutor_study/tutor_material_form.jinja', ctx)
 
@@ -158,13 +356,13 @@ def tutor_material_create(request):
 def tutor_material_edit(request, pk):
     material = get_object_or_404(StudyMaterial, pk=pk, tutor=request.user)
     if request.method == 'POST':
-        form = StudyMaterialForm(request.POST, request.FILES, instance=material)
+        form = StudyMaterialForm(request.POST, request.FILES, instance=material, tutor_user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Notes updated.')
             return redirect('study:tutor_dashboard')
     else:
-        form = StudyMaterialForm(instance=material)
+        form = StudyMaterialForm(instance=material, tutor_user=request.user)
     ctx = {
         **_study_seo_ctx(request),
         'form': form,

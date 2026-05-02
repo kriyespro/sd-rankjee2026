@@ -5,6 +5,11 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('study/', views.dashboard_study, name='study'),
+    path('study/topic/general/', views.dashboard_study_topic_general, name='study_topic_general'),
+    path('study/topic/<int:topic_pk>/', views.dashboard_study_topic, name='study_topic'),
+    path('study/material/<int:pk>/', views.dashboard_study_material, name='study_material'),
+    path('study/assignment/<int:pk>/', views.dashboard_study_assignment, name='study_assignment'),
     path('tutor-requests/<int:request_id>/status/', views.update_tutor_request_status, name='update_tutor_request_status'),
     path('seo/smart-view/', views.seo_smart_view, name='seo_smart_view'),
     path('students/daily-class-log/', views.daily_class_log, name='daily_class_log'),

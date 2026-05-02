@@ -25,7 +25,8 @@
 
     <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
         <p class="text-xs font-black uppercase tracking-widest text-emerald-700">Quick actions</p>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <a href="{{ url('study:tutor_dashboard') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">Study</a>
             <a href="{{ url('hometutor:tutor_demos') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">Open demo inbox</a>
             <a href="{{ url('hometutor:my_profile') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">Edit listing</a>
             <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">View marketplace</a>

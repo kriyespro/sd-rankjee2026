@@ -10,6 +10,43 @@ drive_link_validator = RegexValidator(
 )
 
 
+class StudyTopic(models.Model):
+    """Chapter-style grouping for study hub (e.g. Physics › Mechanics). Global topics have tutor=NULL (catalog)."""
+
+    title = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=130)
+    tutor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='study_topics',
+        null=True,
+        blank=True,
+        help_text='Empty = RankJee catalog chapter (any tutor can attach). Set for tutor-only chapters.',
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        related_name='children',
+        null=True,
+        blank=True,
+    )
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'title']
+        constraints = [
+            models.UniqueConstraint(
+                fields=('tutor', 'parent', 'slug'),
+                name='study_topic_slug_unique_scope',
+            ),
+        ]
+
+    def __str__(self):
+        if self.parent_id:
+            return f'{self.parent.title} › {self.title}'
+        return self.title
+
+
 class StudyMaterial(models.Model):
     tutor = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -25,6 +62,13 @@ class StudyMaterial(models.Model):
         help_text='Optional PDF or image.',
     )
     is_published = models.BooleanField(default=True, db_index=True)
+    study_topic = models.ForeignKey(
+        StudyTopic,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='materials',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -59,6 +103,13 @@ class StudyAssignment(models.Model):
         help_text='Optional — links to existing RankJee assessment for this topic.',
     )
     due_at = models.DateTimeField(null=True, blank=True)
+    study_topic = models.ForeignKey(
+        StudyTopic,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assignments',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

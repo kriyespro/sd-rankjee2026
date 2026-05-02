@@ -1,0 +1,95 @@
+{% extends "base.jinja" %}
+{# LMS shell: persistent topic sidebar + main workspace (Google Classroom–style). #}
+{% block content %}
+<style>
+    .study-lms-scope { font-family: Inter, system-ui, sans-serif; }
+    .study-lms-scope h1,
+    .study-lms-scope h2,
+    .study-lms-scope h3 {
+        font-family: Inter, system-ui, sans-serif;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        color: #202124;
+    }
+    .study-lms-scope .study-prose p {
+        font-size: 0.9375rem;
+        line-height: 1.65;
+        color: #3c4043;
+        margin-bottom: 1rem;
+    }
+    .study-lms-card {
+        border-radius: 0.5rem;
+        border: 1px solid #dadce0;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12);
+    }
+    .study-lms-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.875rem;
+        padding: 1rem 1.125rem;
+        border-bottom: 1px solid #e8eaed;
+        transition: background 0.12s ease;
+        text-decoration: none;
+        color: inherit;
+    }
+    .study-lms-row:last-child {
+        border-bottom: none;
+    }
+    a.study-lms-row:hover {
+        background: #f8f9fa;
+    }
+    .study-lms-sidebar-shell {
+        background: linear-gradient(165deg, #fafbfc 0%, #f1f5f9 48%, #eef2f7 100%);
+    }
+    .study-lms-sidebar-nav {
+        scrollbar-width: thin;
+        scrollbar-color: rgb(203 213 225) transparent;
+    }
+    .study-lms-sidebar-nav::-webkit-scrollbar {
+        width: 6px;
+    }
+    .study-lms-sidebar-nav::-webkit-scrollbar-thumb {
+        background: rgb(203 213 225);
+        border-radius: 999px;
+    }
+    .study-lms-sidebar-nav::-webkit-scrollbar-thumb:hover {
+        background: rgb(148 163 184);
+    }
+    .study-lms-sidebar-link-active {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(238, 242, 255, 0.95) 100%);
+        box-shadow:
+            0 1px 3px rgba(79, 70, 229, 0.08),
+            0 0 0 1px rgba(99, 102, 241, 0.22),
+            inset 3px 0 0 0 rgb(79 70 229);
+    }
+</style>
+<div class="study-lms-scope bg-[#f0f4f9] min-h-[70vh]" x-data="{ studyNavOpen: false }">
+    <div class="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-3 py-2.5 shadow-sm shadow-slate-900/5">
+        <button type="button" @click="studyNavOpen = true" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:border-indigo-200 hover:text-indigo-800 transition-colors">
+            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            Topics
+        </button>
+        <span class="text-sm font-semibold text-slate-800 truncate tracking-tight">Study</span>
+    </div>
+
+    <div x-show="studyNavOpen" x-transition.opacity.duration.200ms x-cloak class="fixed inset-0 z-40 lg:hidden" aria-modal="true">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]" @click="studyNavOpen = false"></div>
+        <aside class="absolute left-0 top-0 bottom-0 flex w-[min(100%,20rem)] flex-col overflow-hidden rounded-r-2xl border-r border-slate-200/90 bg-white shadow-2xl shadow-slate-900/20">
+            {% include "tutor_study/_lms_sidebar.jinja" %}
+            <button type="button" @click="studyNavOpen = false" class="mx-3 mb-3 shrink-0 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors">
+                Close menu
+            </button>
+        </aside>
+    </div>
+
+    <div class="flex max-w-[1680px] mx-auto min-h-[calc(70vh-2.5rem)] lg:min-h-[70vh]">
+        <aside class="hidden lg:flex w-[17rem] xl:w-[18.5rem] shrink-0 flex-col border-r border-slate-200/90 bg-white sticky top-[4.5rem] self-start max-h-[calc(100vh-5rem)] overflow-hidden shadow-[inset_-8px_0_24px_-20px_rgba(15,23,42,0.06)]">
+            {% include "tutor_study/_lms_sidebar.jinja" %}
+        </aside>
+        <div class="flex-1 min-w-0 bg-[#f0f4f9]">
+            {% block study_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

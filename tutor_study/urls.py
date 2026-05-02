@@ -5,6 +5,8 @@ from . import views
 app_name = 'study'
 
 urlpatterns = [
+    path('topic/general/', views.student_topic_workspace_general, name='student_topic_general'),
+    path('topic/<int:topic_pk>/', views.student_topic_workspace, name='student_topic'),
     path('', views.student_hub, name='student_hub'),
     path('material/<int:pk>/', views.student_material_detail, name='student_material'),
     path('assignment/<int:pk>/', views.student_assignment_detail, name='student_assignment'),

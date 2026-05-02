@@ -1,25 +1,35 @@
-{% extends "base.jinja" %}
+{% extends "tutor_study/layout_lms.jinja" %}
 {% block title %}{{ seo_title }}{% endblock %}
-{% block content %}
-<div class="max-w-2xl mx-auto px-4 py-10">
-    <a href="{{ url('study:tutor_dashboard') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Tutor study</a>
-    <h1 class="text-2xl font-black text-slate-900 mt-6 mb-2">{% if assignment %}Edit assignment{% else %}New assignment{% endif %}</h1>
-    <p class="text-sm text-slate-600 mb-6">Optionally link a RankJee skill so students see the same style of quiz as Learn → Take assessment.</p>
-    <form method="post" class="space-y-5">
-        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-        {% for field in form %}
-        <div>
-            <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">{{ field.label }}</label>
-            {{ field }}
-            {% if field.help_text %}
-            <p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>
-            {% endif %}
-            {% if field.errors %}
-            <p class="text-red-600 text-sm mt-1">{{ field.errors[0] }}</p>
-            {% endif %}
-        </div>
-        {% endfor %}
-        <button type="submit" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black uppercase tracking-wider text-sm hover:bg-indigo-700">Save</button>
-    </form>
+{% block study_content %}
+<header class="bg-white border-b border-[#dadce0]">
+    <div class="max-w-2xl mx-auto px-4 sm:px-6 py-4">
+        <a href="{{ url('study:tutor_dashboard') }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a73e8] hover:text-[#1557b0]">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            Back to Classroom
+        </a>
+        <h1 class="text-xl sm:text-2xl mt-4 text-[#202124]">{% if assignment %}Edit assignment{% else %}Create assignment{% endif %}</h1>
+        <p class="mt-1 text-sm text-[#5f6368]">Optionally attach a RankJee skill so learners open the same quiz flow as Learning → Take assessment.</p>
+    </div>
+</header>
+
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div class="study-lms-card px-5 py-6 sm:px-8 sm:py-8">
+        <form method="post" class="space-y-6">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            {% for field in form %}
+            <div>
+                <label class="block text-[11px] font-semibold uppercase tracking-wide text-[#5f6368] mb-2" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.help_text %}
+                <p class="text-xs text-[#5f6368] mt-2 leading-relaxed">{{ field.help_text }}</p>
+                {% endif %}
+                {% if field.errors %}
+                <p class="text-red-700 text-sm mt-2">{{ field.errors[0] }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            <button type="submit" class="inline-flex rounded-full bg-[#1a73e8] px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#1557b0]">Save</button>
+        </form>
+    </div>
 </div>
 {% endblock %}

@@ -665,6 +665,71 @@ def _superuser_only(request):
     return request.user.is_superuser
 
 
+def _study_urls_for_dashboard_role(role):
+    from tutor_study.views import STUDY_URLS_DASHBOARD, STUDY_URLS_STANDALONE
+
+    if role in (User.Role.STUDENT, User.Role.PARENT):
+        return STUDY_URLS_DASHBOARD
+    return STUDY_URLS_STANDALONE
+
+
+@login_required
+def dashboard_study(request):
+    """Student/parent study hub inside `/admin/study/` (dashboard chrome)."""
+    from tutor_study.views import STUDY_URLS_DASHBOARD, student_hub as ts_student_hub
+
+    role = getattr(request.user, 'role', None)
+    if role == User.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    if role not in (User.Role.STUDENT, User.Role.PARENT):
+        return redirect('study:student_hub')
+    return ts_student_hub(request, study_urls=STUDY_URLS_DASHBOARD)
+
+
+@login_required
+def dashboard_study_topic_general(request):
+    from tutor_study.views import STUDY_URLS_DASHBOARD, student_topic_workspace_general as ts_topic_general
+
+    role = getattr(request.user, 'role', None)
+    if role == User.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    if role not in (User.Role.STUDENT, User.Role.PARENT):
+        return redirect('study:student_topic_general')
+    return ts_topic_general(request, study_urls=STUDY_URLS_DASHBOARD)
+
+
+@login_required
+def dashboard_study_topic(request, topic_pk):
+    from tutor_study.views import STUDY_URLS_DASHBOARD, student_topic_workspace as ts_topic
+
+    role = getattr(request.user, 'role', None)
+    if role == User.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    if role not in (User.Role.STUDENT, User.Role.PARENT):
+        return redirect('study:student_topic', topic_pk=topic_pk)
+    return ts_topic(request, topic_pk, study_urls=STUDY_URLS_DASHBOARD)
+
+
+@login_required
+def dashboard_study_material(request, pk):
+    from tutor_study.views import student_material_detail as ts_student_material_detail
+
+    role = getattr(request.user, 'role', None)
+    if role == User.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    return ts_student_material_detail(request, pk, study_urls=_study_urls_for_dashboard_role(role))
+
+
+@login_required
+def dashboard_study_assignment(request, pk):
+    from tutor_study.views import student_assignment_detail as ts_student_assignment_detail
+
+    role = getattr(request.user, 'role', None)
+    if role == User.Role.TUTOR:
+        return redirect('study:tutor_dashboard')
+    return ts_student_assignment_detail(request, pk, study_urls=_study_urls_for_dashboard_role(role))
+
+
 @login_required
 def update_tutor_request_status(request, request_id):
     if request.method != "POST" or not _staff_only(request):

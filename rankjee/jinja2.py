@@ -29,8 +29,13 @@ def _fallback_when_namespace_missing(viewname, args, kwargs):
             return f'/blog/post/{slug}/'
         return '/blog/'
 
+    topic_pk_kw = kwargs.get('topic_pk')
+    if topic_pk_kw is None and args:
+        topic_pk_kw = args[0] if viewname == 'study:student_topic' else None
+
     study_fixed = {
         'study:student_hub': '/study/',
+        'study:student_topic_general': '/study/topic/general/',
         'study:tutor_dashboard': '/study/tutor/',
         'study:tutor_material_create': '/study/tutor/materials/new/',
         'study:tutor_assignment_create': '/study/tutor/assignments/new/',
@@ -41,6 +46,8 @@ def _fallback_when_namespace_missing(viewname, args, kwargs):
         return f'/study/material/{pk}/'
     if viewname == 'study:student_assignment' and pk is not None:
         return f'/study/assignment/{pk}/'
+    if viewname == 'study:student_topic' and topic_pk_kw is not None:
+        return f'/study/topic/{topic_pk_kw}/'
     if viewname == 'study:tutor_material_edit' and pk is not None:
         return f'/study/tutor/materials/{pk}/edit/'
     if viewname == 'study:tutor_assignment_edit' and pk is not None:

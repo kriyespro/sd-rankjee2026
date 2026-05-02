@@ -82,37 +82,42 @@
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            justify-content: space-between;
-            column-gap: 0.75rem;
-            row-gap: 0.25rem;
+            justify-content: flex-end;
             max-width: 80rem;
             margin-left: auto;
             margin-right: auto;
-            padding: 0.28rem 0.75rem;
+            padding: 0.5rem 1rem;
         }
         @media (min-width: 768px) {
-            .nav-top-bar-inner { padding: 0.32rem 1.25rem; }
+            .nav-top-bar-inner { padding: 0.625rem 2rem; }
+        }
+        .nav-top-bar-right {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.65rem 1rem;
         }
         .nav-top-bar-links {
             display: inline-flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 0 0.85rem;
+            gap: 0.125rem 1.25rem;
         }
         .nav-top-bar-links > a {
             color: #e2e8f0;
-            font-size: 0.625rem;
+            font-size: 0.6875rem;
             font-weight: 800;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.14em;
             text-transform: uppercase;
             white-space: nowrap;
-            padding: 0.15rem 0;
+            padding: 0.35rem 0;
             text-decoration: none;
             border-bottom: 1px solid transparent;
             transition: color 0.15s ease, border-color 0.15s ease;
         }
         @media (min-width: 768px) {
-            .nav-top-bar-links > a { font-size: 0.6875rem; letter-spacing: 0.12em; }
+            .nav-top-bar-links > a { font-size: 0.75rem; letter-spacing: 0.16em; }
         }
         .nav-top-bar-links > a:hover {
             color: #fff;
@@ -120,35 +125,42 @@
         }
         .nav-top-sep {
             color: #64748b;
-            font-size: 0.55rem;
-            opacity: 0.9;
+            font-size: 0.65rem;
+            opacity: 0.95;
             line-height: 1;
             user-select: none;
             pointer-events: none;
-            padding: 0 0.0625rem;
+            padding: 0 0.125rem;
+        }
+        .nav-top-pipe {
+            width: 1px;
+            height: 1.25rem;
+            background: rgba(148, 163, 184, 0.45);
+            align-self: center;
+            flex-shrink: 0;
         }
         .nav-top-bar-actions {
             display: inline-flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 0.35rem 0.45rem;
+            gap: 0.5rem 0.75rem;
         }
         .nav-top-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.625rem;
+            font-size: 0.6875rem;
             font-weight: 800;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             text-decoration: none;
-            border-radius: 0.375rem;
-            padding: 0.22rem 0.55rem;
-            min-height: 1.5rem;
+            border-radius: 0.5rem;
+            padding: 0.4rem 0.9rem;
+            min-height: 2rem;
             transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
         }
         @media (min-width: 768px) {
-            .nav-top-btn { font-size: 0.6875rem; padding: 0.25rem 0.65rem; min-height: 1.55rem; }
+            .nav-top-btn { font-size: 0.75rem; padding: 0.45rem 1rem; }
         }
         .nav-top-btn--login {
             color: #e2e8f0;
@@ -181,6 +193,47 @@
             border-color: rgba(248, 113, 113, 0.55);
             color: #fecaca;
         }
+        /* Footer — 4-column keyword grid */
+        .site-footer {
+            background: linear-gradient(185deg, #eef2ff 0%, #f8fafc 35%, #f1f5f9 100%);
+        }
+        .footer-col-card {
+            border-radius: 1rem;
+            border: 1px solid rgba(226, 232, 240, 0.98);
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: 0 6px 28px -18px rgba(30, 27, 75, 0.35), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+            height: 100%;
+        }
+        .footer-col-head {
+            border-bottom: 1px solid rgba(199, 210, 254, 0.55);
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.625rem;
+        }
+        .footer-kw li + li { margin-top: 0.0625rem; }
+        .footer-kw a {
+            display: block;
+            padding: 0.4rem 0.55rem;
+            margin-left: -0.55rem;
+            margin-right: -0.55rem;
+            border-radius: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: #475569;
+            text-decoration: none;
+            line-height: 1.4;
+            transition: background 0.14s ease, color 0.14s ease;
+        }
+        .footer-kw a:hover {
+            background: rgba(238, 242, 255, 0.98);
+            color: #4338ca;
+        }
+        .footer-study-box {
+            margin-top: 1rem;
+            padding: 0.875rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(145deg, rgba(238, 242, 255, 0.65) 0%, rgba(241, 245, 249, 0.9) 100%);
+            border: 1px solid rgba(199, 210, 254, 0.45);
+        }
     </style>
     {% block schema %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -197,11 +250,17 @@
         {# Slim utility row: quick account + blog — always visible above primary nav #}
         <div class="nav-top-bar">
             <div class="nav-top-bar-inner">
+                <div class="nav-top-bar-right" aria-label="Top shortcuts and account">
                 <nav class="nav-top-bar-links" aria-label="Quick links">
+                    {% if not request.user.is_authenticated or current_role not in ('STUDENT', 'PARENT') %}
                     <a href="{{ top_study_href }}">Study</a>
+                    <span class="nav-top-sep" aria-hidden="true">·</span>
+                    {% endif %}
+                    <a href="{{ url('dashboard:index') }}">{{ uil.dashboard }}</a>
                     <span class="nav-top-sep" aria-hidden="true">·</span>
                     <a href="{{ url('blog:index') }}">Blog</a>
                 </nav>
+                <span class="nav-top-pipe" aria-hidden="true"></span>
                 <div class="nav-top-bar-actions">
                     {% if request.user.is_authenticated %}
                         <form action="{{ url('users:logout') }}" method="post" class="m-0">
@@ -213,18 +272,56 @@
                         <a href="{{ url('users:signup') }}" class="nav-top-btn nav-top-btn--join">{{ uil.join }}</a>
                     {% endif %}
                 </div>
+                </div>
             </div>
         </div>
 
     <nav class="nav-glass border-t-0">
-        <div class="max-w-7xl mx-auto px-4 md:px-8 h-12 md:h-14 flex justify-between items-center">
-            <a href="{{ url('core:home') }}" class="flex items-center gap-2 md:gap-2.5 group">
-                <div class="w-8 h-8 md:w-9 md:h-9 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-lg md:text-xl shadow-lg shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
-                <span class="text-lg md:text-xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
+        <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center gap-3 md:gap-6">
+            {# Logo — extra padding after wordmark, subtle divider #}
+            <a href="{{ url('core:home') }}" class="flex shrink-0 items-center gap-2 md:gap-3 group pr-3 md:pr-6 mr-1 md:mr-2 border-r border-slate-200/90">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-xl shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
+                <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
             </a>
-            <div class="flex items-center justify-end gap-3 min-w-0">
+            
+            <!-- Desktop Nav — centered in remaining space -->
+            <div class="hidden md:flex flex-1 min-w-0 justify-center items-center">
+            <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:gap-x-7 xl:gap-x-9 text-sm font-black text-slate-600 uppercase tracking-[0.16em] lg:tracking-[0.19em] text-center">
+                {% if not request.user.is_authenticated %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                {% elif current_role == 'TUTOR' %}
+                    <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
+                    <a href="{{ url('hometutor:my_profile') }}" class="nav-link">My Listing</a>
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
+                {% elif current_role == 'PARENT' %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="nav-link">My Demos</a>
+                    <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
+                    <a href="/sd/" class="nav-link">Admin</a>
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                {% else %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    {% if request.user.is_authenticated %}
+                    <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
+                    {% endif %}
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                {% endif %}
+            </div>
+            </div>
+            
+            <div class="flex shrink-0 items-center justify-end gap-3 md:gap-5">
                 {% if request.user.is_authenticated and not request.user.is_premium %}
-                <a href="{{ url('payments:plans') }}" class="inline-flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] md:text-xs font-black px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl shadow-md shadow-orange-200/80 hover:scale-[1.02] transition-all uppercase tracking-widest">
+                <a href="{{ url('payments:plans') }}" class="hidden md:inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-orange-200 hover:scale-105 transition-all uppercase tracking-widest">
                     <span>{{ uil.pro }}</span>
                 </a>
                 {% endif %}
@@ -256,9 +353,9 @@
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
                 </a>
                 {% if request.user.is_authenticated and current_role == 'STUDENT' %}
-                <a href="{{ url('study:student_hub') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
-                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.startswith('/study/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.startswith('/study/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
+                <a href="{{ url('dashboard:study') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/study' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
                 </a>
                 {% endif %}
                 {% if request.user.is_authenticated and current_role == 'STUDENT' %}
@@ -281,15 +378,29 @@
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/profile' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🧑</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if 'my/profile' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Profile</span>
                 </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                </a>
             {% elif current_role == 'PARENT' %}
-                <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
+                <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
+                <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
                 </a>
-                <a href="{{ url('hometutor:my_demo_requests') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/requests' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📅</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/requests' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Demos</span>
+                <a href="{{ url('hometutor:my_demo_requests') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'my/requests' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📅</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'my/requests' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Demos</span>
                 </a>
+                <a href="{{ url('dashboard:study') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/study' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
+                </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/study' not in request.path and request.path.rstrip('/') == '/admin' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' not in request.path and request.path.rstrip('/') == '/admin' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                </a>
+                </div>
             {% else %}
                 <a href="/sd/" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/sd/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🛡️</div>
@@ -298,6 +409,10 @@
                 <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/hometutor/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
+                </a>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
             {% endif %}
         </div>
@@ -321,12 +436,138 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-white border-t border-slate-200/60 py-5 text-center text-sm font-semibold text-slate-600 mt-auto space-y-2">
-        <div class="flex flex-wrap justify-center gap-4">
-            <a href="{{ url('core:privacy') }}" class="text-slate-700 hover:text-indigo-600">Privacy</a>
-            <a href="{{ url('core:terms') }}" class="text-slate-700 hover:text-indigo-600">Terms</a>
+    <footer class="site-footer mt-auto border-t border-indigo-100/80 text-slate-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 lg:pt-14 lg:pb-12">
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 lg:mb-12">
+                <div>
+                    <p class="text-xs font-black uppercase tracking-[0.28em] text-indigo-600">Home tutors across India</p>
+                    <h2 class="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Find the right tutor near you</h2>
+                    <p class="mt-2 text-sm text-slate-500 max-w-xl font-medium">City &amp; subject landing pages below — same marketplace, tailored search intent.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-7">
+                {# Column 1 — North & East #}
+                <div class="footer-col-card p-5 lg:p-6">
+                    <div class="footer-col-head flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-indigo-500 to-violet-600" aria-hidden="true"></span>
+                        <div>
+                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600">North &amp; East</p>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5">Home tutor keywords</p>
+                        </div>
+                    </div>
+                    <ul class="footer-kw list-none p-0 m-0">
+                        <li><a href="{{ url('core:home') }}">RankJee — home</a></li>
+                        <li><a href="{{ url('hometutor:tutor_list') }}">Verified home tutors — all India</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='ranchi') }}">Home tutor Ranchi</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='patna') }}">Home tutor Patna</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='kolkata') }}">Private home tutors Kolkata</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='lucknow') }}">Home tutoring Lucknow</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='guwahati') }}">Home tutor Guwahati</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='bhopal') }}">Home tutor Bhopal</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='chandigarh') }}">Home tutors Chandigarh</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='delhi') }}">Home tutors Delhi NCR area</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='delhi', subject_slug='maths') }}">Maths home tutors Delhi</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='kolkata', subject_slug='physics') }}">Physics home tutors Kolkata</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='patna', subject_slug='science') }}">Science home tutors Patna</a></li>
+                    </ul>
+                </div>
+                {# Column 2 — West & Central #}
+                <div class="footer-col-card p-5 lg:p-6">
+                    <div class="footer-col-head flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-sky-500 to-indigo-600" aria-hidden="true"></span>
+                        <div>
+                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600">West &amp; Central</p>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5">City &amp; subject links</p>
+                        </div>
+                    </div>
+                    <ul class="footer-kw list-none p-0 m-0">
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='surat') }}">Home tutor Surat</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='ahmedabad') }}">Home tutors Ahmedabad</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='mumbai') }}">Private home tutor Mumbai</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='pune') }}">Home tutoring Pune</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='indore') }}">Home tutor Indore</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='nagpur') }}">Home tutors Nagpur</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='rajkot') }}">Home tutor Rajkot</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='nashik') }}">Home tutor Nashik</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='vadodara', subject_slug='science') }}">Science home tutors Vadodara</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='mumbai', subject_slug='english') }}">English home tutor Mumbai</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='pune', subject_slug='maths') }}">Maths home tutors Pune</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='aurangabad', subject_slug='biology') }}">Biology home tutor Aurangabad</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='ahmedabad', subject_slug='chemistry') }}">Chemistry home tutors Ahmedabad</a></li>
+                    </ul>
+                </div>
+                {# Column 3 — South + study #}
+                <div class="footer-col-card p-5 lg:p-6">
+                    <div class="footer-col-head flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-emerald-500 to-indigo-600" aria-hidden="true"></span>
+                        <div>
+                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600">South India</p>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5">+ Study room</p>
+                        </div>
+                    </div>
+                    <ul class="footer-kw list-none p-0 m-0">
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='hyderabad') }}">Home tutor Hyderabad</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='hyderabad', subject_slug='chemistry') }}">Chemistry home tutors Hyderabad</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='chennai') }}">Home tutors Chennai</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='chennai', subject_slug='biology') }}">Biology home tutors Chennai</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='bengaluru', subject_slug='physics') }}">Physics home tutors Bengaluru</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='bengaluru', subject_slug='maths') }}">Maths home tutors Bengaluru</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='coimbatore') }}">Home tutor Coimbatore</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='kochi') }}">Home tutors Kochi</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='visakhapatnam') }}">Home tutor Visakhapatnam</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='mangaluru', subject_slug='maths') }}">Maths home tutor Mangaluru</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='ranchi', subject_slug='maths') }}">Home tutor maths Ranchi</a></li>
+                    </ul>
+                    <div class="footer-study-box">
+                        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600 mb-1.5">Tutors: upload to /study</p>
+                        <p class="text-xs text-slate-600 leading-relaxed">Sign in as tutor → <strong class="text-slate-800">Study</strong> → <strong class="text-slate-800">New notes</strong> / <strong class="text-slate-800">New assignment</strong>. Students with <strong class="text-slate-800">active engagement</strong> see everything at <strong class="text-slate-800">/study/</strong>.</p>
+                        {% if request.user.is_authenticated and current_role == 'TUTOR' %}
+                        <a href="{{ url('study:tutor_dashboard') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Open tutor study →</a>
+                        {% elif request.user.is_authenticated and current_role in ('STUDENT', 'PARENT') %}
+                        <a href="{{ url('dashboard:study') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Your study room →</a>
+                        {% elif request.user.is_authenticated %}
+                        <a href="{{ url('study:student_hub') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Study hub →</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {# Column 4 — Boards + product + legal #}
+                <div class="footer-col-card p-5 lg:p-6">
+                    <div class="footer-col-head flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-amber-500 to-rose-600" aria-hidden="true"></span>
+                        <div>
+                            <p class="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-600">Boards &amp; account</p>
+                            <p class="text-sm font-bold text-slate-900 mt-0.5">More home tutor searches</p>
+                        </div>
+                    </div>
+                    <ul class="footer-kw list-none p-0 m-0">
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='jaipur', subject_slug='maths') }}">CBSE-style maths home tutor Jaipur</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='noida', subject_slug='maths') }}">Maths home tutor Noida</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_landing', city_slug='gurugram') }}">Home tutors Gurugram</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='patna', subject_slug='biology') }}">Biology home tutors Patna</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='surat', subject_slug='english') }}">English home tutor Surat</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='ahmedabad', subject_slug='maths') }}">JEE maths home tutor Ahmedabad</a></li>
+                        <li><a href="{{ url('hometutor:tutor_city_subject_landing', city_slug='jaipur', subject_slug='science') }}">Science home tutoring Jaipur</a></li>
+                        <li><a href="{{ url('hometutor:tutor_list') }}">Online &amp; home tutoring India — full search</a></li>
+                        <li><a href="{{ url('learning:index') }}">Micro-learning &amp; videos</a></li>
+                        <li><a href="{{ url('core:courses') }}">Job-ready courses</a></li>
+                        <li class="pt-2 mt-2 border-t border-slate-200/90"><a href="{{ url('core:privacy') }}">Privacy policy</a></li>
+                        <li><a href="{{ url('core:terms') }}">Terms of use</a></li>
+                        {% if request.user.is_authenticated %}
+                        <li><a href="{{ url('dashboard:index') }}">{{ uil.dashboard }}</a></li>
+                        {% else %}
+                        <li><a href="{{ url('users:login') }}">{{ uil.login }}</a></li>
+                        <li><a href="{{ url('users:signup') }}">{{ uil.join }}</a></li>
+                        {% endif %}
+                        <li><a href="{{ url('assessment:index') }}">JEE &amp; practice exams</a></li>
+                        <li><a href="{{ url('blog:index') }}">Blog — tips &amp; guides</a></li>
+                        <li><a href="{{ url('core:earnings') }}">Earn on RankJee</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
-        <p class="text-xs text-slate-500">&copy; 2026 RankJee · Focus on Execution</p>
+        <div class="border-t border-indigo-100/90 bg-white/95 backdrop-blur-sm py-5">
+            <p class="text-center text-xs text-slate-500 font-semibold tracking-wide">&copy; 2026 RankJee · Home tutors, exams &amp; learning</p>
+        </div>
     </footer>
 </body>
 </html>

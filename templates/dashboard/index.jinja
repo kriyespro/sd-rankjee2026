@@ -47,7 +47,8 @@
 
     <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
         <p class="text-xs font-black uppercase tracking-widest text-indigo-700">Quick actions</p>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <a href="{{ url('dashboard:study') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Study</a>
             <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Take test</a>
             <a href="{{ url('learning:index') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Watch videos</a>
             <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Book tutor</a>

@@ -20,7 +20,8 @@
 
     <div class="mt-6 rounded-2xl border border-fuchsia-200 bg-fuchsia-50 p-4">
         <p class="text-xs font-black uppercase tracking-widest text-fuchsia-700">Quick actions</p>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            <a href="{{ url('study:student_hub') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-fuchsia-800 hover:bg-fuchsia-100">Study</a>
             <a href="/sd/hometutor/tutorprofile/?verification_status__exact=PENDING" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-fuchsia-800 hover:bg-fuchsia-100">Review KYC queue</a>
             <a href="/sd/hometutor/engagementdispute/" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-fuchsia-800 hover:bg-fuchsia-100">Resolve disputes</a>
             <a href="/sd/users/withdrawalrequest/?status__exact=PENDING" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-fuchsia-800 hover:bg-fuchsia-100">Check withdrawals</a>
