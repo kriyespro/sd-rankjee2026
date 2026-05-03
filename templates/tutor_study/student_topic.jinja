@@ -1,102 +1,98 @@
 {% extends "tutor_study/layout_lms.jinja" %}
 {% block title %}{{ seo_title }}{% endblock %}
 {% block study_content %}
-<header class="bg-white border-b border-[#dadce0]">
-    <div class="px-4 sm:px-8 py-5 lg:py-7">
-        <nav class="text-xs font-medium text-[#5f6368] mb-3" aria-label="Breadcrumb">
-            <a href="{{ url(study_route_hub) }}" class="text-[#1a73e8] hover:underline">Overview</a>
+<header class="border-b border-slate-200/90 bg-gradient-to-r from-violet-50/80 via-white to-indigo-50/70">
+    <div class="px-4 sm:px-6 py-3 lg:py-4">
+        <nav class="text-[10px] font-semibold text-slate-500 mb-1.5" aria-label="Breadcrumb">
+            <a href="{{ url(study_route_hub) }}" class="text-indigo-600 hover:underline">Overview</a>
             {% for part in lms_topic_trail %}
-            <span class="mx-1.5 text-[#dadce0]" aria-hidden="true">/</span>
+            <span class="mx-1 text-slate-300" aria-hidden="true">/</span>
             {% if loop.last %}
-            <span class="text-[#202124]">{{ part }}</span>
+            <span class="text-slate-900 font-bold">{{ part }}</span>
             {% else %}
             <span>{{ part }}</span>
             {% endif %}
             {% endfor %}
         </nav>
-        <h1 class="text-2xl font-semibold text-[#202124] tracking-tight">{{ lms_topic_title }}</h1>
-        <p class="text-sm text-[#5f6368] mt-2 max-w-2xl">Everything for this topic in one place: readings, work to turn in, and timed practice linked from your tutor.</p>
+        <h1 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">{{ lms_topic_title }}</h1>
+        <p class="text-xs text-slate-600 mt-1 max-w-2xl leading-snug">Readings, tasks & practice for this topic.</p>
     </div>
 </header>
 
-<div class="px-4 sm:px-8 py-8 lg:py-10 space-y-12">
+<div class="px-4 sm:px-6 py-4 lg:py-5 space-y-6">
     <section aria-labelledby="sec-materials">
-        <div class="flex items-center gap-2 mb-5">
-            <span class="text-xl" aria-hidden="true">📘</span>
-            <h2 id="sec-materials" class="text-base font-semibold text-[#202124]">Materials</h2>
-            <span class="text-xs font-medium text-[#5f6368] tabular-nums">({{ topic_cards.materials|length }})</span>
+        <div class="flex items-center gap-2 mb-2.5 border-l-4 border-teal-500 pl-2">
+            <h2 id="sec-materials" class="text-xs font-bold uppercase tracking-widest text-teal-800">Materials</h2>
+            <span class="text-[10px] font-bold tabular-nums text-teal-600 bg-teal-100 rounded-full px-1.5 py-px">{{ topic_cards.materials|length }}</span>
         </div>
         {% if topic_cards.materials %}
-        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {% for c in topic_cards.materials %}
-            <a href="{{ c.href }}" class="study-lms-card flex flex-col h-full p-5 hover:border-[#aecbfa] hover:shadow-md transition-all group">
+            <a href="{{ c.href }}" class="group relative flex flex-col rounded-xl border border-teal-200/70 bg-gradient-to-br from-teal-400/10 via-white to-emerald-50/80 px-3 py-2.5 shadow-sm hover:shadow-md hover:border-teal-400/80 transition-all min-h-0">
                 <div class="flex items-start justify-between gap-2">
-                    <h3 class="text-sm font-semibold text-[#202124] group-hover:text-[#1967d2] leading-snug">{{ c.title }}</h3>
+                    <h3 class="text-[13px] font-bold text-slate-900 leading-snug group-hover:text-teal-800 line-clamp-2">{{ c.title }}</h3>
                     {% if c.has_attachment %}
-                    <span class="shrink-0 text-[11px] font-semibold uppercase text-[#5f6368] border border-[#dadce0] rounded px-1.5 py-0.5">PDF</span>
+                    <span class="shrink-0 text-[9px] font-bold uppercase text-teal-800 bg-teal-100 rounded px-1 py-px">PDF</span>
                     {% endif %}
                 </div>
-                <p class="mt-2 text-xs text-[#5f6368]">{{ c.subtitle }}</p>
-                <p class="mt-auto pt-4 text-[11px] font-semibold uppercase tracking-wide text-[#80868b]">{{ c.source }}</p>
+                <p class="mt-1 text-[11px] text-slate-600 leading-snug">{{ c.subtitle }}</p>
+                <p class="mt-1.5 text-[9px] font-bold uppercase tracking-wide text-teal-700/90">{{ c.source }}</p>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-sm text-[#5f6368] italic">No notes in this topic yet.</p>
+        <p class="text-xs text-slate-500 italic">No notes in this topic yet.</p>
         {% endif %}
     </section>
 
     <section aria-labelledby="sec-assignments">
-        <div class="flex items-center gap-2 mb-5">
-            <span class="text-xl" aria-hidden="true">✏️</span>
-            <h2 id="sec-assignments" class="text-base font-semibold text-[#202124]">Assignments</h2>
-            <span class="text-xs font-medium text-[#5f6368] tabular-nums">({{ topic_cards.assignments|length }})</span>
+        <div class="flex items-center gap-2 mb-2.5 border-l-4 border-indigo-500 pl-2">
+            <h2 id="sec-assignments" class="text-xs font-bold uppercase tracking-widest text-indigo-800">Assignments</h2>
+            <span class="text-[10px] font-bold tabular-nums text-indigo-600 bg-indigo-100 rounded-full px-1.5 py-px">{{ topic_cards.assignments|length }}</span>
         </div>
         {% if topic_cards.assignments %}
-        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {% for c in topic_cards.assignments %}
-            <a href="{{ c.href }}" class="study-lms-card flex flex-col h-full p-5 hover:border-[#aecbfa] hover:shadow-md transition-all group">
+            <a href="{{ c.href }}" class="group relative flex flex-col rounded-xl border border-indigo-200/70 bg-gradient-to-br from-indigo-400/10 via-white to-sky-50/80 px-3 py-2.5 shadow-sm hover:shadow-md hover:border-indigo-400/80 transition-all min-h-0">
                 <div class="flex items-start justify-between gap-2">
-                    <h3 class="text-sm font-semibold text-[#202124] group-hover:text-[#1967d2] leading-snug">{{ c.title }}</h3>
+                    <h3 class="text-[13px] font-bold text-slate-900 leading-snug group-hover:text-indigo-800 line-clamp-2">{{ c.title }}</h3>
                     {% if c.badge == 'Submitted' %}
-                    <span class="shrink-0 inline-flex rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[11px] font-semibold text-green-900">{{ c.badge }}</span>
+                    <span class="shrink-0 inline-flex rounded-full bg-emerald-100 text-emerald-900 px-1.5 py-px text-[9px] font-bold">{{ c.badge }}</span>
                     {% elif c.badge == 'Overdue' %}
-                    <span class="shrink-0 inline-flex rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-900">{{ c.badge }}</span>
+                    <span class="shrink-0 inline-flex rounded-full bg-rose-100 text-rose-900 px-1.5 py-px text-[9px] font-bold">{{ c.badge }}</span>
                     {% else %}
-                    <span class="shrink-0 inline-flex rounded-full border border-[#d2e3fc] bg-[#e8f0fe] px-2 py-0.5 text-[11px] font-semibold text-[#1967d2]">{{ c.badge }}</span>
+                    <span class="shrink-0 inline-flex rounded-full bg-indigo-100 text-indigo-900 px-1.5 py-px text-[9px] font-bold">{{ c.badge }}</span>
                     {% endif %}
                 </div>
-                <p class="mt-2 text-xs text-[#5f6368]">{{ c.subtitle }}</p>
-                <p class="mt-auto pt-4 text-[11px] font-semibold uppercase tracking-wide text-[#80868b]">{{ c.source }}</p>
+                <p class="mt-1 text-[11px] text-slate-600 leading-snug">{{ c.subtitle }}</p>
+                <p class="mt-1.5 text-[9px] font-bold uppercase tracking-wide text-indigo-700/90">{{ c.source }}</p>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-sm text-[#5f6368] italic">No assignments for this topic.</p>
+        <p class="text-xs text-slate-500 italic">No assignments for this topic.</p>
         {% endif %}
     </section>
 
     <section aria-labelledby="sec-exams">
-        <div class="flex items-center gap-2 mb-5">
-            <span class="text-xl" aria-hidden="true">🎯</span>
-            <h2 id="sec-exams" class="text-base font-semibold text-[#202124]">Practice exams</h2>
-            <span class="text-xs font-medium text-[#5f6368] tabular-nums">({{ topic_cards.exams|length }})</span>
+        <div class="flex items-center gap-2 mb-2.5 border-l-4 border-violet-500 pl-2">
+            <h2 id="sec-exams" class="text-xs font-bold uppercase tracking-widest text-violet-800">Practice exams</h2>
+            <span class="text-[10px] font-bold tabular-nums text-violet-600 bg-violet-100 rounded-full px-1.5 py-px">{{ topic_cards.exams|length }}</span>
         </div>
         {% if topic_cards.exams %}
-        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
             {% for c in topic_cards.exams %}
-            <a href="{{ c.href }}" class="study-lms-card flex flex-col h-full p-5 border-violet-100 bg-gradient-to-br from-white to-violet-50/80 hover:border-violet-300 hover:shadow-md transition-all group">
-                <h3 class="text-sm font-semibold text-[#202124] group-hover:text-violet-900 leading-snug">{{ c.title }}</h3>
-                <p class="mt-2 text-xs text-[#5f6368]">{{ c.subtitle }}</p>
-                <span class="mt-auto pt-5 inline-flex items-center text-sm font-semibold text-violet-700 group-hover:text-violet-900">
-                    Start quiz
-                    <span class="ml-1" aria-hidden="true">→</span>
+            <a href="{{ c.href }}" class="group flex flex-col rounded-xl border border-violet-300/70 bg-gradient-to-br from-violet-500/15 via-fuchsia-50/60 to-white px-3 py-2.5 shadow-sm hover:shadow-md hover:border-violet-400 transition-all min-h-0">
+                <h3 class="text-[13px] font-bold text-slate-900 leading-snug group-hover:text-violet-900 line-clamp-2">{{ c.title }}</h3>
+                <p class="mt-1 text-[11px] text-slate-600 leading-snug">{{ c.subtitle }}</p>
+                <span class="mt-2 inline-flex items-center text-[11px] font-bold text-violet-700 group-hover:text-violet-900">
+                    Start quiz <span class="ml-0.5" aria-hidden="true">→</span>
                 </span>
             </a>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-sm text-[#5f6368] italic">No linked quizzes yet. Your tutor can attach a RankJee skill to an assignment.</p>
+        <p class="text-xs text-slate-500 italic">No linked quizzes yet.</p>
         {% endif %}
     </section>
 </div>

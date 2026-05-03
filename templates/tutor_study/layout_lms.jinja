@@ -1,5 +1,8 @@
 {% extends "base.jinja" %}
 {# LMS shell: persistent topic sidebar + main workspace (Google Classroom–style). #}
+{% block extra_head %}
+{% block study_extra_head %}{% endblock %}
+{% endblock %}
 {% block content %}
 <style>
     .study-lms-scope { font-family: Inter, system-ui, sans-serif; }

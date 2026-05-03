@@ -47,6 +47,41 @@
             -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
+        /* Logo “R” tile — never rely on Tailwind arbitrary classes alone (missing purge → white on white) */
+        .rankjee-mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 2rem;
+            height: 2rem;
+            min-width: 2rem;
+            min-height: 2rem;
+            border-radius: 0.5rem;
+            background-color: #3b4cb8;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 1.125rem;
+            line-height: 1;
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            box-shadow: 0 4px 6px -1px rgba(59, 76, 184, 0.28);
+            transition: transform 0.15s ease;
+        }
+        .rankjee-logo:hover .rankjee-mark {
+            transform: scale(1.02);
+        }
+        @media (min-width: 768px) {
+            .rankjee-mark {
+                width: 2.5rem;
+                height: 2.5rem;
+                min-width: 2.5rem;
+                min-height: 2.5rem;
+                font-size: 1.375rem;
+            }
+        }
+        .brand-jee {
+            color: #3b4cb8;
+        }
         .nav-link {
             transition: all 0.3s ease;
             position: relative;
@@ -73,125 +108,81 @@
         .mobile-nav-shadow {
             box-shadow: 0 -4px 20px -5px rgba(0, 0, 0, 0.08);
         }
-        /* Top utility strip — explicit flex/gap (does not rely on Tailwind purge for spacing) */
-        .nav-top-bar {
-            background: linear-gradient(90deg, #0f172a 0%, #1e293b 45%, #1e1b4b 55%, #0f172a 100%);
-            border-bottom: 1px solid rgba(99, 102, 241, 0.3);
-        }
-        .nav-top-bar-inner {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-end;
-            max-width: 80rem;
-            margin-left: auto;
-            margin-right: auto;
-            padding: 0.5rem 1rem;
-        }
-        @media (min-width: 768px) {
-            .nav-top-bar-inner { padding: 0.625rem 2rem; }
-        }
-        .nav-top-bar-right {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 0.65rem 1rem;
-        }
-        .nav-top-bar-links {
+        /* Main nav — compact account cluster (replaces removed top utility bar) */
+        .nav-main-util {
             display: inline-flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 0.125rem 1.25rem;
+            gap: 0.25rem 0.35rem;
         }
-        .nav-top-bar-links > a {
-            color: #e2e8f0;
-            font-size: 0.6875rem;
+        @media (min-width: 768px) {
+            .nav-main-util { gap: 0.35rem 0.5rem; }
+        }
+        .nav-main-util a.nav-util-link {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.625rem;
             font-weight: 800;
-            letter-spacing: 0.14em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            white-space: nowrap;
-            padding: 0.35rem 0;
+            color: #64748b;
             text-decoration: none;
-            border-bottom: 1px solid transparent;
-            transition: color 0.15s ease, border-color 0.15s ease;
+            transition: background 0.15s ease, color 0.15s ease;
         }
         @media (min-width: 768px) {
-            .nav-top-bar-links > a { font-size: 0.75rem; letter-spacing: 0.16em; }
+            .nav-main-util a.nav-util-link { font-size: 0.6875rem; padding: 0.4rem 0.65rem; letter-spacing: 0.12em; }
         }
-        .nav-top-bar-links > a:hover {
-            color: #fff;
-            border-bottom-color: rgba(129, 140, 248, 0.6);
+        .nav-main-util a.nav-util-link:hover {
+            color: #4f46e5;
+            background: rgba(238, 242, 255, 0.95);
         }
-        .nav-top-sep {
-            color: #64748b;
-            font-size: 0.65rem;
-            opacity: 0.95;
-            line-height: 1;
-            user-select: none;
-            pointer-events: none;
-            padding: 0 0.125rem;
-        }
-        .nav-top-pipe {
-            width: 1px;
-            height: 1.25rem;
-            background: rgba(148, 163, 184, 0.45);
-            align-self: center;
-            flex-shrink: 0;
-        }
-        .nav-top-bar-actions {
-            display: inline-flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 0.5rem 0.75rem;
-        }
-        .nav-top-btn {
+        .nav-util-btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.6875rem;
+            font-size: 0.625rem;
             font-weight: 800;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            text-decoration: none;
             border-radius: 0.5rem;
-            padding: 0.4rem 0.9rem;
-            min-height: 2rem;
-            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+            padding: 0.35rem 0.55rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
         }
         @media (min-width: 768px) {
-            .nav-top-btn { font-size: 0.75rem; padding: 0.45rem 1rem; }
+            .nav-util-btn { font-size: 0.6875rem; padding: 0.4rem 0.65rem; letter-spacing: 0.12em; }
         }
-        .nav-top-btn--login {
-            color: #e2e8f0;
-            background: rgba(255, 255, 255, 0.06);
+        .nav-util-btn--logout {
+            color: #64748b;
+            background: transparent;
             border: 1px solid rgba(148, 163, 184, 0.45);
         }
-        .nav-top-btn--login:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.12);
-            border-color: rgba(199, 210, 254, 0.5);
+        .nav-util-btn--logout:hover {
+            color: #b91c1c;
+            border-color: rgba(248, 113, 113, 0.55);
+            background: rgba(254, 242, 242, 0.9);
         }
-        .nav-top-btn--join {
+        .nav-util-btn--login {
+            color: #4f46e5;
+            background: rgba(238, 242, 255, 0.9);
+            border: 1px solid rgba(199, 210, 254, 0.8);
+            text-decoration: none;
+        }
+        .nav-util-btn--login:hover {
+            background: rgba(224, 231, 255, 1);
+        }
+        .nav-util-btn--join {
             color: #fff;
             background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
             border: 1px solid rgba(129, 140, 248, 0.5);
-            box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset, 0 2px 8px rgba(79, 70, 229, 0.35);
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25);
         }
-        .nav-top-btn--join:hover {
-            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
-        }
-        .nav-top-btn--logout {
-            color: #f8fafc;
-            background: rgba(15, 23, 42, 0.5);
-            border: 1px solid rgba(148, 163, 184, 0.4);
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .nav-top-btn--logout:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: rgba(248, 113, 113, 0.55);
-            color: #fecaca;
+        .nav-util-btn--join:hover {
+            filter: brightness(1.05);
         }
         /* Footer — 4-column keyword grid */
         .site-footer {
@@ -240,53 +231,20 @@
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pb-20 md:pb-0">
     {% set current_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
-    {% if request.user.is_authenticated and current_role == 'TUTOR' %}
-        {% set top_study_href = url('study:tutor_dashboard') %}
-    {% else %}
-        {% set top_study_href = url('study:student_hub') %}
-    {% endif %}
 
     <header class="sticky top-0 z-50">
-        {# Slim utility row: quick account + blog — always visible above primary nav #}
-        <div class="nav-top-bar">
-            <div class="nav-top-bar-inner">
-                <div class="nav-top-bar-right" aria-label="Top shortcuts and account">
-                <nav class="nav-top-bar-links" aria-label="Quick links">
-                    {% if not request.user.is_authenticated or current_role not in ('STUDENT', 'PARENT') %}
-                    <a href="{{ top_study_href }}">Study</a>
-                    <span class="nav-top-sep" aria-hidden="true">·</span>
-                    {% endif %}
-                    <a href="{{ url('dashboard:index') }}">{{ uil.dashboard }}</a>
-                    <span class="nav-top-sep" aria-hidden="true">·</span>
-                    <a href="{{ url('blog:index') }}">Blog</a>
-                </nav>
-                <span class="nav-top-pipe" aria-hidden="true"></span>
-                <div class="nav-top-bar-actions">
-                    {% if request.user.is_authenticated %}
-                        <form action="{{ url('users:logout') }}" method="post" class="m-0">
-                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                            <button type="submit" class="nav-top-btn nav-top-btn--logout">{{ uil.logout }}</button>
-                        </form>
-                    {% else %}
-                        <a href="{{ url('users:login') }}" class="nav-top-btn nav-top-btn--login">{{ uil.login }}</a>
-                        <a href="{{ url('users:signup') }}" class="nav-top-btn nav-top-btn--join">{{ uil.join }}</a>
-                    {% endif %}
-                </div>
-                </div>
-            </div>
-        </div>
-
     <nav class="nav-glass border-t-0">
-        <div class="max-w-7xl mx-auto px-4 md:px-8 h-16 md:h-20 flex items-center gap-3 md:gap-6">
-            {# Logo — extra padding after wordmark, subtle divider #}
-            <a href="{{ url('core:home') }}" class="flex shrink-0 items-center gap-2 md:gap-3 group pr-3 md:pr-6 mr-1 md:mr-2 border-r border-slate-200/90">
-                <div class="w-8 h-8 md:w-10 md:h-10 bg-indigo-600 rounded-lg md:rounded-xl flex items-center justify-center text-white font-black text-xl md:text-2xl shadow-xl shadow-indigo-500/10 group-hover:scale-105 transition-transform">R</div>
-                <span class="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Rank<span class="text-indigo-600">Jee</span></span>
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 h-[3.2rem] md:h-16 flex items-center gap-2 md:gap-4">
+            {# Logo — ~20% shorter bar: smaller mark + type #}
+            {# Brand mark: blue #3b4cb8 square + white R; wordmark Rank (black) + Jee (brand blue) #}
+            <a href="{{ url('core:home') }}" class="rankjee-logo flex shrink-0 items-center gap-1.5 md:gap-2.5 pr-2 md:pr-5 mr-0.5 md:mr-1 border-r border-slate-200/90" aria-label="RankJee home">
+                <span class="rankjee-mark" aria-hidden="true">R</span>
+                <span class="text-lg md:text-xl font-black tracking-tight text-slate-900">Rank<span class="brand-jee">Jee</span></span>
             </a>
             
             <!-- Desktop Nav — centered in remaining space -->
             <div class="hidden md:flex flex-1 min-w-0 justify-center items-center">
-            <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:gap-x-7 xl:gap-x-9 text-sm font-black text-slate-600 uppercase tracking-[0.16em] lg:tracking-[0.19em] text-center">
+            <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 lg:gap-x-6 xl:gap-x-7 text-xs font-black text-slate-600 uppercase tracking-[0.14em] lg:tracking-[0.16em] text-center">
                 {% if not request.user.is_authenticated %}
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
@@ -318,10 +276,24 @@
                 {% endif %}
             </div>
             </div>
-            
-            <div class="flex shrink-0 items-center justify-end gap-3 md:gap-5">
+
+            <!-- Dashboard · Blog · Login/Logout/Join — compact (replaces top utility strip) -->
+            <div class="flex shrink-0 items-center justify-end gap-1.5 md:gap-2">
+                <nav class="nav-main-util" aria-label="Account shortcuts">
+                    <a href="{{ url('dashboard:index') }}" class="nav-util-link">{{ uil.dashboard }}</a>
+                    <a href="{{ url('blog:index') }}" class="nav-util-link">Blog</a>
+                    {% if request.user.is_authenticated %}
+                    <form action="{{ url('users:logout') }}" method="post" class="inline m-0">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <button type="submit" class="nav-util-btn nav-util-btn--logout">{{ uil.logout }}</button>
+                    </form>
+                    {% else %}
+                    <a href="{{ url('users:login') }}" class="nav-util-btn nav-util-btn--login">{{ uil.login }}</a>
+                    <a href="{{ url('users:signup') }}" class="nav-util-btn nav-util-btn--join">{{ uil.join }}</a>
+                    {% endif %}
+                </nav>
                 {% if request.user.is_authenticated and not request.user.is_premium %}
-                <a href="{{ url('payments:plans') }}" class="hidden md:inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-xs font-black px-4 py-2 rounded-xl shadow-lg shadow-orange-200 hover:scale-105 transition-all uppercase tracking-widest">
+                <a href="{{ url('payments:plans') }}" class="hidden sm:inline-flex items-center bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg md:rounded-xl shadow-md shadow-orange-200/80 hover:scale-[1.02] transition-all uppercase tracking-widest">
                     <span>{{ uil.pro }}</span>
                 </a>
                 {% endif %}

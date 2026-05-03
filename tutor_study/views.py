@@ -1,3 +1,4 @@
+import json
 from functools import wraps
 
 from django.contrib import messages
@@ -268,6 +269,7 @@ def student_material_detail(request, pk, study_urls=None):
         **shell,
         'material': material,
         'body_html': _format_note_body(material.body),
+        'material_plain_json': json.dumps(material.body or ''),
         'seo_title': f'{material.title} — Study room',
     }
     return render(request, 'tutor_study/student_material.jinja', ctx)
