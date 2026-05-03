@@ -350,6 +350,8 @@ SOCIALACCOUNT_ADAPTER = 'users.adapters.RoleAwareSocialAccountAdapter'
 # Google OAuth credentials from environment (recommended for deploys).
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '').strip()
 GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '').strip()
+# Browser Google Picker (Drive link chooser). Create an API key with “Google Picker API” enabled.
+GOOGLE_PICKER_API_KEY = os.environ.get('GOOGLE_PICKER_API_KEY', '').strip()
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],

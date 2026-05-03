@@ -54,16 +54,27 @@
 
     <section class="study-lms-card px-5 py-6 sm:px-8 sm:py-7">
         <h2 class="text-base font-semibold text-[#202124]">Your work</h2>
-        <p class="mt-1 text-sm text-[#5f6368] leading-relaxed">Paste a link to Google Drive or Google Docs so your tutor can review your file.</p>
+        <p class="mt-1 text-sm text-[#5f6368] leading-relaxed">Submit a <strong>share link</strong> to Google Drive or Google Docs so your tutor can open your file. RankJee only stores the link, not the file.</p>
+        {% if google_drive_picker_enabled %}
+        <p class="mt-2 text-xs text-[#5f6368]">Use <strong>Pick from Drive</strong> to choose a file (Google may ask you to allow Drive access).</p>
+        {% endif %}
         {% if submission %}
         <p class="mt-4 inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-900">
             Last submitted {{ submission.submitted_at.strftime('%d %b %Y, %H:%M') }}
         </p>
         {% endif %}
-        <form method="post" class="mt-6 space-y-4">
+        <form method="post" class="mt-6 space-y-4" id="assignment-submit-form">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <div>
-                <label for="{{ form.drive_url.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wide text-[#5f6368] mb-2">Drive link</label>
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                    <label for="{{ form.drive_url.id_for_label }}" class="block text-xs font-semibold uppercase tracking-wide text-[#5f6368]">Drive link</label>
+                    {% if google_drive_picker_enabled %}
+                    <button type="button" id="study-drive-picker-btn" class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wide text-indigo-800 hover:bg-indigo-100 transition-colors">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3L4 9v12h16V9l-8-6zm0 2.18l6 4.5V19H6v-9.32l6-4.5z"/></svg>
+                        Pick from Drive
+                    </button>
+                    {% endif %}
+                </div>
                 {{ form.drive_url }}
                 {% if form.drive_url.errors %}
                 <p class="text-red-700 text-sm mt-2">{{ form.drive_url.errors[0] }}</p>
@@ -75,4 +86,61 @@
         </form>
     </section>
 </div>
+
+{% if google_drive_picker_enabled %}
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<script>
+(function () {
+    var clientId = {{ google_picker_client_id_json|safe }};
+    var apiKey = {{ google_picker_api_key_json|safe }};
+    var btn = document.getElementById('study-drive-picker-btn');
+    var input = document.querySelector('#assignment-submit-form [name="drive_url"]');
+    if (!btn || !input || !clientId || !apiKey) return;
+
+    function loadPickerThen(cb) {
+        if (typeof gapi !== 'undefined' && gapi.load) {
+            gapi.load('picker', cb);
+            return;
+        }
+        setTimeout(function () { loadPickerThen(cb); }, 100);
+    }
+
+    btn.addEventListener('click', function () {
+        if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+            alert('Google sign-in script is still loading. Try again in a moment.');
+            return;
+        }
+        var tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            callback: function (res) {
+                if (res.error) return;
+                if (!res.access_token) return;
+                loadPickerThen(function () {
+                    var picker = new google.picker.PickerBuilder()
+                        .addView(new google.picker.DocsView().setIncludeFolders(true))
+                        .setOAuthToken(res.access_token)
+                        .setDeveloperKey(apiKey)
+                        .setTitle('Select your file')
+                        .setCallback(function (data) {
+                            if (data[google.picker.Response.ACTION] !== google.picker.Action.PICKED) return;
+                            var docs = data[google.picker.Response.DOCUMENTS];
+                            if (!docs || !docs.length) return;
+                            var url = docs[0].url || docs[0].alternateLink || '';
+                            if (url) {
+                                input.value = url;
+                                input.dispatchEvent(new Event('input', { bubbles: true }));
+                            }
+                        })
+                        .build();
+                    picker.setVisible(true);
+                });
+            },
+        });
+        tokenClient.requestAccessToken({ prompt: '' });
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -39,6 +39,11 @@ def platform_study_material_q():
     return Q(tutor__is_staff=True) | Q(tutor__is_superuser=True)
 
 
+def platform_study_assignment_q():
+    """Assignments created by staff/superuser tutors — shown to every logged-in student."""
+    return Q(tutor__is_staff=True) | Q(tutor__is_superuser=True)
+
+
 def study_material_visible_to_all_students(material) -> bool:
     t = material.tutor
     return bool(t.is_staff or t.is_superuser)
@@ -50,6 +55,18 @@ def student_can_access_study_material(student, material) -> bool:
     if study_material_visible_to_all_students(material):
         return True
     return student_can_access_tutor(student, material.tutor_id)
+
+
+def platform_assignment_visible_to_all_students(assignment) -> bool:
+    t = assignment.tutor
+    return bool(t.is_staff or t.is_superuser)
+
+
+def student_can_access_study_assignment(student, assignment) -> bool:
+    """Engaged tutor assignments, or platform (staff/superuser) assignments for any logged-in student."""
+    if platform_assignment_visible_to_all_students(assignment):
+        return True
+    return student_can_access_tutor(student, assignment.tutor_id)
 
 
 def _tutor_display_name(user) -> str:

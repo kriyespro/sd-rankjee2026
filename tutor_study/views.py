@@ -1,6 +1,7 @@
 import json
 from functools import wraps
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
@@ -18,8 +19,10 @@ from .services import (
     build_lms_flat_nav,
     build_lms_topic_page_cards,
     engaged_tutor_user_ids,
+    platform_study_assignment_q,
     get_tutor_profile,
     platform_study_material_q,
+    student_can_access_study_assignment,
     student_can_access_study_material,
     student_can_access_tutor,
     topic_breadcrumb_labels,
@@ -89,21 +92,23 @@ def _student_study_data(request):
         .distinct()
         .order_by('-updated_at')[:80]
     )
-    assignments = []
-    submitted_ids = set()
+    assign_q = platform_study_assignment_q()
     if tutors:
-        assignments = list(
-            StudyAssignment.objects.filter(tutor_id__in=tutors).select_related(
-                'tutor', 'skill', 'material', 'study_topic', 'study_topic__parent'
-            )[:80]
+        assign_q = Q(tutor_id__in=tutors) | platform_study_assignment_q()
+    assignments = list(
+        StudyAssignment.objects.filter(assign_q)
+        .select_related('tutor', 'skill', 'material', 'study_topic', 'study_topic__parent')
+        .distinct()
+        .order_by('-updated_at')[:80]
+    )
+    submitted_ids = set()
+    if assignments:
+        aid = [a.pk for a in assignments]
+        submitted_ids = set(
+            AssignmentSubmission.objects.filter(
+                student=request.user, assignment_id__in=aid
+            ).values_list('assignment_id', flat=True)
         )
-        if assignments:
-            aid = [a.pk for a in assignments]
-            submitted_ids = set(
-                AssignmentSubmission.objects.filter(
-                    student=request.user, assignment_id__in=aid
-                ).values_list('assignment_id', flat=True)
-            )
     return {
         'tutors': tutors,
         'materials': materials,
@@ -286,7 +291,7 @@ def student_assignment_detail(request, pk, study_urls=None):
         ),
         pk=pk,
     )
-    if not student_can_access_tutor(request.user, assignment.tutor_id):
+    if not student_can_access_study_assignment(request.user, assignment):
         messages.error(request, 'You do not have access to this assignment.')
         return redirect(reverse(urls['hub']))
 
@@ -311,6 +316,9 @@ def student_assignment_detail(request, pk, study_urls=None):
         highlight_topic_pk=assignment.study_topic_id,
         study_data=bundle,
     )
+    cid = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', '').strip()
+    pkey = getattr(settings, 'GOOGLE_PICKER_API_KEY', '').strip()
+    picker_on = bool(cid and pkey)
     ctx = {
         **_study_seo_ctx(request),
         **shell,
@@ -318,6 +326,9 @@ def student_assignment_detail(request, pk, study_urls=None):
         'form': form,
         'submission': existing,
         'seo_title': f'{assignment.title} — Study room',
+        'google_drive_picker_enabled': picker_on,
+        'google_picker_client_id_json': json.dumps(cid),
+        'google_picker_api_key_json': json.dumps(pkey),
     }
     return render(request, 'tutor_study/student_assignment.jinja', ctx)
 
