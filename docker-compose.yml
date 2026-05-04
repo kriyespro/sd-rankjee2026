@@ -35,6 +35,9 @@ services:
       - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+    # Pass Razorpay keys via env_file so secrets are not mangled by Compose ${VAR} interpolation ($ in secret, etc.).
+    env_file:
+      - .env
     environment:
       # Copy .env.production.example to .env on the server; Compose loads .env for ${VAR} substitution.
       - DEBUG=${DEBUG:-0}
@@ -48,11 +51,7 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
-      # Razorpay (must exist in host .env — Compose passes into container; avoids silent empty KEY_* inside web)
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
-      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
-      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
+      # RAZORPAY_* comes from env_file `.env` above (do not use ${RAZORPAY_KEY_SECRET} here).
     ports:
       - "8889:8000"
     depends_on:
@@ -66,6 +65,8 @@ services:
     command: celery -A rankjee worker --loglevel=info
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
       - DEBUG=${DEBUG:-0}
       - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
@@ -75,10 +76,6 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
-      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
-      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -90,6 +87,8 @@ services:
     command: celery -A rankjee beat --loglevel=info
     volumes:
       - .:/app
+    env_file:
+      - .env
     environment:
       - DEBUG=${DEBUG:-0}
       - SECRET_KEY=${SECRET_KEY:-django-insecure-change-me-in-env}
@@ -99,10 +98,6 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
-      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
-      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
-      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
-      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     depends_on:
       db:
         condition: service_healthy

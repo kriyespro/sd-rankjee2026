@@ -15,7 +15,7 @@ class Command(BaseCommand):
 
         self.stdout.write(f"razorpay_dummy_mode: {razorpay_dummy_mode()}")
         self.stdout.write(f"RAZORPAY_KEY_ID length: {len(kid)} prefix: {kid[:14]}…" if len(kid) > 14 else f"RAZORPAY_KEY_ID: {kid!r}")
-        self.stdout.write(f"RAZORPAY_KEY_SECRET length: {len(secret)} (expect roughly 24–40 chars; too short often means truncation)")
+        self.stdout.write(f"RAZORPAY_KEY_SECRET length: {len(secret)}")
 
         if any(ch.isspace() for ch in kid):
             self.stdout.write(self.style.ERROR("RAZORPAY_KEY_ID contains whitespace — fix `.env` line."))
@@ -23,23 +23,6 @@ class Command(BaseCommand):
         if any(ch.isspace() for ch in secret):
             self.stdout.write(self.style.ERROR("RAZORPAY_KEY_SECRET contains whitespace/newline — use single line in `.env`."))
             return
-
-        if kid.startswith("rzp_test_") and len(kid) < 22:
-            self.stdout.write(
-                self.style.WARNING(
-                    "KEY_ID looks short for a typical test key (~23 chars like rzp_test_XXXXXXXXXXXX). "
-                    "Confirm you copied the full Key Id from Dashboard → Account & Settings → API Keys."
-                )
-            )
-        if kid.startswith("rzp_live_") and len(kid) < 22:
-            self.stdout.write(self.style.WARNING("KEY_ID looks short — confirm full live Key Id was copied."))
-
-        if secret and len(secret) < 18:
-            self.stdout.write(
-                self.style.WARNING(
-                    "KEY_SECRET looks short — after regenerating secret, paste the whole string on one line."
-                )
-            )
 
         if razorpay_dummy_mode():
             self.stdout.write(self.style.WARNING("Dummy checkout active — real Razorpay API is skipped."))
@@ -70,11 +53,11 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f"Razorpay API rejected credentials: {exc}"))
             self.stdout.write(
                 "Fix checklist:\n"
-                "  1) Razorpay Dashboard → switch to Test mode (top) → Account & Settings → API Keys.\n"
-                "  2) Click Regenerate Key Secret (or create new pair).\n"
-                "  3) Copy Key Id and Key Secret again into server `.env` (same row pair; no quotes).\n"
-                "  4) `docker compose up -d --force-recreate web` then re-run this command.\n"
-                "  5) Ensure KEY_SECRET belongs to this KEY_ID (mixing old secret + new id fails)."
+                "  1) Pull latest `docker-compose.yml` — Razorpay vars must use `env_file: .env` (not ${VAR} in compose).\n"
+                "  2) Razorpay Dashboard → Test mode → Account & Settings → API Keys → Regenerate Key Secret.\n"
+                "  3) Paste full Key Id + Key Secret into project `.env` (one line each; no quotes; avoid `$` eaten by old compose).\n"
+                "  4) `docker compose up -d --force-recreate web celery celery-beat` then `razorpay_check` again.\n"
+                "  5) Secret must match Key Id from the same regenerate/copy operation."
             )
             return
 

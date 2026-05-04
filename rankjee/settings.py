@@ -163,7 +163,7 @@ def _strip_env_value(raw):
     """Trim whitespace and optional wrapping quotes from `.env` (copy/paste errors)."""
     if raw is None:
         return ""
-    s = str(raw).strip()
+    s = str(raw).strip().replace("\r", "")
     if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
         s = s[1:-1].strip()
     return s
