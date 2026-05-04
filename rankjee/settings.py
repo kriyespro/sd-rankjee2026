@@ -17,10 +17,12 @@ from urllib.parse import urlparse
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load `.env` from project root (Docker bind-mount `/app` → reliable; cwd-independent).
+# Does not override vars already set by Docker Compose / shell.
+load_dotenv(BASE_DIR / ".env")
 
 
 # Quick-start development settings - unsuitable for production
@@ -159,8 +161,8 @@ INSTALLED_APPS = [
 
 # Razorpay — use dashboard test keys in .env, or leave empty in DEBUG for dummy checkout
 # Set RAZORPAY_USE_DUMMY=1 to force simulated payments even if keys exist (local only).
-RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '').strip()
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '').strip()
 # Razorpay webhooks (payment.captured) for home tutor marketplace — verify X-Razorpay-Signature
 RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '').strip()
 

@@ -24,12 +24,19 @@ from core.sitemaps import StaticViewSitemap, CourseSitemap, CourseCitySitemap
 from hometutor.sitemaps import TutorCityLandingSitemap, TutorCitySubjectLandingSitemap
 from assessment.sitemaps import MockTestLandingSitemap, MockTestCityLandingSitemap
 from blog.sitemaps import BlogPostSitemap
+from core import course_checkout
+from payments import views as payments_views
 
 admin.site.site_header = "RankJee Admin Control"
 admin.site.site_title = "RankJee Admin"
 admin.site.index_title = "Welcome to RankJee Control Centre"
 
 urlpatterns = [
+    # Razorpay Standard Checkout — spec-style API aliases (same handlers as /payments/… and course checkout)
+    path('api/payments/order/<int:plan_id>/', payments_views.create_order, name='api_payments_create_order'),
+    path('api/payments/verify/', payments_views.verify_payment, name='api_payments_verify'),
+    path('api/courses/checkout/create/', course_checkout.course_checkout_create, name='api_courses_checkout_create'),
+    path('api/courses/checkout/verify/', course_checkout.course_checkout_verify, name='api_courses_checkout_verify'),
     path('sd/', admin.site.urls), # standard django admin
     path('admin/', include('dashboard.urls')), # custom dashboard
     path('robots.txt', core_views.robots_txt, name='robots_txt'),

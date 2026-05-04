@@ -24,14 +24,16 @@ def make_dummy_order_id() -> str:
 
 
 def get_razorpay_client():
-    """Return Client or None when using dummy checkout."""
+    """Return Client or None when using dummy checkout or keys are missing."""
     if razorpay_dummy_mode():
+        return None
+    key_id = (getattr(settings, "RAZORPAY_KEY_ID", None) or "").strip()
+    key_secret = (getattr(settings, "RAZORPAY_KEY_SECRET", None) or "").strip()
+    if not key_id or not key_secret:
         return None
     import razorpay
 
-    return razorpay.Client(
-        auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
-    )
+    return razorpay.Client(auth=(key_id, key_secret))
 
 
 def _complimentary_subscription_plan():

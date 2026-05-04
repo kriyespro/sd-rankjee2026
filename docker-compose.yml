@@ -48,6 +48,11 @@ services:
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
+      # Razorpay (must exist in host .env — Compose passes into container; avoids silent empty KEY_* inside web)
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     ports:
       - "8889:8000"
     depends_on:
@@ -70,6 +75,10 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
@@ -90,6 +99,10 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
       - SITE_BASE_URL=${SITE_BASE_URL:-http://localhost:8889}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET:-}
+      - RAZORPAY_USE_DUMMY=${RAZORPAY_USE_DUMMY:-0}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-}
     depends_on:
       db:
         condition: service_healthy
