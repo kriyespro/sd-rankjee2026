@@ -39,6 +39,11 @@ def user_unmark_vip_testing(modeladmin, request, queryset):
     queryset.update(is_vip_testing_user=False)
 
 
+@admin.action(description='Set selected users role to VIP_USER')
+def user_set_role_vip_user(modeladmin, request, queryset):
+    queryset.update(role=CustomUser.Role.VIP_USER)
+
+
 @admin.action(description='Mark withdrawals as processed')
 def withdrawal_mark_processed(modeladmin, request, queryset):
     now = timezone.now()
@@ -89,6 +94,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = (
         'username',
         'email',
+        'role',
         'state',
         'is_vip_testing_user',
         'streak_days',
@@ -97,6 +103,7 @@ class CustomUserAdmin(UserAdmin):
         'referral_code',
     )
     list_filter = (
+        'role',
         'is_vip_testing_user',
         'state',
         'is_staff',
@@ -109,6 +116,7 @@ class CustomUserAdmin(UserAdmin):
         user_grant_7_days_pro,
         user_mark_vip_testing,
         user_unmark_vip_testing,
+        user_set_role_vip_user,
     )
     readonly_fields = ('referral_code', 'last_ad_claim_at', 'signup_pro_trial_applied_at')
     fieldsets = UserAdmin.fieldsets + (
@@ -116,6 +124,7 @@ class CustomUserAdmin(UserAdmin):
             'RankJee',
             {
                 'fields': (
+                    'role',
                     'state',
                     'streak_days',
                     'xp_points',
