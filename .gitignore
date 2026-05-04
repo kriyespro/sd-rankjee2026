@@ -1,24 +1,62 @@
+# --- Secrets & local env (never commit) ---
+.env
+.env.local
+.env.*.local
+!.env.production.example
+*.pem
+secrets/
+
 # Python Virtual Environment
 venv/
+.venv/
 ENV/
 env/
-.env
-googleid.txt
-app.log
-app.log.*
-*.pyc
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
 __pycache__/
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
 
-# Database
+# Django
+*.sqlite3
 db.sqlite3
-
-# Static / Media
 staticfiles/
 media/
 
-# Logs & OS Files
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule.*
+
+# Logs
 *.log
+app.log
+app.log.*
+
+# Project-specific (local credentials)
+googleid.txt
+
+# Editors / OS
 .DS_Store
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# Frontend tooling (if used later)
 node_modules/

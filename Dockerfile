@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 
 # Install dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=70,<81" wheel \
     && pip install --no-cache-dir -r requirements.txt
 
 # Copy project

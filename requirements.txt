@@ -1,3 +1,5 @@
+# Razorpay 1.4.x loads pkg_resources via setuptools; setuptools 82+ removed it (breaks import).
+setuptools>=70,<81
 asgiref==3.11.1
 Django==5.0.14
 Jinja2==3.1.6
