@@ -141,11 +141,19 @@ def course_checkout_verify(request):
         order.save(update_fields=["status"])
         return JsonResponse({"status": "failed", "error": str(e)}, status=400)
 
-    complete_course_order_after_payment(
-        order,
-        request.user,
-        params_dict["razorpay_payment_id"],
-        params_dict["razorpay_signature"],
-        request,
-    )
+    try:
+        complete_course_order_after_payment(
+            order,
+            request.user,
+            params_dict["razorpay_payment_id"],
+            params_dict["razorpay_signature"],
+            request,
+        )
+    except Exception:
+        order.status = CourseOrder.Status.FAILED
+        order.save(update_fields=["status"])
+        return JsonResponse(
+            {"status": "failed", "error": "Payment captured but post-payment processing failed. Please contact support."},
+            status=500,
+        )
     return JsonResponse({"status": "success"})

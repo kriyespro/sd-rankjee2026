@@ -113,7 +113,8 @@ def complete_course_order_after_payment(
     signature: str | None,
     request,
 ) -> None:
-    courses = list(order.lines.select_related("course"))
+    # `order.lines` contains CourseOrderLine rows; convert to Course objects for purchase + referral logic.
+    courses = [line.course for line in order.lines.select_related("course")]
     with transaction.atomic():
         order.razorpay_payment_id = payment_id or ""
         order.razorpay_signature = signature or ""
