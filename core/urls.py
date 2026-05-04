@@ -1,11 +1,16 @@
 from django.urls import path
-from . import views
+from . import course_checkout, views
 
 app_name = 'core'
 urlpatterns = [
     path('privacy/', views.privacy, name='privacy'),
     path('terms/', views.terms, name='terms'),
     path('courses/', views.courses, name='courses'),
+    path('courses/cart/', course_checkout.course_cart, name='course_cart'),
+    path('courses/cart/add/<int:course_id>/', course_checkout.course_cart_add, name='course_cart_add'),
+    path('courses/cart/remove/<int:course_id>/', course_checkout.course_cart_remove, name='course_cart_remove'),
+    path('courses/checkout/create/', course_checkout.course_checkout_create, name='course_checkout_create'),
+    path('courses/checkout/verify/', course_checkout.course_checkout_verify, name='course_checkout_verify'),
     path('courses/<slug:slug>/<slug:city_slug>/', views.course_city_landing, name='course_city_landing'),
     path('courses/<slug:slug>/', views.course_detail, name='course_detail'),
     path('request-tutor/', views.request_tutor, name='request_tutor'),

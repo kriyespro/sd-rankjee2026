@@ -1,0 +1,146 @@
+{% extends "base.jinja" %}
+{% block title %}Course cart - RankJee{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+    <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
+    <h1 class="mt-4 text-3xl font-black text-slate-900">Course cart</h1>
+    <p class="mt-2 text-sm text-slate-600">Pay securely with Razorpay (UPI, cards, wallets). Minimum payable total is ₹1.</p>
+
+    {% if payment_dummy %}
+    <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
+        Dummy checkout — simulate payment without live Razorpay keys.
+    </div>
+    {% endif %}
+
+    {% if not cart_courses %}
+    <div class="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-slate-600">
+        Your cart is empty. <a href="{{ url('core:courses') }}" class="font-black text-indigo-700 hover:underline">Browse courses</a>
+    </div>
+    {% else %}
+    <ul class="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {% for c in cart_courses %}
+        <li class="flex flex-wrap items-center justify-between gap-3 p-4">
+            <div>
+                <p class="font-black text-slate-900">{{ c.title }}</p>
+                <p class="text-xs text-slate-500">{{ c.duration_weeks }} weeks · {{ c.level or 'All levels' }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="font-black text-emerald-700">₹{{ c.price_inr }}</span>
+                <form method="post" action="{{ url('core:course_cart_remove', c.id) }}">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <button type="submit" class="text-xs font-black uppercase tracking-wider text-rose-600 hover:text-rose-500">Remove</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
+        <p class="text-lg font-black text-indigo-900">Total <span class="text-emerald-700">₹{{ cart_total_inr }}</span></p>
+        {% if request.user.is_authenticated %}
+        <button type="button" id="course-pay-btn"
+                class="rounded-xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 shadow-lg shadow-indigo-100">
+            Pay now
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(function (c) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+        });
+    }
+    return v;
+}
+async function verifyCoursePayment(payload) {
+    const csrftoken = getCookie('csrftoken');
+    const body = new URLSearchParams(payload);
+    const resp = await fetch('{{ url("core:course_checkout_verify") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken || '',
+        },
+        credentials: 'same-origin',
+        body: body,
+    });
+    let data;
+    try {
+        data = await resp.json();
+    } catch (e) {
+        alert('Invalid server response after payment.');
+        return;
+    }
+    if (data.status === 'success') {
+        window.location.href = '{{ checkout_success_url }}';
+    } else {
+        alert(data.error || 'Verification failed');
+    }
+}
+async function startCourseCheckout() {
+    const csrftoken = getCookie('csrftoken');
+    const resp = await fetch('{{ url("core:course_checkout_create") }}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken || '' },
+        credentials: 'same-origin',
+    });
+    let data;
+    try {
+        data = await resp.json();
+    } catch (e) {
+        alert('Could not start checkout.');
+        return;
+    }
+    if (data.error) {
+        alert(data.error);
+        return;
+    }
+    if (data.checkout_mode === 'free') {
+        window.location.href = data.redirect || '{{ checkout_success_url }}';
+        return;
+    }
+    if (data.checkout_mode === 'dummy') {
+        if (!confirm('Simulate successful payment for these courses?')) return;
+        await verifyCoursePayment({
+            razorpay_order_id: data.order_id,
+            razorpay_payment_id: 'pay_dummy_' + Date.now(),
+            razorpay_signature: 'dummy',
+        });
+        return;
+    }
+    const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: 'INR',
+        name: data.name || 'RankJee Courses',
+        description: data.description || 'Courses',
+        order_id: data.order_id,
+        handler: async function (response) {
+            await verifyCoursePayment({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+            });
+        },
+        modal: { ondismiss: function () {} },
+        prefill: { name: data.user_name, email: data.user_email },
+        theme: { color: '#4F46E5' },
+    };
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function (resp) {
+        const desc = (resp.error && resp.error.description) ? resp.error.description : 'Payment failed';
+        alert(desc);
+    });
+    rzp.open();
+}
+document.getElementById('course-pay-btn')?.addEventListener('click', startCourseCheckout);
+</script>
+{% endblock %}

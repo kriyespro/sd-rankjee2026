@@ -9,7 +9,8 @@ from django.conf import settings
 from django.urls import reverse
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
-from .models import Course, CourseReferral, EarningTask, TutorLeadRequest, UserTaskSubmission
+from .models import Course, CourseReferral, CoursePurchase, EarningTask, TutorLeadRequest, UserTaskSubmission
+from .services_course_checkout import user_owned_course_ids
 from assessment.models import UserAttempt
 from django.utils import timezone
 from assessment.models import DailyJackpot
@@ -144,11 +145,17 @@ def courses(request):
     if ref_code:
         request.session["pending_course_referrer_code"] = ref_code
     courses_qs = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    purchased_ids = (
+        user_owned_course_ids(request.user)
+        if request.user.is_authenticated
+        else set()
+    )
     return render(
         request,
         "core/courses.jinja",
         {
             "courses": courses_qs,
+            "course_purchased_ids": purchased_ids,
             "seo_title": "Courses - Upskill Faster with RankJee",
             "seo_description": "Explore practical courses with outcomes, duration, and pricing to accelerate your career.",
             "canonical_url": request.build_absolute_uri(request.path),
@@ -205,11 +212,16 @@ def course_detail(request, slug):
         )
         return redirect("core:course_detail", slug=course.slug)
 
+    owns_course = False
+    if request.user.is_authenticated:
+        owns_course = CoursePurchase.objects.filter(user=request.user, course=course).exists()
+
     return render(
         request,
         "core/course_detail.jinja",
         {
             "course": course,
+            "owns_course": owns_course,
             "pending_course_referrer_code": pending_ref,
             "seo_title": f"{course.title} - Course Details | RankJee",
             "seo_description": (course.short_description or course.description or "Explore this course on RankJee.")[:155],

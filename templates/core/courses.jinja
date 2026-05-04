@@ -6,6 +6,11 @@
     <div class="mb-8">
         <h1 class="text-3xl font-black text-slate-900">Courses</h1>
         <p class="text-slate-600 mt-2">Explore job-focused courses and start learning with a clean, guided flow.</p>
+        {% if request.GET.get('purchased') == '1' %}
+        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
+            Payment successful — your courses are unlocked. We&apos;ll follow up with access details by email where applicable.
+        </div>
+        {% endif %}
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -20,10 +25,29 @@
                 <span>{{ c.level or "All levels" }}</span>
                 <span>{{ c.duration_weeks }} weeks</span>
             </div>
-            <div class="mt-3 text-lg font-black text-emerald-700">₹{{ c.price_inr }}</div>
-            <a href="{{ url('core:course_detail', c.slug) }}" class="mt-4 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
-                Enroll now
-            </a>
+            <div class="mt-3 text-lg font-black text-emerald-700">{% if c.price_inr and c.price_inr > 0 %}₹{{ c.price_inr }}{% else %}Free{% endif %}</div>
+            <div class="mt-4 flex flex-col gap-2">
+                <a href="{{ url('core:course_detail', c.slug) }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">
+                    Details
+                </a>
+                {% if request.user.is_authenticated %}
+                    {% if c.id in course_purchased_ids %}
+                    <span class="inline-flex items-center justify-center rounded-xl bg-emerald-100 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-800">Owned</span>
+                    {% else %}
+                    <form method="post" action="{{ url('core:course_cart_add', c.id) }}" class="m-0">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="next" value="{{ url('core:courses') }}">
+                        <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
+                            Add to cart
+                        </button>
+                    </form>
+                    {% endif %}
+                {% else %}
+                <a href="{{ url('users:login') }}?next=/courses/" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
+                    Log in to buy
+                </a>
+                {% endif %}
+            </div>
         </article>
         {% else %}
         <div class="md:col-span-2 xl:col-span-3 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">

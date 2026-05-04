@@ -68,6 +68,63 @@ class Course(models.Model):
         return f"/courses/{self.slug}/"
 
 
+class CourseOrder(models.Model):
+    """Paid (or free) cart checkout for `Course` catalog — separate from exam Pro `payments.PaymentOrder`."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        SUCCESS = "SUCCESS", "Success"
+        FAILED = "FAILED", "Failed"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="course_orders")
+    total_inr = models.DecimalField(max_digits=10, decimal_places=2)
+    razorpay_order_id = models.CharField(max_length=100, unique=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=200, blank=True, null=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"CourseOrder {self.razorpay_order_id} — {self.status}"
+
+
+class CourseOrderLine(models.Model):
+    order = models.ForeignKey(CourseOrder, on_delete=models.CASCADE, related_name="lines")
+    course = models.ForeignKey(Course, on_delete=models.PROTECT)
+    unit_price_inr = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.course.title} × ₹{self.unit_price_inr}"
+
+
+class CoursePurchase(models.Model):
+    """Lifetime access row after successful checkout (one row per user per course)."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="course_purchases")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="purchases")
+    order = models.ForeignKey(
+        CourseOrder,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="purchases",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=("user", "course"), name="uniq_course_purchase_user_course"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} owns {self.course.slug}"
+
+
 class CourseReferral(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"

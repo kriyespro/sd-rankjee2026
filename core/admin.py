@@ -1,7 +1,16 @@
 from django.contrib import admin
 from django.utils import timezone
 
-from .models import Course, CourseReferral, EarningTask, TutorLeadRequest, UserTaskSubmission
+from .models import (
+    Course,
+    CourseOrder,
+    CourseOrderLine,
+    CoursePurchase,
+    CourseReferral,
+    EarningTask,
+    TutorLeadRequest,
+    UserTaskSubmission,
+)
 
 @admin.register(EarningTask)
 class EarningTaskAdmin(admin.ModelAdmin):
@@ -21,6 +30,29 @@ class UserTaskSubmissionAdmin(admin.ModelAdmin):
     def reject(self, request, queryset):
         queryset.update(status='REJECTED')
     reject.short_description = "Reject selected submissions"
+
+
+class CourseOrderLineInline(admin.TabularInline):
+    model = CourseOrderLine
+    extra = 0
+    raw_id_fields = ("course",)
+
+
+@admin.register(CourseOrder)
+class CourseOrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "total_inr", "status", "razorpay_order_id", "created_at")
+    list_filter = ("status",)
+    search_fields = ("razorpay_order_id", "user__username", "user__email")
+    raw_id_fields = ("user",)
+    inlines = (CourseOrderLineInline,)
+
+
+@admin.register(CoursePurchase)
+class CoursePurchaseAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "order", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("user__username", "course__title", "course__slug")
+    raw_id_fields = ("user", "course", "order")
 
 
 @admin.register(Course)

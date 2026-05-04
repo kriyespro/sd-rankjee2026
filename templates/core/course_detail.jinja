@@ -55,6 +55,31 @@
         {% if course.description %}
         <div class="mt-6 text-sm text-slate-700 whitespace-pre-line">{{ course.description }}</div>
         {% endif %}
+
+        <div class="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5">
+            <h2 class="text-sm font-black uppercase tracking-wider text-emerald-900">Buy this course</h2>
+            {% if owns_course %}
+            <p class="mt-2 text-sm font-semibold text-emerald-800">You already own this course.</p>
+            {% elif request.user.is_authenticated %}
+            <p class="mt-2 text-sm text-emerald-900">Add to your cart and pay with Razorpay (UPI / cards).</p>
+            <div class="mt-4 flex flex-wrap gap-3">
+                <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500">
+                        Add to cart
+                    </button>
+                </form>
+                <a href="{{ url('core:course_cart') }}" class="inline-flex items-center rounded-xl border border-emerald-300 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-900 hover:bg-emerald-50">
+                    View cart &amp; pay
+                </a>
+            </div>
+            {% else %}
+            <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}" class="mt-3 inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500">
+                Log in to purchase
+            </a>
+            {% endif %}
+        </div>
     </article>
 
     <section class="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">

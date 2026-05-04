@@ -1,6 +1,23 @@
 """Minimal EN/HI labels for nav (FEATURE-13 lean)."""
 
 
+def _course_cart_count(request):
+    if not request.user.is_authenticated:
+        return 0
+    raw = request.session.get("course_cart_ids") or []
+    seen = set()
+    n = 0
+    for x in raw:
+        try:
+            pk = int(x)
+        except (TypeError, ValueError):
+            continue
+        if pk > 0 and pk not in seen:
+            seen.add(pk)
+            n += 1
+    return n
+
+
 def ui_labels(request):
     lang = request.session.get('ui_lang', 'en')
     if lang == 'hi':
@@ -39,4 +56,4 @@ def ui_labels(request):
             'watch_earn': 'Watch & earn ₹',
             'enter_jackpot': 'Enter jackpot',
         }
-    return {'uil': labels, 'ui_lang': lang}
+    return {"uil": labels, "ui_lang": lang, "course_cart_count": _course_cart_count(request)}
