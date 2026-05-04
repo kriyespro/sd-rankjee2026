@@ -16,6 +16,13 @@ class Command(BaseCommand):
         self.stdout.write(f"razorpay_dummy_mode: {razorpay_dummy_mode()}")
         self.stdout.write(f"RAZORPAY_KEY_ID length: {len(kid)} prefix: {kid[:14]}…" if len(kid) > 14 else f"RAZORPAY_KEY_ID: {kid!r}")
         self.stdout.write(f"RAZORPAY_KEY_SECRET length: {len(secret)}")
+        if len(secret) > 0 and len(secret) < 22:
+            self.stdout.write(
+                self.style.WARNING(
+                    "KEY_SECRET looks too short — Razorpay usually shows a longer Key Secret after regenerate "
+                    "(copy the whole line once). Do not use placeholders like xxxxxx or Client Secret by mistake."
+                )
+            )
 
         if any(ch.isspace() for ch in kid):
             self.stdout.write(self.style.ERROR("RAZORPAY_KEY_ID contains whitespace — fix `.env` line."))
