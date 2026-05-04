@@ -1,0 +1,106 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6 md:gap-8 md:pb-12 md:pt-8">
+
+    <header class="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-indigo-50 p-5 shadow-sm md:p-7">
+        <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-[0.22em] text-violet-700">VIP coordinator</p>
+                <h1 class="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">Smart dashboard</h1>
+                <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+                    Snapshot of learners, tutors, exams, and content — jump into study room, scores, referrals, or publishing without leaving RankJee.
+                </p>
+            </div>
+            <div class="flex shrink-0 flex-wrap gap-2">
+                <a href="{{ url('dashboard:vip_create_user') }}" class="inline-flex items-center justify-center rounded-xl bg-violet-700 px-4 py-2.5 text-[11px] font-black uppercase tracking-wider text-white shadow-sm hover:bg-violet-600">Add user</a>
+                <a href="{{ url('dashboard:vip_blog_post_create') }}" class="inline-flex items-center justify-center rounded-xl border border-violet-300 bg-white px-4 py-2.5 text-[11px] font-black uppercase tracking-wider text-violet-900 hover:bg-violet-50">New blog post</a>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Users</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ total_users }}</p>
+            </div>
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Students</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ count_students }}</p>
+            </div>
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Parents</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ count_parents }}</p>
+            </div>
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Tutors (role)</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ count_tutors_role }}</p>
+            </div>
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Listings</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ count_tutor_profiles }}</p>
+            </div>
+            <div class="rounded-xl border border-white/80 bg-white/90 px-3 py-3 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Attempts 7d</p>
+                <p class="mt-1 text-xl font-black tabular-nums text-slate-900">{{ attempts_7d }}</p>
+            </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <span class="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-900 ring-1 ring-emerald-200/80">{{ blog_posts_live }} live blog posts</span>
+            <span class="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-900 ring-1 ring-amber-200/80">{{ referrals_linked }} referrals linked</span>
+        </div>
+    </header>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-700">Shortcuts</h2>
+        <div class="mt-3 flex flex-wrap gap-2">
+            <a href="{{ url('dashboard:study') }}" class="inline-flex rounded-lg bg-slate-900 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-600">Study room</a>
+            <a href="{{ url('assessment:index') }}" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">Exams</a>
+            <a href="{{ url('learning:index') }}" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">Learn</a>
+            <a href="{{ url('dashboard:students_score_table') }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-900 hover:bg-indigo-100">All scores</a>
+            <a href="{{ url('dashboard:users_referral_table') }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-900 hover:bg-indigo-100">Referrals</a>
+            <a href="{{ url('blog:index') }}" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">Blog</a>
+            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">Tutor marketplace</a>
+        </div>
+    </section>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-700">Recent signups</h2>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Last 14</span>
+            </div>
+            <ul class="mt-3 divide-y divide-slate-100">
+                {% for u in recent_users %}
+                <li class="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                    <span class="font-semibold text-slate-900">@{{ u.username }}</span>
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-600">{{ u.role }}</span>
+                    <span class="text-xs text-slate-500">{{ u.date_joined.strftime('%d %b %Y') }}</span>
+                </li>
+                {% else %}
+                <li class="py-6 text-center text-sm text-slate-500">No users yet.</li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-700">Latest exam attempts</h2>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Last 14</span>
+            </div>
+            <ul class="mt-3 divide-y divide-slate-100">
+                {% for a in recent_attempts %}
+                <li class="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                    <span class="min-w-0 truncate font-medium text-slate-900">@{{ a.user.username }}</span>
+                    <span class="truncate text-slate-600">{{ a.skill.name }}</span>
+                    <span class="tabular-nums font-black text-indigo-700">{{ a.score }}%</span>
+                    <span class="text-xs text-slate-500">{{ a.attempt_date.strftime('%d %b %H:%M') }}</span>
+                </li>
+                {% else %}
+                <li class="py-6 text-center text-sm text-slate-500">No attempts recorded.</li>
+                {% endfor %}
+            </ul>
+        </section>
+    </div>
+</div>
+{% endblock %}

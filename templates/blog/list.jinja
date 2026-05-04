@@ -1,16 +1,16 @@
 {% extends "base.jinja" %}
 {% block title %}{{ seo_title }}{% endblock %}
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 py-10">
-    <header class="mb-10">
+<div class="max-w-5xl mx-auto px-3 sm:px-4 py-6 sm:py-10 min-w-0">
+    <header class="mb-6 sm:mb-10">
         <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Blog</p>
-        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Guides & exam tips</h1>
-        <p class="text-slate-600 mt-3 max-w-2xl">Long-tail prep ideas and links to tutors, mock tests, and courses on RankJee.</p>
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Guides & exam tips</h1>
+        <p class="text-slate-600 mt-3 max-w-2xl text-sm sm:text-base">Long-tail prep ideas and links to tutors, mock tests, and courses on RankJee.</p>
     </header>
 
-    <div class="grid gap-6 md:grid-cols-2">
+    <div class="grid gap-4 sm:gap-6 md:grid-cols-2 min-w-0">
         {% for post in posts %}
-        <article class="rounded-2xl border p-4 md:p-5 shadow-sm hover:shadow-md transition-all flex flex-col {% if loop.index0 % 3 == 0 %}bg-indigo-50/70 border-indigo-100 hover:border-indigo-200{% elif loop.index0 % 3 == 1 %}bg-sky-50/70 border-sky-100 hover:border-sky-200{% else %}bg-emerald-50/70 border-emerald-100 hover:border-emerald-200{% endif %}">
+        <article class="min-w-0 rounded-2xl border p-4 md:p-5 shadow-sm hover:shadow-md transition-all flex flex-col {% if loop.index0 % 3 == 0 %}bg-indigo-50/70 border-indigo-100 hover:border-indigo-200{% elif loop.index0 % 3 == 1 %}bg-sky-50/70 border-sky-100 hover:border-sky-200{% else %}bg-emerald-50/70 border-emerald-100 hover:border-emerald-200{% endif %}">
             <a href="{{ url('blog:detail', slug=post.slug) }}" class="block mb-4 overflow-hidden rounded-xl bg-slate-100">
                 {% if post.hero_image %}
                 <img src="{{ post.hero_image.url }}" alt="{{ post.title }}" class="w-full h-44 object-cover transition-transform duration-300 hover:scale-[1.02]" loading="lazy" decoding="async">
@@ -21,7 +21,7 @@
             {% if post.category %}
             <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">{{ post.category.name }}</span>
             {% endif %}
-            <h2 class="text-xl font-black text-slate-900 mt-2 mb-2">
+            <h2 class="text-lg sm:text-xl font-black text-slate-900 mt-2 mb-2 break-words">
                 <a href="{{ url('blog:detail', slug=post.slug) }}" class="hover:text-indigo-700">{{ post.title }}</a>
             </h2>
             {% if post.excerpt %}
@@ -44,7 +44,7 @@
     </div>
 
     {% if page_obj.paginator.num_pages > 1 %}
-    <nav class="mt-10 flex justify-center gap-4 items-center text-sm font-bold">
+    <nav class="mt-10 flex flex-wrap justify-center gap-x-4 gap-y-2 items-center text-sm font-bold px-1">
         {% if page_obj.has_previous() %}
         <a href="{{ url('blog:index') }}?page={{ page_obj.previous_page_number() }}" class="text-indigo-600 hover:underline">← Newer</a>
         {% endif %}

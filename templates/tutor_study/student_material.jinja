@@ -16,6 +16,17 @@
     }
     .study-reading-prose p:last-child,
     .study-reading-prose .study-prose p:last-child { margin-bottom: 0; }
+    .study-reading-prose img,
+    .study-reading-prose video,
+    .study-reading-prose svg { max-width: 100%; height: auto; }
+    .study-reading-prose table {
+        display: block;
+        width: max-content;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .study-reading-prose pre { overflow-x: auto; max-width: 100%; }
 </style>
 {% endblock %}
 {% block study_content %}
@@ -45,7 +56,7 @@
     </header>
 
     <div class="px-4 sm:px-6 py-5 sm:py-8">
-        <article class="max-w-prose mx-auto rounded-2xl border border-stone-300/70 bg-[#fffefb] shadow-xl shadow-stone-900/10 px-5 py-6 sm:px-9 sm:py-9">
+        <article class="max-w-prose w-full min-w-0 mx-auto rounded-2xl border border-stone-300/70 bg-[#fffefb] shadow-xl shadow-stone-900/10 px-4 py-5 sm:px-9 sm:py-9">
             <div class="study-reading-prose max-w-none">{{ body_html }}</div>
         </article>
     </div>

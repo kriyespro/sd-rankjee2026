@@ -52,6 +52,14 @@
         {% endif %}
     </div>
 
+    {% if study_vip_preview %}
+    <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-950">
+        <p class="font-semibold text-amber-900">Coordinator preview</p>
+        <p class="mt-1 text-amber-900/90 leading-relaxed">You can read instructions and linked quizzes; student submissions stay on real student accounts.</p>
+    </div>
+    {% endif %}
+
+    {% if not study_vip_preview %}
     <section class="study-lms-card px-5 py-6 sm:px-8 sm:py-7">
         <h2 class="text-base font-semibold text-[#202124]">Your work</h2>
         <p class="mt-1 text-sm text-[#5f6368] leading-relaxed">Submit a <strong>share link</strong> to Google Drive or Google Docs so your tutor can open your file. RankJee only stores the link, not the file.</p>
@@ -85,6 +93,7 @@
             </button>
         </form>
     </section>
+    {% endif %}
 </div>
 
 {% if google_drive_picker_enabled %}

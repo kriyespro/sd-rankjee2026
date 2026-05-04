@@ -125,9 +125,15 @@ async function verifyOnServer(payload) {
         credentials: 'same-origin',
         body: body,
     });
-    const verifyData = await verifyResp.json();
+    let verifyData;
+    try {
+        verifyData = await verifyResp.json();
+    } catch (e) {
+        alert('Could not read server response after payment. Please contact support if money was debited.');
+        return;
+    }
     if (verifyData.status === 'success') {
-        window.location.href = '/admin/?paid=1';
+        window.location.href = '{{ payment_success_url }}';
     } else {
         alert(verifyData.error || 'Payment verification failed');
     }
@@ -139,7 +145,13 @@ async function initiatePayment(planId) {
         headers: { 'X-CSRFToken': csrftoken || '' },
         credentials: 'same-origin',
     });
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        alert('Unexpected response from server when creating order. Try again later.');
+        return;
+    }
     if (data.error) {
         alert('Payment error: ' + data.error);
         return;
@@ -167,10 +179,20 @@ async function initiatePayment(planId) {
                 razorpay_signature: response.razorpay_signature,
             });
         },
+        modal: {
+            ondismiss: function () {
+                /* User closed checkout — no alert (noise); optional: toast here */
+            },
+        },
         prefill: { name: data.user_name, email: data.user_email },
         theme: { color: '#4F46E5' },
     };
     const rzp1 = new Razorpay(options);
+    rzp1.on('payment.failed', function (resp) {
+        const desc = (resp.error && resp.error.description) ? resp.error.description : 'Payment failed';
+        const reason = (resp.error && resp.error.reason) ? (' (' + resp.error.reason + ')') : '';
+        alert(desc + reason);
+    });
     rzp1.open();
 }
 </script>

@@ -5,6 +5,9 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('vip/smart/', views.vip_smart_dashboard, name='vip_smart'),
+    path('vip/add-user/', views.vip_create_user, name='vip_create_user'),
+    path('vip/blog/new/', views.vip_blog_post_create, name='vip_blog_post_create'),
     path('study/', views.dashboard_study, name='study'),
     path('study/topic/general/', views.dashboard_study_topic_general, name='study_topic_general'),
     path('study/topic/<int:topic_pk>/', views.dashboard_study_topic, name='study_topic'),

@@ -67,8 +67,9 @@
             inset 3px 0 0 0 rgb(79 70 229);
     }
 </style>
-<div class="study-lms-scope bg-[#f0f4f9] min-h-[70vh]" x-data="{ studyNavOpen: false }">
-    <div class="lg:hidden sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-3 py-2.5 shadow-sm shadow-slate-900/5">
+<div class="study-lms-scope bg-[#f0f4f9] min-h-[70vh] overflow-x-hidden" x-data="{ studyNavOpen: false }">
+    {# Stick below site header (mobile h-[3.2rem]) so bar is not hidden under nav #}
+    <div class="lg:hidden sticky top-[3.2rem] z-30 flex items-center gap-3 border-b border-slate-200/90 bg-white/95 backdrop-blur-md px-3 py-2.5 shadow-sm shadow-slate-900/5">
         <button type="button" @click="studyNavOpen = true" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 px-3 py-2 text-sm font-semibold text-slate-800 shadow-sm hover:border-indigo-200 hover:text-indigo-800 transition-colors">
             <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
             Topics
@@ -86,7 +87,7 @@
         </aside>
     </div>
 
-    <div class="flex max-w-[1680px] mx-auto min-h-[calc(70vh-2.5rem)] lg:min-h-[70vh]">
+    <div class="flex max-w-[1680px] mx-auto min-h-[calc(70vh-2.5rem)] lg:min-h-[70vh] min-w-0">
         <aside class="hidden lg:flex w-[17rem] xl:w-[18.5rem] shrink-0 flex-col border-r border-slate-200/90 bg-white sticky top-[4.5rem] self-start max-h-[calc(100vh-5rem)] overflow-hidden shadow-[inset_-8px_0_24px_-20px_rgba(15,23,42,0.06)]">
             {% include "tutor_study/_lms_sidebar.jinja" %}
         </aside>

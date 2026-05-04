@@ -27,6 +27,7 @@ class CustomUser(AbstractUser):
         STUDENT = 'STUDENT', 'Student'
         PARENT = 'PARENT', 'Parent'
         TUTOR = 'TUTOR', 'Tutor'
+        VIP_USER = 'VIP_USER', 'VIP user'
         CITY_ADMIN = 'CITY_ADMIN', 'City admin'
         GLOBAL_ADMIN = 'GLOBAL_ADMIN', 'Global admin'
 
@@ -100,6 +101,8 @@ class CustomUser(AbstractUser):
     @property
     def is_premium(self):
         """Exam Pro (payments subscription), VIP tester flag, or active paid/complimentary sub."""
+        if getattr(self, 'role', None) == self.Role.VIP_USER:
+            return True
         if self.is_vip_testing_user:
             return True
         try:

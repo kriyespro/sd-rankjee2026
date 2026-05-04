@@ -1,0 +1,9 @@
+{# Compact KPI row — expects `kpi_cards` list of {label, value} #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    {% for card in kpi_cards %}
+    <div class="min-w-0 rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate">{{ card.label }}</p>
+        <p class="mt-0.5 text-base font-black tabular-nums text-slate-900 leading-tight sm:text-lg">{{ card.value }}</p>
+    </div>
+    {% endfor %}
+</div>

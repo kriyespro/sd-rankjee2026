@@ -2,158 +2,139 @@
 {% block title %}Parent Dashboard - RankJee{% endblock %}
 
 {% block content %}
-<div class="mx-auto w-full max-w-7xl px-5 py-8 sm:px-8">
-    <div class="mb-8">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-amber-700">Parent workspace</p>
-        <h1 class="mt-2 text-3xl font-black text-slate-900">Manage learning with control</h1>
-        <p class="mt-2 text-sm text-slate-600">Approve tutor bookings, track active learning, and handle support quickly.</p>
-    </div>
+<div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
 
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {% for card in kpi_cards %}
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">{{ card.label }}</p>
-            <p class="mt-1 text-2xl font-black text-slate-900">{{ card.value }}</p>
+    <section class="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5" aria-label="Dashboard overview">
+        <div class="border-b border-slate-100 pb-3">
+            <p class="text-[10px] font-black uppercase tracking-wider text-amber-700">Parent workspace</p>
+            <h1 class="text-xl font-black tracking-tight text-slate-900">Overview</h1>
+            <p class="mt-0.5 text-xs text-slate-600">Demos, payments, and continuity in one glance.</p>
         </div>
-        {% endfor %}
-    </div>
-
-    <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-        <p class="text-xs font-black uppercase tracking-widest text-amber-700">Quick actions</p>
-        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            <a href="{{ url('dashboard:study') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Study</a>
-            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Find tutors</a>
-            <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Review demos</a>
-            <a href="{{ url('learning:index') }}" class="inline-flex items-center justify-center rounded-xl bg-white px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Learning hub</a>
-            <a href="{{ url('dashboard:index') }}" class="inline-flex items-center justify-center rounded-xl bg-amber-500 px-3 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-amber-400">Refresh dashboard</a>
+        <div class="mt-3">
+            {% include "dashboard/partials/_dash_kpi_strip.jinja" %}
         </div>
-        {% if parent_demo_sla_risk_count > 0 %}
-        <p class="mt-3 rounded-xl border border-amber-200 bg-amber-100 px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800">
-            {{ parent_demo_sla_risk_count }} demo request{% if parent_demo_sla_risk_count != 1 %}s{% endif %} pending for more than 24h.
-        </p>
-        {% endif %}
-    </div>
-
-    <div class="mt-8 grid gap-4 md:grid-cols-2">
-        <a href="{{ url('hometutor:tutor_list') }}" class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-            <p class="text-xs font-black uppercase tracking-widest text-amber-700">Action</p>
-            <h2 class="mt-2 text-lg font-black text-slate-900">Find and compare tutors</h2>
-            <p class="mt-1 text-sm text-slate-600">Review tutor profiles, ratings, and request demos for better fit.</p>
-        </a>
-        <a href="{{ url('hometutor:my_demo_requests') }}" class="rounded-2xl border border-slate-200 bg-white p-5">
-            <p class="text-xs font-black uppercase tracking-widest text-slate-500">Action</p>
-            <h2 class="mt-2 text-lg font-black text-slate-900">Track pending approvals</h2>
-            <p class="mt-1 text-sm text-slate-600">{{ pending_sent }} requests are waiting for tutor response.</p>
-        </a>
-    </div>
-
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 class="text-sm font-black text-slate-900">Priority queue</h3>
-        <ul class="mt-3 space-y-2 text-sm text-slate-700">
-            <li>• Review newly accepted demos and confirm schedule.</li>
-            <li>• Watch active engagement count for continuity.</li>
-            <li>• Resolve support cases early to avoid learning disruptions.</li>
-        </ul>
-    </div>
-
-    <div class="mt-6 grid gap-4 lg:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Monthly spend</p>
-            <p class="mt-1 text-2xl font-black text-slate-900">₹{{ parent_monthly_spend }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Total spend</p>
-            <p class="mt-1 text-2xl font-black text-slate-900">₹{{ parent_total_spend }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Pending payment actions</p>
-            <p class="mt-1 text-2xl font-black text-slate-900">{{ parent_pending_payment_count }}</p>
-        </div>
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Attendance rate</p>
-            <p class="mt-1 text-2xl font-black text-slate-900">{{ parent_attendance_rate }}%</p>
-        </div>
-    </div>
-
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 class="text-sm font-black text-slate-900">Parent control center</h3>
-        <ul class="mt-3 space-y-2 text-sm text-slate-700">
-            <li>• Use monthly spend to decide tutor continuation and session frequency.</li>
-            <li>• Clear pending payment actions quickly to avoid schedule disruptions.</li>
-            <li>• Keep attendance above 80% for stable outcomes.</li>
-        </ul>
-    </div>
-
-    <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
-        <h3 class="text-sm font-black text-amber-900">Recommended next actions</h3>
-        <ul class="mt-3 space-y-2 text-sm text-amber-900">
-            {% for item in parent_next_actions %}
-            <li>• {{ item }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <div class="mt-6 grid gap-4 lg:grid-cols-2">
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-            <div class="flex items-center justify-between gap-2">
-                <h3 class="text-sm font-black text-slate-900">Recent demo requests</h3>
-                <a href="{{ url('hometutor:my_demo_requests') }}" class="text-xs font-black uppercase tracking-wider text-amber-700 hover:text-amber-900">View all</a>
+        <div class="mt-3 border-t border-slate-100 pt-3">
+            <p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">Quick links</p>
+            <div class="flex flex-wrap gap-1.5">
+                <a href="{{ url('dashboard:study') }}" class="inline-flex rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-200">Study</a>
+                <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-200">Tutors</a>
+                <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex rounded-md bg-amber-600 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-amber-500">Demos{% if pending_sent %} {{ pending_sent }}{% endif %}</a>
+                <a href="{{ url('learning:index') }}" class="inline-flex rounded-md border border-slate-200 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Learn</a>
             </div>
-            {% if latest_demo_requests %}
-            <div class="mt-3 space-y-3">
-                {% for d in latest_demo_requests %}
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-sm font-black text-slate-900">{{ d.tutor.display_name }}</p>
-                    {% if d.pk in parent_demo_sla_risk_ids %}
-                    <p class="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-800">SLA risk</p>
-                    {% endif %}
-                    <p class="mt-1 text-xs font-bold uppercase tracking-wider text-slate-600">Status: {{ d.get_status_display() }}</p>
-                    {% if d.scheduled_at %}
-                    <p class="mt-1 text-xs text-slate-500">Scheduled: {{ d.scheduled_at.strftime('%d %b %Y %H:%M') }}</p>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <p class="mt-3 text-sm text-slate-500">No demo requests yet. Start by shortlisting tutors.</p>
+            {% if parent_demo_sla_risk_count > 0 %}
+            <p class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-900">
+                {{ parent_demo_sla_risk_count }} demo{% if parent_demo_sla_risk_count != 1 %}s{% endif %} pending over 24h.
+            </p>
             {% endif %}
         </div>
+    </section>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5">
-            <div class="flex items-center justify-between gap-2">
-                <h3 class="text-sm font-black text-slate-900">Learning engagements</h3>
-                <a href="{{ url('hometutor:my_demo_requests') }}" class="text-xs font-black uppercase tracking-wider text-amber-700 hover:text-amber-900">Track</a>
-            </div>
-            {% if latest_learning_engagements %}
-            <div class="mt-3 space-y-3">
-                {% for e in latest_learning_engagements %}
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-sm font-black text-slate-900">{{ e.tutor_profile.display_name }}</p>
-                    <p class="mt-1 text-xs font-bold uppercase tracking-wider text-slate-600">{{ e.get_status_display() }}</p>
-                    <a href="{{ url('hometutor:engagement_room', pk=e.pk) }}" class="mt-2 inline-flex text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-900">Open engagement room</a>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+        <div class="min-w-0 w-full flex-1 space-y-4">
+            <div class="grid gap-2 sm:grid-cols-4">
+                <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Spend 30d</p>
+                    <p class="text-base font-black tabular-nums text-slate-900">₹{{ parent_monthly_spend }}</p>
                 </div>
-                {% endfor %}
+                <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Total spend</p>
+                    <p class="text-base font-black tabular-nums text-slate-900">₹{{ parent_total_spend }}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Pay pending</p>
+                    <p class="text-base font-black tabular-nums text-slate-900">{{ parent_pending_payment_count }}</p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-white px-2.5 py-2 shadow-sm">
+                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Attendance</p>
+                    <p class="text-base font-black tabular-nums text-slate-900">{{ parent_attendance_rate }}%</p>
+                </div>
             </div>
-            {% else %}
-            <p class="mt-3 text-sm text-slate-500">No active learning engagement yet.</p>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
-        <h3 class="text-sm font-black text-slate-900">Activity timeline</h3>
-        {% if activity_timeline %}
-        <div class="mt-3 space-y-3">
-            {% for item in activity_timeline %}
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p class="text-sm font-bold text-slate-900">{{ item.title }}</p>
-                <p class="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">{{ item.meta.strftime('%d %b %Y %H:%M') }}</p>
+            <div class="rounded-xl border border-amber-100 bg-amber-50/90 p-4">
+                <h2 class="text-xs font-black uppercase tracking-wider text-amber-900">Suggested actions</h2>
+                <ul class="mt-2 list-inside list-disc space-y-1 text-[11px] text-amber-950">
+                    {% for item in parent_next_actions %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
             </div>
-            {% endfor %}
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Demo requests</h3>
+                        <a href="{{ url('hometutor:my_demo_requests') }}" class="text-[10px] font-black uppercase tracking-wider text-amber-700 hover:text-amber-900">All</a>
+                    </div>
+                    {% if latest_demo_requests %}
+                    <ul class="mt-2 space-y-2">
+                        {% for d in latest_demo_requests %}
+                        <li class="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                            <p class="text-sm font-bold text-slate-900">{{ d.tutor.display_name }}</p>
+                            {% if d.pk in parent_demo_sla_risk_ids %}
+                            <span class="mt-1 inline-block rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-800">SLA</span>
+                            {% endif %}
+                            <p class="mt-1 text-[11px] font-bold uppercase tracking-wider text-slate-600">{{ d.get_status_display() }}</p>
+                            {% if d.scheduled_at %}
+                            <p class="text-[10px] text-slate-500">{{ d.scheduled_at.strftime('%d %b %Y %H:%M') }}</p>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="mt-2 text-xs text-slate-500">No demos yet.</p>
+                    {% endif %}
+                </div>
+                <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-center justify-between gap-2">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Engagements</h3>
+                        <a href="{{ url('hometutor:my_demo_requests') }}" class="text-[10px] font-black uppercase tracking-wider text-amber-700 hover:text-amber-900">Track</a>
+                    </div>
+                    {% if latest_learning_engagements %}
+                    <ul class="mt-2 space-y-2">
+                        {% for e in latest_learning_engagements %}
+                        <li class="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                            <p class="text-sm font-bold text-slate-900">{{ e.tutor_profile.display_name }}</p>
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-600">{{ e.get_status_display() }}</p>
+                            <a href="{{ url('hometutor:engagement_room', pk=e.pk) }}" class="mt-1 inline-flex text-[10px] font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-900">Room</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="mt-2 text-xs text-slate-500">No engagements yet.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% else %}
-        <p class="mt-3 text-sm text-slate-500">No recent activity yet.</p>
-        {% endif %}
+
+        <aside class="w-full shrink-0 space-y-4 lg:w-[17rem] lg:max-w-[17rem]">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Checklist</p>
+                <ul class="mt-2 space-y-1.5 text-[11px] text-slate-700">
+                    <li>Confirm schedules when tutors accept</li>
+                    <li>Clear payments before sessions slip</li>
+                    <li>Keep attendance above ~80%</li>
+                </ul>
+                <div class="mt-3 flex flex-col gap-2">
+                    <a href="{{ url('hometutor:tutor_list') }}" class="rounded-lg bg-amber-600 px-3 py-2 text-center text-[11px] font-black uppercase tracking-wider text-white hover:bg-amber-500">Find tutors</a>
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">My demos</a>
+                </div>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Activity</h3>
+                {% if activity_timeline %}
+                <ul class="mt-2 space-y-2">
+                    {% for item in activity_timeline %}
+                    <li class="rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2">
+                        <p class="text-[11px] font-semibold text-slate-900">{{ item.title }}</p>
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">{{ item.meta.strftime('%d %b %H:%M') }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mt-2 text-xs text-slate-500">No recent activity.</p>
+                {% endif %}
+            </div>
+        </aside>
     </div>
 </div>
 {% endblock %}

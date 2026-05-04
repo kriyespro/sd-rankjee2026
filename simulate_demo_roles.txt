@@ -1,0 +1,70 @@
+RankJee — Simulate home tutor flows (demo_student / demo_tutor / demo_parent)
+============================================================================
+
+Password for all three accounts: demo1234
+
+ONE-TIME SETUP (local DB)
+-------------------------
+From the project root:
+
+  python3 manage.py setup_demo_three_roles
+
+This ensures:
+  • Users demo_student, demo_tutor, demo_parent exist with role + password demo1234
+  • demo_tutor has an APPROVED listing at slug: demo-tutor-sandbox
+  • One PENDING demo from demo_student → demo_tutor (if none pending yet)
+  • One PENDING demo from demo_parent → demo_tutor (if none pending yet)
+
+Optional richer seeded dashboards (uses demo_tutor_1 / demo_tutor_2, not demo_tutor):
+
+  python3 manage.py seed_role_dash_demo
+
+
+RECOMMENDED ORDER (happy path)
+------------------------------
+
+1) TUTOR — see incoming requests  
+   • Log in as demo_tutor  
+   • Open: http://127.0.0.1:8000/hometutor/my/demos/  
+   • You should see two pending rows (student + parent).  
+   • Accept one: pick date/time → Submit.  
+   • Later use “I confirm this demo time” after parent/student confirms.
+
+2) STUDENT or PARENT — confirm scheduled demo  
+   • Log in as demo_student OR demo_parent (whoever’s request you accepted).  
+   • Open: http://127.0.0.1:8000/hometutor/my/requests/  
+   • Click “I confirm this demo time” when shown.
+
+3) TUTOR — second confirmation  
+   • Back as demo_tutor → Demo inbox → Recent → confirm if still pending.
+
+4) ENGAGEMENT ROOM (chat, sessions, reviews)  
+   • As demo_student or demo_parent (requester for that demo):  
+     My demo requests → “Open session room”  
+   • Or as demo_tutor: Demo inbox → “Open session room”  
+   • Try: log session (tutor), post chat, submit review (requester) where UI allows.
+
+5) DECLINE / CANCEL (edge paths)  
+   • Tutor: Demo inbox → Decline on the other pending request.  
+   • Student/parent: My demo requests → Cancel while status is PENDING only.
+
+6) NEW REQUEST FROM SCRATCH  
+   • Log in as demo_student or demo_parent  
+   • Browse: http://127.0.0.1:8000/hometutor/t/demo-tutor-sandbox/  
+   • Submit “Request a free demo” → banner confirmation → track under My demo requests.
+
+STAFF / ADMIN CHECKS
+--------------------
+  • Django admin (models): http://127.0.0.1:8000/sd/ → Hometutor → Demo requests  
+  • Note: /admin/ in this project is the RankJee dashboard app, not Django admin.
+
+PAYMENTS (optional)
+-------------------
+After mutual confirm + ACTIVE engagement, “Pay first month” links to  
+/hometutor/payments/pay/<engagement_id>/ — needs Razorpay keys configured for a real charge.
+
+TROUBLESHOOTING
+---------------
+  • Tutor inbox empty: run setup_demo_three_roles again; ensure you use demo_tutor  
+    (listing must be linked to that user).  
+  • Cannot request demo on tutor page: must be logged in as someone other than the tutor.

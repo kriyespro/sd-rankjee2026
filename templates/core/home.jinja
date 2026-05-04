@@ -3,9 +3,689 @@
 
 {% block extra_head %}
 <style>
-    .jackpot-gradient {
-        background: radial-gradient(circle at top right, #4f46e5, #7c3aed, #020617);
+    /* Home — RankJEE palette (colorp.md): navy · saffron · gold · emerald */
+    .home-kicker {
+        color: var(--rj-saffron);
     }
+
+    .hero-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 1rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 900;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--rj-navy);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--rj-gold) 38%, #fff) 0%, color-mix(in srgb, var(--rj-gold) 12%, #fff) 100%);
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 48%, #e2e8f0);
+        margin-bottom: calc(1.25rem * 0.85);
+        box-shadow: 0 8px 26px -14px color-mix(in srgb, var(--rj-navy) 38%, transparent);
+    }
+    .hero-eyebrow-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 9999px;
+        background: var(--rj-emerald);
+        flex-shrink: 0;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--rj-emerald) 24%, transparent);
+    }
+
+    #home-hero {
+        position: relative;
+        padding: clamp(2.75rem, 7vw, 5rem) 1rem clamp(2.5rem, 6vw, 4rem);
+        background-color: #f6f4f1;
+        background-image:
+            linear-gradient(180deg, #ffffff 0%, #f6f4f1 42%, color-mix(in srgb, var(--rj-navy) 7%, #eef1f7) 100%),
+            radial-gradient(ellipse 95% 65% at 92% -8%, color-mix(in srgb, var(--rj-saffron) 20%, transparent) 0%, transparent 52%),
+            radial-gradient(ellipse 75% 55% at -5% 35%, color-mix(in srgb, var(--rj-gold) 16%, transparent) 0%, transparent 48%),
+            radial-gradient(ellipse 70% 45% at 55% 105%, color-mix(in srgb, var(--rj-navy) 12%, transparent) 0%, transparent 45%);
+        border-bottom: 1px solid color-mix(in srgb, var(--rj-navy) 11%, #e2e8f0);
+        isolation: isolate;
+    }
+    #home-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.38;
+        background-image:
+            linear-gradient(color-mix(in srgb, var(--rj-navy) 7%, transparent) 1px, transparent 1px),
+            linear-gradient(90deg, color-mix(in srgb, var(--rj-navy) 7%, transparent) 1px, transparent 1px);
+        background-size: 52px 52px;
+        mask-image: radial-gradient(ellipse 85% 75% at 50% 45%, black 22%, transparent 72%);
+    }
+
+    .hero-shell {
+        position: relative;
+        z-index: 10;
+        max-width: 72rem;
+        margin: 0 auto;
+    }
+
+    .hero-grid {
+        display: grid;
+        gap: 2.25rem;
+        align-items: center;
+    }
+    @media (min-width: 1024px) {
+        .hero-grid {
+            grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+            gap: clamp(2rem, 4vw, 3.5rem);
+        }
+    }
+
+    .hero-main {
+        text-align: center;
+    }
+    @media (min-width: 1024px) {
+        .hero-main {
+            text-align: left;
+        }
+    }
+
+    .hero-panel {
+        padding: clamp(1.35rem, 3.5vw, 2.4rem);
+        border-radius: 1.375rem;
+        background: color-mix(in srgb, #ffffff 92%, transparent);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 9%, rgba(255, 255, 255, 0.95));
+        box-shadow:
+            0 22px 56px -30px color-mix(in srgb, var(--rj-navy) 38%, transparent),
+            inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    }
+    @media (min-width: 1024px) {
+        .hero-panel {
+            max-width: 38rem;
+        }
+    }
+
+    .hero-title {
+        font-size: clamp(calc(2.35rem * 0.85), calc(6vw * 0.85), calc(4.25rem * 0.85));
+        line-height: 1.02;
+        font-weight: 900;
+        letter-spacing: -0.035em;
+        margin: 0 0 calc(1.25rem * 0.85) 0;
+        color: var(--rj-navy);
+        font-family: Outfit, system-ui, sans-serif;
+    }
+    .hero-title-accent {
+        background: linear-gradient(135deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 58%, var(--rj-saffron)) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+
+    .hero-lead-block {
+        margin: 0 auto calc(1.75rem * 0.85);
+        max-width: 34rem;
+    }
+    @media (min-width: 1024px) {
+        .hero-lead-block {
+            margin-left: 0;
+            margin-right: 0;
+        }
+    }
+    .hero-lead-line {
+        margin: 0;
+        font-size: calc(1.0625rem * 0.85);
+        line-height: 1.45;
+        font-weight: 600;
+        color: color-mix(in srgb, var(--rj-navy) 88%, #334155);
+        letter-spacing: -0.015em;
+    }
+    @media (min-width: 768px) {
+        .hero-lead-line {
+            font-size: calc(1.1875rem * 0.85);
+            line-height: 1.42;
+        }
+    }
+    .hero-lead-line + .hero-lead-line {
+        margin-top: calc(0.65rem * 0.85);
+    }
+    .hero-lead-muted {
+        font-weight: 500;
+        color: color-mix(in srgb, var(--rj-navy) 52%, #64748b);
+        font-size: calc(0.98rem * 0.85);
+    }
+    @media (min-width: 768px) {
+        .hero-lead-muted {
+            font-size: calc(1.0625rem * 0.85);
+        }
+    }
+
+    .hero-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        width: 100%;
+        max-width: 26rem;
+        margin: 0 auto;
+    }
+    @media (min-width: 640px) {
+        .hero-actions {
+            flex-direction: row;
+            flex-wrap: wrap;
+        }
+    }
+    @media (min-width: 1024px) {
+        .hero-actions {
+            margin-left: 0;
+            max-width: none;
+        }
+    }
+
+    #home-hero .hero-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        min-width: 0;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        border-radius: 0.875rem;
+        padding: 0.875rem 1.25rem;
+        font-size: 0.8125rem;
+        line-height: 1.2;
+        transition: filter 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    #home-hero .hero-btn:active {
+        transform: scale(0.98);
+    }
+    #home-hero .hero-btn-primary {
+        background-color: var(--rj-saffron);
+        color: #fff;
+        border: 2px solid color-mix(in srgb, var(--rj-saffron) 72%, #c2410c);
+        box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--rj-saffron) 58%, transparent);
+    }
+    #home-hero .hero-btn-primary:hover {
+        filter: brightness(1.07);
+    }
+    #home-hero .hero-btn-secondary {
+        background-color: var(--rj-navy);
+        color: #fff;
+        border: 2px solid color-mix(in srgb, var(--rj-navy) 88%, #000);
+        box-shadow: 0 10px 28px -10px color-mix(in srgb, var(--rj-navy) 52%, transparent);
+    }
+    #home-hero .hero-btn-secondary:hover {
+        filter: brightness(1.12);
+        box-shadow: 0 14px 34px -10px color-mix(in srgb, var(--rj-navy) 58%, transparent);
+    }
+
+    .hero-pills {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: center;
+    }
+    .hero-pills-main {
+        margin-top: 1.25rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        justify-content: flex-start;
+    }
+    .hero-pills-main .hero-pill {
+        justify-content: flex-start;
+        width: 100%;
+    }
+    @media (min-width: 1024px) {
+        .hero-pills-main {
+            align-items: flex-start;
+        }
+    }
+    .hero-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--rj-navy) 92%, #1e293b);
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 11%, #e2e8f0);
+        box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--rj-navy) 24%, transparent);
+    }
+    .hero-pill-mark {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.125rem;
+        height: 1.125rem;
+        border-radius: 9999px;
+        font-size: 0.6rem;
+        font-weight: 900;
+        color: #fff;
+        background: var(--rj-emerald);
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--rj-emerald) 45%, transparent);
+    }
+
+    .hero-aside {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        width: 100%;
+        max-width: 24rem;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    @media (min-width: 1024px) {
+        .hero-aside {
+            max-width: none;
+            margin-left: 0;
+            margin-right: 0;
+            gap: 1.25rem;
+        }
+    }
+    .hero-showcase-visual {
+        display: block;
+        width: 100%;
+    }
+
+    .hero-showcase-frame {
+        position: relative;
+        border-radius: 1.625rem;
+        padding: 2px;
+        background: linear-gradient(145deg, var(--rj-gold) 0%, var(--rj-saffron) 45%, var(--rj-navy) 100%);
+        box-shadow: 0 32px 64px -32px color-mix(in srgb, var(--rj-navy) 55%, transparent);
+    }
+    .hero-showcase-inner {
+        border-radius: calc(1.625rem - 2px);
+        padding: 1.65rem 1.5rem;
+        background: linear-gradient(168deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 78%, #0f172a) 55%, color-mix(in srgb, var(--rj-navy) 62%, #020617) 100%);
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 40%, rgba(255, 255, 255, 0.12));
+        color: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .hero-showcase-inner::after {
+        content: "";
+        position: absolute;
+        top: -40%;
+        right: -25%;
+        width: 70%;
+        height: 90%;
+        background: radial-gradient(circle, color-mix(in srgb, var(--rj-saffron) 18%, transparent) 0%, transparent 68%);
+        pointer-events: none;
+    }
+    .hero-showcase-kicker {
+        font-size: 0.625rem;
+        font-weight: 900;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--rj-gold);
+        margin: 0 0 0.75rem;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-showcase-title {
+        font-family: Outfit, system-ui, sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        margin: 0 0 1.15rem;
+        max-width: 16rem;
+        position: relative;
+        z-index: 1;
+    }
+    .hero-showcase-stats {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin: 0 0 1.15rem;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.18);
+    }
+    .hero-showcase-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.75rem 0.85rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-showcase-stat:last-child {
+        border-bottom: none;
+    }
+    .hero-showcase-stat-num {
+        font-family: Outfit, system-ui, sans-serif;
+        font-size: 1.375rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+        background: linear-gradient(135deg, #fff 0%, var(--rj-gold) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+    }
+    .hero-showcase-stat-label {
+        font-size: 0.6875rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.62);
+    }
+    .hero-showcase-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 0.5rem;
+        font-size: 0.6875rem;
+        font-weight: 900;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--rj-navy);
+        background: linear-gradient(135deg, var(--rj-gold) 0%, color-mix(in srgb, var(--rj-gold) 72%, #fff) 100%);
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 55%, transparent);
+        position: relative;
+        z-index: 1;
+    }
+    .hero-showcase-foot {
+        margin-top: 1.05rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.02em;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-typed {
+        color: var(--rj-saffron);
+        text-shadow: 0 1px 0 color-mix(in srgb, var(--rj-gold) 28%, transparent);
+    }
+    .hero-typed-wrap {
+        min-height: 1em;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.06em;
+        justify-content: center;
+        width: 100%;
+    }
+    @media (min-width: 1024px) {
+        .hero-typed-wrap {
+            justify-content: flex-start;
+        }
+    }
+
+    #home-hero .hero-blob-tr {
+        background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--rj-saffron) 26%, transparent) 0%, transparent 68%);
+    }
+    #home-hero .hero-blob-bl {
+        background: radial-gradient(circle at 65% 45%, color-mix(in srgb, var(--rj-gold) 24%, transparent) 0%, transparent 65%);
+    }
+
+    #home-hero .hero-jackpot-label {
+        color: var(--rj-gold);
+    }
+    #home-hero .hero-jackpot-pool {
+        color: var(--rj-saffron);
+    }
+    #home-hero .hero-jackpot-cta {
+        background-color: var(--rj-saffron);
+    }
+    #home-hero .hero-jackpot-cta:hover {
+        filter: brightness(1.05);
+    }
+    #home-hero .hero-jackpot-live {
+        color: var(--rj-emerald);
+    }
+    #home-hero .hero-city-accent {
+        color: var(--rj-gold);
+        font-weight: 800;
+    }
+    #home-hero .hero-jackpot-card {
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
+        box-shadow: 0 22px 48px -26px color-mix(in srgb, var(--rj-navy) 32%, transparent);
+        background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--rj-navy) 4%, #fff) 100%);
+    }
+    #home-hero .hero-jackpot-amount {
+        color: var(--rj-navy);
+    }
+    #home-hero .hero-jackpot-meta {
+        color: color-mix(in srgb, var(--rj-navy) 58%, #64748b);
+    }
+
+    /* Featured tutors strip */
+    .home-find-tutors {
+        background: var(--rj-surface);
+        border-color: color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
+    }
+    .home-find-tutors h2 {
+        color: var(--rj-navy);
+    }
+    .home-tutor-grid {
+        gap: 1.5rem;
+    }
+    @media (min-width: 768px) {
+        .home-tutor-grid {
+            gap: 1.75rem;
+        }
+    }
+    .home-btn-saffron {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 900;
+        font-size: 0.875rem;
+        background: var(--rj-saffron);
+        color: #fff;
+        transition: filter 0.15s ease;
+    }
+    .home-btn-saffron:hover {
+        filter: brightness(1.06);
+    }
+    .home-btn-navy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        background: var(--rj-navy);
+        color: #fff;
+        transition: filter 0.15s ease;
+    }
+    .home-btn-navy:hover {
+        filter: brightness(1.12);
+    }
+    .home-btn-outline-navy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.75rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        border: 2px solid var(--rj-navy);
+        color: var(--rj-navy);
+        transition: background-color 0.15s ease;
+    }
+    .home-btn-outline-navy:hover {
+        background: color-mix(in srgb, var(--rj-gold) 18%, #fff);
+    }
+
+    /* Partner strip */
+    .home-trust-strip {
+        background: color-mix(in srgb, var(--rj-navy) 6%, #fff);
+        border-color: color-mix(in srgb, var(--rj-navy) 10%, #e2e8f0);
+    }
+    .home-trust-strip .home-trust-logo {
+        color: color-mix(in srgb, var(--rj-navy) 42%, #94a3b8);
+    }
+    .home-trust-strip .home-trust-logo--accent {
+        color: var(--rj-saffron);
+    }
+
+    /* Bento / features */
+    .home-bento-section {
+        background: linear-gradient(180deg, var(--rj-surface-warm) 0%, var(--rj-surface) 55%, #fff 100%);
+    }
+    .home-bento-section h2 {
+        color: var(--rj-navy);
+    }
+    .home-services-head {
+        position: relative;
+        margin-bottom: 3rem;
+    }
+    @media (min-width: 768px) {
+        .home-services-head {
+            margin-bottom: 4rem;
+        }
+    }
+    .home-bento-intro-rule {
+        width: 3rem;
+        height: 3px;
+        border-radius: 9999px;
+        margin: 0 auto 1rem;
+        background: linear-gradient(90deg, var(--rj-navy), var(--rj-saffron));
+        opacity: 0.9;
+    }
+    .home-bento-lead {
+        color: color-mix(in srgb, var(--rj-navy) 48%, #64748b);
+        max-width: 36rem;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.65;
+    }
+    .home-bento-card-surface {
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 10%, #e2e8f0);
+        box-shadow: 0 14px 40px -28px color-mix(in srgb, var(--rj-navy) 22%, transparent);
+    }
+    .home-bento-card-surface h3 {
+        color: var(--rj-navy);
+    }
+    .home-bento-tag {
+        color: var(--rj-saffron);
+    }
+    .home-bento-card-navy {
+        background: var(--rj-navy);
+        color: #fff;
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 90%, #fff);
+    }
+    .home-bento-card-navy .home-bento-muted {
+        color: rgba(255, 255, 255, 0.78);
+    }
+    .home-bento-card-navy .home-bento-tag-line {
+        color: var(--rj-gold);
+    }
+    .home-bento-card-gold-edge {
+        background: linear-gradient(145deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 88%, #000) 100%);
+        color: #fff;
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 35%, var(--rj-navy));
+        box-shadow: 0 18px 40px -24px color-mix(in srgb, var(--rj-gold) 45%, var(--rj-navy));
+    }
+    .home-bento-card-gold-edge .home-bento-tag-line {
+        color: var(--rj-gold);
+    }
+    .home-bento-card-gold-edge .home-bento-muted {
+        color: rgba(255, 255, 255, 0.82);
+    }
+    .home-bento-earn {
+        background: var(--rj-emerald);
+        color: #fff;
+        border: 1px solid color-mix(in srgb, var(--rj-emerald) 65%, #fff);
+    }
+    .home-bento-earn .home-bento-tag-line {
+        color: rgba(255, 255, 255, 0.92);
+    }
+    .home-mock-panel {
+        background: color-mix(in srgb, var(--rj-navy) 6%, #fff);
+        border-left: 1px solid color-mix(in srgb, var(--rj-navy) 10%, #e2e8f0);
+        border-top: 1px solid color-mix(in srgb, var(--rj-navy) 10%, #e2e8f0);
+    }
+    .home-mock-bar-on {
+        background: color-mix(in srgb, var(--rj-emerald) 55%, #e2e8f0);
+    }
+    .home-mock-bar-off {
+        background: color-mix(in srgb, var(--rj-navy) 14%, #e2e8f0);
+    }
+    .home-mock-score {
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 55%, #e2e8f0);
+        color: var(--rj-navy);
+    }
+    .home-mock-score strong {
+        color: var(--rj-saffron);
+    }
+    .home-bento-icon-saffron {
+        background: color-mix(in srgb, var(--rj-saffron) 88%, #fff);
+        color: var(--rj-navy);
+        box-shadow: 0 10px 28px -12px color-mix(in srgb, var(--rj-saffron) 45%, transparent);
+    }
+    .home-bento-icon-gold {
+        background: color-mix(in srgb, var(--rj-gold) 38%, transparent);
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 55%, rgba(255, 255, 255, 0.35));
+    }
+
+    /* Final CTA */
+    .home-final-cta {
+        background: linear-gradient(165deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 82%, #020617) 48%, #020617 100%);
+        border-top: 1px solid color-mix(in srgb, var(--rj-gold) 22%, transparent);
+    }
+    .home-final-cta .home-final-head-accent {
+        color: var(--rj-gold);
+    }
+    .home-final-cta .home-btn-wide {
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 1.15rem 2.35rem;
+        border-radius: 1rem;
+        transition: filter 0.15s ease, background-color 0.15s ease;
+    }
+    .home-final-cta .home-btn-emerald {
+        background: var(--rj-emerald);
+        color: #fff;
+        box-shadow: 0 18px 40px -16px color-mix(in srgb, var(--rj-emerald) 55%, transparent);
+    }
+    .home-final-cta .home-btn-emerald:hover {
+        filter: brightness(1.07);
+    }
+    .home-final-cta .home-btn-saffron-wide {
+        background: var(--rj-saffron);
+        color: #fff;
+        box-shadow: 0 18px 40px -16px color-mix(in srgb, var(--rj-saffron) 50%, transparent);
+    }
+    .home-final-cta .home-btn-saffron-wide:hover {
+        filter: brightness(1.06);
+    }
+    .home-final-cta .home-btn-gold-outline {
+        border: 2px solid var(--rj-gold);
+        color: #fff;
+        background: transparent;
+    }
+    .home-final-cta .home-btn-gold-outline:hover {
+        background: color-mix(in srgb, var(--rj-gold) 14%, transparent);
+    }
+    .home-final-glow {
+        background: radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--rj-saffron) 18%, transparent) 0%, transparent 55%);
+    }
+
     .text-gradient {
         background: linear-gradient(to right, #818cf8, #c084fc, #fb7185);
         -webkit-background-clip: text;
@@ -16,119 +696,131 @@
         border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .bento-card:hover {
-        transform: translateY(-5px) scale(1.01);
-        border-color: rgba(99, 102, 241, 0.4);
-        box-shadow: 0 20px 40px -20px rgba(79, 70, 229, 0.4);
+        transform: translateY(-4px);
+        border-color: color-mix(in srgb, var(--rj-saffron) 45%, transparent);
+        box-shadow: 0 22px 44px -22px color-mix(in srgb, var(--rj-navy) 35%, transparent);
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="jackpot-gradient text-white pt-20 pb-16 px-4 relative overflow-hidden">
-    <!-- Animated shapes -->
-    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-        <div class="absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full bg-indigo-600/20 blur-[120px] animate-pulse"></div>
-        <div class="absolute top-[20%] -left-[10%] w-[40%] h-[40%] rounded-full bg-fuchsia-600/10 blur-[100px]"></div>
+<section id="home-hero" class="relative overflow-hidden">
+    <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="hero-blob-tr absolute -top-[10%] -right-[10%] w-[60%] h-[60%] rounded-full blur-[120px] opacity-90"></div>
+        <div class="hero-blob-bl absolute top-[20%] -left-[10%] w-[45%] h-[55%] rounded-full blur-[110px] opacity-95"></div>
     </div>
 
-    <div class="max-w-6xl mx-auto text-center relative z-10 px-4">
-        <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-5 py-2 text-xs font-black uppercase tracking-[0.2em] mb-10 text-indigo-200 shadow-2xl">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            Home tutors · {{ hometutor_pilot_city }} pilot
-        </div>
-        
-        <h1 class="text-4xl sm:text-6xl md:text-8xl font-black leading-[0.95] mb-6 tracking-tighter">
-            Find a verified <br>
-            <span class="text-gradient">home tutor.</span>
-        </h1>
-        
-        <p class="text-lg md:text-xl text-slate-300 max-w-3xl mx-auto mb-4 font-medium leading-relaxed">
-            Book trusted tutors for CBSE, ICSE &amp; boards — starting in <strong class="text-white">{{ hometutor_pilot_city }}</strong>.
-        </p>
-        <p class="text-base md:text-lg text-slate-400 max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
-            Same account unlocks online exams, skill paths &amp; rewards when you&apos;re ready.
-        </p>
-        
-        <div class="bg-white/5 backdrop-blur-3xl border border-white/10 p-4 rounded-[2.5rem] max-w-4xl mx-auto shadow-2xl">
-            <div class="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-center justify-center">
-                <a href="#find-tutors"
-                   class="w-full sm:w-auto bg-white text-slate-900 font-black px-8 py-4 rounded-2xl hover:bg-slate-100 transition-all shadow-xl text-sm tracking-wide active:scale-95 uppercase text-center">
-                    Browse tutors
-                </a>
-                <a href="{{ url('core:request_tutor') }}"
-                   class="w-full sm:w-auto bg-emerald-500 text-white font-black px-8 py-4 rounded-2xl hover:bg-emerald-400 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
-                    Request a tutor
-                </a>
-                <a href="{{ url('assessment:index') }}"
-                   class="w-full sm:w-auto bg-indigo-500 text-white font-black px-8 py-4 rounded-2xl hover:bg-indigo-400 transition-all text-sm tracking-wide active:scale-95 uppercase text-center">
-                    Practice online (exams)
-                </a>
-                <a href="{{ url('users:signup') }}"
-                   class="w-full sm:w-auto text-indigo-200 border border-indigo-400/40 font-bold px-8 py-4 rounded-2xl hover:bg-indigo-500/20 transition-all text-sm tracking-wide text-center">
-                    Join as tutor
-                </a>
+    <div class="hero-shell px-4 sm:px-6">
+        <div class="hero-grid">
+            <div class="hero-main">
+                <div class="hero-panel">
+                    <p class="hero-eyebrow mx-auto w-fit lg:mx-0"><span class="hero-eyebrow-dot" aria-hidden="true"></span> RankJee · Tutors &amp; exams</p>
+                    <h1 class="hero-title"
+                        x-data="{ words: ['home tutor.', 'exam coach.', 'learning mentor.'], wi: 0, ci: 0, typed: '', deleting: false, tick() { const w = this.words[this.wi]; if (!this.deleting) { this.ci = Math.min(this.ci + 1, w.length); this.typed = w.slice(0, this.ci); if (this.ci === w.length) { this.deleting = true; setTimeout(() => this.tick(), 850); return; } } else { this.ci = Math.max(this.ci - 1, 0); this.typed = w.slice(0, this.ci); if (this.ci === 0) { this.deleting = false; this.wi = (this.wi + 1) % this.words.length; } } setTimeout(() => this.tick(), this.deleting ? 38 : 80); } }"
+                        x-init="tick()">
+                        Find a <span class="hero-title-accent">verified</span><br>
+                        <span class="hero-typed-wrap"><span class="hero-typed" x-text="typed"></span><span class="hero-typed animate-pulse">|</span></span>
+                    </h1>
+
+                    <div class="hero-lead-block">
+                        <p class="hero-lead-line">
+                            Coaching-grade tutoring for CBSE, ICSE &amp; boards — live in <strong class="hero-city-accent">{{ hometutor_pilot_city }}</strong>.
+                        </p>
+                        <p class="hero-lead-line hero-lead-muted">
+                            One RankJee account: tutors today, diagnostics &amp; skill paths when you want to level up.
+                        </p>
+                    </div>
+
+                    <div class="hero-actions">
+                        <a href="{{ url('users:signup') }}" class="hero-btn hero-btn-primary">
+                            Join as tutor
+                        </a>
+                        <a href="{{ url('core:request_tutor') }}" class="hero-btn hero-btn-secondary">
+                            Request a tutor
+                        </a>
+                    </div>
+
+                    <ul class="hero-pills hero-pills-main" aria-label="Why families choose RankJee">
+                        <li class="hero-pill"><span class="hero-pill-mark" aria-hidden="true">✓</span> Verified profiles</li>
+                        <li class="hero-pill"><span class="hero-pill-mark" aria-hidden="true">✓</span> Same-day matching</li>
+                        <li class="hero-pill"><span class="hero-pill-mark" aria-hidden="true">✓</span> Tutors + online exams</li>
+                    </ul>
+                </div>
             </div>
-            <p class="text-center text-xs text-slate-400 mt-4 font-medium">
-                <a href="{{ url('core:watch_ads') }}" class="text-indigo-300 hover:text-white underline underline-offset-2">{{ uil.watch_earn }}</a>
-                · {% if featured_tutors_from_db %}Featured tutors are live in <strong class="text-white/90">{{ hometutor_pilot_city }}</strong> — browse the full directory anytime.{% else %}Listings below are placeholders until you seed tutors (see <code class="text-indigo-200/90">seed_hometutor_tutors</code>).{% endif %}
-            </p>
+
+            <aside class="hero-aside">
+                <div class="hero-showcase-visual">
+                    <div class="hero-showcase-frame">
+                        <div class="hero-showcase-inner">
+                            <p class="hero-showcase-kicker">RankJee home tutors</p>
+                            <p class="hero-showcase-title">Book verified educators for CBSE, ICSE &amp; boards — at home or online.</p>
+                            <div class="hero-showcase-stats" role="group" aria-label="Home tutoring network highlights">
+                                <div class="hero-showcase-stat">
+                                    <span class="hero-showcase-stat-num">15,000+</span>
+                                    <span class="hero-showcase-stat-label">Students</span>
+                                </div>
+                                <div class="hero-showcase-stat">
+                                    <span class="hero-showcase-stat-num">3,900+</span>
+                                    <span class="hero-showcase-stat-label">Verified tutors</span>
+                                </div>
+                                <div class="hero-showcase-stat">
+                                    <span class="hero-showcase-stat-num">90+</span>
+                                    <span class="hero-showcase-stat-label">Cities</span>
+                                </div>
+                            </div>
+                            <span class="hero-showcase-badge">Home tutoring · India-wide</span>
+                            <p class="hero-showcase-foot">Background-checked profiles · Demo before you commit · Same RankJee login everywhere</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
         </div>
 
         {% if jackpot %}
-        <div class="max-w-xl mx-auto mt-14 rounded-2xl border border-white/25 bg-white/10 backdrop-blur-xl px-6 py-6 text-center shadow-xl">
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-200 mb-2">Tonight&apos;s jackpot</p>
-            <p class="text-2xl md:text-3xl font-black text-white">₹{{ jackpot.prize_pool|int }} <span class="text-indigo-200 text-lg font-bold">pool</span></p>
-            <p class="text-sm text-white/80 mt-1 font-semibold">{{ jackpot.skill.name }}</p>
+        <div class="hero-jackpot-card max-w-xl mx-auto mt-10 rounded-2xl px-4 py-5 md:py-6 text-center">
+            <p class="hero-jackpot-label text-xs font-black uppercase tracking-[0.2em] mb-2">Tonight&apos;s jackpot</p>
+            <p class="hero-jackpot-amount text-2xl md:text-3xl font-black">₹{{ jackpot.prize_pool|int }} <span class="hero-jackpot-pool text-lg font-bold">pool</span></p>
+            <p class="hero-jackpot-meta text-sm mt-1 font-semibold">{{ jackpot.skill.name }}</p>
             {% if jackpot_time_to_go > 0 %}
             <div class="mt-4" x-data="{ t: {{ jackpot_time_to_go }} }" x-init="setInterval(() => { if (t > 0) t-- }, 1000)">
-                <p class="text-xs font-black text-white/70 uppercase tracking-widest mb-1">Starts in</p>
-                <p class="text-3xl font-black text-white font-mono tracking-tight" x-text="String(Math.floor(t/3600)).padStart(2,'0') + ':' + String(Math.floor((t%3600)/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0')"></p>
+                <p class="hero-jackpot-meta text-xs font-black uppercase tracking-widest mb-1">Starts in</p>
+                <p class="hero-jackpot-amount text-3xl font-black font-mono tracking-tight" x-text="String(Math.floor(t/3600)).padStart(2,'0') + ':' + String(Math.floor((t%3600)/60)).padStart(2,'0') + ':' + String(t%60).padStart(2,'0')"></p>
             </div>
             {% else %}
-            <p class="mt-4 text-emerald-300 font-black text-sm uppercase tracking-widest">Live now — join before it settles</p>
+            <p class="hero-jackpot-live mt-4 font-black text-sm uppercase tracking-widest">Live now — join before it settles</p>
             {% endif %}
-            <a href="{{ url('assessment:jackpot_lobby') }}" class="mt-5 inline-flex items-center justify-center gap-2 bg-white text-indigo-900 font-black text-xs uppercase tracking-widest px-8 py-3 rounded-xl hover:bg-indigo-50 transition-colors shadow-lg">
+            <a href="{{ url('assessment:jackpot_lobby') }}" class="hero-jackpot-cta mt-5 inline-flex items-center justify-center gap-2 text-white font-black text-xs uppercase tracking-widest px-8 py-3 rounded-xl transition-colors shadow-lg">
                 {{ uil.enter_jackpot }}
             </a>
         </div>
         {% endif %}
-
-        <!-- Trusted by sub-row -->
-        <div class="flex flex-col items-center gap-6 opacity-30">
-            <p class="text-xs md:text-sm font-black text-white/70 uppercase tracking-[0.25em]">RELIABLE & SECURE PAYMENT PARTNERS</p>
-            <div class="flex flex-wrap justify-center gap-8 md:gap-12 items-center grayscale">
-                <span class="text-xl md:text-2xl font-black text-white tracking-widest">VISA</span>
-                <span class="text-xl md:text-2xl font-black text-white tracking-widest">STRIPE</span>
-                <span class="text-xl md:text-2xl font-black text-white tracking-widest">RAZORPAY</span>
-            </div>
-        </div>
     </div>
 </section>
 
 <!-- Home tutor listings: DB-backed when seeded (HT-1); else static fallback (core/hometutor_data.py) -->
-<section id="find-tutors" class="bg-slate-100 border-y border-slate-200/80 scroll-mt-20">
+<section id="find-tutors" class="home-find-tutors border-y scroll-mt-20">
     <div class="max-w-6xl mx-auto px-4 py-14 md:py-20">
         <div class="text-center mb-10 md:mb-14">
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Featured in {{ hometutor_pilot_city }}</p>
-            <h2 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-3">Home tutors you can book next</h2>
+            <p class="home-kicker text-xs font-black uppercase tracking-[0.2em] mb-3">Featured in {{ hometutor_pilot_city }}</p>
+            <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-3">Home tutors you can book next</h2>
             <p class="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
                 {% if featured_tutors_from_db %}Verified listings — request a demo when the tutor uses a linked RankJee account.{% else %}Placeholder cards until you run <code class="text-xs bg-slate-200 px-1 rounded">python manage.py seed_hometutor_tutors</code>.{% endif %}
             </p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="home-tutor-grid grid grid-cols-1 md:grid-cols-3">
             {% for t in featured_home_tutors %}
             {% include "hometutor/partials/_tutor_card.jinja" %}
             {% endfor %}
         </div>
         <div class="mt-10 flex flex-wrap justify-center gap-4">
-            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+            <a href="{{ url('hometutor:tutor_list') }}" class="home-btn-saffron">
                 Browse all tutors →
             </a>
-            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800 transition-colors">
+            <a href="{{ url('assessment:index') }}" class="home-btn-navy">
                 Start online practice →
             </a>
-            <a href="{{ url('users:signup') }}" class="inline-flex items-center justify-center px-6 py-3 rounded-xl border-2 border-indigo-600 text-indigo-700 text-sm font-bold hover:bg-indigo-50 transition-colors">
+            <a href="{{ url('users:signup') }}" class="home-btn-outline-navy">
                 Create free account
             </a>
         </div>
@@ -136,69 +828,70 @@
 </section>
 
 <!-- Trust Section -->
-<div class="bg-indigo-900/10 backdrop-blur-md border-y border-indigo-100/10 py-6 md:py-8">
-    <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-8 opacity-50 grayscale hover:grayscale-0 transition-all duration-700">
-        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">APPLE</span>
-        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">GOOGLE</span>
-        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter">STRIPE</span>
-        <span class="text-lg md:text-xl font-black text-slate-400 tracking-tighter text-indigo-400">RAZORPAY</span>
+<div class="home-trust-strip backdrop-blur-md border-y py-6 md:py-8">
+    <div class="max-w-6xl mx-auto px-4 flex flex-wrap justify-center md:justify-between items-center gap-6 md:gap-8 opacity-70 grayscale hover:grayscale-0 transition-all duration-700">
+        <span class="home-trust-logo text-lg md:text-xl font-black tracking-tighter">APPLE</span>
+        <span class="home-trust-logo text-lg md:text-xl font-black tracking-tighter">GOOGLE</span>
+        <span class="home-trust-logo text-lg md:text-xl font-black tracking-tighter">STRIPE</span>
+        <span class="home-trust-logo home-trust-logo--accent text-lg md:text-xl font-black tracking-tighter">RAZORPAY</span>
     </div>
 </div>
 
 <!-- Bento Grid Features -->
-<section class="py-16 md:py-24 bg-slate-50">
+<section class="home-bento-section py-16 md:py-24">
     <div class="max-w-6xl mx-auto px-4">
-        <div class="text-center mb-12 md:mb-16 px-4">
-            <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-3">Online exam &amp; skills</p>
-            <h2 class="text-3xl md:text-5xl font-black text-slate-900 tracking-tight mb-4">Engineering your success.</h2>
-            <p class="text-slate-600 text-sm md:text-base font-medium max-w-xl mx-auto">After you find a tutor, use RankJee diagnostics and micro-learning to close skill gaps — and earn along the way.</p>
+        <div class="home-services-head text-center px-4">
+            <p class="home-kicker text-xs font-black uppercase tracking-[0.2em] mb-3">Online exam &amp; skills</p>
+            <div class="home-bento-intro-rule" aria-hidden="true"></div>
+            <h2 class="text-3xl md:text-5xl font-black tracking-tight mb-4">Engineering your success.</h2>
+            <p class="home-bento-lead text-sm md:text-base font-medium">After you find a tutor, use RankJee diagnostics and micro-learning to close skill gaps — and earn along the way.</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-auto">
             <!-- Big Feature: Diagnose -->
-            <div class="md:col-span-2 bento-card bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between overflow-hidden relative shadow-sm min-h-[300px] md:min-h-0">
+            <div class="md:col-span-2 bento-card home-bento-card-surface bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between overflow-hidden relative min-h-[300px] md:min-h-0">
                 <div class="relative z-10">
-                    <span class="text-indigo-600 font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">01. Intelligent Diagnosis</span>
-                    <h3 class="text-2xl md:text-3xl font-black text-slate-900 mb-3 md:mb-4 max-w-xs">AI-Powered Skill Gap Analysis.</h3>
+                    <span class="home-bento-tag font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">01. Intelligent Diagnosis</span>
+                    <h3 class="text-2xl md:text-3xl font-black mb-3 md:mb-4 max-w-xs">AI-Powered Skill Gap Analysis.</h3>
                     <p class="text-slate-600 text-sm md:text-base max-w-xs leading-relaxed">Our system identifies your specific weaknesses across 500+ topics instantly.</p>
                 </div>
-                <div class="absolute bottom-[-5%] right-[-5%] w-[60%] h-[60%] bg-indigo-50 rounded-tl-[3rem] p-6 border-l border-t border-indigo-100/50 shadow-inner hidden md:block">
+                <div class="absolute bottom-[-5%] right-[-5%] w-[60%] h-[60%] home-mock-panel rounded-tl-[3rem] p-6 shadow-inner hidden md:block">
                     <div class="space-y-4">
-                        <div class="h-4 w-full bg-indigo-200/50 rounded-full animate-pulse"></div>
-                        <div class="h-4 w-[80%] bg-indigo-200/30 rounded-full"></div>
-                        <div class="h-10 w-full bg-white border border-indigo-100 rounded-xl flex items-center px-4 gap-3">
-                            <span class="text-xs text-indigo-500 font-black">Score: 82%</span>
+                        <div class="h-4 w-full home-mock-bar-on rounded-full animate-pulse"></div>
+                        <div class="h-4 w-[80%] home-mock-bar-off rounded-full"></div>
+                        <div class="h-10 w-full bg-white home-mock-score rounded-xl flex items-center px-4 gap-3">
+                            <span class="text-xs font-black"><strong>Score:</strong> 82%</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Square: Learn -->
-            <div class="bento-card bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between text-white shadow-xl min-h-[250px] md:min-h-0">
+            <div class="bento-card home-bento-card-navy rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between shadow-xl min-h-[250px] md:min-h-0">
                 <div>
-                    <span class="text-indigo-400 font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">02. Micro-Learning</span>
+                    <span class="home-bento-tag-line font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">02. Micro-Learning</span>
                     <h3 class="text-xl md:text-2xl font-black mb-3 md:mb-4">5-Min Turbo Lessons.</h3>
-                    <p class="text-slate-300 text-sm md:text-base leading-relaxed">No fluff. Only the concepts you failed in the diagnostic test.</p>
+                    <p class="home-bento-muted text-sm md:text-base leading-relaxed">No fluff. Only the concepts you failed in the diagnostic test.</p>
                 </div>
-                <div class="w-12 h-12 md:w-16 md:h-16 bg-indigo-600 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl shadow-lg shadow-indigo-500/20">📚</div>
+                <div class="home-bento-icon-saffron w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl">📚</div>
             </div>
 
             <!-- Square: Master -->
-            <div class="bento-card bg-indigo-600 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between text-white shadow-xl min-h-[250px] md:min-h-0">
+            <div class="bento-card home-bento-card-gold-edge rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col justify-between shadow-xl min-h-[250px] md:min-h-0">
                 <div>
-                    <span class="text-indigo-200 font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">03. Certification</span>
+                    <span class="home-bento-tag-line font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">03. Certification</span>
                     <h3 class="text-xl md:text-2xl font-black mb-3 md:mb-4">Mastery Badges.</h3>
-                    <p class="text-indigo-100 text-sm md:text-base leading-relaxed">Score 80%+ on your weak areas to unlock verified credentials.</p>
+                    <p class="home-bento-muted text-sm md:text-base leading-relaxed">Score 80%+ on your weak areas to unlock verified credentials.</p>
                 </div>
-                <div class="w-12 h-12 md:w-16 md:h-16 bg-white/20 backdrop-blur-md rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl">🏆</div>
+                <div class="home-bento-icon-gold w-12 h-12 md:w-16 md:h-16 backdrop-blur-md rounded-xl md:rounded-2xl flex items-center justify-center text-xl md:text-2xl">🏆</div>
             </div>
 
             <!-- Wide Row: Earn -->
-            <div class="md:col-span-2 bento-card bg-emerald-500 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between text-white shadow-xl overflow-hidden relative min-h-[300px] md:min-h-0">
+            <div class="md:col-span-2 bento-card home-bento-earn rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between shadow-xl overflow-hidden relative min-h-[300px] md:min-h-0">
                 <div class="relative z-10 md:max-w-md w-full">
-                    <span class="text-emerald-100 font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">04. Monetization</span>
+                    <span class="home-bento-tag-line font-black text-xs md:text-xs uppercase tracking-[0.2em] mb-3 md:mb-4 block">04. Monetization</span>
                     <h3 class="text-2xl md:text-3xl font-black mb-3 md:mb-4">Direct Task Rewards.</h3>
-                    <p class="text-emerald-50 text-sm md:text-base leading-relaxed mb-6 md:mb-0">Access the task marketplace once your skills are verified. Get paid for your expertise.</p>
+                    <p class="text-white/90 text-sm md:text-base leading-relaxed mb-6 md:mb-0">Access the task marketplace once your skills are verified. Get paid for your expertise.</p>
                 </div>
                 <div class="relative z-10 bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 w-full md:w-auto">
                     <p class="text-xs font-black uppercase mb-1">CASH EARNED</p>
@@ -212,27 +905,26 @@
 </section>
 
 <!-- Final CTA -->
-<section class="py-32 bg-slate-950 text-center px-4 relative overflow-hidden">
+<section class="home-final-cta py-32 text-center px-4 relative overflow-hidden">
     <div class="max-w-3xl mx-auto relative z-10">
-        <h2 class="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-tight">Master the platform. <br> <span class="text-indigo-500">Master your life.</span></h2>
-        <p class="text-slate-400 text-lg mb-12 font-medium">Join thousands of students who have optimized their learning path and started earning from home.</p>
+        <h2 class="text-5xl md:text-7xl font-black text-white mb-8 tracking-tighter leading-tight">Master the platform. <br> <span class="home-final-head-accent">Master your life.</span></h2>
+        <p class="text-slate-300 text-lg mb-12 font-medium">Join thousands of students who have optimized their learning path and started earning from home.</p>
         <div class="flex flex-wrap justify-center gap-4">
             <a href="#find-tutors"
-               class="bg-emerald-600 text-white font-black px-10 py-5 rounded-2xl hover:bg-emerald-500 transition-all shadow-2xl shadow-emerald-600/30">
+               class="home-btn-wide home-btn-emerald">
                 FIND TUTORS
             </a>
             <a href="{{ url('assessment:index') }}"
-               class="bg-indigo-600 text-white font-black px-10 py-5 rounded-2xl hover:bg-indigo-500 transition-all shadow-2xl shadow-indigo-600/30">
+               class="home-btn-wide home-btn-saffron-wide">
                 PRACTICE ONLINE
             </a>
             <a href="{{ url('users:signup') }}"
-               class="border border-slate-600 text-slate-200 font-black px-10 py-5 rounded-2xl hover:bg-slate-800 transition-all">
+               class="home-btn-wide home-btn-gold-outline">
                 START NOW &rarr;
             </a>
         </div>
     </div>
-    
-    <!-- Decorative light beam -->
-    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[50%] bg-indigo-600/10 blur-[150px] rounded-t-full"></div>
+
+    <div class="home-final-glow absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[50%] blur-[150px] rounded-t-full pointer-events-none"></div>
 </section>
 {% endblock %}

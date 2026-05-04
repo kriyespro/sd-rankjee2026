@@ -79,6 +79,27 @@ def tutor_required(view_fn):
 
 
 def _student_study_data(request):
+    if getattr(request.user, 'role', None) == CustomUser.Role.VIP_USER:
+        materials = list(
+            StudyMaterial.objects.filter(is_published=True)
+            .select_related('tutor', 'study_topic', 'study_topic__parent')
+            .distinct()
+            .order_by('-updated_at')[:220]
+        )
+        assignments = list(
+            StudyAssignment.objects.select_related(
+                'tutor', 'skill', 'material', 'study_topic', 'study_topic__parent'
+            )
+            .distinct()
+            .order_by('-updated_at')[:220]
+        )
+        return {
+            'tutors': set(),
+            'materials': materials,
+            'assignments': assignments,
+            'submitted_ids': set(),
+        }
+
     tutors = engaged_tutor_user_ids(request.user)
     materials_visibility = (
         Q(tutor_id__in=tutors) | platform_study_material_q()
@@ -165,6 +186,7 @@ def student_hub(request, study_urls=None):
     if study_urls is None and request.user.role in (
         CustomUser.Role.STUDENT,
         CustomUser.Role.PARENT,
+        CustomUser.Role.VIP_USER,
     ):
         return redirect('dashboard:study')
     bundle = _student_study_data(request)
@@ -199,6 +221,7 @@ def _render_student_topic_page(request, topic_pk, urls):
     if urls is None and request.user.role in (
         CustomUser.Role.STUDENT,
         CustomUser.Role.PARENT,
+        CustomUser.Role.VIP_USER,
     ):
         if topic_pk is None:
             return redirect(STUDY_URLS_DASHBOARD['topic_general'])
@@ -296,6 +319,11 @@ def student_assignment_detail(request, pk, study_urls=None):
         return redirect(reverse(urls['hub']))
 
     existing = AssignmentSubmission.objects.filter(assignment=assignment, student=request.user).first()
+    study_vip_preview = getattr(request.user, 'role', None) == CustomUser.Role.VIP_USER
+    if study_vip_preview and request.method == 'POST':
+        messages.info(request, 'VIP coordinator preview: assignment submissions are disabled.')
+        return redirect(reverse(urls['assignment'], kwargs={'pk': assignment.pk}))
+
     if request.method == 'POST':
         form = AssignmentSubmissionForm(request.POST, instance=existing)
         if form.is_valid():
@@ -318,7 +346,7 @@ def student_assignment_detail(request, pk, study_urls=None):
     )
     cid = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', '').strip()
     pkey = getattr(settings, 'GOOGLE_PICKER_API_KEY', '').strip()
-    picker_on = bool(cid and pkey)
+    picker_on = bool(cid and pkey) and not study_vip_preview
     ctx = {
         **_study_seo_ctx(request),
         **shell,
@@ -329,6 +357,7 @@ def student_assignment_detail(request, pk, study_urls=None):
         'google_drive_picker_enabled': picker_on,
         'google_picker_client_id_json': json.dumps(cid),
         'google_picker_api_key_json': json.dumps(pkey),
+        'study_vip_preview': study_vip_preview,
     }
     return render(request, 'tutor_study/student_assignment.jinja', ctx)
 

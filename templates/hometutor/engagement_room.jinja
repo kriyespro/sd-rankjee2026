@@ -45,7 +45,7 @@
             <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-3">Chat</h2>
             <div class="space-y-2 mb-4 max-h-80 overflow-y-auto pr-1">
                 {% for m in chat_messages %}
-                <div class="rounded-xl px-3 py-2 {{ 'bg-indigo-50 border border-indigo-100' if m.sender_id == user.id else 'bg-slate-50 border border-slate-100' }}">
+                <div class="rounded-xl px-3 py-2 {{ 'bg-indigo-50 border border-indigo-100' if m.sender_id == request.user.id else 'bg-slate-50 border border-slate-100' }}">
                     <p class="text-xs font-black text-slate-600">{{ m.sender.get_username() }} · {{ m.created_at.strftime('%d %b %H:%M') }}</p>
                     <p class="text-sm text-slate-800 whitespace-pre-line">{{ m.body }}</p>
                     {% if m.support_flag %}<p class="text-[11px] font-black uppercase tracking-wider text-rose-700 mt-1">Support flag</p>{% endif %}

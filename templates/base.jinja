@@ -32,6 +32,129 @@
     <script defer src="{{ static('js/htmx.min.js') }}"></script>
     <style>
         [x-cloak] { display: none !important; }
+        /* RankJEE brand palette — see colorp.md */
+        :root {
+            --rj-navy: #0D2B5E;
+            --rj-saffron: #F4711C;
+            --rj-gold: #F5B731;
+            --rj-emerald: #1CA97B;
+            --rj-surface: #f4f6fb;
+            --rj-surface-warm: #faf8f5;
+        }
+
+        /* Tutor listing cards — RankJEE palette (shared home + directory) */
+        .rankjee-tutor-card {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
+            border-radius: 1.25rem;
+            box-shadow: 0 4px 22px -14px color-mix(in srgb, var(--rj-navy) 26%, transparent);
+            transition: box-shadow 0.22s ease, border-color 0.22s ease, transform 0.22s ease;
+        }
+        .rankjee-tutor-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--rj-navy), var(--rj-saffron));
+            opacity: 0.92;
+        }
+        .rankjee-tutor-card:hover {
+            border-color: color-mix(in srgb, var(--rj-saffron) 38%, #e2e8f0);
+            box-shadow: 0 20px 44px -22px color-mix(in srgb, var(--rj-navy) 26%, transparent);
+            transform: translateY(-3px);
+        }
+        .rankjee-tutor-avatar-ph {
+            background: linear-gradient(145deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 55%, var(--rj-saffron)) 100%);
+            color: #fff;
+        }
+        .rankjee-tutor-badge-verified {
+            background: color-mix(in srgb, var(--rj-emerald) 12%, #ecfdf5);
+            color: color-mix(in srgb, var(--rj-emerald) 35%, #064e3b);
+            border: 1px solid color-mix(in srgb, var(--rj-emerald) 28%, #bbf7d0);
+        }
+        .rankjee-tutor-badge-rating {
+            background: color-mix(in srgb, var(--rj-gold) 24%, #fffbeb);
+            color: var(--rj-navy);
+            border: 1px solid color-mix(in srgb, var(--rj-gold) 40%, #fde68a);
+        }
+        .rankjee-tutor-name-link:hover .rankjee-tutor-name {
+            color: var(--rj-saffron);
+        }
+        .rankjee-tutor-subjects {
+            color: color-mix(in srgb, var(--rj-navy) 88%, #1e293b);
+        }
+        .rankjee-chip {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 0.5rem;
+            padding: 0.25rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .rankjee-chip-muted {
+            background: color-mix(in srgb, var(--rj-navy) 7%, #f1f5f9);
+            color: color-mix(in srgb, var(--rj-navy) 72%, #334155);
+        }
+        .rankjee-chip-accent {
+            background: color-mix(in srgb, var(--rj-saffron) 12%, #fff);
+            color: var(--rj-navy);
+            border: 1px solid color-mix(in srgb, var(--rj-saffron) 35%, #fed7aa);
+        }
+        .rankjee-tutor-btn-primary {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            background: var(--rj-saffron);
+            color: #fff;
+            transition: filter 0.15s ease;
+        }
+        .rankjee-tutor-btn-primary:hover {
+            filter: brightness(1.07);
+        }
+        .rankjee-tutor-btn-secondary {
+            display: block;
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 2px solid var(--rj-navy);
+            color: var(--rj-navy);
+            background: #fff;
+            transition: background-color 0.15s ease;
+        }
+        .rankjee-tutor-btn-secondary:hover {
+            background: color-mix(in srgb, var(--rj-gold) 14%, #fff);
+        }
+        .rankjee-tutor-btn-ghost {
+            display: block;
+            width: 100%;
+            padding: 0.625rem 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            background: #fff;
+            transition: background-color 0.15s ease;
+        }
+        .rankjee-tutor-btn-ghost:hover {
+            background: #f8fafc;
+        }
+
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, h4, h5, h6 { font-family: 'Outfit', sans-serif; }
         
@@ -260,6 +383,13 @@
                     <a href="{{ url('hometutor:my_demo_requests') }}" class="nav-link">My Demos</a>
                     <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">{{ uil.academy }}</a>
+                {% elif current_role == 'VIP_USER' %}
+                    <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
+                    <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
                     <a href="/sd/" class="nav-link">Admin</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
@@ -314,7 +444,7 @@
                 <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
                 <span class="text-[10px] font-black uppercase tracking-wider {% if request.path == '/' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.home }}</span>
             </a>
-            {% if not request.user.is_authenticated or current_role == 'STUDENT' %}
+            {% if not request.user.is_authenticated or current_role in ('STUDENT', 'VIP_USER') %}
                 <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
                 <a href="{{ url('assessment:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
@@ -324,7 +454,7 @@
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
                 </a>
-                {% if request.user.is_authenticated and current_role == 'STUDENT' %}
+                {% if request.user.is_authenticated and current_role in ('STUDENT', 'VIP_USER') %}
                 <a href="{{ url('dashboard:study') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/study' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
@@ -495,7 +625,7 @@
                         <p class="text-xs text-slate-600 leading-relaxed">Sign in as tutor → <strong class="text-slate-800">Study</strong> → <strong class="text-slate-800">New notes</strong> / <strong class="text-slate-800">New assignment</strong>. Students with <strong class="text-slate-800">active engagement</strong> see everything at <strong class="text-slate-800">/study/</strong>.</p>
                         {% if request.user.is_authenticated and current_role == 'TUTOR' %}
                         <a href="{{ url('study:tutor_dashboard') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Open tutor study →</a>
-                        {% elif request.user.is_authenticated and current_role in ('STUDENT', 'PARENT') %}
+                        {% elif request.user.is_authenticated and current_role in ('STUDENT', 'PARENT', 'VIP_USER') %}
                         <a href="{{ url('dashboard:study') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Your study room →</a>
                         {% elif request.user.is_authenticated %}
                         <a href="{{ url('study:student_hub') }}" class="mt-2 inline-flex text-[11px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-800">Study hub →</a>

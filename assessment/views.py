@@ -39,6 +39,7 @@ def test_index(request):
         'pro_locked_skill_ids': pro_locked_skill_ids,
         'is_premium_user': is_premium_user,
         'seo_noindex': True,
+        'show_exam_pro_thanks': request.GET.get('paid') == '1',
     })
 
 

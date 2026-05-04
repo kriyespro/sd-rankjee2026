@@ -1,26 +1,26 @@
+RankJee — environment reference, Razorpay checkout, deploy commands
+==================================================================
+Keep real secrets ONLY in server `.env` (never commit `.env`, db.sqlite3, or `__pycache__`).
+
+Production URL
+--------------
 https://rankjee.com/
 
 
+.env (production template — replace placeholders on the server)
+-----------------------------------------------------------------
 DEBUG=False
-SECRET_KEY=dxkWDQY5vmdru56zZFOyFojrUeVnHCJXMDs3s3prnm6Gw49aI0bCgYngR85VgzjN8NsANXNMrX5h7rU9ohKGvw
-# Include your Droplet public IP and domain (no spaces). Required when DEBUG=False or Docker sets D>
+SECRET_KEY=<generate-a-strong-secret-never-commit-this-line>
 ALLOWED_HOSTS=rankjee.com,www.rankjee.com,161.97.146.14,127.0.0.1,localhost
 
-# Database / cache (PostgreSQL required when DEBUG=False; pooled connections for performance)
 DATABASE_URL=postgres://postgres:postgres@db:5432/rankjee_db
 DB_CONN_MAX_AGE=600
 REDIS_URL=redis://redis:6379/0
 CELERY_BROKER_URL=redis://redis:6379/0
 CELERY_RESULT_BACKEND=redis://redis:6379/0
-# With DEBUG=0 and REDIS_URL set, Django uses Redis cache unless USE_REDIS_CACHE=0
 USE_REDIS_CACHE=1
 REDIS_CACHE_URL=redis://redis:6379/2
 
-# Optional: tune Gunicorn (docker-compose web service)
-# GUNICORN_WORKERS=3
-# GUNICORN_THREADS=2
-
-# Email
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
@@ -28,20 +28,114 @@ EMAIL_HOST_USER=your-email@example.com
 EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=your-email@example.com
 
-# Payments
+# --- Razorpay (exam Pro subscription checkout, `payments` app) ---
+# Keys from Razorpay Dashboard (test vs live). Never expose KEY_SECRET to the browser.
 RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
 RAZORPAY_KEY_SECRET=xxxxxxxxxxxxxxxx
+# Set to 1 only for local simulated checkout (no real gateway).
 RAZORPAY_USE_DUMMY=0
+# Optional: home tutor marketplace webhooks → see RAZORPAY_WEBHOOK_SECRET in `.env.production.example`
+RAZORPAY_WEBHOOK_SECRET=
 
-# App URLs
 SITE_BASE_URL=https://rankjee.com
+SITE_ID=1
 CSRF_TRUSTED_ORIGINS=https://rankjee.com,https://www.rankjee.com
 
-# --- Host Nginx (MindMap on 8080 frees host :80) ---
-# 1) DNS: A records for rankjee.com and www → 161.97.146.14
-#    Cloudflare proxied: SSL/TLS = Full (strict). DNS-only: traffic hits VPS directly.
-# 2) Create /etc/nginx/sites-available/rankjee.com — paste the two server { } blocks below (no leading #), then:
-#
+
+Razorpay integration (code behaviour — updated)
+-----------------------------------------------
+Backend (`payments/views.py`, `payments/services.py`, `payments/urls.py`):
+  • POST `/payments/order/<plan_id>/` — creates Razorpay order (amount in paise), adds `receipt`,
+    enforces minimum 100 paise for live mode; maps Razorpay errors to 400 / 401 / 500 where appropriate.
+  • POST `/payments/verify/` — form fields: razorpay_order_id, razorpay_payment_id, razorpay_signature;
+    requires payment id + signature for live mode; uses SDK signature verification; does not mark paid
+    on mismatch (order → FAILED).
+  • Dummy mode: DEBUG + missing keys, or `RAZORPAY_USE_DUMMY=1` — local confirm flow without keys.
+
+Frontend (`templates/payments/plans.jinja`):
+  • Loads `https://checkout.razorpay.com/v1/checkout.js`, opens modal, verifies via fetch + CSRF.
+  • Handles JSON parse errors, `payment.failed`, and modal dismiss hook.
+
+Post-payment redirect (`payments/views.py` — `_exam_subscription_success_url`):
+  • Staff or superuser → `/admin/?paid=1` (command centre).
+  • Everyone else → `/assessment/?paid=1` (diagnostic catalog).
+
+UX confirmations:
+  • `templates/assessment/test_list.jinja` — banner when `paid=1`.
+  • `templates/dashboard/admin_dashboard.jinja` — banner when `paid=1` for staff.
+
+Settings (`rankjee/settings.py`): reads `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+from environment (`python-dotenv` loads `.env`).
+
+
+Other recent workspace changes (summary — verify with `git status`)
+--------------------------------------------------------------------
+Users / auth:
+  • `users/models.py` — `CustomUser.Role.VIP_USER`; migration `users/migrations/0013_customuser_role_vip_user.py`.
+
+Dashboard / VIP:
+  • `dashboard/views.py`, `dashboard/forms.py`, `dashboard/urls.py`
+  • Templates: `templates/dashboard/vip_smart.jinja`, `vip_create_user.jinja`, `vip_blog_post.jinja`,
+    partials under `templates/dashboard/partials/`, updates to `index.jinja`, `role_parent.jinja`,
+    `role_tutor.jinja`, `admin_dashboard.jinja`.
+
+Assessment / payments UX:
+  • `assessment/views.py`, `templates/assessment/test_list.jinja`
+  • `templates/payments/plans.jinja`
+
+Product / UI (non-payment):
+  • `templates/base.jinja`, `templates/core/home.jinja`, blog templates, tutor study LMS templates,
+    `static/css/app.css`, `tutor_study/views.py`, `tutor_study/services.py`, `hometutor/views.py`,
+    hometutor templates, `rankjee/settings.py`.
+
+Demo / notes (optional local-only):
+  • `hometutor/management/commands/setup_demo_three_roles.py`, `simulate_demo_roles.txt`, `pg.md`, `colorp.md`.
+
+
+Database migrations (Docker)
+---------------------------
+After pull on the server, apply Django migrations inside the `web` container:
+
+  cd ~/sdrankjee2026
+  docker compose exec web python manage.py migrate
+
+If the stack was recreated from scratch:
+
+  docker compose up -d --build
+  docker compose exec web python manage.py migrate
+
+Local (SQLite):
+
+  cd ~/Desktop/sd-rankjee2026
+  python3 manage.py migrate
+
+
+Git — push from local (example)
+-------------------------------
+  cd ~/Desktop/sd-rankjee2026
+  git status
+  git add -A
+  git commit -m "Describe your change in one sentence."
+  git push origin main
+
+Tip: exclude secrets and local DB from commits (`git restore --staged db.sqlite3` if needed).
+
+
+Git — pull on server (example)
+------------------------------
+  cd ~/sdrankjee2026
+  git pull origin main
+  git log -1 --oneline
+  docker compose exec web python manage.py migrate
+  docker compose up -d --build
+
+
+Host Nginx (MindMap on 8080 frees host :80)
+-------------------------------------------
+1) DNS: A records for rankjee.com and www → 161.97.146.14
+   Cloudflare proxied: SSL/TLS = Full (strict). DNS-only: traffic hits VPS directly.
+2) Create /etc/nginx/sites-available/rankjee.com — paste the two server { } blocks below (no leading #), then:
+
 server {
     listen 80;
     listen [::]:80;
@@ -63,7 +157,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
-#
-# sudo ln -sf /etc/nginx/sites-available/rankjee.com /etc/nginx/sites-enabled/rankjee.com
-# sudo nginx -t && sudo systemctl enable --now nginx && sudo systemctl reload nginx
-# 3) cd ~/sd-rankjee2026 && git pull && docker compose up -d --force-recreate web
+
+  sudo ln -sf /etc/nginx/sites-available/rankjee.com /etc/nginx/sites-enabled/rankjee.com
+  sudo nginx -t && sudo systemctl enable --now nginx && sudo systemctl reload nginx
+3) cd ~/sdrankjee2026 && git pull origin main && docker compose exec web python manage.py migrate && docker compose up -d --force-recreate web

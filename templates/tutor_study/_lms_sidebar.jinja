@@ -29,7 +29,7 @@
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if lms_active_nav == 'hub' %}bg-indigo-500 text-white shadow-sm{% else %}bg-slate-200/80 text-slate-600 group-hover:bg-white group-hover:text-indigo-600{% endif %} transition-colors duration-150" aria-hidden="true">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                 </span>
-                {{ item.label }}
+                <span class="min-w-0 break-words">{{ item.label }}</span>
             </a>
             {% else %}
             {% set rail_left = 14 + item.depth * 12 %}
@@ -47,7 +47,7 @@
                 <span class="pointer-events-none absolute left-0 top-1/2 h-px w-2 -translate-y-1/2 bg-slate-300/90 group-hover:bg-slate-400/80" style="left: {{ 10 + (item.depth - 1) * 12 }}px;" aria-hidden="true"></span>
                 {% endif %}
                 <span class="relative flex min-w-0 flex-1 flex-col gap-1">
-                    <span class="font-semibold leading-snug {% if is_active %}text-indigo-900{% elif is_related %}text-amber-950{% endif %}">{{ item.label }}</span>
+                    <span class="font-semibold leading-snug break-words {% if is_active %}text-indigo-900{% elif is_related %}text-amber-950{% endif %}">{{ item.label }}</span>
                     {% if item.count_materials or item.count_assignments or item.count_exams %}
                     <span class="flex flex-wrap gap-1">
                         {% if item.count_materials %}

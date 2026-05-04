@@ -14,20 +14,20 @@
         {% endif %}
 
         {% if not show_study_empty %}
-        <dl class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <div class="rounded-xl border border-teal-200/80 bg-gradient-to-br from-teal-400/20 via-teal-50 to-white px-2.5 py-2 shadow-sm">
+        <dl class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 min-w-0">
+            <div class="rounded-xl border border-teal-200/80 bg-gradient-to-br from-teal-400/20 via-teal-50 to-white px-2 py-2 sm:px-2.5 shadow-sm min-w-0">
                 <dt class="text-[9px] font-bold uppercase tracking-wide text-teal-900/75">Materials</dt>
                 <dd class="text-lg font-bold tabular-nums leading-none text-teal-950 mt-0.5">{{ study_summary_materials }}</dd>
             </div>
-            <div class="rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-400/18 via-indigo-50 to-white px-2.5 py-2 shadow-sm">
+            <div class="rounded-xl border border-indigo-200/80 bg-gradient-to-br from-indigo-400/18 via-indigo-50 to-white px-2 py-2 sm:px-2.5 shadow-sm min-w-0">
                 <dt class="text-[9px] font-bold uppercase tracking-wide text-indigo-900/75">Assignments</dt>
                 <dd class="text-lg font-bold tabular-nums leading-none text-indigo-950 mt-0.5">{{ study_summary_assignments }}</dd>
             </div>
-            <div class="rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-400/18 via-violet-50 to-white px-2.5 py-2 shadow-sm">
+            <div class="rounded-xl border border-violet-200/80 bg-gradient-to-br from-violet-400/18 via-violet-50 to-white px-2 py-2 sm:px-2.5 shadow-sm min-w-0">
                 <dt class="text-[9px] font-bold uppercase tracking-wide text-violet-900/75">Quizzes</dt>
                 <dd class="text-lg font-bold tabular-nums leading-none text-violet-950 mt-0.5">{{ study_summary_exams }}</dd>
             </div>
-            <div class="rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-400/22 via-amber-50 to-white px-2.5 py-2 shadow-sm">
+            <div class="rounded-xl border border-amber-200/80 bg-gradient-to-br from-amber-400/22 via-amber-50 to-white px-2 py-2 sm:px-2.5 shadow-sm min-w-0">
                 <dt class="text-[9px] font-bold uppercase tracking-wide text-amber-900/75">Tutor links</dt>
                 <dd class="text-lg font-bold tabular-nums leading-none text-amber-950 mt-0.5">{{ engaged_tutor_count }}</dd>
             </div>

@@ -25,6 +25,8 @@ import os
 import requests
 from urllib.parse import urlencode
 
+from blog.models import BlogCategory, BlogPost
+
 from .forms import (
     EarningTaskForm,
     ConceptVideoForm,
@@ -33,6 +35,8 @@ from .forms import (
     SkillPathForm,
     StudentDailyClassLogForm,
     VideoQuestionImportForm,
+    VipBlogPostForm,
+    VipManualUserForm,
 )
 try:
     from .models import SeoTarget
@@ -661,6 +665,118 @@ def _staff_only(request):
     return request.user.is_staff or request.user.is_superuser
 
 
+def _vip_coordinator(request):
+    return getattr(request.user, "role", None) == User.Role.VIP_USER
+
+
+def _staff_or_vip_coordinator(request):
+    return _staff_only(request) or _vip_coordinator(request)
+
+
+@login_required
+def vip_smart_dashboard(request):
+    """Coordinator cockpit: metrics + deep links (VIP_USER role only)."""
+    if not _vip_coordinator(request):
+        messages.error(request, "VIP coordinator access only.")
+        return redirect("dashboard:index")
+
+    from hometutor.models import TutorProfile
+
+    last_7 = timezone.now() - timedelta(days=7)
+    recent_attempts = (
+        UserAttempt.objects.select_related("user", "skill")
+        .order_by("-attempt_date")[:14]
+    )
+    ctx = {
+        "seo_title": "VIP Smart Dashboard — RankJee",
+        "seo_description": "Coordinator overview for students, tutors, exams, and study content.",
+        "total_users": User.objects.count(),
+        "count_students": User.objects.filter(role=User.Role.STUDENT).count(),
+        "count_parents": User.objects.filter(role=User.Role.PARENT).count(),
+        "count_tutors_role": User.objects.filter(role=User.Role.TUTOR).count(),
+        "count_tutor_profiles": TutorProfile.objects.count(),
+        "attempts_7d": UserAttempt.objects.filter(attempt_date__gte=last_7).count(),
+        "blog_posts_live": BlogPost.objects.filter(
+            published_at__isnull=False,
+            published_at__lte=timezone.now(),
+        ).count(),
+        "referrals_linked": User.objects.exclude(referred_by__isnull=True).count(),
+        "recent_users": User.objects.order_by("-date_joined")[:14],
+        "recent_attempts": recent_attempts,
+    }
+    return render(request, "dashboard/vip_smart.jinja", ctx)
+
+
+@login_required
+def vip_create_user(request):
+    if not _vip_coordinator(request):
+        messages.error(request, "VIP coordinator access only.")
+        return redirect("dashboard:index")
+
+    from users.models import CustomUser as CU
+
+    if request.method == "POST":
+        form = VipManualUserForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data["username"].strip()
+            email = (form.cleaned_data.get("email") or "").strip().lower()
+            pwd = form.cleaned_data["password1"]
+            role = form.cleaned_data["role"]
+            attach = form.cleaned_data.get("attach_my_referral")
+            new_user = User.objects.create_user(
+                username=username,
+                email=email or "",
+                password=pwd,
+            )
+            new_user.role = role
+            if attach:
+                new_user.referred_by = request.user
+            new_user.save()
+            label = "student" if role == CU.Role.STUDENT else "tutor"
+            messages.success(
+                request,
+                f"Created {label} @{new_user.username}. "
+                + (
+                    "Ask them to complete tutor listing at Home tutor profile."
+                    if role == CU.Role.TUTOR
+                    else "They can log in with the password you set."
+                ),
+            )
+            return redirect("dashboard:vip_create_user")
+    else:
+        form = VipManualUserForm()
+
+    return render(
+        request,
+        "dashboard/vip_create_user.jinja",
+        {"form": form, "seo_title": "Add student or tutor — VIP"},
+    )
+
+
+@login_required
+def vip_blog_post_create(request):
+    if not _vip_coordinator(request):
+        messages.error(request, "VIP coordinator access only.")
+        return redirect("dashboard:index")
+
+    if request.method == "POST":
+        form = VipBlogPostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            messages.success(request, f"Published: {post.title}")
+            return redirect("blog:detail", slug=post.slug)
+    else:
+        form = VipBlogPostForm()
+
+    return render(
+        request,
+        "dashboard/vip_blog_post.jinja",
+        {"form": form, "seo_title": "New blog post — VIP"},
+    )
+
+
 def _superuser_only(request):
     return request.user.is_superuser
 
@@ -668,7 +784,7 @@ def _superuser_only(request):
 def _study_urls_for_dashboard_role(role):
     from tutor_study.views import STUDY_URLS_DASHBOARD, STUDY_URLS_STANDALONE
 
-    if role in (User.Role.STUDENT, User.Role.PARENT):
+    if role in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         return STUDY_URLS_DASHBOARD
     return STUDY_URLS_STANDALONE
 
@@ -681,7 +797,7 @@ def dashboard_study(request):
     role = getattr(request.user, 'role', None)
     if role == User.Role.TUTOR:
         return redirect('study:tutor_dashboard')
-    if role not in (User.Role.STUDENT, User.Role.PARENT):
+    if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         return redirect('study:student_hub')
     return ts_student_hub(request, study_urls=STUDY_URLS_DASHBOARD)
 
@@ -693,7 +809,7 @@ def dashboard_study_topic_general(request):
     role = getattr(request.user, 'role', None)
     if role == User.Role.TUTOR:
         return redirect('study:tutor_dashboard')
-    if role not in (User.Role.STUDENT, User.Role.PARENT):
+    if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         return redirect('study:student_topic_general')
     return ts_topic_general(request, study_urls=STUDY_URLS_DASHBOARD)
 
@@ -705,7 +821,7 @@ def dashboard_study_topic(request, topic_pk):
     role = getattr(request.user, 'role', None)
     if role == User.Role.TUTOR:
         return redirect('study:tutor_dashboard')
-    if role not in (User.Role.STUDENT, User.Role.PARENT):
+    if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         return redirect('study:student_topic', topic_pk=topic_pk)
     return ts_topic(request, topic_pk, study_urls=STUDY_URLS_DASHBOARD)
 
@@ -843,7 +959,7 @@ def seo_smart_view(request):
 
 @login_required
 def students_score_table(request):
-    if not _staff_only(request):
+    if not _staff_or_vip_coordinator(request):
         return redirect("dashboard:index")
 
     q = (request.GET.get("q") or "").strip()
@@ -920,8 +1036,8 @@ def students_score_table(request):
 
 @login_required
 def users_referral_table(request):
-    if not _superuser_only(request):
-        messages.error(request, "Only superadmin can access referral table.")
+    if not (_superuser_only(request) or _vip_coordinator(request)):
+        messages.error(request, "Only superadmin or VIP coordinators can access the referral table.")
         return redirect("dashboard:index")
 
     q = (request.GET.get("q") or "").strip()
@@ -1168,6 +1284,8 @@ def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
         return redirect('users:onboarding_role')
     role = getattr(request.user, 'role', 'STUDENT')
+    if role == User.Role.VIP_USER:
+        return vip_smart_dashboard(request)
     now = timezone.now()
     role_intro_map = {
         'TUTOR': "Manage your tutor listing, handle demo requests, and grow student enrollments.",

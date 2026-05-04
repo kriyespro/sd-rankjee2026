@@ -18,5 +18,16 @@
 - **Password:** RankJeeRefer99!
 - **Role:** Student (for referral testing)
 
+## Demo role accounts (password: demo1234)
+- **Username:** demo_student · **Email:** demo_student@example.com · **Role:** Student
+- **Username:** demo_tutor · **Email:** demo_tutor@example.com · **Role:** Tutor
+- **Username:** demo_parent · **Email:** demo_parent@example.com · **Role:** Parent
+
+One-command local wiring (approved tutor listing + sample pending demos):
+
+`python3 manage.py setup_demo_three_roles`
+
+Step-by-step flows: see **`simulate_demo_roles.txt`** in the project root.
+
 ---
 *Note: These are for local testing purposes only.*

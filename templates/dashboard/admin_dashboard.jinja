@@ -112,7 +112,12 @@
 
     {# Main Content #}
     <main class="flex-grow p-4 lg:p-6 overflow-y-auto">
-        
+        {% if request.GET.get('paid') == '1' %}
+        <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-900" role="status">
+            Exam Pro subscription payment received — your account has extended access. Open <a href="{{ url('assessment:index') }}" class="font-black text-emerald-800 underline hover:no-underline">Diagnostics</a> to use Pro tests.
+        </div>
+        {% endif %}
+
         {# Welcome Box #}
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>

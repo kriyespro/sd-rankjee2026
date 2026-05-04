@@ -6,6 +6,18 @@ from django.utils import timezone
 
 from hometutor.models import TutorEngagement, TutorProfile
 
+try:
+    from users.models import CustomUser as _CustomUser
+except ImportError:  # pragma: no cover
+    _CustomUser = None
+
+
+def _viewer_has_vip_study_access(user) -> bool:
+    return (
+        _CustomUser is not None
+        and getattr(user, "role", None) == _CustomUser.Role.VIP_USER
+    )
+
 
 def get_tutor_profile(user):
     try:
@@ -50,6 +62,8 @@ def study_material_visible_to_all_students(material) -> bool:
 
 
 def student_can_access_study_material(student, material) -> bool:
+    if _viewer_has_vip_study_access(student):
+        return bool(material.is_published)
     if not material.is_published:
         return False
     if study_material_visible_to_all_students(material):
@@ -64,6 +78,8 @@ def platform_assignment_visible_to_all_students(assignment) -> bool:
 
 def student_can_access_study_assignment(student, assignment) -> bool:
     """Engaged tutor assignments, or platform (staff/superuser) assignments for any logged-in student."""
+    if _viewer_has_vip_study_access(student):
+        return True
     if platform_assignment_visible_to_all_students(assignment):
         return True
     return student_can_access_tutor(student, assignment.tutor_id)
