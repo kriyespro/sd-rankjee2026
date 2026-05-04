@@ -159,12 +159,22 @@ INSTALLED_APPS = [
 
 # ... existing settings ...
 
+def _strip_env_value(raw):
+    """Trim whitespace and optional wrapping quotes from `.env` (copy/paste errors)."""
+    if raw is None:
+        return ""
+    s = str(raw).strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in "\"'":
+        s = s[1:-1].strip()
+    return s
+
+
 # Razorpay — use dashboard test keys in .env, or leave empty in DEBUG for dummy checkout
 # Set RAZORPAY_USE_DUMMY=1 to force simulated payments even if keys exist (local only).
-RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '').strip()
-RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '').strip()
+RAZORPAY_KEY_ID = _strip_env_value(os.environ.get("RAZORPAY_KEY_ID"))
+RAZORPAY_KEY_SECRET = _strip_env_value(os.environ.get("RAZORPAY_KEY_SECRET"))
 # Razorpay webhooks (payment.captured) for home tutor marketplace — verify X-Razorpay-Signature
-RAZORPAY_WEBHOOK_SECRET = os.environ.get('RAZORPAY_WEBHOOK_SECRET', '').strip()
+RAZORPAY_WEBHOOK_SECRET = _strip_env_value(os.environ.get("RAZORPAY_WEBHOOK_SECRET"))
 
 # Home tutor marketplace (separate from subscription `payments`)
 HOMETUTOR_DEFAULT_MONTHLY_FEE_INR = os.environ.get('HOMETUTOR_DEFAULT_MONTHLY_FEE_INR', '5000')
