@@ -231,7 +231,9 @@ class VipBlogPostForm(_StyledModelForm):
         )
         self.fields["body"].required = False
         self.fields["body"].help_text = (
-            "Optional manual markdown override. Leave blank to auto-build from H1, sections, and links below."
+            "Paste full SEO article draft here (SEO Metadata + content supported). "
+            "System auto-cleans research sections and auto-fills title/slug/meta when possible. "
+            "Leave blank to auto-build from H1, sections, and links below."
         )
         self.fields["body"].widget.attrs.setdefault(
             "placeholder",

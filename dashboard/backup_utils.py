@@ -86,7 +86,51 @@ def create_backups(*, include_full=True, include_db=True, created_by=None):
         created.append(create_full_backup(created_by=created_by))
     if include_db:
         created.append(create_db_backup(created_by=created_by))
+    apply_backup_retention_policy()
     return created
+
+
+def delete_backup_artifact(item: BackupArtifact) -> bool:
+    removed_file = False
+    if item.file_path:
+        p = Path(item.file_path)
+        if p.exists() and p.is_file():
+            p.unlink()
+            removed_file = True
+    item.delete()
+    return removed_file
+
+
+def apply_backup_retention_policy(*, keep_full=None, keep_db=None):
+    keep_full = int(
+        keep_full
+        if keep_full is not None
+        else getattr(settings, "BACKUP_KEEP_FULL_COUNT", 14)
+    )
+    keep_db = int(
+        keep_db
+        if keep_db is not None
+        else getattr(settings, "BACKUP_KEEP_DB_COUNT", 30)
+    )
+
+    deleted = []
+    policy = [
+        (BackupArtifact.BackupType.FULL, keep_full),
+        (BackupArtifact.BackupType.DB, keep_db),
+    ]
+    for backup_type, keep_count in policy:
+        if keep_count < 0:
+            keep_count = 0
+        ids_to_keep = list(
+            BackupArtifact.objects.filter(backup_type=backup_type)
+            .order_by("-created_at", "-id")
+            .values_list("id", flat=True)[:keep_count]
+        )
+        stale_qs = BackupArtifact.objects.filter(backup_type=backup_type).exclude(id__in=ids_to_keep)
+        for artifact in stale_qs:
+            delete_backup_artifact(artifact)
+            deleted.append(artifact.file_name)
+    return deleted
 
 
 def notify_superusers_for_backups(backups):

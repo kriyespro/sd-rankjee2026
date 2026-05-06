@@ -12,6 +12,7 @@ urlpatterns = [
     path('backups/', views.backup_center, name='backup_center'),
     path('backups/create/', views.backup_create_now, name='backup_create_now'),
     path('backups/<int:backup_id>/download/', views.backup_download, name='backup_download'),
+    path('backups/<int:backup_id>/delete/', views.backup_delete, name='backup_delete'),
     # Backward-compatible alias for already-open forms/bookmarks.
     path('vip/blog/new/', views.blog_post_create, name='vip_blog_post_create'),
     path('study/', views.dashboard_study, name='study'),

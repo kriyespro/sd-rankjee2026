@@ -2,6 +2,7 @@ import logging
 import ipaddress
 import calendar
 
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -43,7 +44,7 @@ try:
     from .models import SeoTarget
 except ImportError:
     SeoTarget = None
-from .backup_utils import create_backups, notify_superusers_for_backups
+from .backup_utils import create_backups, delete_backup_artifact, notify_superusers_for_backups
 from .models import BackupArtifact, StudentDailyClassLog
 try:
     from axes.models import AccessLog
@@ -845,6 +846,8 @@ def backup_center(request):
         {
             "backups": backups,
             "seo_title": "Backups — Admin",
+            "backup_keep_full": getattr(settings, "BACKUP_KEEP_FULL_COUNT", 14),
+            "backup_keep_db": getattr(settings, "BACKUP_KEEP_DB_COUNT", 30),
         },
     )
 
@@ -880,6 +883,21 @@ def backup_download(request, backup_id):
         filename=item.file_name,
         content_type="application/octet-stream",
     )
+
+
+@login_required
+def backup_delete(request, backup_id):
+    if request.method != "POST":
+        return redirect("dashboard:backup_center")
+    if not _staff_only(request):
+        messages.error(request, "Only staff users can delete backups.")
+        return redirect("dashboard:index")
+
+    item = get_object_or_404(BackupArtifact, pk=backup_id)
+    name = item.file_name
+    delete_backup_artifact(item)
+    messages.success(request, f"Deleted backup: {name}")
+    return redirect("dashboard:backup_center")
 
 
 def _superuser_only(request):

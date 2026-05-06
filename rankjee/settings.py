@@ -345,6 +345,10 @@ LOGIN_REDIRECT_URL = '/admin/'
 LOGOUT_REDIRECT_URL = '/'
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
 SITE_ID = int(os.environ.get('SITE_ID', '1'))
+
+# Backup retention policy (auto-delete older backups after each backup run).
+BACKUP_KEEP_FULL_COUNT = int(os.environ.get("BACKUP_KEEP_FULL_COUNT", "14"))
+BACKUP_KEEP_DB_COUNT = int(os.environ.get("BACKUP_KEEP_DB_COUNT", "30"))
 CANONICAL_HOST = os.environ.get('CANONICAL_HOST', '').strip().lower()
 CANONICAL_HOST_REDIRECT_ENABLED = _env_bool(
     'CANONICAL_HOST_REDIRECT_ENABLED',

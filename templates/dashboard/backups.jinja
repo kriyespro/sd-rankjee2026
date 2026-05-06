@@ -8,6 +8,7 @@
             <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Admin dashboard</a>
             <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Backups</h1>
             <p class="mt-1 text-sm text-slate-600">Daily full-project and DB backups. Download any artifact below.</p>
+            <p class="mt-1 text-xs font-bold text-slate-500">Auto-delete policy: keep latest {{ backup_keep_full }} full backups and {{ backup_keep_db }} DB backups.</p>
         </div>
         <form method="post" action="{{ url('dashboard:backup_create_now') }}">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -26,7 +27,7 @@
                     <th class="px-4 py-3">File name</th>
                     <th class="px-4 py-3">Size</th>
                     <th class="px-4 py-3">Created by</th>
-                    <th class="px-4 py-3 text-right">Action</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -41,6 +42,12 @@
                         <a href="{{ url('dashboard:backup_download', backup_id=b.id) }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">
                             Download
                         </a>
+                        <form method="post" action="{{ url('dashboard:backup_delete', backup_id=b.id) }}" class="inline-block ml-2" onsubmit="return confirm('Delete backup {{ b.file_name }}?');">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                            <button type="submit" class="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">
+                                Delete
+                            </button>
+                        </form>
                     </td>
                 </tr>
                 {% else %}
