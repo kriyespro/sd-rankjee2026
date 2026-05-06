@@ -322,6 +322,14 @@ def post_detail(request, slug):
             },
         ],
     }
+    can_edit = bool(
+        request.user.is_authenticated
+        and (
+            request.user.is_staff
+            or request.user.is_superuser
+            or (post.author_id and post.author_id == request.user.id)
+        )
+    )
     return render(
         request,
         'blog/detail.jinja',
@@ -336,5 +344,7 @@ def post_detail(request, slug):
             'blog_hero_is_upload': bool(post.hero_image),
             'blog_posting_ld_json': mark_safe(json.dumps(posting_ld, ensure_ascii=False)),
             'breadcrumb_ld_json': mark_safe(json.dumps(breadcrumb_ld, ensure_ascii=False)),
+            'can_edit': can_edit,
+            'edit_url': reverse('dashboard:blog_post_edit', kwargs={'slug': post.slug}) if can_edit else '',
         },
     )

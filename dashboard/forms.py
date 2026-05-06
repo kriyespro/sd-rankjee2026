@@ -1,7 +1,10 @@
+import json
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.core.validators import URLValidator
 
 from assessment.models import Question, Skill, SkillPath
 from core.models import EarningTask
@@ -189,6 +192,22 @@ class VipManualUserForm(forms.Form):
 
 class VipBlogPostForm(_StyledModelForm):
     slug = forms.SlugField(required=False)
+    h1_tag = forms.CharField(
+        required=False,
+        max_length=220,
+        help_text="Main headline for the post.",
+    )
+    intro_text = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Opening paragraph under the H1 heading.",
+            }
+        ),
+    )
+    sections_payload = forms.CharField(required=False, widget=forms.HiddenInput())
+    links_payload = forms.CharField(required=False, widget=forms.HiddenInput())
 
     class Meta:
         model = BlogPost
@@ -202,3 +221,104 @@ class VipBlogPostForm(_StyledModelForm):
             "meta_description",
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Allow "paste-only" publishing (especially for staff/superuser workflows).
+        # BlogPost.save() already auto-derives title/slug/excerpt/meta from body when blank.
+        self.fields["title"].required = False
+        self.fields["title"].help_text = (
+            "Optional. If blank, we'll auto-extract the title from the first markdown heading in the body."
+        )
+        self.fields["body"].required = False
+        self.fields["body"].help_text = (
+            "Optional manual markdown override. Leave blank to auto-build from H1, sections, and links below."
+        )
+        self.fields["body"].widget.attrs.setdefault(
+            "placeholder",
+            "Optional: add full markdown body manually. If empty, the structured editor data is used.",
+        )
+        self._parsed_sections = []
+        self._parsed_links = []
+
+    def _parse_json_items(self, raw_value, field_name):
+        if not raw_value:
+            return []
+        try:
+            parsed = json.loads(raw_value)
+        except json.JSONDecodeError:
+            raise forms.ValidationError("Invalid structured content data. Please re-add sections/links.")
+        if not isinstance(parsed, list):
+            raise forms.ValidationError("Structured content must be a list.")
+        return parsed
+
+    def _clean_sections(self, sections):
+        cleaned = []
+        for row in sections:
+            if not isinstance(row, dict):
+                continue
+            h2 = (row.get("h2") or "").strip()
+            content = (row.get("content") or "").strip()
+            if not h2 and not content:
+                continue
+            if not h2:
+                raise forms.ValidationError("Each section needs an H2 heading.")
+            cleaned.append({"h2": h2[:220], "content": content})
+        return cleaned
+
+    def _clean_links(self, links):
+        cleaned = []
+        validator = URLValidator()
+        for row in links:
+            if not isinstance(row, dict):
+                continue
+            label = (row.get("label") or "").strip()
+            url = (row.get("url") or "").strip()
+            if not label and not url:
+                continue
+            if not url:
+                raise forms.ValidationError("Each link needs a URL.")
+            try:
+                validator(url)
+            except DjangoValidationError:
+                raise forms.ValidationError(f"Invalid URL: {url}")
+            cleaned.append({"label": label[:180], "url": url})
+        return cleaned
+
+    def _compose_body(self, h1_tag, intro_text, sections, links):
+        parts = []
+        if h1_tag:
+            parts.append(f"# {h1_tag}")
+        if intro_text:
+            parts.append(intro_text)
+        for section in sections:
+            parts.append(f"## {section['h2']}")
+            if section["content"]:
+                parts.append(section["content"])
+        if links:
+            parts.append("### Useful links")
+            for link in links:
+                label = link["label"] or link["url"]
+                parts.append(f"- [{label}]({link['url']})")
+        return "\n\n".join(parts).strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        h1_tag = (cleaned.get("h1_tag") or "").strip()
+        intro_text = (cleaned.get("intro_text") or "").strip()
+        manual_body = (cleaned.get("body") or "").strip()
+
+        sections_raw = cleaned.get("sections_payload")
+        links_raw = cleaned.get("links_payload")
+        sections = self._clean_sections(self._parse_json_items(sections_raw, "sections_payload"))
+        links = self._clean_links(self._parse_json_items(links_raw, "links_payload"))
+
+        auto_body = self._compose_body(h1_tag, intro_text, sections, links)
+        if not manual_body and not auto_body:
+            raise forms.ValidationError(
+                "Add a manual body or provide H1/sections content to generate the post body."
+            )
+
+        self._parsed_sections = sections
+        self._parsed_links = links
+        cleaned["body"] = manual_body or auto_body
+        return cleaned

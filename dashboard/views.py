@@ -5,7 +5,8 @@ import calendar
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import FileResponse, Http404, HttpResponse
+from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
 from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max, OuterRef, Subquery
 from django.contrib.auth import get_user_model
@@ -42,7 +43,8 @@ try:
     from .models import SeoTarget
 except ImportError:
     SeoTarget = None
-from .models import StudentDailyClassLog
+from .backup_utils import create_backups, notify_superusers_for_backups
+from .models import BackupArtifact, StudentDailyClassLog
 try:
     from axes.models import AccessLog
 except ImportError:
@@ -669,6 +671,14 @@ def _vip_coordinator(request):
     return getattr(request.user, "role", None) == User.Role.VIP_USER
 
 
+def _student_user(request):
+    return getattr(request.user, "role", None) == User.Role.STUDENT
+
+
+def _can_create_blog_post(request):
+    return _staff_only(request) or _vip_coordinator(request) or _student_user(request)
+
+
 def _staff_or_vip_coordinator(request):
     return _staff_only(request) or _vip_coordinator(request)
 
@@ -754,16 +764,23 @@ def vip_create_user(request):
 
 
 @login_required
-def vip_blog_post_create(request):
-    if not _vip_coordinator(request):
-        messages.error(request, "VIP coordinator access only.")
+def blog_post_create(request):
+    if not _can_create_blog_post(request):
+        messages.error(request, "Only VIP, staff, or student users can publish posts.")
         return redirect("dashboard:index")
 
     if request.method == "POST":
         form = VipBlogPostForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
-            post.author = request.user
+            # Author defaulting:
+            # - For staff/superuser publishing ops, default author to user id=1 if it exists.
+            # - Otherwise use the logged-in user.
+            if request.user.is_staff or request.user.is_superuser:
+                default_author = User.objects.filter(pk=1).first()
+                post.author = default_author or request.user
+            else:
+                post.author = request.user
             post.save()
             messages.success(request, f"Published: {post.title}")
             return redirect("blog:detail", slug=post.slug)
@@ -773,7 +790,95 @@ def vip_blog_post_create(request):
     return render(
         request,
         "dashboard/vip_blog_post.jinja",
-        {"form": form, "seo_title": "New blog post — VIP"},
+        {
+            "form": form,
+            "seo_title": "New blog post",
+            "page_title": "Publish blog post",
+            "page_hint": "Goes live immediately with your account as author. Leave slug blank to auto-generate from the title.",
+            "submit_label": "Publish",
+        },
+    )
+
+
+@login_required
+def blog_post_edit(request, slug):
+    post = get_object_or_404(BlogPost, slug=slug)
+    if not (_staff_only(request) or (post.author_id and post.author_id == request.user.id)):
+        raise PermissionDenied
+
+    if request.method == "POST":
+        form = VipBlogPostForm(request.POST, instance=post)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            # Preserve authorship; only owner/staff can reach here anyway.
+            if not obj.author_id:
+                obj.author = request.user
+            obj.save()
+            messages.success(request, f"Updated: {obj.title}")
+            return redirect("blog:detail", slug=obj.slug)
+    else:
+        form = VipBlogPostForm(instance=post)
+
+    return render(
+        request,
+        "dashboard/vip_blog_post.jinja",
+        {
+            "form": form,
+            "seo_title": f"Edit blog post — {post.title}",
+            "page_title": "Edit blog post",
+            "page_hint": "Only you (the author) can edit this post.",
+            "submit_label": "Save changes",
+        },
+    )
+
+
+@login_required
+def backup_center(request):
+    if not _staff_only(request):
+        messages.error(request, "Only staff users can access backups.")
+        return redirect("dashboard:index")
+
+    backups = BackupArtifact.objects.select_related("created_by").order_by("-created_at")[:100]
+    return render(
+        request,
+        "dashboard/backups.jinja",
+        {
+            "backups": backups,
+            "seo_title": "Backups — Admin",
+        },
+    )
+
+
+@login_required
+def backup_create_now(request):
+    if request.method != "POST":
+        return redirect("dashboard:backup_center")
+    if not _staff_only(request):
+        messages.error(request, "Only staff users can create backups.")
+        return redirect("dashboard:index")
+
+    backups = create_backups(include_full=True, include_db=True, created_by=request.user)
+    notify_superusers_for_backups(backups)
+    messages.success(request, f"Backup completed: {len(backups)} artifact(s) created.")
+    return redirect("dashboard:backup_center")
+
+
+@login_required
+def backup_download(request, backup_id):
+    if not _staff_only(request):
+        messages.error(request, "Only staff users can download backups.")
+        return redirect("dashboard:index")
+
+    item = get_object_or_404(BackupArtifact, pk=backup_id)
+    path = item.file_path
+    if not path or not os.path.exists(path):
+        raise Http404("Backup file not found.")
+
+    return FileResponse(
+        open(path, "rb"),
+        as_attachment=True,
+        filename=item.file_name,
+        content_type="application/octet-stream",
     )
 
 
@@ -1376,6 +1481,9 @@ def index(request):
         if is_city_admin and getattr(request.user, "state", None):
             recent_daily_class_logs_qs = recent_daily_class_logs_qs.filter(user__state=request.user.state)
         recent_daily_class_logs = list(recent_daily_class_logs_qs[:12])
+        latest_backups = list(
+            BackupArtifact.objects.select_related("created_by").order_by("-created_at")[:5]
+        )
 
         return render(request, 'dashboard/admin_dashboard.jinja', {
             'admin_role': role,
@@ -1401,6 +1509,7 @@ def index(request):
             'tutor_requests_count': tutor_requests_count,
             'recent_failed_attempts': recent_failed_attempts,
             'recent_daily_class_logs': recent_daily_class_logs,
+            'latest_backups': latest_backups,
         })
 
     # Role-dedicated dashboards for non-staff roles.

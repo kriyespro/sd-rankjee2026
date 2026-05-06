@@ -62,3 +62,28 @@ class SeoTarget(models.Model):
 
     def __str__(self):
         return f"{self.phase}: {self.title}"
+
+
+class BackupArtifact(models.Model):
+    class BackupType(models.TextChoices):
+        FULL = "FULL", "Full project backup"
+        DB = "DB", "Database backup"
+
+    backup_type = models.CharField(max_length=10, choices=BackupType.choices, db_index=True)
+    file_path = models.CharField(max_length=500, unique=True)
+    file_name = models.CharField(max_length=255)
+    file_size_bytes = models.BigIntegerField(default=0)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_backups",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.get_backup_type_display()} - {self.file_name}"

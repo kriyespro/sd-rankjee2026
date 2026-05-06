@@ -6,13 +6,18 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
             <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Dashboard</a>
-            <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Publish blog post</h1>
-            <p class="mt-1 text-sm text-slate-600">Goes live immediately with your account as author. Leave slug blank to auto-generate from the title.</p>
+            <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ page_title or 'Publish blog post' }}</h1>
+            <p class="mt-1 text-sm text-slate-600">{{ page_hint or 'Goes live immediately with your account as author. Leave slug blank to auto-generate from the title.' }}</p>
         </div>
         <a href="{{ url('blog:index') }}" class="text-xs font-black uppercase tracking-wider text-slate-600 hover:text-indigo-600">View blog →</a>
     </div>
 
-    <form method="post" class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <form
+        method="post"
+        class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        x-data="vipBlogBuilder()"
+        x-init="init()"
+    >
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         {% if form.non_field_errors() %}
         <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-800">
@@ -20,7 +25,7 @@
         </div>
         {% endif %}
 
-        {% for field in form %}
+        {% for field in form if field.name not in ['sections_payload', 'links_payload', 'h1_tag', 'intro_text'] and not field.is_hidden %}
         <div class="space-y-1.5">
             <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-slate-700">
                 {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
@@ -37,7 +42,114 @@
         </div>
         {% endfor %}
 
-        <button type="submit" class="w-full rounded-xl bg-slate-900 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-600">Publish</button>
+        {{ form.sections_payload }}
+        {{ form.links_payload }}
+
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-4">
+            <h2 class="text-sm font-black uppercase tracking-widest text-slate-700">Structured content builder</h2>
+
+            <div class="space-y-1.5">
+                <label for="{{ form.h1_tag.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-slate-700">H1 tag</label>
+                {{ form.h1_tag }}
+                {% if form.h1_tag.errors %}
+                <div class="text-xs font-bold text-rose-600">
+                    {% for e in form.h1_tag.errors %}<div>{{ e }}</div>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-1.5">
+                <label for="{{ form.intro_text.id_for_label }}" class="block text-xs font-black uppercase tracking-widest text-slate-700">Intro paragraph</label>
+                {{ form.intro_text }}
+                {% if form.intro_text.errors %}
+                <div class="text-xs font-bold text-rose-600">
+                    {% for e in form.intro_text.errors %}<div>{{ e }}</div>{% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-700">Sections (H2 + content)</h3>
+                    <button type="button" @click="addSection()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-white">+ Add section</button>
+                </div>
+                <template x-for="(section, idx) in sections" :key="idx">
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-bold text-slate-500" x-text="'Section ' + (idx + 1)"></p>
+                            <button type="button" @click="removeSection(idx)" class="text-xs font-black uppercase tracking-wider text-rose-600 hover:underline">Remove</button>
+                        </div>
+                        <input type="text" x-model="section.h2" @input="syncPayloads()" placeholder="H2 heading" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
+                        <textarea x-model="section.content" @input="syncPayloads()" rows="4" placeholder="Section content" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500"></textarea>
+                    </div>
+                </template>
+            </div>
+
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-700">Links</h3>
+                    <button type="button" @click="addLink()" class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-white">+ Add link</button>
+                </div>
+                <template x-for="(link, idx) in links" :key="idx">
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <p class="text-xs font-bold text-slate-500" x-text="'Link ' + (idx + 1)"></p>
+                            <button type="button" @click="removeLink(idx)" class="text-xs font-black uppercase tracking-wider text-rose-600 hover:underline">Remove</button>
+                        </div>
+                        <input type="text" x-model="link.label" @input="syncPayloads()" placeholder="Link text (optional)" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
+                        <input type="url" x-model="link.url" @input="syncPayloads()" placeholder="https://example.com" class="w-full rounded-xl border border-slate-200 px-4 py-2.5 text-base bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full rounded-xl bg-slate-900 py-3 text-sm font-black uppercase tracking-widest text-white hover:bg-indigo-600">{{ submit_label or 'Publish' }}</button>
     </form>
 </div>
+
+<script>
+function vipBlogBuilder() {
+    return {
+        sections: [],
+        links: [],
+        init() {
+            this.sections = this.parseField("{{ form.sections_payload.id_for_label }}");
+            this.links = this.parseField("{{ form.links_payload.id_for_label }}");
+            this.syncPayloads();
+        },
+        parseField(id) {
+            const el = document.getElementById(id);
+            if (!el || !el.value) return [];
+            try {
+                const data = JSON.parse(el.value);
+                return Array.isArray(data) ? data : [];
+            } catch (_) {
+                return [];
+            }
+        },
+        syncPayloads() {
+            const sectionsInput = document.getElementById("{{ form.sections_payload.id_for_label }}");
+            const linksInput = document.getElementById("{{ form.links_payload.id_for_label }}");
+            if (sectionsInput) sectionsInput.value = JSON.stringify(this.sections);
+            if (linksInput) linksInput.value = JSON.stringify(this.links);
+        },
+        addSection() {
+            this.sections.push({ h2: "", content: "" });
+            this.syncPayloads();
+        },
+        removeSection(idx) {
+            this.sections.splice(idx, 1);
+            this.syncPayloads();
+        },
+        addLink() {
+            this.links.push({ label: "", url: "" });
+            this.syncPayloads();
+        },
+        removeLink(idx) {
+            this.links.splice(idx, 1);
+            this.syncPayloads();
+        },
+    };
+}
+</script>
 {% endblock %}

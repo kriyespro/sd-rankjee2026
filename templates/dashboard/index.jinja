@@ -18,6 +18,9 @@
                 <p class="mt-1 text-xs leading-snug text-slate-600 line-clamp-2 md:text-sm">{{ role_intro }}</p>
             </div>
             <div class="flex shrink-0 flex-wrap items-center gap-2">
+                {% if user_role == 'STUDENT' %}
+                <a href="{{ url('dashboard:blog_post_create') }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">Add post</a>
+                {% endif %}
                 <a href="{{ url('dashboard:daily_class_log') }}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Class log</a>
                 <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
                     <span class="text-[10px] font-black uppercase tracking-wider text-slate-500">Streak</span>

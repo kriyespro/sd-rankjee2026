@@ -1,0 +1,55 @@
+{% extends "base.jinja" %}
+{% block title %}{{ seo_title }}{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Admin dashboard</a>
+            <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Backups</h1>
+            <p class="mt-1 text-sm text-slate-600">Daily full-project and DB backups. Download any artifact below.</p>
+        </div>
+        <form method="post" action="{{ url('dashboard:backup_create_now') }}">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <button type="submit" class="rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-black uppercase tracking-widest text-white hover:bg-indigo-600">
+                Run backup now
+            </button>
+        </form>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <table class="w-full min-w-[860px] border-collapse text-left">
+            <thead class="bg-slate-50 text-[11px] font-black uppercase tracking-widest text-slate-500">
+                <tr>
+                    <th class="px-4 py-3">Created</th>
+                    <th class="px-4 py-3">Type</th>
+                    <th class="px-4 py-3">File name</th>
+                    <th class="px-4 py-3">Size</th>
+                    <th class="px-4 py-3">Created by</th>
+                    <th class="px-4 py-3 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for b in backups %}
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-3 text-xs font-bold text-slate-700">{{ b.created_at.strftime('%d %b %Y · %H:%M') }}</td>
+                    <td class="px-4 py-3 text-xs font-black text-indigo-700">{{ b.get_backup_type_display() }}</td>
+                    <td class="px-4 py-3 text-sm font-semibold text-slate-900">{{ b.file_name }}</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">{{ "{:,.2f}".format((b.file_size_bytes or 0) / 1048576) }} MB</td>
+                    <td class="px-4 py-3 text-xs text-slate-600">{{ b.created_by.username if b.created_by else "system" }}</td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ url('dashboard:backup_download', backup_id=b.id) }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">
+                            Download
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-sm font-bold text-slate-500">No backups created yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

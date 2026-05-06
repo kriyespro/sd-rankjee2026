@@ -61,11 +61,29 @@
     margin-top: 0;
   }
   .blog-content h1 { font-size: calc(1.875rem * 0.95); font-weight: 900; }
+  .blog-content h1 {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--blog-navy) 95%, #111827), color-mix(in srgb, var(--blog-saffron) 35%, var(--blog-navy)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   .blog-content h2 {
     font-size: 1.4375rem;
     font-weight: 800;
     padding-bottom: 0.35rem;
     border-bottom: 1px solid color-mix(in srgb, var(--blog-navy) 12%, #e2e8f0);
+    position: relative;
+    padding-left: 0.8rem;
+  }
+  .blog-content h2::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.2rem;
+    bottom: 0.3rem;
+    width: 0.2rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--blog-saffron), var(--blog-gold));
   }
   .blog-content h3 { font-size: 1.22rem; font-weight: 800; }
   .blog-content h4 { font-size: 1.08rem; font-weight: 800; color: color-mix(in srgb, var(--blog-heading) 88%, #475569); }
@@ -102,6 +120,42 @@
   }
   .blog-content li::marker {
     color: var(--blog-saffron);
+  }
+  .blog-content h3 + ul {
+    margin-top: 0.85rem;
+    margin-left: 0;
+    list-style: none;
+    padding: 0.6rem;
+    border: 1px solid color-mix(in srgb, var(--blog-navy) 12%, #e2e8f0);
+    border-radius: 0.85rem;
+    background: linear-gradient(180deg, #ffffff, color-mix(in srgb, var(--blog-navy) 4%, #ffffff));
+  }
+  .blog-content h3 + ul li {
+    margin: 0;
+    padding: 0;
+  }
+  .blog-content h3 + ul li + li {
+    margin-top: 0.55rem;
+  }
+  .blog-content h3 + ul li a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 0.6rem;
+    text-decoration: none;
+    background: color-mix(in srgb, var(--blog-navy) 4%, #f8fafc);
+    border: 1px solid color-mix(in srgb, var(--blog-navy) 10%, #e2e8f0);
+  }
+  .blog-content h3 + ul li a::before {
+    content: "↗";
+    font-size: 0.84em;
+    color: var(--blog-saffron);
+    line-height: 1;
+  }
+  .blog-content h3 + ul li a:hover {
+    border-color: color-mix(in srgb, var(--blog-saffron) 35%, #cbd5e1);
+    background: color-mix(in srgb, var(--blog-saffron) 9%, #ffffff);
   }
   .blog-content hr {
     border: none;
@@ -213,7 +267,14 @@
         {% if post.category %}
         <span class="text-[10px] font-black uppercase tracking-[0.16em] text-[#f4711c]">{{ post.category.name }}</span>
         {% endif %}
-        <h1 class="font-black text-[#0d2b5e] mt-2 mb-3 sm:mb-4 tracking-tight break-words text-[1.65rem] sm:text-[1.85rem] md:text-[2.15rem] leading-[1.18] max-w-[65ch]">{{ post.title }}</h1>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h1 class="font-black text-[#0d2b5e] mt-2 mb-0 tracking-tight break-words text-[1.65rem] sm:text-[1.85rem] md:text-[2.15rem] leading-[1.18] max-w-[65ch]">{{ post.title }}</h1>
+            {% if can_edit and edit_url %}
+            <a href="{{ edit_url }}" class="inline-flex items-center justify-center rounded-xl border border-[#0d2b5e]/15 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-wider text-[#0d2b5e] hover:border-[#f4711c]/35 hover:text-[#f4711c] hover:bg-[#faf8f5] transition-colors">
+                Edit post
+            </a>
+            {% endif %}
+        </div>
         {% if post.published_at %}
         <time class="text-sm text-slate-500 block mb-8 sm:mb-10 tabular-nums" datetime="{{ post.published_at.isoformat() }}">{{ post.published_at.strftime('%d %B %Y') }}</time>
         {% endif %}

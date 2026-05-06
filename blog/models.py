@@ -71,22 +71,59 @@ class BlogPost(models.Model):
     def _strip_template_preamble_for_body(self, raw: str) -> str:
         if not raw:
             return raw
-        lowered = raw.lower()
-        if "phase 1: strategic research" not in lowered and "seo metadata" not in lowered:
-            return raw
-        lines = raw.splitlines()
-        saw_template = False
-        for idx, line in enumerate(lines):
-            s = line.strip()
-            if not s:
-                continue
-            low = s.lower()
-            if "phase 1: strategic research" in low or "seo metadata" in low:
-                saw_template = True
-                continue
-            if saw_template and s.startswith("#"):
-                return "\n".join(lines[idx:]).strip()
-        return raw
+        # Back-compat wrapper for older excerpt/title generation:
+        # strip known template blocks (SEO metadata / research plan) but keep the article.
+        cleaned, _ = self._clean_body_and_extract_seo(raw)
+        return cleaned
+
+    def _clean_body_and_extract_seo(self, raw: str) -> tuple[str, dict]:
+        """
+        Supports the "SEO draft" paste format:
+
+        - Removes the top "# SEO Metadata" block from the saved body
+        - Removes the whole "# Phase 1: Strategic Research" section (until next H1) from the saved body
+        - Extracts:
+          - Title Tag
+          - Meta Description
+          - Suggested URL Slug
+        """
+        if not raw:
+            return raw, {}
+
+        text = raw.replace("\r\n", "\n").strip()
+        seo = {}
+
+        # Extract SEO metadata block (if present) and remove it from body.
+        # We remove from "# SEO Metadata" up to the next H1 heading ("# ...") OR end-of-text.
+        meta_match = re.search(
+            r"(?ims)^\s*#\s*seo metadata\s*\n(?P<body>.*?)(?=^\s*#\s+|\Z)",
+            text,
+        )
+        if meta_match:
+            meta_block = meta_match.group("body") or ""
+            title_tag = re.search(r"(?im)^\s*\*\*title\s*tag:\*\*\s*(.+?)\s*$", meta_block)
+            meta_desc = re.search(r"(?im)^\s*\*\*meta\s*description:\*\*\s*(.+?)\s*$", meta_block)
+            slug_suggest = re.search(r"(?im)^\s*\*\*suggested\s*url\s*slug:\*\*\s*(.+?)\s*$", meta_block)
+            if title_tag:
+                seo["title_tag"] = title_tag.group(1).strip()
+            if meta_desc:
+                seo["meta_description"] = meta_desc.group(1).strip()
+            if slug_suggest:
+                seo["suggested_slug"] = slug_suggest.group(1).strip()
+
+            text = (text[: meta_match.start()] + "\n\n" + text[meta_match.end() :]).strip()
+
+        # Remove "Phase 1: Strategic Research" section anywhere in the document.
+        # Remove from its H1 heading to the next H1 heading or end.
+        text = re.sub(
+            r"(?ims)^\s*#\s*phase\s*1:\s*strategic\s*research\s*\n.*?(?=^\s*#\s+|\Z)",
+            "",
+            text,
+        ).strip()
+
+        # Collapse excessive blank lines created by removals.
+        text = re.sub(r"\n{4,}", "\n\n\n", text).strip()
+        return text, seo
 
     def _extract_title_from_body(self) -> str:
         raw = self._strip_template_preamble_for_body((self.body or "").strip())
@@ -134,7 +171,176 @@ class BlogPost(models.Model):
         text = re.sub(r"\s+", " ", text).strip()
         return text[:280]
 
+    def _title_tokens(self, value: str) -> set[str]:
+        stop = {
+            "the",
+            "a",
+            "an",
+            "for",
+            "and",
+            "with",
+            "from",
+            "into",
+            "your",
+            "guide",
+            "best",
+            "complete",
+            "how",
+            "to",
+            "of",
+            "in",
+            "on",
+        }
+        cleaned = re.sub(r"[^a-z0-9\s]", " ", (value or "").lower())
+        return {t for t in cleaned.split() if len(t) > 2 and t not in stop}
+
+    def _resolve_internal_link_target(self, anchor_text: str, excluded_ids=None):
+        tokens = self._title_tokens(anchor_text)
+        excluded_ids = set(excluded_ids or [])
+        if not tokens:
+            return None
+
+        qs = BlogPost.objects.exclude(pk=self.pk).exclude(pk__in=excluded_ids).filter(
+            published_at__isnull=False
+        ).order_by("-published_at", "-pk")[:200]
+
+        best_post = None
+        best_score = 0
+        anchor_norm = " ".join(sorted(tokens))
+        for post in qs:
+            title_tokens = self._title_tokens(post.title or "")
+            excerpt_tokens = self._title_tokens(post.excerpt or "")
+            overlap = len(tokens & title_tokens)
+            overlap += 0.5 * len(tokens & excerpt_tokens)
+
+            # Prefer closer phrase matches in title.
+            title_l = (post.title or "").lower()
+            if anchor_text.lower() in title_l:
+                overlap += 3
+            if anchor_norm and anchor_norm in " ".join(sorted(title_tokens)):
+                overlap += 1
+
+            if overlap > best_score:
+                best_score = overlap
+                best_post = post
+
+        if best_post and best_score > 0:
+            return best_post
+        # Fallback: pick the latest published post so suggestion still becomes a link.
+        return (
+            BlogPost.objects.exclude(pk=self.pk)
+            .exclude(pk__in=excluded_ids)
+            .filter(published_at__isnull=False)
+            .order_by("-published_at", "-pk")
+            .first()
+        )
+
+    def _autolink_internal_suggestions(self, raw: str) -> str:
+        if not raw:
+            return raw
+        lines = raw.splitlines()
+        out = []
+        in_section = False
+        used_target_ids = set()
+
+        for line in lines:
+            stripped = line.strip()
+            low = stripped.lower()
+
+            if not in_section:
+                if low in {
+                    "internal linking suggestions",
+                    "# internal linking suggestions",
+                    "## internal linking suggestions",
+                }:
+                    in_section = True
+                out.append(line)
+                continue
+
+            # End this block at horizontal rule or next H1.
+            if stripped == "---" or re.match(r"^#\s+.+", stripped):
+                in_section = False
+                out.append(line)
+                continue
+
+            # Bullet item containing bracket text only: "* [Some title]"
+            m = re.match(r"^(\s*[-*]\s*)\[([^\]]+)\]\s*$", line)
+            if m:
+                prefix, anchor = m.group(1), m.group(2).strip()
+                target = self._resolve_internal_link_target(anchor, excluded_ids=used_target_ids)
+                if target:
+                    used_target_ids.add(target.pk)
+                    out.append(f"{prefix}[{anchor}](/blog/post/{target.slug}/)")
+                else:
+                    out.append(line)
+                continue
+
+            # Existing markdown link item: "* [Some title](/blog/post/slug/)"
+            m_link = re.match(r"^(\s*[-*]\s*)\[([^\]]+)\]\(([^)]+)\)\s*$", line)
+            if m_link:
+                prefix, anchor, href = m_link.group(1), m_link.group(2).strip(), m_link.group(3).strip()
+                slug_match = re.match(r"^/blog/post/([^/]+)/?$", href)
+                current_target = None
+                if slug_match:
+                    current_target = BlogPost.objects.filter(
+                        slug=slug_match.group(1),
+                        published_at__isnull=False,
+                    ).exclude(pk=self.pk).first()
+                if current_target and current_target.pk not in used_target_ids:
+                    used_target_ids.add(current_target.pk)
+                    out.append(f"{prefix}[{anchor}](/blog/post/{current_target.slug}/)")
+                else:
+                    # Repair missing/duplicate/bad links by re-resolving best target.
+                    target = self._resolve_internal_link_target(anchor, excluded_ids=used_target_ids)
+                    if target:
+                        used_target_ids.add(target.pk)
+                        out.append(f"{prefix}[{anchor}](/blog/post/{target.slug}/)")
+                    else:
+                        out.append(line)
+                continue
+
+            # Bare bracket line: "[Some title]"
+            m2 = re.match(r"^\s*\[([^\]]+)\]\s*$", line)
+            if m2:
+                anchor = m2.group(1).strip()
+                target = self._resolve_internal_link_target(anchor, excluded_ids=used_target_ids)
+                if target:
+                    used_target_ids.add(target.pk)
+                    out.append(f"- [{anchor}](/blog/post/{target.slug}/)")
+                else:
+                    out.append(line)
+                continue
+
+            out.append(line)
+
+        return "\n".join(out)
+
     def save(self, *args, **kwargs):
+        # Normalize body + extract SEO metadata from paste format (before deriving title/excerpt/meta).
+        cleaned_body, extracted_seo = self._clean_body_and_extract_seo((self.body or "").strip())
+        if cleaned_body != (self.body or "").strip():
+            self.body = cleaned_body
+        self.body = self._autolink_internal_suggestions(self.body or "")
+
+        # Auto-fill from extracted SEO metadata if fields are blank.
+        if extracted_seo:
+            if (not self.meta_title or not self.meta_title.strip()) and extracted_seo.get("title_tag"):
+                self.meta_title = extracted_seo["title_tag"][:220]
+            if (not self.meta_description or not self.meta_description.strip()) and extracted_seo.get("meta_description"):
+                self.meta_description = extracted_seo["meta_description"][:320]
+            if (not self.slug or not self.slug.strip()) and extracted_seo.get("suggested_slug"):
+                suggested = extracted_seo["suggested_slug"].strip()
+                # Accept "/foo/bar" or "foo" — we store only the slug part.
+                suggested = suggested.split("?", 1)[0].strip()
+                suggested = suggested.strip("/")
+                if "/" in suggested:
+                    suggested = suggested.split("/")[-1]
+                suggested = slugify(suggested)[:180]
+                if suggested:
+                    self.slug = suggested
+            if (not self.title or not self.title.strip()) and extracted_seo.get("title_tag"):
+                self.title = extracted_seo["title_tag"][:220]
+
         if not self.title or not self.title.strip():
             self.title = self._extract_title_from_body()
         if not self.slug or not self.slug.strip():

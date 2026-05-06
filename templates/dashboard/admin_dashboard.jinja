@@ -46,6 +46,9 @@
                     <span class="text-sm opacity-70">🧠</span> SEO Smart View
                 </a>
                 {% endif %}
+                <a href="{{ url('dashboard:backup_center') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🗃️</span> Backup Center
+                </a>
                 <a href="/sd/assessment/skillpath/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">🛤️</span> Skill Paths
                 </a>
@@ -248,6 +251,45 @@
                 <p class="text-xs text-slate-500 font-bold mt-2 uppercase">Action required ASAP</p>
             </div>
         </div>
+
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <div class="p-4 border-b border-slate-100 bg-indigo-50/50 flex justify-between items-center">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Latest Backups
+                </h3>
+                <a href="{{ url('dashboard:backup_center') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:underline">Open backup center</a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[760px] text-left">
+                    <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                        <tr>
+                            <th class="px-5 py-3">Created</th>
+                            <th class="px-5 py-3">Type</th>
+                            <th class="px-5 py-3">File</th>
+                            <th class="px-5 py-3">Size</th>
+                            <th class="px-5 py-3 text-right">Download</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for b in latest_backups %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-5 py-3 text-xs font-bold text-slate-600">{{ b.created_at.strftime('%d %b %Y · %H:%M') }}</td>
+                            <td class="px-5 py-3 text-xs font-black text-indigo-700">{{ b.get_backup_type_display() }}</td>
+                            <td class="px-5 py-3 text-xs font-bold text-slate-800">{{ b.file_name }}</td>
+                            <td class="px-5 py-3 text-xs text-slate-600">{{ "{:,.2f}".format((b.file_size_bytes or 0) / 1048576) }} MB</td>
+                            <td class="px-5 py-3 text-right">
+                                <a href="{{ url('dashboard:backup_download', backup_id=b.id) }}" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Download</a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No backup artifacts yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
             
