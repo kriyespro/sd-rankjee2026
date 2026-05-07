@@ -1,11 +1,21 @@
 {% extends "base.jinja" %}
 {% block title %}Courses - RankJee{% endblock %}
+{% block extra_head %}
+<style>
+    .course-card {
+        border-color: color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
+    }
+    .course-card:hover {
+        border-color: color-mix(in srgb, var(--rj-saffron) 36%, #e2e8f0);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-10">
-    <div class="mb-8">
-        <h1 class="text-3xl font-black text-slate-900">Courses</h1>
-        <p class="text-slate-600 mt-2">Explore job-focused courses and start learning with a clean, guided flow.</p>
+<div class="max-w-6xl mx-auto px-4 py-8 md:py-10">
+    <div class="mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-black text-slate-900">Courses</h1>
+        <p class="text-sm md:text-base text-slate-600 mt-2">Explore job-focused courses and start learning with a clean, guided flow.</p>
         {% if request.GET.get('purchased') == '1' %}
         <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
             Payment successful — your courses are unlocked. We&apos;ll follow up with access details by email where applicable.
@@ -13,19 +23,23 @@
         {% endif %}
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
         {% for c in courses %}
-        <article class="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-all p-5 flex flex-col">
+        <article class="course-card group rounded-2xl border bg-white shadow-sm hover:shadow-md transition-all p-4 md:p-5 flex flex-col">
             {% if c.thumbnail_url %}
-            <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" class="w-full h-40 object-cover rounded-xl mb-4">
+            <a href="{{ url('core:course_detail', c.slug) }}" class="block overflow-hidden rounded-xl mb-4">
+                <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" class="w-full h-44 md:h-40 object-cover transition-transform duration-300 group-hover:scale-[1.02]">
+            </a>
             {% endif %}
-            <h2 class="text-xl font-black text-slate-900">{{ c.title }}</h2>
+            <h2 class="text-lg md:text-xl font-black text-slate-900 leading-tight">
+                <a href="{{ url('core:course_detail', c.slug) }}" class="rj-link-accent transition-colors">{{ c.title }}</a>
+            </h2>
             <p class="text-sm text-slate-500 mt-2">{{ c.short_description or c.description[:140] }}</p>
             <div class="mt-4 flex items-center justify-between text-xs text-slate-600 font-semibold">
                 <span>{{ c.level or "All levels" }}</span>
                 <span>{{ c.duration_weeks }} weeks</span>
             </div>
-            <div class="mt-3 text-lg font-black text-emerald-700">{% if c.price_inr and c.price_inr > 0 %}₹{{ c.price_inr }}{% else %}Free{% endif %}</div>
+            <div class="mt-3 text-xl font-black text-emerald-700">{% if c.price_inr and c.price_inr > 0 %}₹{{ c.price_inr }}{% else %}Free{% endif %}</div>
             <div class="mt-4 flex flex-col gap-2">
                 <a href="{{ url('core:course_detail', c.slug) }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">
                     Details
@@ -36,14 +50,13 @@
                     {% else %}
                     <form method="post" action="{{ url('core:course_cart_add', c.id) }}" class="m-0">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <input type="hidden" name="next" value="{{ url('core:courses') }}">
-                        <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
+                        <button type="submit" class="rj-cta-primary w-full px-5 py-3 font-black uppercase text-white">
                             Add to cart
                         </button>
                     </form>
                     {% endif %}
                 {% else %}
-                <a href="{{ url('users:login') }}?next=/courses/" class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
+                <a href="{{ url('users:login') }}?next=/courses/" class="rj-cta-primary inline-flex items-center justify-center px-5 py-3 font-black uppercase text-white">
                     Log in to buy
                 </a>
                 {% endif %}

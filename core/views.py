@@ -1,16 +1,24 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Count, Q, Sum
 from django.contrib import messages
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.conf import settings
 from django.urls import reverse
+from decimal import Decimal
+from urllib.parse import quote
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
 from .models import Course, CourseReferral, CoursePurchase, EarningTask, TutorLeadRequest, UserTaskSubmission
-from .services_course_checkout import user_owned_course_ids
+from .services_course_checkout import (
+    REFERRAL_COMMISSION_PERCENT_DEFAULT,
+    REFERRAL_LEAD_DISCOUNT_PERCENT,
+    expected_referral_sale_amount_inr,
+    unit_checkout_price_inr,
+    user_owned_course_ids,
+)
 from assessment.models import UserAttempt
 from django.utils import timezone
 from assessment.models import DailyJackpot
@@ -197,18 +205,19 @@ def course_detail(request, slug):
                 "lead_name": lead_name,
                 "lead_user": lead_user,
                 "status": CourseReferral.Status.PENDING,
-                "sale_amount": course.price_inr,
+                "sale_amount": expected_referral_sale_amount_inr(course),
             },
         )
         if not created:
             referral.lead_name = lead_name or referral.lead_name
             referral.lead_user = lead_user or referral.lead_user
             if not referral.sale_amount:
-                referral.sale_amount = course.price_inr
+                referral.sale_amount = expected_referral_sale_amount_inr(course)
             referral.save(update_fields=["lead_name", "lead_user", "sale_amount"])
         messages.success(
             request,
-            "Enrollment interest recorded. On successful conversion, 30% referral commission is credited.",
+            "Enrollment recorded. You get 15% off at checkout on this course; your referrer earns "
+            f"{REFERRAL_COMMISSION_PERCENT_DEFAULT:g}% on the amount you pay after a successful purchase.",
         )
         return redirect("core:course_detail", slug=course.slug)
 
@@ -216,12 +225,25 @@ def course_detail(request, slug):
     if request.user.is_authenticated:
         owns_course = CoursePurchase.objects.filter(user=request.user, course=course).exists()
 
+    list_inr = course.price_inr if course.price_inr is not None else Decimal("0")
+    checkout_inr = (
+        unit_checkout_price_inr(course, request.user)
+        if request.user.is_authenticated
+        else list_inr
+    )
+    referral_price_unlocked = bool(request.user.is_authenticated and checkout_inr < list_inr)
+
     return render(
         request,
         "core/course_detail.jinja",
         {
             "course": course,
             "owns_course": owns_course,
+            "course_list_price_inr": list_inr,
+            "course_checkout_price_inr": checkout_inr,
+            "referral_price_unlocked": referral_price_unlocked,
+            "referral_lead_discount_pct": REFERRAL_LEAD_DISCOUNT_PERCENT,
+            "referral_commission_pct": REFERRAL_COMMISSION_PERCENT_DEFAULT,
             "pending_course_referrer_code": pending_ref,
             "seo_title": f"{course.title} - Course Details | RankJee",
             "seo_description": (course.short_description or course.description or "Explore this course on RankJee.")[:155],
@@ -282,36 +304,77 @@ def course_city_landing(request, slug, city_slug):
 @login_required
 def earnings(request):
     user = request.user
-    referrals = user.referrals.all().order_by('-date_joined')
-    referral_count = referrals.count()
-    
-    # Referral link construction
+
     scheme = 'https' if request.is_secure() else 'http'
     site_domain = request.get_host()
-    referral_link = f"{scheme}://{site_domain}/users/signup/?ref={user.referral_code}"
-    
+    ref_code = (getattr(user, "referral_code", "") or "").strip()
+    referral_code_ready = bool(ref_code)
+    referral_link = (
+        f"{scheme}://{site_domain}/users/signup/?ref={ref_code}" if ref_code else ""
+    )
+
     total_earned = user.wallet_balance
     wallet_transactions = user.wallet_transactions.all()[:20]
-    withdrawals = user.withdrawals.all()[:5]
     active_courses = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
     course_ref_links = {}
-    if getattr(user, "referral_code", ""):
+    courses_hub_ref_url = ""
+    whatsapp_share_all_url = ""
+    course_whatsapp_urls = {}
+    if ref_code:
+        courses_hub_ref_url = f"{scheme}://{site_domain}/courses/?ref={ref_code}"
         for c in active_courses:
             course_ref_links[c.id] = (
-                f"{scheme}://{site_domain}/courses/{c.slug}/?ref={user.referral_code}"
+                f"{scheme}://{site_domain}/courses/{c.slug}/?ref={ref_code}"
             )
-    
-    return render(request, 'core/earnings.jinja', {
-        'referrals': referrals,
-        'referral_count': referral_count,
-        'referral_link': referral_link,
-        'total_earned': total_earned,
-        'transactions': wallet_transactions,
-        'withdrawals': withdrawals,
-        'active_courses': active_courses,
-        'course_ref_links': course_ref_links,
-        'seo_noindex': True,
-    })
+        _wa = lambda msg: "https://wa.me/?text=" + quote(msg, safe="")
+        whatsapp_share_all_url = _wa(
+            "Hi! I'm sharing RankJee courses with my referral link.\n\n"
+            "You save *15%* at checkout when you enroll via my link and pay.\n\n"
+            "Browse all courses with my code attached — pick one, tap Enroll now while logged in, then pay.\n\n"
+            f"{courses_hub_ref_url}\n\n"
+            "Ask me if you want a direct link to a specific course."
+        )
+        for c in active_courses:
+            _link = course_ref_links[c.id]
+            course_whatsapp_urls[c.id] = _wa(
+                f"Hi! Here's a RankJee course I recommend:\n*{c.title}*\n\n"
+                "Open the link, log in, tap Enroll now — you'll get *15% off* when you pay.\n\n"
+                f"{_link}"
+            )
+
+    course_referrals = (
+        user.course_referrals.select_related("course", "lead_user")
+        .order_by("-created_at")[:80]
+    )
+    course_ref_agg = user.course_referrals.aggregate(
+        pending_n=Count("id", filter=Q(status=CourseReferral.Status.PENDING)),
+        success_n=Count("id", filter=Q(status=CourseReferral.Status.SUCCESS)),
+        success_total=Sum("commission_amount", filter=Q(status=CourseReferral.Status.SUCCESS)),
+    )
+    course_commission_paid = course_ref_agg["success_total"] or 0
+
+    return render(
+        request,
+        "core/earnings.jinja",
+        {
+            "referral_link": referral_link,
+            "referral_code_ready": referral_code_ready,
+            "total_earned": total_earned,
+            "transactions": wallet_transactions,
+            "active_courses": active_courses,
+            "course_ref_links": course_ref_links,
+            "courses_hub_ref_url": courses_hub_ref_url,
+            "whatsapp_share_all_url": whatsapp_share_all_url,
+            "course_whatsapp_urls": course_whatsapp_urls,
+            "course_referrals": course_referrals,
+            "course_ref_pending_n": course_ref_agg["pending_n"] or 0,
+            "course_ref_success_n": course_ref_agg["success_n"] or 0,
+            "course_commission_paid": course_commission_paid,
+            "referral_lead_discount_pct": REFERRAL_LEAD_DISCOUNT_PERCENT,
+            "referral_commission_pct": REFERRAL_COMMISSION_PERCENT_DEFAULT,
+            "seo_noindex": True,
+        },
+    )
 
 
 @login_required

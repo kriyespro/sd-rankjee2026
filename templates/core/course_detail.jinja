@@ -23,79 +23,109 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-10">
+<div class="max-w-5xl mx-auto px-4 py-8 md:py-10">
     <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
 
-    <article class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-sm p-6 md:p-8">
-        {% if course.thumbnail_url %}
-        <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-64 object-cover rounded-xl mb-6">
-        {% endif %}
-        <h1 class="text-3xl font-black text-slate-900">{{ course.title }}</h1>
-        <p class="text-slate-600 mt-3">{{ course.short_description }}</p>
+    <article class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-0">
+            <div class="lg:col-span-7 p-4 md:p-8 lg:border-r lg:border-slate-100">
+                {% if course.thumbnail_url %}
+                <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm mb-5 md:mb-6">
+                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-52 md:h-64 object-cover">
+                </div>
+                {% endif %}
+                <p class="text-[11px] font-black uppercase tracking-[0.2em] text-[#f4711c] mb-2">RankJee course</p>
+                <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{{ course.title }}</h1>
+                {% if course.short_description %}
+                <p class="text-sm md:text-base text-slate-600 mt-3 leading-relaxed">{{ course.short_description }}</p>
+                {% endif %}
 
-        <div class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                <p class="text-xs text-slate-500 font-semibold">Price</p>
-                <p class="font-black text-emerald-700">₹{{ course.price_inr }}</p>
-            </div>
-            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                <p class="text-xs text-slate-500 font-semibold">Duration</p>
-                <p class="font-black text-slate-800">{{ course.duration_weeks }} weeks</p>
-            </div>
-            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                <p class="text-xs text-slate-500 font-semibold">Level</p>
-                <p class="font-black text-slate-800">{{ course.level or "All levels" }}</p>
-            </div>
-            <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
-                <p class="text-xs text-slate-500 font-semibold">Format</p>
-                <p class="font-black text-slate-800">Online</p>
-            </div>
-        </div>
+                <div class="mt-5 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Price</p>
+                        {% if referral_price_unlocked %}
+                        <p class="mt-0.5">
+                            <span class="text-xs font-bold text-slate-400 line-through">₹{{ course_list_price_inr }}</span>
+                            <span class="font-black text-emerald-700 ml-1">₹{{ course_checkout_price_inr }}</span>
+                        </p>
+                        <p class="text-[10px] font-bold text-emerald-700 mt-0.5">{{ referral_lead_discount_pct }}% off with referral</p>
+                        {% else %}
+                        <p class="font-black text-emerald-700 mt-0.5">₹{{ course_list_price_inr }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Duration</p>
+                        <p class="font-black text-slate-800 mt-0.5">{{ course.duration_weeks }} weeks</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Level</p>
+                        <p class="font-black text-slate-800 mt-0.5">{{ course.level or "All levels" }}</p>
+                    </div>
+                    <div class="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5">
+                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Format</p>
+                        <p class="font-black text-slate-800 mt-0.5">Online</p>
+                    </div>
+                </div>
 
-        {% if course.description %}
-        <div class="mt-6 text-sm text-slate-700 whitespace-pre-line">{{ course.description }}</div>
-        {% endif %}
-
-        <div class="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5">
-            <h2 class="text-sm font-black uppercase tracking-wider text-emerald-900">Buy this course</h2>
-            {% if owns_course %}
-            <p class="mt-2 text-sm font-semibold text-emerald-800">You already own this course.</p>
-            {% elif request.user.is_authenticated %}
-            <p class="mt-2 text-sm text-emerald-900">Add to your cart and pay with Razorpay (UPI / cards).</p>
-            <div class="mt-4 flex flex-wrap gap-3">
-                <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <input type="hidden" name="next" value="{{ request.path }}">
-                    <button type="submit" class="rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500">
-                        Add to cart
-                    </button>
-                </form>
-                <a href="{{ url('core:course_cart') }}" class="inline-flex items-center rounded-xl border border-emerald-300 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-900 hover:bg-emerald-50">
-                    View cart &amp; pay
-                </a>
+                {% if course.description %}
+                <div class="mt-6 text-sm leading-relaxed text-slate-700 whitespace-pre-line border-t border-slate-100 pt-6">{{ course.description }}</div>
+                {% endif %}
             </div>
-            {% else %}
-            <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}" class="mt-3 inline-flex rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500">
-                Log in to purchase
-            </a>
-            {% endif %}
+
+            <aside class="lg:col-span-5 p-4 md:p-6 lg:p-8 bg-slate-50/90 lg:bg-gradient-to-b lg:from-slate-50 lg:to-white">
+                <div class="rounded-2xl border border-emerald-200 bg-emerald-50/90 shadow-sm p-4 md:p-5 lg:sticky lg:top-24">
+                    <h2 class="text-xs font-black uppercase tracking-[0.14em] text-emerald-900">Secure checkout</h2>
+                    <p class="text-xs text-emerald-800/90 mt-2 leading-relaxed">Razorpay — UPI, cards &amp; wallets. Your cart opens after you add this course.</p>
+                    {% if pending_course_referrer_code and not referral_price_unlocked %}
+                    <p class="mt-3 text-xs font-bold text-emerald-900 leading-snug rounded-lg bg-white/80 border border-emerald-200/80 px-3 py-2">
+                        Submit <strong>Enroll now</strong> below while logged in — you'll unlock <strong>{{ referral_lead_discount_pct }}% off</strong> this course at payment.
+                    </p>
+                    {% elif referral_price_unlocked %}
+                    <p class="mt-3 text-xs font-bold text-emerald-900 leading-snug rounded-lg bg-white/80 border border-emerald-200/80 px-3 py-2">
+                        Referral pricing active: pay <strong>₹{{ course_checkout_price_inr }}</strong> ({{ referral_lead_discount_pct }}% off list) in cart checkout.
+                    </p>
+                    {% endif %}
+                    {% if owns_course %}
+                    <p class="mt-4 text-sm font-semibold text-emerald-800">You already own this course.</p>
+                    {% elif request.user.is_authenticated %}
+                    <div class="mt-4 flex flex-col gap-2">
+                        <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                            <button type="submit" class="rj-cta-primary w-full px-5 py-3 font-black uppercase text-white">
+                                Add to cart
+                            </button>
+                        </form>
+                        <a href="{{ url('core:course_cart') }}" class="inline-flex items-center justify-center rounded-xl border-2 border-emerald-700/25 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-900 hover:bg-emerald-50/80 transition-colors">
+                            View cart
+                        </a>
+                    </div>
+                    {% else %}
+                    <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}" class="rj-cta-primary mt-4 inline-flex w-full items-center justify-center px-5 py-3 font-black uppercase text-white">
+                        Log in to purchase
+                    </a>
+                    {% endif %}
+                </div>
+            </aside>
         </div>
     </article>
 
-    <section class="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-6">
-        <h2 class="text-lg font-black text-indigo-900">Enroll Now</h2>
-        <p class="text-sm text-indigo-800 mt-1">Submit your details to register interest for this course.</p>
+    <section class="mt-8 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 md:p-6 shadow-sm">
+        <h2 class="text-lg font-black text-indigo-900">Enroll now</h2>
+        <p class="text-sm text-indigo-800 mt-1 leading-relaxed">Submit your details to register interest for this course.</p>
         {% if pending_course_referrer_code %}
-        <p class="mt-3 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700">
-            Referral code active: {{ pending_course_referrer_code }}
+        <p class="mt-3 inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 border border-indigo-100 shadow-sm">
+            Referral link active: {{ pending_course_referrer_code }}
+        </p>
+        <p class="mt-2 text-sm text-indigo-900 font-semibold leading-relaxed">
+            Friends save <strong>{{ referral_lead_discount_pct }}%</strong> at checkout after enrolling here; referrer earns <strong>{{ referral_commission_pct }}%</strong> on what you pay.
         </p>
         {% endif %}
         <form method="post" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            <input type="text" name="lead_name" placeholder="Your name" class="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm">
-            <input type="email" name="lead_email" placeholder="Your email" value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}" class="rounded-xl border border-indigo-200 px-3 py-2.5 text-sm" required>
-            <button type="submit" class="rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-xs font-black uppercase tracking-wider hover:bg-indigo-500">
-                Submit Enrollment
+            <input type="text" name="lead_name" placeholder="Your name" class="rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <input type="email" name="lead_email" placeholder="Your email" value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}" class="rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" required>
+            <button type="submit" class="rj-cta-primary w-full px-4 py-2.5 font-black uppercase text-white md:col-span-1">
+                Submit enrollment
             </button>
         </form>
     </section>

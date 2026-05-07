@@ -1,127 +1,156 @@
 {% extends "base.jinja" %}
-{% block title %}Freelance Earnings - RankJee{% endblock %}
+{% block title %}Course earnings - RankJee{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8 md:py-12">
-    <!-- Header Area: Referral Focus -->
-    <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-8 bg-indigo-600 p-8 rounded-3xl shadow-xl shadow-indigo-100 text-white relative overflow-hidden">
-        <div class="relative z-10 text-center md:text-left">
-            <h2 class="text-3xl md:text-4xl font-black tracking-tight leading-tight">Refer & Earn 💰</h2>
-            <p class="text-indigo-100 mt-2 font-medium max-w-sm">Help your friends master new skills. Get ₹50 for every verified registration!</p>
-        </div>
-        
-        <div class="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 min-w-[200px] text-center shadow-lg">
-            <p class="text-xs text-indigo-200 font-bold uppercase tracking-widest mb-1">Total Rewards Earned</p>
-            <p class="text-4xl font-black text-white tracking-tight">₹{{ total_earned }}</p>
-        </div>
-        
-        <!-- Decorative blob -->
-        <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <!-- Main Referral Link Area -->
-        <div class="lg:col-span-2 space-y-8">
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 md:p-8">
-                <h3 class="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
-                    <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">🔗</span>
-                    Your Personal Invite Link
-                </h3>
-                
-                <div x-data="{ copied: false, link: '{{ referral_link }}' }" class="space-y-4">
-                    <div class="relative group">
-                        <input type="text" x-model="link" readonly
-                               class="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3.5 pr-32 font-mono text-xs md:text-sm text-slate-600 focus:outline-none focus:border-indigo-300 transition-all select-all">
-                        <button @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)"
-                                class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition active:scale-95 flex items-center gap-2">
-                            <span x-text="copied ? 'Copied!' : 'Copy'"></span>
-                        </button>
-                    </div>
-                    
-                    <div class="flex flex-col sm:flex-row gap-3">
-                        <a :href="'https://wa.me/?text=' + encodeURIComponent('Bhai, check this! I just earned ₹50 for watching ads on RankJee. Take a 5-min test and start earning too! Join here: ' + link)" 
-                           target="_blank"
-                           class="flex-1 bg-[#25D366] text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-[#20bd5a] transition-all shadow-lg shadow-green-100 active:scale-95">
-                            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.399-4.437 9.884-9.838 9.884"/></svg>
-                            Invite via WhatsApp
-                        </a>
-                        <button @click="navigator.share({ title: 'Join RankJee', text: 'Earn ₹50 per referral!', url: link })"
-                                class="bg-slate-900 md:hidden text-white px-6 rounded-xl text-xl hover:bg-slate-800 transition active:scale-95">
-                            📤
-                        </button>
-                    </div>
+<div class="max-w-4xl mx-auto px-4 py-8 md:py-12" x-data="{ showSignupLink: false }">
+    <div class="mb-10 rounded-3xl border border-indigo-400/25 bg-gradient-to-br from-rj-navy via-indigo-900 to-indigo-950 p-6 sm:p-8 shadow-xl shadow-indigo-950/30 text-white relative overflow-hidden">
+        <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-rj-saffron/25 blur-3xl pointer-events-none" aria-hidden="true"></div>
+        <div class="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-rj-gold/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-8">
+            <div class="flex-1 text-center lg:text-left min-w-0">
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight leading-tight text-white drop-shadow-sm">Earn from course referrals</h2>
+                <p class="mt-2 font-medium max-w-xl mx-auto lg:mx-0 leading-relaxed text-indigo-100/95">
+                    Friends save <strong class="text-white font-black">{{ referral_lead_discount_pct }}%</strong> at checkout after enrolling with your link; when they <strong class="text-white font-black">pay</strong>, you earn <strong class="text-rj-gold font-black">{{ referral_commission_pct }}%</strong> of the amount they paid — credited here.
+                </p>
+
+                {% if whatsapp_share_all_url %}
+                <div class="mt-5 flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center justify-center lg:justify-start gap-3">
+                    <a href="{{ whatsapp_share_all_url }}" target="_blank" rel="noopener noreferrer"
+                       class="inline-flex items-center justify-center gap-2 rounded-xl bg-rj-wa px-5 py-3 text-sm font-black text-white shadow-lg shadow-emerald-950/30 hover:brightness-110 active:scale-[0.98] transition-all">
+                        <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.881 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        WhatsApp — share all courses
+                    </a>
+                    <p class="text-[11px] font-semibold text-indigo-200/90 max-w-[16rem] sm:max-w-xs text-center sm:text-left leading-snug">
+                        Sends your catalog link (<code class="rounded bg-black/20 px-1 text-[10px] text-white/90">/courses/?ref=</code>). They enroll, then pay with <strong class="text-white">{{ referral_lead_discount_pct }}% off</strong> on eligible courses.
+                    </p>
                 </div>
+                {% endif %}
             </div>
 
+            <div class="relative z-10 shrink-0 rounded-2xl border border-white/25 bg-slate-950/35 backdrop-blur-md px-6 py-5 min-w-[200px] text-center shadow-inner shadow-black/20">
+                <p class="text-[10px] font-black uppercase tracking-widest text-indigo-200/90 mb-1">Wallet balance</p>
+                <p class="text-4xl font-black text-white tracking-tight tabular-nums">₹{{ total_earned }}</p>
+                {% if course_commission_paid %}
+                <p class="text-[11px] text-rj-gold/95 mt-2 font-bold leading-snug">₹{{ course_commission_paid }} from paid course referrals</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 space-y-8">
             <div class="bg-white border border-slate-200 shadow-sm rounded-2xl p-6 md:p-8">
                 <h3 class="text-lg font-black text-slate-900 mb-2 flex items-center gap-2">
                     <span class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">🎓</span>
-                    Course referral links (30% commission)
+                    Your course referral links
                 </h3>
-                <p class="text-sm text-slate-600 mb-5">Share course-specific links. On successful enrollment, you earn 30% commission.</p>
-                <div class="space-y-3">
-                    {% for c in active_courses %}
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" x-data="{ copied: false, link: '{{ course_ref_links.get(c.id, '') }}' }">
-                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                            <div>
-                                <p class="text-sm font-black text-slate-900">{{ c.title }}</p>
-                                <p class="text-xs text-slate-500">Price: ₹{{ c.price_inr }}</p>
+                <p class="text-sm text-slate-600 mb-2 leading-relaxed">
+                    Copy a link and share it. Your referral code is attached (<code class="text-xs bg-slate-100 px-1 rounded">?ref=</code>). Your friend opens the course, submits <strong class="text-slate-800">Enroll now</strong> while logged in, then checks out — they get <strong class="text-slate-800">{{ referral_lead_discount_pct }}% off</strong> list price; you earn <strong class="text-slate-800">{{ referral_commission_pct }}%</strong> of what they pay after a successful purchase.
+                </p>
+                <div class="space-y-3 mt-5">
+                    {% if referral_code_ready %}
+                        {% for c in active_courses %}
+                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3" x-data="{ copied: false, link: '{{ course_ref_links.get(c.id, '') }}' }">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                <div>
+                                    <p class="text-sm font-black text-slate-900">{{ c.title }}</p>
+                                    <p class="text-xs text-slate-500">Approx. commission ({{ referral_commission_pct }}% of discounted price): ≈ ₹{{ ((c.price_inr or 0) * (100 - referral_lead_discount_pct) / 100 * referral_commission_pct / 100)|round(2) }} per paid enrolment</p>
+                                </div>
+                                <a href="{{ url('core:course_detail', c.slug) }}" class="text-xs font-black text-indigo-700 hover:text-indigo-500 shrink-0">Preview course</a>
                             </div>
-                            <a href="{{ url('core:course_detail', c.slug) }}" class="text-xs font-black text-indigo-700 hover:text-indigo-500">View course</a>
+                            <div class="mt-2 relative">
+                                <input type="text" x-model="link" readonly class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 pr-24 text-xs text-slate-600 font-mono">
+                                <button type="button" @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-md bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">
+                                    <span x-show="!copied">Copy</span>
+                                    <span x-show="copied" x-cloak>Copied</span>
+                                </button>
+                            </div>
+                            {% set wa_u = course_whatsapp_urls.get(c.id, '') %}
+                            {% if wa_u %}
+                            <a href="{{ wa_u }}" target="_blank" rel="noopener noreferrer"
+                               class="mt-3 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-rj-wa px-4 py-2.5 text-xs font-black text-white shadow-md hover:brightness-110 active:scale-[0.99] transition-all">
+                                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.881 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                WhatsApp this course
+                            </a>
+                            {% endif %}
                         </div>
-                        <div class="mt-2 relative">
-                            <input type="text" x-model="link" readonly class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 pr-24 text-xs text-slate-600 font-mono">
-                            <button @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 rounded-md bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700">
-                                <span x-show="!copied">Copy</span>
-                                <span x-show="copied" x-cloak>Copied</span>
-                            </button>
-                        </div>
+                        {% else %}
+                        <p class="text-sm text-slate-500">No active courses yet. Check back soon.</p>
+                        {% endfor %}
+                    {% elif active_courses %}
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                        <p class="font-black mb-1">Referral links are not ready</p>
+                        <p class="text-amber-900 font-medium leading-relaxed">Your account has no usable referral code right now, so <code class="text-xs bg-white/80 px-1 rounded border border-amber-200/80">?ref=</code> links cannot be built. Open your <a href="{{ url('users:profile') }}" class="font-black text-amber-950 underline decoration-2 underline-offset-2 hover:text-amber-700">profile</a> or contact support so we can restore it.</p>
                     </div>
                     {% else %}
-                    <p class="text-sm text-slate-500">No active courses available yet.</p>
-                    {% endfor %}
+                    <p class="text-sm text-slate-500">No active courses yet. Check back soon.</p>
+                    {% endif %}
                 </div>
             </div>
 
-            <!-- Referral List Table -->
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-8">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-black text-slate-900">Your Referrals</h3>
-                    <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{{ referral_count }} Joined</span>
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="font-black text-slate-900">Course referral activity</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs font-black text-amber-800 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">{{ course_ref_pending_n }} pending payment</span>
+                        <span class="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">{{ course_ref_success_n }} paid</span>
+                    </div>
                 </div>
-                
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
                             <tr>
-                                <th class="px-6 py-4">User</th>
+                                <th class="px-6 py-4">Course</th>
+                                <th class="px-6 py-4">Lead</th>
                                 <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4">Joined On</th>
                                 <th class="px-6 py-4 text-right">Commission</th>
+                                <th class="px-6 py-4 text-right whitespace-nowrap">Paid on</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 text-sm">
-                            {% for ref in referrals %}
+                            {% for cr in course_referrals %}
                             <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-slate-900">{{ ref.username }}</div>
+                                <td class="px-6 py-4 font-bold text-slate-900">{{ cr.course.title }}</td>
+                                <td class="px-6 py-4 text-slate-600">
+                                    {% if cr.lead_user %}
+                                    <span class="font-semibold text-slate-800">{{ cr.lead_user.username }}</span>
+                                    <span class="block text-xs text-slate-500">{{ cr.lead_email }}</span>
+                                    {% else %}
+                                    <span class="text-slate-700">{{ cr.lead_email }}</span>
+                                    <span class="block text-xs text-amber-700 font-semibold">Needs same user logged in at enroll + pay</span>
+                                    {% endif %}
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide {{ 'bg-emerald-50 text-emerald-600 border border-emerald-100' if ref.is_active else 'bg-amber-50 text-amber-600 border border-amber-100' }}">
-                                        {{ 'Verified' if ref.is_active else 'Pending' }}
-                                    </span>
+                                    {% if cr.status == 'SUCCESS' %}
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100">Paid</span>
+                                    {% elif cr.status == 'REJECTED' %}
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100">Rejected</span>
+                                    {% else %}
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100">Awaiting payment</span>
+                                    {% endif %}
                                 </td>
-                                <td class="px-6 py-4 text-slate-500 font-medium">
-                                    {{ ref.date_joined.strftime('%d %b, %Y') }}
+                                <td class="px-6 py-4 text-right align-top">
+                                    {% if cr.status == 'SUCCESS' and cr.commission_amount %}
+                                    <span class="font-bold text-emerald-600">+₹{{ cr.commission_amount }}</span>
+                                    {% else %}
+                                    <span class="text-slate-400 font-medium">—</span>
+                                    {% endif %}
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    <span class="font-bold text-emerald-600">+₹50</span>
+                                <td class="px-6 py-4 text-right text-slate-600 align-top whitespace-nowrap">
+                                    {% if cr.status == 'SUCCESS' and cr.commission_paid_at %}
+                                    <span class="text-xs font-semibold">{{ cr.commission_paid_at.strftime('%d %b %Y') }}</span>
+                                    <span class="block text-[11px] text-slate-400 font-medium">{{ cr.commission_paid_at.strftime('%I:%M %p') }}</span>
+                                    {% else %}
+                                    <span class="text-slate-400 font-medium">—</span>
+                                    {% endif %}
                                 </td>
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="4" class="px-6 py-12 text-center">
-                                    <div class="text-3xl mb-3">🤝</div>
-                                    <p class="text-slate-400 font-medium italic">No referrals yet. Start sharing to earn!</p>
+                                <td colspan="5" class="px-6 py-12 text-center">
+                                    <div class="text-3xl mb-3">🎓</div>
+                                    <p class="text-slate-500 font-medium">No course referrals yet. Share a course link above — rows appear when someone submits enroll interest from your link.</p>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -130,12 +159,11 @@
                 </div>
             </div>
 
-            <!-- Wallet Transactions History Table -->
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden mt-8">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                    <h3 class="font-black text-slate-900">Wallet Transactions</h3>
+            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-black text-slate-900">Wallet transactions</h3>
+                    <p class="text-xs text-slate-500 mt-1">Course payouts appear as <span class="font-semibold">Referral Bonus</span>; other rows may be tasks or login rewards.</p>
                 </div>
-                
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
@@ -172,63 +200,104 @@
                     </table>
                 </div>
             </div>
+
+            <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-5">
+                <button type="button" @click="showSignupLink = !showSignupLink" class="text-sm font-black text-slate-700 hover:text-indigo-700 flex items-center gap-2">
+                    <span x-text="showSignupLink ? '▼' : '▶'"></span>
+                    Optional: general account invite link (signup bonus program)
+                </button>
+                <div x-show="showSignupLink" x-cloak class="mt-4 space-y-3">
+                    <p class="text-xs text-slate-600 leading-relaxed">Separate from course commissions. Use only if you want to invite people to create a RankJee account.</p>
+                    {% if referral_link %}
+                    <div class="relative" x-data="{ copied: false }">
+                        <input type="text" readonly value="{{ referral_link }}"
+                               class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 pr-28 font-mono text-xs text-slate-600 select-all">
+                        <button type="button" @click="navigator.clipboard.writeText('{{ referral_link }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="absolute right-2 top-2 bottom-2 bg-slate-700 text-white px-4 rounded-lg text-xs font-bold">
+                            <span x-text="copied ? 'Copied' : 'Copy'"></span>
+                        </button>
+                    </div>
+                    {% else %}
+                    <p class="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">Signup invite needs an active referral code first — see the notice under course links or your <a href="{{ url('users:profile') }}" class="underline font-black">profile</a>.</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
-        <!-- Sidebar: Stats/Rules -->
         <div class="space-y-6">
             <div class="bg-slate-900 text-white rounded-2xl p-6 shadow-xl">
-                <h4 class="text-xs font-black uppercase tracking-widest text-indigo-400 mb-4">How it works</h4>
+                <h4 class="text-xs font-black uppercase tracking-widest text-[#F5B731] mb-4">How course referrals work</h4>
                 <ul class="space-y-4">
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">1</span>
-                        <p class="text-xs leading-relaxed text-slate-200">Share your invite link with friends who want to learn tech & exams.</p>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#F4711C] text-white flex items-center justify-center text-xs font-black">1</span>
+                        <p class="text-xs leading-relaxed text-slate-200">Copy your link for the course you want to promote.</p>
                     </li>
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">2</span>
-                        <p class="text-xs leading-relaxed text-slate-200">Wait for them to sign up and verify their email/account.</p>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#F4711C] text-white flex items-center justify-center text-xs font-black">2</span>
+                        <p class="text-xs leading-relaxed text-slate-200">Your friend opens it, logs in, and submits <strong class="text-white">Enroll now</strong> on that course page (this creates your referral row).</p>
                     </li>
                     <li class="flex gap-4">
-                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">3</span>
-                        <p class="text-xs leading-relaxed text-slate-200">Instantly receive <span class="text-indigo-400 font-bold">₹50 credits</span> in your wallet for every lead.</p>
+                        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-[#F4711C] text-white flex items-center justify-center text-xs font-black">3</span>
+                        <p class="text-xs leading-relaxed text-slate-200">They pay with <strong class="text-[#F5B731]">{{ referral_lead_discount_pct }}% off</strong>; when payment succeeds you earn <strong class="text-[#F5B731]">{{ referral_commission_pct }}%</strong> of that amount — shown here and in wallet as referral earnings.</p>
                     </li>
                 </ul>
+                <p class="mt-4 text-[11px] font-semibold text-slate-300/95 border-t border-white/10 pt-3">
+                    Commission payout cycle: <strong class="text-white">21st of every month</strong> for successful verified referrals.
+                </p>
             </div>
 
-            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center">
-                <p class="text-xs font-black text-indigo-400 uppercase tracking-widest mb-1.5">Network Strength</p>
-                <p class="text-4xl font-black text-indigo-600 mb-1 tracking-tight">{{ referral_count }}</p>
-                <p class="text-xs font-bold text-indigo-400 italic">Friends Invited</p>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-6">
+                <p class="text-xs font-black text-indigo-500 uppercase tracking-widest mb-3 text-center">Course referrals</p>
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="rounded-xl bg-white border border-indigo-100 p-3">
+                        <p class="text-2xl font-black text-indigo-700">{{ course_ref_pending_n }}</p>
+                        <p class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider mt-1">Awaiting pay</p>
+                    </div>
+                    <div class="rounded-xl bg-white border border-emerald-100 p-3">
+                        <p class="text-2xl font-black text-emerald-700">{{ course_ref_success_n }}</p>
+                        <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider mt-1">Paid out</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Withdrawal Section -->
             <div class="bg-white border text-center border-slate-200 rounded-2xl p-6 shadow-sm">
-                <h4 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-4">Request Withdrawal</h4>
-                
+                <h4 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-4">Request withdrawal</h4>
+
                 <form action="{{ url('core:request_withdrawal') }}" method="POST" class="space-y-4">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    
+
                     <div class="text-left">
                         <label class="block text-xs font-bold text-slate-600 mb-1">Amount (₹)</label>
                         <input type="number" name="amount" min="100" max="{{ total_earned }}" value="{{ total_earned }}"
                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
                     </div>
-                    
+
                     <div class="text-left">
                         <label class="block text-xs font-bold text-slate-600 mb-1">Your UPI ID</label>
                         <input type="text" name="upi_id" placeholder="e.g. 9876543210@paytm" required
                                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-indigo-400">
                     </div>
-                    
-                    <button type="submit" 
+
+                    <button type="submit"
                             class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-xs uppercase tracking-wide hover:bg-indigo-700 transition active:scale-95 disabled:opacity-50"
                             {% if total_earned < 100 %}disabled{% endif %}>
                         {% if total_earned < 100 %}
-                            Min ₹100 Required
+                            Min ₹100 required
                         {% else %}
-                            Withdraw Now
+                            Withdraw now
                         {% endif %}
                     </button>
                 </form>
+                <p class="mt-4 text-[11px] text-slate-500 font-semibold leading-relaxed">
+                    Referral commission payout is released on the <strong>21st of each month</strong> (for successful verified conversions).
+                </p>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                <h4 class="text-xs font-black uppercase tracking-widest text-slate-800 mb-2">Terms &amp; Conditions</h4>
+                <p class="text-xs text-slate-700 leading-relaxed">
+                    Affiliate commission payout is processed on the <strong>21st of each month</strong>. Only successful and verified course referral conversions are included in that payout cycle.
+                </p>
             </div>
         </div>
     </div>

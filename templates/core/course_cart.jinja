@@ -1,15 +1,29 @@
 {% extends "base.jinja" %}
 {% block title %}Course cart - RankJee{% endblock %}
+{% block extra_head %}
+<style>
+    .cart-summary {
+        border-color: color-mix(in srgb, var(--rj-navy) 18%, #c7d2fe);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--rj-navy) 8%, #fff) 0%, #fff 65%);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-10">
+<div class="max-w-3xl mx-auto px-4 py-8 md:py-10">
     <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
-    <h1 class="mt-4 text-3xl font-black text-slate-900">Course cart</h1>
-    <p class="mt-2 text-sm text-slate-600">Pay securely with Razorpay (UPI, cards, wallets). Minimum payable total is ₹1.</p>
+    <h1 class="mt-4 text-2xl md:text-3xl font-black text-slate-900">Your Course Cart</h1>
+    <p class="mt-2 text-sm text-slate-600">Review selected courses and complete secure checkout with Razorpay (UPI, cards, wallets).</p>
 
     {% if payment_dummy %}
     <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">
         Dummy checkout — simulate payment without live Razorpay keys.
+    </div>
+    {% endif %}
+
+    {% if cart_has_referral_savings %}
+    <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900 leading-relaxed">
+        Referral pricing applied on eligible courses — <strong>{{ referral_lead_discount_pct }}% off</strong> list price where you enrolled with a referrer link.
     </div>
     {% endif %}
 
@@ -18,15 +32,40 @@
         Your cart is empty. <a href="{{ url('core:courses') }}" class="font-black text-indigo-700 hover:underline">Browse courses</a>
     </div>
     {% else %}
-    <ul class="mt-6 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {% for c in cart_courses %}
-        <li class="flex flex-wrap items-center justify-between gap-3 p-4">
-            <div>
-                <p class="font-black text-slate-900">{{ c.title }}</p>
-                <p class="text-xs text-slate-500">{{ c.duration_weeks }} weeks · {{ c.level or 'All levels' }}</p>
+    <div class="mt-6 grid gap-4">
+        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex items-center justify-between text-xs font-black uppercase tracking-wider text-slate-500">
+                <span>Items in cart</span>
+                <span>{{ cart_courses|length }} course{{ '' if cart_courses|length == 1 else 's' }}</span>
             </div>
+        </div>
+    </div>
+    <ul class="mt-4 divide-y divide-slate-200 rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {% for c in cart_courses %}
+        <li class="flex flex-wrap items-center justify-between gap-3 p-3 md:p-4">
             <div class="flex items-center gap-3">
-                <span class="font-black text-emerald-700">₹{{ c.price_inr }}</span>
+                {% if c.thumbnail_url %}
+                <a href="{{ url('core:course_detail', c.slug) }}" class="block">
+                    <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" class="h-12 w-16 md:h-14 md:w-20 rounded-lg object-cover border border-slate-200">
+                </a>
+                {% endif %}
+                <div>
+                <p class="font-black text-slate-900">
+                    <a href="{{ url('core:course_detail', c.slug) }}" class="rj-link-accent transition-colors">{{ c.title }}</a>
+                </p>
+                <p class="text-xs text-slate-500">{{ c.duration_weeks }} weeks · {{ c.level or 'All levels' }}</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-0.5 text-right">
+                {% set pay_p = cart_unit_prices.get(c.id, c.price_inr) %}
+                {% set list_p = c.price_inr %}
+                {% if pay_p < list_p %}
+                <span class="text-xs font-bold text-slate-400 line-through">₹{{ list_p }}</span>
+                <span class="font-black text-emerald-700 text-base">₹{{ pay_p }}</span>
+                <span class="text-[10px] font-black uppercase tracking-wide text-emerald-700">{{ referral_lead_discount_pct }}% referral off</span>
+                {% else %}
+                <span class="font-black text-emerald-700">₹{{ list_p }}</span>
+                {% endif %}
                 <form method="post" action="{{ url('core:course_cart_remove', c.id) }}">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                     <button type="submit" class="text-xs font-black uppercase tracking-wider text-rose-600 hover:text-rose-500">Remove</button>
@@ -36,12 +75,15 @@
         {% endfor %}
     </ul>
 
-    <div class="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5">
-        <p class="text-lg font-black text-indigo-900">Total <span class="text-emerald-700">₹{{ cart_total_inr }}</span></p>
+    <div class="cart-summary mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border p-4 md:p-5">
+        <div>
+            <p class="text-xs font-black uppercase tracking-wider text-indigo-700">Order total</p>
+            <p class="text-lg font-black text-indigo-900">₹{{ cart_total_inr }}</p>
+        </div>
         {% if request.user.is_authenticated %}
         <button type="button" id="course-pay-btn"
-                class="rounded-xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 shadow-lg shadow-indigo-100">
-            Pay now
+                class="rj-cta-primary w-full sm:w-auto px-6 py-3 font-black uppercase text-white">
+            Proceed to payment
         </button>
         {% endif %}
     </div>

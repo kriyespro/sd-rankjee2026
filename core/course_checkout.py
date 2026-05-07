@@ -1,4 +1,6 @@
 """Course catalog cart + Razorpay Standard Checkout."""
+from decimal import Decimal
+
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,6 +13,7 @@ from payments.services import get_razorpay_client, razorpay_dummy_mode
 
 from .models import Course, CourseOrder
 from .services_course_checkout import (
+    REFERRAL_LEAD_DISCOUNT_PERCENT,
     cart_course_ids,
     complete_course_order_after_payment,
     complete_free_checkout,
@@ -23,13 +26,23 @@ from .services_course_checkout import (
 
 @login_required
 def course_cart(request):
-    courses, total = resolve_cart_courses(request.user, request)
+    courses, total, cart_unit_prices = resolve_cart_courses(request.user, request)
+    cart_has_referral_savings = False
+    for c in courses:
+        list_p = c.price_inr if c.price_inr is not None else Decimal("0")
+        pay_p = cart_unit_prices.get(c.id, list_p)
+        if pay_p < list_p:
+            cart_has_referral_savings = True
+            break
     return render(
         request,
         "core/course_cart.jinja",
         {
             "cart_courses": courses,
             "cart_total_inr": total,
+            "cart_unit_prices": cart_unit_prices,
+            "cart_has_referral_savings": cart_has_referral_savings,
+            "referral_lead_discount_pct": REFERRAL_LEAD_DISCOUNT_PERCENT,
             "payment_dummy": razorpay_dummy_mode(),
             "checkout_success_url": reverse("core:courses") + "?purchased=1",
             "seo_title": "Course cart | RankJee",
@@ -46,14 +59,11 @@ def course_cart_add(request, course_id):
     course = get_object_or_404(Course, id=course_id, is_active=True)
     owned = user_owned_course_ids(request.user)
     if course.id in owned:
-        return redirect(request.POST.get("next") or reverse("core:course_cart"))
+        return redirect("core:course_cart")
     ids = cart_course_ids(request)
     if course.id not in ids:
         ids.append(course.id)
         set_cart_course_ids(request, ids)
-    next_url = (request.POST.get("next") or "").strip()
-    if next_url.startswith("/"):
-        return redirect(next_url)
     return redirect("core:course_cart")
 
 
@@ -68,7 +78,7 @@ def course_cart_remove(request, course_id):
 @login_required
 @require_POST
 def course_checkout_create(request):
-    courses, total = resolve_cart_courses(request.user, request)
+    courses, total, _ = resolve_cart_courses(request.user, request)
     if not courses:
         return JsonResponse({"error": "Your cart is empty or courses were already purchased."}, status=400)
 
@@ -81,7 +91,7 @@ def course_checkout_create(request):
             }
         )
 
-    payload = create_course_checkout_order(request.user, courses, total)
+    payload = create_course_checkout_order(request.user, courses)
     if "error" in payload:
         status = int(payload.get("http_status") or 400)
         return JsonResponse({"error": payload["error"]}, status=status)

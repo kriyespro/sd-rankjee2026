@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from django.contrib import admin
 from django.utils import timezone
 
+from .services_course_checkout import REFERRAL_COMMISSION_PERCENT_DEFAULT, unit_checkout_price_inr
 from .models import (
     Course,
     CourseOrder,
@@ -63,14 +66,19 @@ class CourseAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("title",)}
 
 
-@admin.action(description="Mark selected referrals SUCCESS and pay 30%% commission")
+@admin.action(description="Mark selected referrals SUCCESS and pay commission (default 18%%)")
 def mark_referral_success_and_pay(modeladmin, request, queryset):
     for item in queryset.select_related("referrer", "course"):
         if item.commission_paid_at:
             continue
-        sale_amount = item.sale_amount or item.course.price_inr or 0
-        percent = item.commission_percent or 30
-        commission = (sale_amount * percent) / 100
+        sale_amount = item.sale_amount
+        if sale_amount is None:
+            if item.lead_user_id:
+                sale_amount = unit_checkout_price_inr(item.course, item.lead_user)
+            else:
+                sale_amount = item.course.price_inr or Decimal("0")
+        percent = item.commission_percent or REFERRAL_COMMISSION_PERCENT_DEFAULT
+        commission = (sale_amount * percent / Decimal("100")).quantize(Decimal("0.01"))
         item.status = CourseReferral.Status.SUCCESS
         item.sale_amount = sale_amount
         item.commission_amount = commission
