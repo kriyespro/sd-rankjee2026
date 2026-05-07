@@ -39,6 +39,9 @@ def _fallback_when_namespace_missing(viewname, args, kwargs):
         'study:tutor_dashboard': '/study/tutor/',
         'study:tutor_material_create': '/study/tutor/materials/new/',
         'study:tutor_assignment_create': '/study/tutor/assignments/new/',
+        'core:cancellation_refund': '/cancellation-refund/',
+        'core:shipping_exchange': '/shipping-exchange/',
+        'core:contact_us': '/contact-us/',
     }
     if viewname in study_fixed:
         return study_fixed[viewname]
@@ -72,14 +75,12 @@ def url(viewname, *args, **kwargs):
             return django_reverse(viewname, kwargs=kwargs)
         return django_reverse(viewname)
     except NoReverseMatch as exc:
-        if 'not a registered namespace' not in str(exc):
-            raise
         fb = _fallback_when_namespace_missing(viewname, args, kwargs)
         if fb is not None:
             logger.warning(
-                'URL reverse skipped missing namespace for %r; using fallback %r. '
-                'Ensure rankjee/urls.py includes blog and tutor_study routes.',
+                'URL reverse fallback for %r due to %s; using %r.',
                 viewname,
+                exc,
                 fb,
             )
             return fb

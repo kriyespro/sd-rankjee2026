@@ -672,8 +672,7 @@
                         <li><a href="{{ url('hometutor:tutor_list') }}">Online &amp; home tutoring India — full search</a></li>
                         <li><a href="{{ url('learning:index') }}">Micro-learning &amp; videos</a></li>
                         <li><a href="{{ url('core:courses') }}">Job-ready courses</a></li>
-                        <li class="pt-2 mt-2 border-t border-slate-200/90"><a href="{{ url('core:privacy') }}">Privacy policy</a></li>
-                        <li><a href="{{ url('core:terms') }}">Terms of use</a></li>
+                        <li class="pt-2 mt-2 border-t border-slate-200/90"><a href="{{ url('dashboard:index') }}">Support &amp; dashboard</a></li>
                         {% if request.user.is_authenticated %}
                         <li><a href="{{ url('dashboard:index') }}">{{ uil.dashboard }}</a></li>
                         {% else %}
@@ -688,6 +687,17 @@
             </div>
         </div>
         <div class="border-t border-indigo-100/90 bg-white/95 backdrop-blur-sm py-5">
+            <div class="mx-auto mb-3 flex max-w-6xl flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 text-[11px] font-bold text-slate-600">
+                <a href="{{ url('core:terms') }}" class="hover:text-indigo-700">Terms and Conditions</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ url('core:privacy') }}" class="hover:text-indigo-700">Privacy Policy</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ url('core:cancellation_refund') }}" class="hover:text-indigo-700">Cancellation and Refund</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ url('core:shipping_exchange') }}" class="hover:text-indigo-700">Shipping and Exchange</a>
+                <span class="text-slate-300">•</span>
+                <a href="{{ url('core:contact_us') }}" class="hover:text-indigo-700">Contact Us</a>
+            </div>
             <p class="text-center text-xs text-slate-500 font-semibold tracking-wide">&copy; 2026 RankJee · Home tutors, exams &amp; learning</p>
         </div>
     </footer>

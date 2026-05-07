@@ -273,6 +273,8 @@
             <span>{{ post.category.name if post.category else "General" }}</span>
             <span class="text-[#f4711c]/60">|</span>
             <span>{{ post.published_at.strftime('%d %b %Y') if post.published_at else post.created_at.strftime('%d %b %Y') }}</span>
+            <span class="text-[#f4711c]/60">|</span>
+            <span>{{ post.view_count }} views</span>
         </div>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <h1 class="font-black text-[#0d2b5e] mt-2 mb-0 tracking-tight break-words text-[1.65rem] sm:text-[1.85rem] md:text-[2.15rem] leading-[1.18] max-w-[65ch]">{{ post.title }}</h1>

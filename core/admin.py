@@ -11,6 +11,7 @@ from .models import (
     CoursePurchase,
     CourseReferral,
     EarningTask,
+    LegalPage,
     TutorLeadRequest,
     UserTaskSubmission,
 )
@@ -134,3 +135,10 @@ class TutorLeadRequestAdmin(admin.ModelAdmin):
     )
     list_filter = ("status", "requester_type", "city")
     search_fields = ("full_name", "phone", "email", "city", "area", "subjects")
+
+
+@admin.register(LegalPage)
+class LegalPageAdmin(admin.ModelAdmin):
+    list_display = ("title", "slug", "is_published", "updated_at")
+    list_filter = ("is_published", "slug")
+    search_fields = ("title", "content", "seo_title", "seo_description")

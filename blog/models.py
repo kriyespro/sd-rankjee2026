@@ -56,6 +56,7 @@ class BlogPost(models.Model):
     meta_title = models.CharField(max_length=220, blank=True)
     meta_description = models.CharField(max_length=320, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    view_count = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

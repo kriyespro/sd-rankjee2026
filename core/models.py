@@ -157,6 +157,31 @@ class CourseReferral(models.Model):
         return f"{self.referrer} → {self.course.title} ({self.status})"
 
 
+class LegalPage(models.Model):
+    """Editable legal/policy pages rendered on public routes and managed from /sd/."""
+
+    class Slug(models.TextChoices):
+        TERMS = "terms-and-conditions", "Terms and Conditions"
+        PRIVACY = "privacy-policy", "Privacy Policy"
+        CANCELLATION = "cancellation-and-refund", "Cancellation and Refund"
+        SHIPPING = "shipping-and-exchange", "Shipping and Exchange"
+        CONTACT = "contact-us", "Contact Us"
+
+    slug = models.SlugField(max_length=80, unique=True, choices=Slug.choices)
+    title = models.CharField(max_length=180)
+    content = models.TextField(help_text="Main page content. Use short paragraphs and bullet lines.")
+    seo_title = models.CharField(max_length=180, blank=True)
+    seo_description = models.CharField(max_length=255, blank=True)
+    is_published = models.BooleanField(default=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["slug"]
+
+    def __str__(self):
+        return self.title
+
+
 class TutorLeadRequest(models.Model):
     class RequesterType(models.TextChoices):
         STUDENT = "STUDENT", "Student"

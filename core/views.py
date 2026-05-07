@@ -11,7 +11,7 @@ from decimal import Decimal
 from urllib.parse import quote
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
-from .models import Course, CourseReferral, CoursePurchase, EarningTask, TutorLeadRequest, UserTaskSubmission
+from .models import Course, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
 from .services_course_checkout import (
     REFERRAL_COMMISSION_PERCENT_DEFAULT,
     REFERRAL_LEAD_DISCOUNT_PERCENT,
@@ -28,12 +28,150 @@ from hometutor.services import featured_home_tutors
 from .hometutor_data import PILOT_CITY
 
 
+_LEGAL_PAGE_FALLBACKS = {
+    "terms-and-conditions": {
+        "title": "Terms and Conditions",
+        "content": (
+            "Welcome to RankJee.\n\n"
+            "By using our website, tutor marketplace, exam tools, courses, and earning features, "
+            "you agree to these Terms and Conditions.\n\n"
+            "1) Eligibility and account use\n"
+            "- You must provide accurate information at signup.\n"
+            "- You are responsible for account activity and credential security.\n"
+            "- We may suspend accounts for fraud, abuse, or policy violations.\n\n"
+            "2) Platform scope\n"
+            "- RankJee connects learners with tutors and learning resources.\n"
+            "- Learning outcomes depend on user effort and tutor performance.\n"
+            "- We may update products, pricing, and features without prior notice.\n\n"
+            "3) Payments and pricing\n"
+            "- Listed prices are in INR unless stated otherwise.\n"
+            "- Paid features are activated after successful payment verification.\n"
+            "- Taxes/charges (if applicable) may be included or shown at checkout.\n\n"
+            "4) Acceptable use\n"
+            "- Do not submit illegal, abusive, or misleading content.\n"
+            "- Do not scrape, reverse engineer, or misuse platform data.\n\n"
+            "5) Liability\n"
+            "- Services are provided on an 'as available' basis.\n"
+            "- RankJee is not liable for indirect or consequential losses.\n\n"
+            "6) Contact\n"
+            "For policy or legal queries, use the Contact Us page."
+        ),
+    },
+    "privacy-policy": {
+        "title": "Privacy Policy",
+        "content": (
+            "RankJee values your privacy.\n\n"
+            "1) Data we collect\n"
+            "- Account details: name, email, phone (if provided), login metadata.\n"
+            "- Usage data: pages visited, activity logs, learning interactions.\n"
+            "- Transaction data for paid features and payouts.\n\n"
+            "2) How we use data\n"
+            "- Deliver core features (tutors, courses, tests, dashboard).\n"
+            "- Improve product quality, security, and support.\n"
+            "- Process payments, withdrawals, and compliance obligations.\n\n"
+            "3) Data sharing\n"
+            "- With trusted service providers (payment, hosting, email, analytics) as needed.\n"
+            "- With legal authorities when required by law.\n"
+            "- We do not sell personal data.\n\n"
+            "4) Data protection\n"
+            "- We apply reasonable technical and operational safeguards.\n"
+            "- Users should protect account passwords and device access.\n\n"
+            "5) Retention and rights\n"
+            "- We keep data as needed for service delivery and legal compliance.\n"
+            "- You may request account/data actions by contacting support."
+        ),
+    },
+    "cancellation-and-refund": {
+        "title": "Cancellation and Refund",
+        "content": (
+            "This policy applies to digital services on RankJee.\n\n"
+            "1) Order cancellation\n"
+            "- If payment is not successful, no charge is captured.\n"
+            "- If payment is successful and access is granted, cancellation may not be available.\n\n"
+            "2) Refund eligibility\n"
+            "- Duplicate/accidental charges are eligible after verification.\n"
+            "- Technical failures where service is not delivered may be eligible.\n"
+            "- Misuse or policy-violating transactions are not refundable.\n\n"
+            "3) Refund process\n"
+            "- Raise a support request with payment reference and account email.\n"
+            "- Verified refunds are processed to the original payment method.\n"
+            "- Processing timelines depend on payment provider/bank cycles.\n\n"
+            "4) Non-refundable items\n"
+            "- Consumed digital content and completed service milestones."
+        ),
+    },
+    "shipping-and-exchange": {
+        "title": "Shipping and Exchange",
+        "content": (
+            "RankJee primarily delivers digital services.\n\n"
+            "1) Shipping\n"
+            "- No physical shipping is applicable for most products.\n"
+            "- Digital access is provided to your account after payment verification.\n\n"
+            "2) Delivery timelines\n"
+            "- Access is usually instant, subject to payment confirmation and system checks.\n"
+            "- In rare cases, activation may take additional time.\n\n"
+            "3) Exchange\n"
+            "- Digital services are generally non-exchangeable.\n"
+            "- If a wrong plan/course is purchased due to a platform error, contact support for review."
+        ),
+    },
+    "contact-us": {
+        "title": "Contact Us",
+        "content": (
+            "Need help? We are here for you.\n\n"
+            "Support scope:\n"
+            "- Account and login issues\n"
+            "- Payment and billing queries\n"
+            "- Tutor request and engagement support\n"
+            "- Course and exam feature assistance\n\n"
+            "Please share:\n"
+            "- Registered email/username\n"
+            "- Problem summary and screenshots (if any)\n"
+            "- Payment reference/order id for billing issues\n\n"
+            "You can also use in-app support links where available for faster resolution."
+        ),
+    },
+}
+
+
+def _render_legal_page(request, slug: str):
+    page = LegalPage.objects.filter(slug=slug, is_published=True).first()
+    fallback = _LEGAL_PAGE_FALLBACKS[slug]
+    title = page.title if page else fallback["title"]
+    body = page.content if page else fallback["content"]
+    seo_title = (page.seo_title if page else "") or f"{title} | RankJee"
+    seo_description = (page.seo_description if page else "") or (body[:155] if body else title)
+    return render(
+        request,
+        "core/legal_page.jinja",
+        {
+            "legal_page_title": title,
+            "legal_page_content": body,
+            "seo_title": seo_title,
+            "seo_description": seo_description,
+            "canonical_url": request.build_absolute_uri(request.path),
+        },
+    )
+
+
 def privacy(request):
-    return render(request, 'core/privacy.jinja')
+    return _render_legal_page(request, "privacy-policy")
 
 
 def terms(request):
-    return render(request, 'core/terms.jinja')
+    return _render_legal_page(request, "terms-and-conditions")
+
+
+def cancellation_refund(request):
+    return _render_legal_page(request, "cancellation-and-refund")
+
+
+def shipping_exchange(request):
+    return _render_legal_page(request, "shipping-and-exchange")
+
+
+def contact_us(request):
+    return _render_legal_page(request, "contact-us")
 
 
 def service_worker(request):

@@ -3,6 +3,7 @@ import re
 
 from django.core.paginator import Paginator
 from django.conf import settings
+from django.db.models import F
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -257,6 +258,8 @@ def post_detail(request, slug):
         published_at__isnull=False,
         published_at__lte=timezone.now(),
     )
+    BlogPost.objects.filter(pk=post.pk).update(view_count=F('view_count') + 1)
+    post.refresh_from_db(fields=['view_count'])
     related_qs = BlogPost.objects.filter(
         published_at__isnull=False,
         published_at__lte=timezone.now(),
