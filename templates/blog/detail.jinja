@@ -267,11 +267,11 @@
         {% if post.category %}
         <span class="text-[10px] font-black uppercase tracking-[0.16em] text-[#f4711c]">{{ post.category.name }}</span>
         {% endif %}
-        <div class="mt-2 mb-3 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500">
+        <div class="mt-2 mb-3 flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#f4711c]">
             <span>{{ post.author.get_full_name() or post.author.username if post.author else "RankJee Team" }}</span>
-            <span class="text-slate-300">|</span>
+            <span class="text-[#f4711c]/60">|</span>
             <span>{{ post.category.name if post.category else "General" }}</span>
-            <span class="text-slate-300">|</span>
+            <span class="text-[#f4711c]/60">|</span>
             <span>{{ post.published_at.strftime('%d %b %Y') if post.published_at else post.created_at.strftime('%d %b %Y') }}</span>
         </div>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -282,9 +282,6 @@
             </a>
             {% endif %}
         </div>
-        {% if post.published_at %}
-        <time class="text-sm text-slate-500 block mb-8 sm:mb-10 tabular-nums" datetime="{{ post.published_at.isoformat() }}">{{ post.published_at.strftime('%d %B %Y') }}</time>
-        {% endif %}
 
         {% if blog_image_url %}
         <img src="{{ blog_image_url }}" alt="{{ post.title }}" class="w-full rounded-2xl mb-9 sm:mb-10 object-cover max-h-[22rem] bg-slate-100 shadow-sm border border-slate-100/80" loading="eager" decoding="async"{% if not blog_hero_is_upload %} referrerpolicy="no-referrer"{% endif %}>

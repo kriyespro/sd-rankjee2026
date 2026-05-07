@@ -18,21 +18,19 @@
                 <img src="{{ default_blog_og_image_url }}" alt="{{ post.title }}" class="w-full h-44 object-cover transition-transform duration-300 hover:scale-[1.02]" loading="lazy" decoding="async" referrerpolicy="no-referrer">
                 {% endif %}
             </a>
+            <div class="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-[#f4711c]">
+                <span>{{ post.author.get_full_name() or post.author.username if post.author else "RankJee Team" }}</span>
+                <span class="text-[#f4711c]/60">|</span>
+                <span>{{ post.category.name if post.category else "General" }}</span>
+                <span class="text-[#f4711c]/60">|</span>
+                <span>{{ post.published_at.strftime('%d %b %Y') if post.published_at else post.created_at.strftime('%d %b %Y') }}</span>
+            </div>
             {% if post.category %}
             <span class="text-[10px] font-black uppercase tracking-wider text-indigo-600">{{ post.category.name }}</span>
             {% endif %}
             <h2 class="text-lg sm:text-xl font-black text-slate-900 mt-2 mb-2 break-words">
                 <a href="{{ url('blog:detail', slug=post.slug) }}" class="hover:text-indigo-700">{{ post.title }}</a>
             </h2>
-            <div class="mb-2 flex flex-wrap items-center gap-2 text-[11px] font-bold text-slate-500">
-                <span>{{ post.author.get_full_name() or post.author.username if post.author else "RankJee Team" }}</span>
-                <span class="text-slate-300">|</span>
-                <span>{{ post.category.name if post.category else "General" }}</span>
-                <span class="text-slate-300">|</span>
-                <span>{{ post.published_at.strftime('%d %b %Y') if post.published_at else post.created_at.strftime('%d %b %Y') }}</span>
-                <span class="text-slate-300">|</span>
-                <a href="{{ url('blog:detail', slug=post.slug) }}" class="text-indigo-600 hover:text-indigo-800">Read</a>
-            </div>
             {% if post.excerpt %}
             <p class="text-slate-600 text-sm flex-1">
                 {% if post.excerpt|length > 140 %}
@@ -42,7 +40,6 @@
                 {% endif %}
             </p>
             {% endif %}
-            <a href="{{ url('blog:detail', slug=post.slug) }}" class="mt-4 inline-flex text-sm font-black text-indigo-600 uppercase tracking-wider hover:text-indigo-800">Read →</a>
         </article>
         {% else %}
         <p class="text-slate-600 col-span-full">New guides coming soon.</p>
