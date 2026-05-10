@@ -1,5 +1,4 @@
 {% extends "base.jinja" %}
-{% block title %}Find Home Tutors &amp; Practice Online - RankJee{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -715,7 +714,7 @@
         <div class="hero-grid">
             <div class="hero-main">
                 <div class="hero-panel">
-                    <p class="hero-eyebrow mx-auto w-fit lg:mx-0"><span class="hero-eyebrow-dot" aria-hidden="true"></span> RankJee · Tutors &amp; exams</p>
+                    <p class="hero-eyebrow mx-auto w-fit lg:mx-0"><span class="hero-eyebrow-dot" aria-hidden="true"></span> Home tutors in {{ hometutor_pilot_city }}</p>
                     <h1 class="hero-title"
                         x-data="{ words: ['home tutor.', 'exam coach.', 'learning mentor.'], wi: 0, ci: 0, typed: '', deleting: false, tick() { const w = this.words[this.wi]; if (!this.deleting) { this.ci = Math.min(this.ci + 1, w.length); this.typed = w.slice(0, this.ci); if (this.ci === w.length) { this.deleting = true; setTimeout(() => this.tick(), 850); return; } } else { this.ci = Math.max(this.ci - 1, 0); this.typed = w.slice(0, this.ci); if (this.ci === 0) { this.deleting = false; this.wi = (this.wi + 1) % this.words.length; } } setTimeout(() => this.tick(), this.deleting ? 38 : 80); } }"
                         x-init="tick()">
@@ -725,7 +724,7 @@
 
                     <div class="hero-lead-block">
                         <p class="hero-lead-line">
-                            Coaching-grade tutoring for CBSE, ICSE &amp; boards — live in <strong class="hero-city-accent">{{ hometutor_pilot_city }}</strong>.
+                            Get <strong class="hero-city-accent">home tutors jobs</strong> in <strong class="hero-city-accent">{{ hometutor_pilot_city }}</strong> — and find the <strong class="hero-city-accent">best home tutor</strong> in <strong class="hero-city-accent">{{ hometutor_pilot_city }}</strong> for CBSE, ICSE &amp; boards.
                         </p>
                         <p class="hero-lead-line hero-lead-muted">
                             One RankJee account: tutors today, diagnostics &amp; skill paths when you want to level up.

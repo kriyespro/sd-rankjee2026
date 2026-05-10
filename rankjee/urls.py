@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from core import views as core_views
@@ -67,9 +68,14 @@ urlpatterns = [
     path('hometutor/', include('hometutor.urls')),
     path('hometutor/payments/', include('hometutor_payments.urls')),
     path('sw.js', core_views.service_worker, name='service_worker'),
+    path('favicon.ico', core_views.favicon, name='favicon'),
+    path('earn/', RedirectView.as_view(pattern_name='core:earnings', permanent=False)),
+    path('dashboard/', RedirectView.as_view(pattern_name='dashboard:index', permanent=False)),
     path('', include('core.urls')),
     path('<slug:city_slug>/', core_views.city_tutor_redirect, name='city_tutor_redirect'),
 ]
+
+handler404 = core_views.handler404
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

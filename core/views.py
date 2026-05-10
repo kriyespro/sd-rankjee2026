@@ -4,11 +4,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Q, Sum
 from django.contrib import messages
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.conf import settings
 from django.urls import reverse
 from decimal import Decimal
 from urllib.parse import quote
+import re
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
 from .models import Course, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
@@ -21,11 +22,18 @@ from .services_course_checkout import (
 )
 from assessment.models import UserAttempt
 from django.utils import timezone
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from assessment.models import DailyJackpot
 
 from hometutor.services import featured_home_tutors
 
-from .hometutor_data import PILOT_CITY
+from .hometutor_data import PILOT_CITY, SHORT_LINK_CITY_SLUGS
+
+try:
+    from markdown import markdown as md_markdown
+except ModuleNotFoundError:  # pragma: no cover - defensive fallback
+    md_markdown = None
 
 
 _LEGAL_PAGE_FALLBACKS = {
@@ -201,8 +209,40 @@ def city_tutor_redirect(request, city_slug):
     """
     Keep short city URLs SEO-friendly by resolving to the canonical tutor city landing.
     Example: /surat -> /hometutor/city/surat/
+    Unknown slugs (e.g. /earn/) are rejected so they do not hijack product URLs.
     """
-    return redirect("hometutor:tutor_city_landing", city_slug=city_slug, permanent=True)
+    from django.utils.text import slugify
+    from hometutor.models import TutorProfile
+
+    canonical = slugify(city_slug)
+    if canonical not in SHORT_LINK_CITY_SLUGS:
+        city_label = " ".join(part.capitalize() for part in canonical.replace("-", " ").split())
+        if not city_label:
+            raise Http404()
+        exists = TutorProfile.objects.filter(
+            verification_status=TutorProfile.VerificationStatus.APPROVED,
+            city__iexact=city_label,
+        ).exists()
+        if not exists:
+            raise Http404()
+    return redirect("hometutor:tutor_city_landing", city_slug=canonical, permanent=True)
+
+
+def favicon(request):
+    """Avoid noisy /favicon.ico 404s without requiring static deploy of an .ico file."""
+    svg = (
+        b'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">'
+        b'<rect width="32" height="32" rx="6" fill="#3b4cb8"/>'
+        b'<text x="16" y="22" text-anchor="middle" fill="#fff" '
+        b'font-family="system-ui,sans-serif" font-size="17" font-weight="800">R</text>'
+        b"</svg>"
+    )
+    return HttpResponse(svg, content_type="image/svg+xml")
+
+
+def handler404(request, exception):
+    """Send unknown URLs to home (used when DEBUG is False)."""
+    return redirect("core:home")
 
 
 def home(request):
@@ -210,14 +250,26 @@ def home(request):
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
     time_to_go = int((jackpot.scheduled_time - now).total_seconds()) if jackpot else 0
     featured_rows, featured_from_db = featured_home_tutors()
+    city = PILOT_CITY
+    seo_title = f"Get Home Tutors Jobs in {city} | Find Best Home Tutor in {city} | RankJee"
+    seo_description = (
+        f"Get home tutors jobs in {city}. Find the best home tutor in {city} — verified profiles, "
+        "demo requests, and coaching-grade support on RankJee."
+    )[:160]
+    seo_keywords = (
+        f"home tutor jobs {city}, best home tutor {city}, home tutor near me {city}, "
+        "private tutor, tuition at home, RankJee"
+    )
     return render(request, 'core/home.jinja', {
         'jackpot': jackpot,
         'jackpot_time_to_go': time_to_go,
         'featured_home_tutors': featured_rows,
         'featured_tutors_from_db': featured_from_db,
         'hometutor_pilot_city': PILOT_CITY,
-        'seo_title': "RankJee - Home Tutors, Courses and Mock Tests",
-        'seo_description': "Find trusted home tutors, explore job-ready courses, and practice with mock tests on RankJee.",
+        'seo_title': seo_title,
+        'seo_description': seo_description,
+        'seo_keywords': seo_keywords,
+        'canonical_url': request.build_absolute_uri(request.path),
     })
 
 
@@ -371,11 +423,56 @@ def course_detail(request, slug):
     )
     referral_price_unlocked = bool(request.user.is_authenticated and checkout_inr < list_inr)
 
+    description_sections = []
+    if course.description:
+        markdown_source = course.description.replace("\r\n", "\n")
+        section_re = re.compile(r"^\s*#{1,3}\s+(.+?)\s*$")
+        sections_raw = []
+        current_title = "Course details"
+        current_lines = []
+
+        for line in markdown_source.split("\n"):
+            heading_match = section_re.match(line)
+            if heading_match:
+                text_chunk = "\n".join(current_lines).strip()
+                if text_chunk:
+                    sections_raw.append((current_title, text_chunk))
+                current_title = heading_match.group(1).strip()
+                current_lines = []
+                continue
+            current_lines.append(line)
+
+        text_chunk = "\n".join(current_lines).strip()
+        if text_chunk:
+            sections_raw.append((current_title, text_chunk))
+
+        if not sections_raw:
+            sections_raw = [("Course details", markdown_source.strip())]
+
+        for title, content_md in sections_raw:
+            safe_source = escape(content_md)
+            if md_markdown is not None:
+                html = mark_safe(
+                    md_markdown(
+                        safe_source,
+                        extensions=["extra", "nl2br", "sane_lists"],
+                    )
+                )
+            else:
+                html = mark_safe(safe_source.replace("\n", "<br>"))
+            description_sections.append(
+                {
+                    "title": title,
+                    "html": html,
+                }
+            )
+
     return render(
         request,
         "core/course_detail.jinja",
         {
             "course": course,
+            "course_description_sections": description_sections,
             "owns_course": owns_course,
             "course_list_price_inr": list_inr,
             "course_checkout_price_inr": checkout_inr,

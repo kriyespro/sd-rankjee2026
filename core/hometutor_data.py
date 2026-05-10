@@ -2,6 +2,42 @@
 
 PILOT_CITY = "Ahmedabad"
 
+# Single-segment URLs like `/surat/` redirect to `/hometutor/city/<slug>/`. Only these slugs (plus DB-backed tutor cities in `city_tutor_redirect`) are allowed so `/earn/` etc. do not become fake city pages.
+SHORT_LINK_CITY_SLUGS = frozenset(
+    {
+        "ranchi",
+        "patna",
+        "kolkata",
+        "lucknow",
+        "guwahati",
+        "bhopal",
+        "chandigarh",
+        "delhi",
+        "surat",
+        "ahmedabad",
+        "mumbai",
+        "pune",
+        "indore",
+        "nagpur",
+        "rajkot",
+        "nashik",
+        "vadodara",
+        "aurangabad",
+        "hyderabad",
+        "chennai",
+        "bengaluru",
+        "bangalore",
+        "coimbatore",
+        "kochi",
+        "visakhapatnam",
+        "mangaluru",
+        "jaipur",
+        "noida",
+        "gurugram",
+        "gurgaon",
+    }
+)
+
 # Seeded display rows — not persisted until TutorProfile exists.
 FEATURED_HOME_TUTORS = [
     {

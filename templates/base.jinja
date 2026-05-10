@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% set _seo_title = seo_title if seo_title is defined and seo_title else "RankJee - Earn While You Learn" %}
-    {% set _seo_description = seo_description if seo_description is defined and seo_description else "RankJee helps students learn, practice, and grow with tests, courses, and tutor support." %}
+    {% set _seo_title = seo_title if seo_title is defined and seo_title else "RankJee — Home tutor jobs & best tutors in your city" %}
+    {% set _seo_description = seo_description if seo_description is defined and seo_description else "Get home tutors jobs in your city and find the best home tutor near you — RankJee connects families with verified tutors, courses, and exam practice." %}
+    {% set _seo_keywords = seo_keywords if seo_keywords is defined and seo_keywords else "home tutor jobs, best home tutor, private tutor, tuition at home, RankJee" %}
     {% set _canonical_url = canonical_url if canonical_url is defined and canonical_url else request.build_absolute_uri(request.path) %}
     <title>{% block title %}{{ _seo_title }}{% endblock %}</title>
     <meta name="description" content="{{ _seo_description }}">
+    <meta name="keywords" content="{{ _seo_keywords }}">
     <link rel="canonical" href="{{ _canonical_url }}">
     {% if seo_noindex is defined and seo_noindex %}
     <meta name="robots" content="noindex, nofollow">
