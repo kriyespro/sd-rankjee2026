@@ -4,6 +4,7 @@ import calendar
 
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import FileResponse, Http404, HttpResponse
@@ -27,6 +28,7 @@ import os
 import requests
 from urllib.parse import urlencode
 
+from blog.blog_niche import NICHE_REQUIREMENT_USER_MESSAGE
 from blog.models import BlogCategory, BlogPost
 
 from .forms import (
@@ -668,6 +670,16 @@ def _staff_only(request):
     return request.user.is_staff or request.user.is_superuser
 
 
+def _blog_topic_gate_applies(request):
+    """Student/VIP authors must match blog niche phrases; staff and city/global admins skip."""
+    if _staff_only(request):
+        return False
+    role = getattr(request.user, "role", None)
+    if role in (User.Role.GLOBAL_ADMIN, User.Role.CITY_ADMIN):
+        return False
+    return True
+
+
 def _vip_coordinator(request):
     return getattr(request.user, "role", None) == User.Role.VIP_USER
 
@@ -678,6 +690,23 @@ def _student_user(request):
 
 def _can_create_blog_post(request):
     return _staff_only(request) or _vip_coordinator(request) or _student_user(request)
+
+
+def _dashboard_blog_redirect_after_save(request, post, *, niche_gate_active: bool):
+    """Topic gate leaves pending drafts (`published_at` empty); privileged roles publish freely."""
+    if post.published_at:
+        messages.success(request, f"Published: {post.title}")
+        return redirect("blog:detail", slug=post.slug)
+
+    messages.warning(request, NICHE_REQUIREMENT_USER_MESSAGE)
+    if niche_gate_active:
+        edit_path = reverse("dashboard:blog_post_edit", kwargs={"slug": post.slug})
+        Notification.objects.create(
+            user=request.user,
+            message="Blog saved pending publish — add an approved topic phrase (home tutors, exams, courses, SEO/ads, etc.).",
+            link=edit_path[:200],
+        )
+    return redirect("dashboard:blog_post_edit", slug=post.slug)
 
 
 def _staff_or_vip_coordinator(request):
@@ -774,6 +803,7 @@ def blog_post_create(request):
         form = VipBlogPostForm(request.POST)
         if form.is_valid():
             post = form.save(commit=False)
+            topic_gate = _blog_topic_gate_applies(request)
             # Author defaulting:
             # - For staff/superuser publishing ops, default author to user id=1 if it exists.
             # - Otherwise use the logged-in user.
@@ -782,9 +812,8 @@ def blog_post_create(request):
                 post.author = default_author or request.user
             else:
                 post.author = request.user
-            post.save()
-            messages.success(request, f"Published: {post.title}")
-            return redirect("blog:detail", slug=post.slug)
+            post.save(apply_blog_niche_gate=topic_gate)
+            return _dashboard_blog_redirect_after_save(request, post, niche_gate_active=topic_gate)
     else:
         form = VipBlogPostForm()
 
@@ -795,7 +824,12 @@ def blog_post_create(request):
             "form": form,
             "seo_title": "New blog post",
             "page_title": "Publish blog post",
-            "page_hint": "Goes live immediately with your account as author. Leave slug blank to auto-generate from the title.",
+            "page_hint": (
+                "Posts go live only when content clearly matches RankJee topics (home tutors/tutoring, online exams or mock tests, "
+                "courses, digital marketing, SEO/local SEO, Meta/Google ads, email marketing, or closely related wording). "
+                "Otherwise your draft is saved pending — edit and add a phrase, or ask staff to publish from Django admin. "
+                "Leave slug blank to auto-generate."
+            ),
             "submit_label": "Publish",
         },
     )
@@ -811,12 +845,12 @@ def blog_post_edit(request, slug):
         form = VipBlogPostForm(request.POST, instance=post)
         if form.is_valid():
             obj = form.save(commit=False)
+            topic_gate = _blog_topic_gate_applies(request)
             # Preserve authorship; only owner/staff can reach here anyway.
             if not obj.author_id:
                 obj.author = request.user
-            obj.save()
-            messages.success(request, f"Updated: {obj.title}")
-            return redirect("blog:detail", slug=obj.slug)
+            obj.save(apply_blog_niche_gate=topic_gate)
+            return _dashboard_blog_redirect_after_save(request, obj, niche_gate_active=topic_gate)
     else:
         form = VipBlogPostForm(instance=post)
 
@@ -827,7 +861,10 @@ def blog_post_edit(request, slug):
             "form": form,
             "seo_title": f"Edit blog post — {post.title}",
             "page_title": "Edit blog post",
-            "page_hint": "Only you (the author) can edit this post.",
+            "page_hint": (
+                "Only you (the author) or staff can edit this post. "
+                "If the post is pending, add an approved topic phrase (home tutors, exams, courses, SEO/ads, …) anywhere in title, excerpt, body, or SEO fields to publish."
+            ),
             "submit_label": "Save changes",
         },
     )

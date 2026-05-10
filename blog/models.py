@@ -352,6 +352,19 @@ class BlogPost(models.Model):
             self.meta_title = (self.title or "")[:220]
         if not self.meta_description or not self.meta_description.strip():
             self.meta_description = (self.excerpt or self._auto_excerpt_from_body())[:320]
-        if not self.published_at:
+
+        apply_blog_niche_gate = kwargs.pop("apply_blog_niche_gate", False)
+
+        if apply_blog_niche_gate:
+            from blog.blog_niche import blog_post_matches_allowed_topics
+
+            ok, _detail = blog_post_matches_allowed_topics(self)
+            if ok:
+                if self.published_at is None:
+                    self.published_at = timezone.now()
+            else:
+                self.published_at = None
+        elif self.published_at is None:
             self.published_at = timezone.now()
+
         super().save(*args, **kwargs)
