@@ -354,6 +354,8 @@ class BlogPost(models.Model):
             self.meta_description = (self.excerpt or self._auto_excerpt_from_body())[:320]
 
         apply_blog_niche_gate = kwargs.pop("apply_blog_niche_gate", False)
+        # Django admin (/sd/) passes skip_auto_publish=True so clearing "Published at" stays unpublished.
+        skip_auto_publish = kwargs.pop("skip_auto_publish", False)
 
         if apply_blog_niche_gate:
             from blog.blog_niche import blog_post_matches_allowed_topics
@@ -364,7 +366,7 @@ class BlogPost(models.Model):
                     self.published_at = timezone.now()
             else:
                 self.published_at = None
-        elif self.published_at is None:
+        elif not skip_auto_publish and self.published_at is None:
             self.published_at = timezone.now()
 
         super().save(*args, **kwargs)
