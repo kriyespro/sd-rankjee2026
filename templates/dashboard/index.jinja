@@ -6,7 +6,7 @@
 
     {% if server_buy_success %}
     <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900" role="status">
-        Your server payment was recorded. We will contact you about provisioning for the domain you entered.
+        {{ server_buy_success_message }}
     </div>
     {% endif %}
 

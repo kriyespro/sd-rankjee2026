@@ -93,3 +93,24 @@ class StudentServerOrder(models.Model):
 
     def __str__(self):
         return f"Server order {self.razorpay_order_id} — {self.status} ₹{self.total_inr}"
+
+
+class ServerBuyMessageConfig(models.Model):
+    """Singleton-like editable content shown after successful server buy payment."""
+
+    key = models.CharField(max_length=32, unique=True, default="default", editable=False)
+    success_message = models.TextField(
+        default=(
+            "Your server payment was recorded successfully. "
+            "Our team will contact you shortly for provisioning."
+        ),
+        help_text="Shown to students on dashboard after server buy payment success.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Server buy success message"
+        verbose_name_plural = "Server buy success messages"
+
+    def __str__(self):
+        return f"Server buy success message ({self.key})"

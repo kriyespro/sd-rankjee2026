@@ -1807,6 +1807,20 @@ def index(request):
     else:
         role_stat_cards.append({'label': 'Free Test Uses', 'value': str(request.user.trial_tests_left)})
 
+    server_buy_success = role == 'STUDENT' and request.GET.get('server_paid') == '1'
+    server_buy_success_message = (
+        "Your server payment was recorded. We will contact you about provisioning for the domain you entered."
+    )
+    if server_buy_success:
+        try:
+            from server_buy.models import ServerBuyMessageConfig
+
+            msg_cfg = ServerBuyMessageConfig.objects.first()
+            if msg_cfg and msg_cfg.success_message:
+                server_buy_success_message = msg_cfg.success_message
+        except Exception:
+            logger.exception("Failed to load server-buy success message config")
+
     return render(request, 'dashboard/index.jinja', {
         'user': request.user,
         'user_role': role,
@@ -1849,7 +1863,8 @@ def index(request):
         'selected_path': selected_path,
         'top_users': top_users,
         'next_badge_hint': next_badge_hint,
-        'server_buy_success': role == 'STUDENT' and request.GET.get('server_paid') == '1',
+        'server_buy_success': server_buy_success,
+        'server_buy_success_message': server_buy_success_message,
     })
 
 

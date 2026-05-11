@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import ServerPackage, StudentServerOrder
+from .models import ServerBuyMessageConfig, ServerPackage, StudentServerOrder
 
 
 @admin.register(ServerPackage)
@@ -78,3 +78,33 @@ class StudentServerOrderAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "pricing_snapshot")
     raw_id_fields = ("user",)
     autocomplete_fields = ("package",)
+
+
+@admin.register(ServerBuyMessageConfig)
+class ServerBuyMessageConfigAdmin(admin.ModelAdmin):
+    list_display = ("key", "updated_at")
+    readonly_fields = ("key", "updated_at")
+    fieldsets = (
+        (
+            "Success message editor",
+            {
+                "fields": ("success_message",),
+                "description": (
+                    "This custom text appears on student dashboard after successful "
+                    "server-buy payment."
+                ),
+            },
+        ),
+        (
+            "System",
+            {
+                "classes": ("collapse",),
+                "fields": ("key", "updated_at"),
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        if not request.user.is_superuser:
+            return False
+        return not ServerBuyMessageConfig.objects.exists()
