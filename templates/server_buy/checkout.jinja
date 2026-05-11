@@ -183,15 +183,19 @@ async function verifyServerBuy(payload) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': csrftoken || '',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
         },
         credentials: 'same-origin',
         body: body,
     });
+    const verifyRaw = await verifyResp.text();
     let verifyData;
     try {
-        verifyData = await verifyResp.json();
+        verifyData = JSON.parse(verifyRaw);
     } catch (e) {
-        alert('Could not read server response after payment. Contact support if money was debited.');
+        console.error('server-buy verify non-JSON', verifyResp.status, verifyRaw.slice(0, 800));
+        alert('Could not read server response after payment (HTTP ' + verifyResp.status + '). Contact support if money was debited.');
         return;
     }
     if (verifyData.status === 'success') {
@@ -219,15 +223,25 @@ document.body.addEventListener('click', async function (ev) {
     const csrftoken = getCookie('csrftoken');
     const response = await fetch('{{ create_order_url }}', {
         method: 'POST',
-        headers: { 'X-CSRFToken': csrftoken || '' },
+        headers: {
+            'X-CSRFToken': csrftoken || '',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
         credentials: 'same-origin',
         body: fd,
     });
+    const raw = await response.text();
+    const ct = (response.headers.get('content-type') || '').toLowerCase();
     let data;
     try {
-        data = await response.json();
+        data = JSON.parse(raw);
     } catch (e) {
-        alert('Unexpected response when creating order.');
+        const hint = response.status === 403
+            ? ' Often a CSRF cookie issue on HTTPS: set CSRF_TRUSTED_ORIGINS in Django to your site origin (e.g. https://yourdomain.com).'
+            : '';
+        console.error('server-buy create_order non-JSON', response.status, raw.slice(0, 800));
+        alert('Could not start payment (HTTP ' + response.status + '). The server did not return JSON.' + hint + ' Check the browser console for details.');
         return;
     }
     if (data.error) {

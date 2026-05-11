@@ -1,4 +1,6 @@
+import logging
 import uuid
+from decimal import Decimal
 
 import razorpay.errors as rz_errors
 from django.conf import settings
@@ -16,6 +18,8 @@ from .forms import StudentServerBuyForm
 from .models import ServerPackage, StudentServerOrder
 from .services import quote_for_package_id
 
+logger = logging.getLogger(__name__)
+
 
 def _is_student(user) -> bool:
     return getattr(user, "role", None) == CustomUser.Role.STUDENT
@@ -27,6 +31,30 @@ def _student_only(request):
     if not _is_student(request.user):
         return HttpResponseForbidden("This page is only for student accounts.")
     return None
+
+
+def _student_only_api(request):
+    """For fetch/JSON endpoints: never return HTML redirects or plain 403 bodies."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Not authenticated. Refresh the page and sign in again."}, status=401)
+    if not _is_student(request.user):
+        return JsonResponse({"error": "This checkout is only for student accounts."}, status=403)
+    return None
+
+
+def _pricing_snapshot_json_safe(quote: dict) -> dict:
+    """JSONField-safe copy (Decimals and similar types)."""
+
+    def _conv(o):
+        if isinstance(o, Decimal):
+            return str(o)
+        if isinstance(o, dict):
+            return {k: _conv(v) for k, v in o.items()}
+        if isinstance(o, list):
+            return [_conv(v) for v in o]
+        return o
+
+    return _conv(quote)
 
 
 def _quote_from_request(request):
@@ -117,13 +145,24 @@ def quote_partial(request):
     )
 
 
-@login_required
 @require_POST
 def create_order(request):
-    gate = _student_only(request)
+    # Do not use @login_required here — it redirects to HTML login and breaks fetch().json().
+    gate = _student_only_api(request)
     if gate:
-        return JsonResponse({"error": "Forbidden"}, status=403)
+        return gate
 
+    try:
+        return _create_order_body(request)
+    except Exception as exc:
+        logger.exception("server_buy create_order unexpected error: %s", exc)
+        return JsonResponse(
+            {"error": "Server error while creating the payment order. Please try again."},
+            status=500,
+        )
+
+
+def _create_order_body(request):
     form = StudentServerBuyForm(request.POST)
     if not form.is_valid():
         return JsonResponse({"error": form.errors.as_text()}, status=400)
@@ -145,17 +184,25 @@ def create_order(request):
 
     domain_name = form.cleaned_data["domain_name"].strip()
     desc = f"{quote['title']} — {domain_name}"
+    snapshot = _pricing_snapshot_json_safe(quote)
 
     if razorpay_dummy_mode():
         rid = make_dummy_order_id()
-        StudentServerOrder.objects.create(
-            user=request.user,
-            domain_name=domain_name,
-            package=pkg,
-            total_inr=total_inr,
-            pricing_snapshot=quote,
-            razorpay_order_id=rid,
-        )
+        try:
+            StudentServerOrder.objects.create(
+                user=request.user,
+                domain_name=domain_name,
+                package=pkg,
+                total_inr=total_inr,
+                pricing_snapshot=snapshot,
+                razorpay_order_id=rid,
+            )
+        except Exception as exc:
+            logger.exception("server_buy create_order DB error (dummy): %s", exc)
+            return JsonResponse(
+                {"error": "Could not save your order. Try again or contact support."},
+                status=500,
+            )
         return JsonResponse(
             {
                 "checkout_mode": "dummy",
@@ -195,14 +242,21 @@ def create_order(request):
     except (rz_errors.GatewayError, rz_errors.ServerError) as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-    StudentServerOrder.objects.create(
-        user=request.user,
-        domain_name=domain_name,
-        package=pkg,
-        total_inr=total_inr,
-        pricing_snapshot=quote,
-        razorpay_order_id=razorpay_order["id"],
-    )
+    try:
+        StudentServerOrder.objects.create(
+            user=request.user,
+            domain_name=domain_name,
+            package=pkg,
+            total_inr=total_inr,
+            pricing_snapshot=snapshot,
+            razorpay_order_id=razorpay_order["id"],
+        )
+    except Exception as exc:
+        logger.exception("server_buy create_order DB error (live): %s", exc)
+        return JsonResponse(
+            {"error": "Could not save your order. Try again or contact support."},
+            status=500,
+        )
     return JsonResponse(
         {
             "checkout_mode": "live",
@@ -218,12 +272,11 @@ def create_order(request):
     )
 
 
-@login_required
 @require_POST
 def verify_payment(request):
-    gate = _student_only(request)
+    gate = _student_only_api(request)
     if gate:
-        return JsonResponse({"status": "failed", "error": "Forbidden"}, status=403)
+        return gate
 
     params_dict = {
         "razorpay_order_id": request.POST.get("razorpay_order_id"),
