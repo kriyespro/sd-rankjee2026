@@ -1,6 +1,11 @@
 from django.contrib import admin
 
-from .models import ServerBuyMessageConfig, ServerPackage, StudentServerOrder
+from .models import (
+    ServerBuyMessageConfig,
+    ServerOrderDetail,
+    ServerPackage,
+    StudentServerOrder,
+)
 
 
 @admin.register(ServerPackage)
@@ -78,6 +83,67 @@ class StudentServerOrderAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at", "pricing_snapshot")
     raw_id_fields = ("user",)
     autocomplete_fields = ("package",)
+
+
+@admin.register(ServerOrderDetail)
+class ServerOrderDetailAdmin(admin.ModelAdmin):
+    list_display = ("id", "order", "order_user", "order_status", "updated_at")
+    search_fields = (
+        "order__razorpay_order_id",
+        "order__domain_name",
+        "order__user__username",
+        "order__user__email",
+        "server_ip",
+        "panel_url",
+    )
+    autocomplete_fields = ("order",)
+    readonly_fields = ("updated_at",)
+    fieldsets = (
+        (
+            "Order link",
+            {
+                "fields": ("order",),
+            },
+        ),
+        (
+            "Student-visible status",
+            {
+                "fields": ("status_message",),
+                "description": (
+                    "If empty, student sees: "
+                    "'Your order is in process. Please wait up to 4 hours.'"
+                ),
+            },
+        ),
+        (
+            "Server details",
+            {
+                "fields": (
+                    "server_ip",
+                    "panel_url",
+                    "login_username",
+                    "login_password",
+                    "nameservers",
+                    "extra_details",
+                ),
+            },
+        ),
+        (
+            "System",
+            {
+                "classes": ("collapse",),
+                "fields": ("updated_at",),
+            },
+        ),
+    )
+
+    @admin.display(description="Student")
+    def order_user(self, obj):
+        return obj.order.user
+
+    @admin.display(description="Order status")
+    def order_status(self, obj):
+        return obj.order.status
 
 
 @admin.register(ServerBuyMessageConfig)

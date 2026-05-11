@@ -9,6 +9,77 @@
         {{ server_buy_success_message }}
     </div>
     {% endif %}
+    {% if user_role == 'STUDENT' and server_order_latest %}
+    <section class="rounded-xl border border-indigo-200 bg-indigo-50/70 p-4 shadow-sm md:p-5" aria-label="Server order details">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-[10px] font-black uppercase tracking-wider text-indigo-700">Server order</p>
+                <h2 class="text-base font-black tracking-tight text-slate-900 md:text-lg">Your latest server status</h2>
+            </div>
+            <span class="inline-flex w-fit rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700">
+                {{ server_order_latest.status|lower }}
+            </span>
+        </div>
+        <div class="mt-3 grid gap-3 md:grid-cols-2">
+            <div class="rounded-lg border border-indigo-100 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Order summary</p>
+                <p class="mt-1 text-sm font-bold text-slate-900">Domain: {{ server_order_latest.domain_name }}</p>
+                {% if server_order_latest.package %}
+                <p class="mt-1 text-xs font-semibold text-slate-700">{{ server_order_latest.package.title }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs font-semibold text-slate-600">Amount: ₹{{ server_order_latest.total_inr }}</p>
+            </div>
+            <div class="rounded-lg border border-indigo-100 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Status message</p>
+                <p class="mt-1 text-sm font-semibold text-slate-800">
+                    {{ server_order_detail.status_message if server_order_detail and server_order_detail.status_message else server_order_default_message }}
+                </p>
+            </div>
+        </div>
+        {% if server_order_detail %}
+        <div class="mt-3 grid gap-3 md:grid-cols-2">
+            {% if server_order_detail.server_ip %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Server IP</p>
+                <p class="mt-1 text-sm font-bold text-slate-900">{{ server_order_detail.server_ip }}</p>
+            </div>
+            {% endif %}
+            {% if server_order_detail.panel_url %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Panel URL</p>
+                <a href="{{ server_order_detail.panel_url }}" target="_blank" rel="noopener" class="mt-1 inline-flex text-sm font-bold text-indigo-700 underline hover:text-indigo-800">
+                    Open panel
+                </a>
+            </div>
+            {% endif %}
+            {% if server_order_detail.login_username %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Login username</p>
+                <p class="mt-1 text-sm font-bold text-slate-900">{{ server_order_detail.login_username }}</p>
+            </div>
+            {% endif %}
+            {% if server_order_detail.login_password %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Login password</p>
+                <p class="mt-1 text-sm font-bold text-slate-900">{{ server_order_detail.login_password }}</p>
+            </div>
+            {% endif %}
+            {% if server_order_detail.nameservers %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3 md:col-span-2">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Nameservers</p>
+                <p class="mt-1 whitespace-pre-line text-sm font-semibold text-slate-800">{{ server_order_detail.nameservers }}</p>
+            </div>
+            {% endif %}
+            {% if server_order_detail.extra_details %}
+            <div class="rounded-lg border border-slate-200 bg-white p-3 md:col-span-2">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Extra details</p>
+                <p class="mt-1 whitespace-pre-line text-sm font-semibold text-slate-800">{{ server_order_detail.extra_details }}</p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
 
     {# Overview canvas: identity + KPIs + shortcuts in one scannable panel #}
     <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5" aria-label="Dashboard overview">

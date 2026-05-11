@@ -95,6 +95,47 @@ class StudentServerOrder(models.Model):
         return f"Server order {self.razorpay_order_id} — {self.status} ₹{self.total_inr}"
 
 
+class ServerOrderDetail(models.Model):
+    """
+    Superuser-maintained delivery details for a placed server order.
+    Students can view these fields on their dashboard.
+    """
+
+    order = models.OneToOneField(
+        StudentServerOrder,
+        on_delete=models.CASCADE,
+        related_name="delivery_detail",
+    )
+    status_message = models.TextField(
+        blank=True,
+        help_text=(
+            "Student-facing status note for this order. "
+            "If blank, default processing message is shown."
+        ),
+    )
+    server_ip = models.CharField(max_length=120, blank=True)
+    panel_url = models.URLField(blank=True)
+    login_username = models.CharField(max_length=120, blank=True)
+    login_password = models.CharField(max_length=120, blank=True)
+    nameservers = models.TextField(
+        blank=True,
+        help_text="Optional: one per line or comma-separated.",
+    )
+    extra_details = models.TextField(
+        blank=True,
+        help_text="Any additional setup notes for the student.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-updated_at",)
+        verbose_name = "Server order detail"
+        verbose_name_plural = "Server order details"
+
+    def __str__(self):
+        return f"Details for order {self.order_id}"
+
+
 class ServerBuyMessageConfig(models.Model):
     """Singleton-like editable content shown after successful server buy payment."""
 

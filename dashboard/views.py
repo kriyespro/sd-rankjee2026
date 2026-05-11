@@ -1680,6 +1680,23 @@ def index(request):
 
     user_certificates = request.user.certificates.select_related('skill').order_by('-issued_at')
 
+    server_order_latest = None
+    server_order_detail = None
+    server_order_default_message = "Your order is in process. Please wait up to 4 hours."
+    try:
+        from server_buy.models import StudentServerOrder
+
+        server_order_latest = (
+            StudentServerOrder.objects.filter(user=request.user)
+            .select_related("package")
+            .order_by("-created_at")
+            .first()
+        )
+        if server_order_latest:
+            server_order_detail = getattr(server_order_latest, "delivery_detail", None)
+    except Exception:
+        logger.exception("Failed to load server-buy order details for student dashboard")
+
     xp_rank_india = User.objects.filter(xp_points__gt=request.user.xp_points).count() + 1
 
     from hometutor.models import DemoRequest, TutorProfile, TutorEngagement
@@ -1857,6 +1874,9 @@ def index(request):
         'streak_days': request.user.streak_days,
         'user_badges': user_badges,
         'user_certificates': user_certificates, # Added
+        'server_order_latest': server_order_latest,
+        'server_order_detail': server_order_detail,
+        'server_order_default_message': server_order_default_message,
         'unread_notifications': unread_notifications,
         'learning_path': learning_path,
         'all_paths': all_paths,
