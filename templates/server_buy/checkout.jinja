@@ -1,0 +1,273 @@
+{% extends "base.jinja" %}
+{% set admin_pkg = admin_packages_url if admin_packages_url is defined else '/sd/server_buy/serverpackage/' %}
+{% block title %}Dedicated server checkout — RankJee{% endblock %}
+
+{% block content %}
+<div class="relative min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 via-white to-indigo-50/30 pb-40 pt-6 sm:pb-36 sm:pt-10">
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-violet-400/10 blur-3xl"></div>
+    </div>
+
+    <div class="relative mx-auto max-w-3xl px-4 sm:px-6">
+        {% if show_admin_hint is defined and show_admin_hint %}
+        <div class="mb-6 flex flex-col gap-2 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-900/5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-2">
+                <span class="mt-0.5 text-base" aria-hidden="true">⚙️</span>
+                <div>
+                    <p class="font-bold">Superuser — manage presets</p>
+                    <p class="mt-0.5 text-xs leading-relaxed text-amber-900/85">
+                        Django Admin (<code class="rounded bg-white/80 px-1 py-0.5 text-[11px]">/sd/</code>) → <strong>Server buy</strong> →
+                        <a href="{{ admin_pkg }}" class="font-semibold text-amber-900 underline decoration-amber-400 underline-offset-2 hover:text-amber-950">Server packages</a>
+                        — one form per row (RAM, CPU, SSD, location, duration, fixed price). Orders:
+                        <a href="{{ admin_orders_url }}" class="font-semibold underline decoration-amber-400 underline-offset-2 hover:text-amber-950">Student server orders</a>.
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <header class="text-center sm:text-left">
+            <div class="inline-flex items-center gap-2 rounded-full border border-indigo-200/80 bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-700 shadow-sm backdrop-blur-sm">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" aria-hidden="true"></span>
+                Students · dedicated server
+            </div>
+            <h1 class="mt-4 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Choose your server</h1>
+            <p class="mx-auto mt-2 max-w-xl text-sm leading-relaxed text-slate-600 sm:mx-0">
+                Each option is a complete setup with a <strong class="text-slate-800">fixed price</strong>. Select one, enter your domain, then pay with Razorpay.
+            </p>
+        </header>
+
+        {% if pricing_missing %}
+        {% if show_admin_hint is defined and show_admin_hint %}
+        <div class="mb-6 rounded-2xl border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-900/5">
+            <p class="font-bold">Add your first package</p>
+            <p class="mt-1 text-xs leading-relaxed">
+                Open <a href="{{ admin_pkg }}" class="font-semibold underline">Server packages</a> in admin and click <strong>Add server package</strong>.
+            </p>
+        </div>
+        {% endif %}
+        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50/95 p-6 text-amber-950 shadow-sm ring-1 ring-amber-900/5">
+            <p class="text-base font-bold">No server packages yet</p>
+            <p class="mt-2 text-sm leading-relaxed">
+                A superuser should create presets in
+                <a href="{{ admin_pkg }}" class="font-semibold underline decoration-amber-500">Server packages</a>
+                (<code class="rounded bg-white/70 px-1.5 py-0.5 text-xs">/sd/</code>). Each row is one sellable setup with a fixed total price.
+            </p>
+        </div>
+        {% else %}
+
+        {% if payment_dummy %}
+        <div class="mt-6 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-center text-xs font-semibold text-amber-900 shadow-sm">
+            <strong>Test mode</strong> — Razorpay checkout is simulated locally (no live keys required).
+        </div>
+        {% endif %}
+
+        <form id="server-buy-form" class="mt-10 space-y-8" novalidate>
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+
+            <section class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/5 ring-1 ring-slate-900/5 sm:p-6">
+                <div class="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-black uppercase tracking-wider text-slate-900">Domain</h2>
+                        <p class="text-xs text-slate-500">Used for DNS / SSL provisioning after payment.</p>
+                    </div>
+                </div>
+                <label for="id_domain_name" class="mt-4 block text-[11px] font-bold uppercase tracking-wider text-slate-500">Domain name</label>
+                <input type="text" name="domain_name" id="id_domain_name" required maxlength="255" autocomplete="off" placeholder="yourdomain.com"
+                       class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 text-sm font-medium text-slate-900 placeholder:text-slate-400 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20" />
+            </section>
+
+            <section class="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-md shadow-slate-900/5 ring-1 ring-slate-900/5 sm:p-6">
+                <div class="flex flex-col gap-1 border-b border-slate-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg shadow-slate-900/20">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-sm font-black uppercase tracking-wider text-slate-900">Server setup</h2>
+                            <p class="text-xs text-slate-500">Presets configured by your team — each has a fixed total.</p>
+                        </div>
+                    </div>
+                </div>
+                <fieldset class="mt-5 space-y-3">
+                    <legend class="sr-only">Select a package</legend>
+                    {% for p in packages %}
+                    <label class="relative flex cursor-pointer gap-4 rounded-2xl border-2 border-slate-200/90 bg-slate-50/40 p-4 transition hover:border-indigo-300 hover:bg-white has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50 has-[:checked]:shadow-md has-[:checked]:shadow-indigo-500/10">
+                        <input type="radio" name="package" value="{{ p.id }}" class="mt-1 h-4 w-4 shrink-0 border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                               {% if loop.index0 == 0 %}checked{% endif %} />
+                        <span class="min-w-0 flex-1">
+                            <span class="flex flex-wrap items-baseline justify-between gap-2">
+                                <span class="text-sm font-black text-slate-900">{{ p.title }}</span>
+                                <span class="shrink-0 rounded-lg bg-slate-900 px-2 py-0.5 text-xs font-black tabular-nums text-white">₹{{ p.price_inr }}</span>
+                            </span>
+                            <span class="mt-1.5 block text-xs leading-relaxed text-slate-600">
+                                <span class="font-semibold text-slate-700">{{ p.ram_spec }}</span> RAM ·
+                                <span class="font-semibold text-slate-700">{{ p.cpu_spec }}</span> ·
+                                <span class="font-semibold text-slate-700">{{ p.ssd_spec }}</span> ·
+                                {{ p.get_location_display() }} ·
+                                {{ p.get_duration_months_display() }}
+                            </span>
+                        </span>
+                    </label>
+                    {% endfor %}
+                </fieldset>
+            </section>
+        </form>
+
+        {# Quote lives outside the form so hx-include="#server-buy-form" can serialize radios without nesting the request element inside the included form (HTMX quirk). #}
+        <section aria-label="Price estimate" class="mt-8">
+            <div class="mb-2 flex items-center justify-between px-1">
+                <h2 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">Summary</h2>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Live</span>
+            </div>
+            <div
+                id="server-quote"
+                hx-get="{{ quote_url }}"
+                hx-include="#server-buy-form"
+                hx-trigger="load delay:80ms, change from:input[name='package'] delay:50ms"
+                hx-target="this"
+                hx-swap="innerHTML"
+            >
+                <div class="flex items-center gap-3 rounded-2xl border border-slate-200/80 bg-white/80 px-5 py-6 text-sm text-slate-500 shadow-sm ring-1 ring-slate-900/5">
+                    <svg class="h-5 w-5 shrink-0 animate-spin text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="font-medium text-slate-600">Loading your selection…</span>
+                </div>
+            </div>
+        </section>
+
+        <div id="server-buy-footer-price" class="pointer-events-auto fixed bottom-0 left-0 right-0 z-[60] border-t border-slate-200/90 bg-white/90 shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.15)] backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
+            <div class="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-4">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Pay today</p>
+                    <p class="text-2xl font-black tabular-nums text-slate-300 sm:text-3xl">…</p>
+                    <p class="text-xs text-slate-500">Loading price…</p>
+                </div>
+                <div class="flex w-full shrink-0 sm:w-auto sm:min-w-[200px]">
+                    <button type="button" id="server-pay-btn" form="server-buy-form" disabled
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3.5 text-sm font-black uppercase tracking-wider text-white opacity-40 shadow-lg shadow-indigo-500/25">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Pay with Razorpay
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if not pricing_missing %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie && document.cookie !== '') {
+        document.cookie.split(';').forEach(function (c) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) v = decodeURIComponent(c.slice(name.length + 1));
+        });
+    }
+    return v;
+}
+async function verifyServerBuy(payload) {
+    const csrftoken = getCookie('csrftoken');
+    const body = new URLSearchParams(payload);
+    const verifyResp = await fetch('{{ verify_url }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken || '',
+        },
+        credentials: 'same-origin',
+        body: body,
+    });
+    let verifyData;
+    try {
+        verifyData = await verifyResp.json();
+    } catch (e) {
+        alert('Could not read server response after payment. Contact support if money was debited.');
+        return;
+    }
+    if (verifyData.status === 'success') {
+        window.location.href = '{{ success_url }}';
+    } else {
+        alert(verifyData.error || 'Payment verification failed');
+    }
+}
+document.body.addEventListener('click', async function (ev) {
+    const btn = ev.target.closest('#server-pay-btn');
+    if (!btn || btn.disabled) return;
+    const form = document.getElementById('server-buy-form');
+    if (!form) return;
+    const fd = new FormData(form);
+    const domain = (fd.get('domain_name') || '').toString().trim();
+    if (!domain) {
+        alert('Please enter your domain name.');
+        return;
+    }
+    const pkg = fd.get('package');
+    if (!pkg) {
+        alert('Please select a server setup.');
+        return;
+    }
+    const csrftoken = getCookie('csrftoken');
+    const response = await fetch('{{ create_order_url }}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrftoken || '' },
+        credentials: 'same-origin',
+        body: fd,
+    });
+    let data;
+    try {
+        data = await response.json();
+    } catch (e) {
+        alert('Unexpected response when creating order.');
+        return;
+    }
+    if (data.error) {
+        alert('Payment error: ' + data.error);
+        return;
+    }
+    if (data.checkout_mode === 'dummy') {
+        if (!confirm('Simulate successful payment? (local dummy mode)')) return;
+        await verifyServerBuy({
+            razorpay_order_id: data.order_id,
+            razorpay_payment_id: 'pay_dummy_' + Date.now(),
+            razorpay_signature: 'dummy',
+        });
+        return;
+    }
+    const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: 'INR',
+        name: data.name,
+        description: data.description,
+        order_id: data.order_id,
+        handler: async function (response) {
+            await verifyServerBuy({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+            });
+        },
+        modal: { ondismiss: function () {} },
+        prefill: { name: data.user_name, email: data.user_email },
+        theme: { color: '#4F46E5' },
+    };
+    const rzp = new Razorpay(options);
+    rzp.on('payment.failed', function (resp) {
+        const desc = (resp.error && resp.error.description) ? resp.error.description : 'Payment failed';
+        alert(desc);
+    });
+    rzp.open();
+});
+</script>
+{% endif %}
+{% endblock %}

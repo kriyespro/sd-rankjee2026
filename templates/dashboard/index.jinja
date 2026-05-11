@@ -4,6 +4,12 @@
 {% block content %}
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-8 pt-6 sm:px-6 md:gap-7 md:pb-10 md:pt-7">
 
+    {% if server_buy_success %}
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900" role="status">
+        Your server payment was recorded. We will contact you about provisioning for the domain you entered.
+    </div>
+    {% endif %}
+
     {# Overview canvas: identity + KPIs + shortcuts in one scannable panel #}
     <section class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm md:p-5" aria-label="Dashboard overview">
         <div class="flex flex-col gap-3 border-b border-slate-100 pb-3 sm:flex-row sm:items-start sm:justify-between">
@@ -20,6 +26,7 @@
             <div class="flex shrink-0 flex-wrap items-center gap-2">
                 {% if user_role == 'STUDENT' %}
                 <a href="{{ url('dashboard:blog_post_create') }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-800 hover:bg-emerald-100">Add post</a>
+                <a href="{{ url('server_buy:checkout') }}" class="inline-flex items-center justify-center rounded-lg border border-violet-200 bg-violet-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-violet-800 hover:bg-violet-100">Server buy now</a>
                 {% endif %}
                 <a href="{{ url('dashboard:daily_class_log') }}" class="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-800 hover:bg-indigo-100">Class log</a>
                 <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">

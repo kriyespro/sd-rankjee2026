@@ -1849,6 +1849,7 @@ def index(request):
         'selected_path': selected_path,
         'top_users': top_users,
         'next_badge_hint': next_badge_hint,
+        'server_buy_success': role == 'STUDENT' and request.GET.get('server_paid') == '1',
     })
 
 

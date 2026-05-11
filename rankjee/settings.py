@@ -153,6 +153,7 @@ INSTALLED_APPS = [
     'payments',
     'hometutor',
     'hometutor_payments',
+    'server_buy',
     'django_celery_beat',
     'axes',
 ]

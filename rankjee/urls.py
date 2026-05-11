@@ -65,6 +65,7 @@ urlpatterns = [
     path('blog/', include('blog.urls')),
     path('study/', include('tutor_study.urls')),
     path('payments/', include('payments.urls')),
+    path('server-buy/', include('server_buy.urls')),
     path('hometutor/', include('hometutor.urls')),
     path('hometutor/payments/', include('hometutor_payments.urls')),
     path('sw.js', core_views.service_worker, name='service_worker'),
