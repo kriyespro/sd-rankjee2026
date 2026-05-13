@@ -2,8 +2,27 @@
 {% set admin_pkg = admin_packages_url if admin_packages_url is defined else '/sd/server_buy/serverpackage/' %}
 {% block title %}Dedicated server checkout — RankJee{% endblock %}
 
+{% block extra_head %}
+<style>
+  /* Mobile: sit above app tab bar (z-50). Compiled Tailwind may omit z-[60] / arbitrary bottom — use explicit rules. */
+  #server-buy-footer-price {
+    z-index: 55;
+    bottom: 0;
+  }
+  @media (max-width: 767.98px) {
+    #server-buy-footer-price {
+      bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    }
+    .server-buy-layout {
+      padding-bottom: calc(14rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="relative min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 via-white to-indigo-50/30 pb-40 pt-6 sm:pb-36 sm:pt-10">
+<div class="server-buy-layout relative min-h-[calc(100vh-4rem)] bg-gradient-to-b from-slate-50 via-white to-indigo-50/30 pb-32 pt-6 md:pb-32 md:pt-10">
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl"></div>
         <div class="absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-violet-400/10 blur-3xl"></div>
@@ -142,7 +161,7 @@
             </div>
         </section>
 
-        <div id="server-buy-footer-price" class="pointer-events-auto fixed bottom-0 left-0 right-0 z-[60] border-t border-slate-200/90 bg-white/90 shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.15)] backdrop-blur-md supports-[backdrop-filter]:bg-white/75">
+        <div id="server-buy-footer-price" class="pointer-events-auto fixed left-0 right-0 border-t border-slate-200/90 bg-white/95 shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.15)] backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
             <div class="mx-auto flex max-w-3xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:py-4">
                 <div class="min-w-0 flex-1">
                     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Pay today</p>
