@@ -1,165 +1,50 @@
 {% extends "base.jinja" %}
 {% block title %}{{ seo_title if seo_title is defined and seo_title else course.title + ' - RankJee' }}{% endblock %}
+
 {% block extra_head %}
 <style>
-    .course-content {
-        font-size: 0.95rem;
-    }
-    .course-content h1, .course-content h2, .course-content h3 {
-        color: #0f172a;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-        margin-top: 1.35rem;
-        margin-bottom: 0.5rem;
-        line-height: 1.35;
-    }
-    .course-content h1 {
-        font-size: 1.2rem;
-        margin-top: 1.5rem;
-    }
-    .course-content h2 {
-        font-size: 1.1rem;
-        margin-top: 1.3rem;
-    }
-    .course-content h3 { font-size: 1rem; }
-    .course-content p {
-        margin: 0.55rem 0;
-        color: #334155;
-    }
-    .course-content ul, .course-content ol {
-        margin: 0.6rem 0 0.9rem;
-        padding-left: 1.25rem;
-    }
-    .course-content ul { list-style: disc; }
-    .course-content ol { list-style: decimal; }
-    .course-content li {
-        margin: 0.28rem 0;
-        color: #334155;
-    }
-    .course-content strong { color: #0f172a; }
-    .course-content a {
-        color: #1d4ed8;
-        font-weight: 600;
-        text-decoration: underline;
-    }
-    .course-content hr {
-        border: 0;
-        border-top: 1px solid #e2e8f0;
-        margin: 1.15rem 0;
-    }
-    .course-content blockquote {
-        border-left: 3px solid #cbd5e1;
-        padding-left: 0.8rem;
-        color: #475569;
-        margin: 0.75rem 0;
-    }
-    .course-content table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 0.8rem 0;
-        font-size: 0.9rem;
-    }
-    .course-content th,
-    .course-content td {
-        border: 1px solid #e2e8f0;
-        padding: 0.5rem;
-        text-align: left;
-        vertical-align: top;
-    }
-    .course-content th {
-        background: #f8fafc;
-        color: #0f172a;
-        font-weight: 700;
-    }
-    .course-segment-card {
-        border: 1px solid #e2e8f0;
-        background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-        border-radius: 1rem;
-        padding: 1rem;
-        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-    }
-    .course-segment-title {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.45rem;
-        font-size: 0.78rem;
-        font-weight: 900;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #1e293b;
-        background: #e2e8f0;
-        border: 1px solid #cbd5e1;
-        border-radius: 999px;
-        padding: 0.35rem 0.75rem;
-        margin-bottom: 0.7rem;
-    }
-    .course-stat-chip {
-        display: flex;
-        align-items: center;
-        gap: 0.55rem;
-        border: 1px solid #e2e8f0;
-        border-radius: 0.85rem;
-        background: #ffffff;
-        padding: 0.62rem 0.75rem;
-    }
-    .course-stat-icon {
-        width: 1.7rem;
-        height: 1.7rem;
-        border-radius: 999px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.78rem;
-        font-weight: 900;
-        color: #1e293b;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        flex-shrink: 0;
-    }
-    .course-section-divider {
-        border-top: 1px solid #e2e8f0;
-        margin-top: 1.4rem;
-        padding-top: 1.1rem;
-    }
-    .mobile-buybar {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 40;
-        border-top: 1px solid #d1d5db;
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(8px);
-        box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
-    }
-    @media (min-width: 768px) {
-        .course-content {
-            font-size: 1rem;
-        }
-        .course-content h1 { font-size: 1.35rem; }
-        .course-content h2 { font-size: 1.2rem; }
-        .course-segment-card {
-            padding: 1.1rem 1.15rem;
-        }
-    }
-    @media (min-width: 1024px) {
-        .mobile-buybar {
-            display: none;
-        }
-    }
+  /* Course content markdown render */
+  .rj-course-md ul { list-style: disc; padding-left: 1.2rem; }
+  .rj-course-md ol { list-style: decimal; padding-left: 1.2rem; }
+  .rj-course-md li { margin: 0.3rem 0; color: #334155; font-size: 0.9rem; }
+  .rj-course-md p  { margin: 0.5rem 0; color: #334155; font-size: 0.9rem; }
+  .rj-course-md strong { color: #0f172a; }
+
+  /* Curriculum toggle — pure CSS, no plugin needed */
+  .cur-body { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+  .cur-item input:checked ~ .cur-body { max-height: 600px; }
+  .cur-item input:checked ~ label .cur-arrow { transform: rotate(180deg); }
+  .cur-arrow { transition: transform .25s ease; }
+
+  /* Sticky sidebar */
+  @media (min-width: 1024px) {
+    .course-sticky { position: sticky; top: 1.5rem; }
+  }
+
+  /* Mobile buy bar */
+  .mobile-buybar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,.97); backdrop-filter: blur(10px);
+    border-top: 1px solid #e2e8f0;
+    box-shadow: 0 -8px 24px rgba(15,23,42,.1);
+  }
+  @media (min-width: 1024px) { .mobile-buybar { display: none; } }
+
+  /* Hero gradient */
+  .course-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #1e3a5f 100%);
+  }
 </style>
 {% endblock %}
+
 {% block schema %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Course",
   "name": "{{ course.title|e }}",
-  "description": "{{ (course.short_description or course.description or 'RankJee course')|e }}",
-  "provider": {
-    "@type": "Organization",
-    "name": "RankJee"
-  },
+  "description": "{{ (course.short_description or '')|e }}",
+  "provider": {"@type": "Organization", "name": "RankJee"},
   "offers": {
     "@type": "Offer",
     "price": "{{ course.price_inr }}",
@@ -172,316 +57,307 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-5xl mx-auto px-4 py-8 md:py-10">
-    <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
 
-    <article class="mt-4 rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
-        <div class="p-4 md:p-8">
-                {% if course.thumbnail_url %}
-                <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm mb-5 md:mb-6">
-                    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-52 md:h-64 object-cover">
-                </div>
-                {% endif %}
-                <p class="text-[11px] font-black uppercase tracking-[0.2em] text-[#f4711c] mb-2">RankJee course</p>
-                <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">{{ course.title }}</h1>
-                {% if course.short_description %}
-                <p class="text-sm md:text-base text-slate-600 mt-3 leading-relaxed">{{ course.short_description }}</p>
-                {% endif %}
+{# ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ #}
+<div class="course-hero text-white">
+  <div class="max-w-6xl mx-auto px-4 py-10 md:py-14 lg:flex lg:gap-12 lg:items-start">
 
-                <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5 text-sm">
-                    <div class="course-stat-chip">
-                        <span class="course-stat-icon">₹</span>
-                        <div>
-                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Price</p>
-                        {% if referral_price_unlocked %}
-                        <p class="mt-0.5">
-                            <span class="text-xs font-bold text-slate-400 line-through">₹{{ course_list_price_inr }}</span>
-                            <span class="font-black text-emerald-700 ml-1">₹{{ course_checkout_price_inr }}</span>
-                        </p>
-                        <p class="text-[10px] font-bold text-emerald-700 mt-0.5">{{ referral_lead_discount_pct }}% off with referral</p>
-                        {% else %}
-                        <p class="font-black text-emerald-700 mt-0.5">₹{{ course_list_price_inr }}</p>
-                        {% endif %}
-                        </div>
-                    </div>
-                    <div class="course-stat-chip">
-                        <span class="course-stat-icon">W</span>
-                        <div>
-                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Duration</p>
-                        <p class="font-black text-slate-800 mt-0.5">{{ course.duration_weeks }} weeks</p>
-                        </div>
-                    </div>
-                    <div class="course-stat-chip">
-                        <span class="course-stat-icon">L</span>
-                        <div>
-                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Level</p>
-                        <p class="font-black text-slate-800 mt-0.5">{{ course.level or "All levels" }}</p>
-                        </div>
-                    </div>
-                    <div class="course-stat-chip">
-                        <span class="course-stat-icon">O</span>
-                        <div>
-                        <p class="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Format</p>
-                        <p class="font-black text-slate-800 mt-0.5">Online</p>
-                        </div>
-                    </div>
-                </div>
+    {# Left — main content #}
+    <div class="flex-1 min-w-0">
+      <a href="{{ url('core:courses') }}"
+         class="inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 text-xs font-bold mb-5 transition-colors">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+        All courses
+      </a>
 
-                {% if course_description_sections %}
-                <div class="course-section-divider">
-                    <div class="flex items-center justify-between gap-3 mb-4">
-                        <h2 class="text-base md:text-lg font-black text-slate-900">Program details</h2>
-                        <span class="inline-flex items-center rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-700">
-                            Structured curriculum
-                        </span>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
-                        {% for section in course_description_sections %}
-                        <section class="course-segment-card">
-                            <h3 class="course-segment-title">{{ section.title }}</h3>
-                            <div class="course-content leading-relaxed text-slate-700">
-                                {{ section.html }}
-                            </div>
-                        </section>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endif %}
+      <p class="text-xs font-black uppercase tracking-[0.25em] text-[#f4711c] mb-3">
+        {{ course.level or "All levels" }} · {{ course.duration_weeks }} weeks
+      </p>
+      <h1 class="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight leading-tight text-white mb-3">
+        {{ course.title }}
+      </h1>
+      {% if course.short_description %}
+      <p class="text-slate-300 text-base max-w-2xl leading-relaxed mb-5">{{ course.short_description }}</p>
+      {% endif %}
+
+      {# Stats bar #}
+      <div class="flex flex-wrap items-center gap-3 mb-6">
+        <div class="flex items-center gap-1">
+          {% for _ in range(5) %}
+          <svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          {% endfor %}
+          <span class="text-amber-400 font-black text-sm ml-1">5.0</span>
+          <span class="text-slate-400 text-xs ml-1">({{ course.testimonials|length if course.testimonials else 0 }} reviews)</span>
         </div>
-    </article>
+        <span class="text-slate-500 text-xs">·</span>
+        <span class="text-slate-300 text-xs font-semibold">Certificate on completion</span>
+        <span class="text-slate-500 text-xs">·</span>
+        <span class="text-slate-300 text-xs font-semibold">Online · Self-paced</span>
+      </div>
 
-    {# ── CURRICULUM ─────────────────────────────────────────── #}
-    {% if course.curriculum %}
-    <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50/80">
-            <h2 class="text-base font-black text-slate-900">Course curriculum</h2>
-            <span class="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700">
-                {{ course.curriculum|length }} modules
-            </span>
-        </div>
-        <div class="divide-y divide-slate-100" x-data="{open: 0}">
-            {% for mod in course.curriculum %}
-            <div class="px-5 py-0">
-                <button type="button"
-                        @click="open = open === {{ loop.index0 }} ? -1 : {{ loop.index0 }}"
-                        class="flex w-full items-center justify-between gap-3 py-4 text-left">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-[11px] font-black text-white">{{ loop.index }}</span>
-                        <div class="min-w-0">
-                            <p class="text-[10px] font-black uppercase tracking-wider text-indigo-500">{{ mod.module }}</p>
-                            <p class="text-sm font-black text-slate-900 leading-snug">{{ mod.title }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-[10px] font-bold text-slate-500">{{ mod.topics|length }} topics</span>
-                        <svg class="w-4 h-4 text-slate-400 transition-transform duration-200"
-                             :class="open === {{ loop.index0 }} ? 'rotate-180' : ''"
-                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-                </button>
-                <div x-show="open === {{ loop.index0 }}" x-collapse class="pb-4">
-                    <ul class="space-y-1.5 pl-10">
-                        {% for topic in mod.topics %}
-                        <li class="flex items-start gap-2 text-sm text-slate-700">
-                            <svg class="mt-0.5 h-4 w-4 shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            {{ topic }}
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
+      {# What you'll learn — quick bullets from description #}
+      {% if course_description_sections %}
+      <div class="rounded-xl border border-white/10 bg-white/5 p-4 max-w-2xl">
+        <p class="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">What you'll learn</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
+          {% set learn_section = namespace(found=false, lines=[]) %}
+          {% for sec in course_description_sections %}
+            {% if "learn" in sec.title|lower and not learn_section.found %}
+              {% set learn_section.found = true %}
+            {% endif %}
+          {% endfor %}
+          {% if course.curriculum %}
+            {% for mod in course.curriculum[:6] %}
+            <div class="flex items-start gap-2">
+              <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-sm text-slate-200">{{ mod.title }}</span>
             </div>
             {% endfor %}
+          {% endif %}
         </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {# Right — price card (desktop sidebar) #}
+    <div class="hidden lg:block w-80 shrink-0 course-sticky mt-2">
+      {% include "core/partials/_course_buy_card.jinja" %}
+    </div>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════════
+   BODY
+═══════════════════════════════════════════════ #}
+<div class="max-w-6xl mx-auto px-4 py-8 lg:flex lg:gap-12 lg:items-start">
+
+  {# ── Main column ── #}
+  <div class="flex-1 min-w-0 space-y-8">
+
+    {# ── 1. Program Details ── #}
+    {% if course_description_sections %}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+        <h2 class="text-base font-black text-slate-900">Program details</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
+        {% for section in course_description_sections %}
+        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
+          <p class="text-[10px] font-black uppercase tracking-wider text-indigo-600 mb-2">{{ section.title }}</p>
+          <div class="rj-course-md">{{ section.html }}</div>
+        </div>
+        {% endfor %}
+      </div>
     </section>
     {% endif %}
 
-    {# ── CAREER OUTCOMES ────────────────────────────────────── #}
-    {% if course.salary_after_min or course.job_roles %}
-    <section class="mt-6 rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50/60 shadow-sm p-5 md:p-6">
-        <div class="flex items-center gap-2 mb-4">
-            <div class="h-8 w-8 rounded-xl bg-emerald-600 flex items-center justify-center">
-                <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                </svg>
-            </div>
-            <h2 class="text-base font-black text-slate-900">Career outcomes after this course</h2>
+    {# ── 2. Curriculum ── #}
+    {% if course.curriculum %}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+        <h2 class="text-base font-black text-slate-900">Course curriculum</h2>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700">
+            {{ course.curriculum|length }} modules
+          </span>
+          <span class="text-[11px] text-slate-500 font-semibold">
+            {{ course.curriculum|map(attribute='topics')|map('length')|sum }} topics
+          </span>
         </div>
+      </div>
+      <div class="divide-y divide-slate-100">
+        {% for mod in course.curriculum %}
+        <div class="cur-item">
+          {# Hidden checkbox drives CSS-only expand/collapse #}
+          <input type="checkbox" id="cur-{{ loop.index }}" class="sr-only"
+                 {% if loop.index == 1 %}checked{% endif %}>
+          <label for="cur-{{ loop.index }}"
+                 class="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50/70 transition-colors select-none">
+            <div class="flex items-center gap-3 min-w-0">
+              <span class="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg
+                           {% if loop.index == 1 %}bg-indigo-600 text-white{% else %}bg-slate-100 text-slate-700{% endif %}
+                           text-sm font-black border border-transparent">
+                {{ loop.index }}
+              </span>
+              <div class="min-w-0">
+                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Module {{ loop.index }}</p>
+                <p class="text-sm font-black text-slate-900 leading-snug">{{ mod.title }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap">{{ mod.topics|length }} topics</span>
+              <svg class="cur-arrow h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+          </label>
+          <div class="cur-body">
+            <ul class="pb-4 pl-16 pr-5 space-y-2">
+              {% for topic in mod.topics %}
+              <li class="flex items-center gap-2.5">
+                <span class="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-[10px] font-black text-slate-500">
+                  {{ loop.index }}
+                </span>
+                <span class="text-sm text-slate-700">{{ topic }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {# ── 3. Career Outcomes ── #}
+    {% if course.salary_after_min or course.job_roles %}
+    <section class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50/60">
+        <h2 class="text-base font-black text-slate-900">Career outcomes</h2>
+      </div>
+      <div class="p-5">
         {% if course.salary_after_min and course.salary_after_max %}
-        <div class="mb-5 rounded-xl border border-emerald-200 bg-white p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div class="flex-1">
-                <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-1">Expected salary range</p>
-                <p class="text-3xl font-black text-slate-900 tracking-tight">
-                    ₹{{ course.salary_after_min|int }}–{{ course.salary_after_max|int }}
-                    <span class="text-base font-bold text-slate-500">LPA</span>
-                </p>
-                <p class="text-xs text-slate-500 mt-1">Lakh per annum (annual salary in India)</p>
-            </div>
-            <div class="shrink-0 flex flex-col items-center justify-center rounded-xl bg-emerald-600 px-5 py-3 text-white">
-                <p class="text-[10px] font-black uppercase tracking-wider opacity-80">Up to</p>
-                <p class="text-2xl font-black">₹{{ course.salary_after_max|int }}L</p>
-                <p class="text-[10px] font-black uppercase tracking-wider opacity-80">per year</p>
-            </div>
+        <div class="flex flex-col sm:flex-row gap-4 mb-5">
+          <div class="flex-1 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+            <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-1">Average salary after course</p>
+            <p class="text-4xl font-black text-slate-900 tracking-tight">
+              ₹{{ course.salary_after_min|int }}
+              <span class="text-2xl text-slate-500">–</span>
+              {{ course.salary_after_max|int }}<span class="text-xl font-bold text-slate-500 ml-1">LPA</span>
+            </p>
+            <p class="text-xs text-slate-500 mt-1.5">Lakh Per Annum · India market rate 2025</p>
+          </div>
+          <div class="sm:w-40 rounded-xl border border-emerald-200 bg-emerald-600 p-4 flex flex-col items-center justify-center text-white text-center">
+            <svg class="h-6 w-6 mb-1 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            <p class="text-2xl font-black">₹{{ course.salary_after_max|int }}L</p>
+            <p class="text-[10px] font-black uppercase tracking-wider opacity-80">Max/year</p>
+          </div>
         </div>
         {% endif %}
         {% if course.job_roles %}
         <div>
-            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-2">Job roles you can apply for</p>
-            <div class="flex flex-wrap gap-2">
-                {% for role in course.job_roles.split(',') %}
-                <span class="inline-flex items-center rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm">
-                    <svg class="mr-1.5 h-3 w-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-                    {{ role.strip() }}
-                </span>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-    </section>
-    {% endif %}
-
-    {# ── STUDENT TESTIMONIALS ───────────────────────────────── #}
-    {% if course.testimonials %}
-    <section class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm p-5 md:p-6">
-        <div class="flex items-center justify-between gap-3 mb-5">
-            <h2 class="text-base font-black text-slate-900">What students say</h2>
-            <div class="flex items-center gap-1">
-                {% for _ in range(5) %}<svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
-                <span class="ml-1 text-xs font-black text-slate-700">5.0</span>
-            </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {% for t in course.testimonials %}
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4 flex flex-col gap-3">
-                <div class="flex gap-0.5">
-                    {% for _ in range(t.rating) %}
-                    <svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                    {% endfor %}
-                </div>
-                <p class="text-sm text-slate-700 leading-relaxed flex-1">"{{ t.text }}"</p>
-                <div class="flex items-center gap-2.5 pt-2 border-t border-slate-200">
-                    <div class="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white text-xs font-black shrink-0">
-                        {{ t.name[0] }}
-                    </div>
-                    <div>
-                        <p class="text-xs font-black text-slate-900">{{ t.name }}</p>
-                        <p class="text-[10px] text-slate-500 font-medium">{{ t.role }} · {{ t.city }}</p>
-                    </div>
-                </div>
-            </div>
+          <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3">Job roles you can target</p>
+          <div class="flex flex-wrap gap-2">
+            {% set role_colors = ['bg-blue-50 border-blue-200 text-blue-800', 'bg-violet-50 border-violet-200 text-violet-800', 'bg-emerald-50 border-emerald-200 text-emerald-800', 'bg-amber-50 border-amber-200 text-amber-800', 'bg-rose-50 border-rose-200 text-rose-800'] %}
+            {% for role in course.job_roles.split(',') %}
+            <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold {{ role_colors[loop.index0 % 5] }}">
+              <svg class="h-3 w-3 opacity-70" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+              {{ role.strip() }}
+            </span>
             {% endfor %}
+          </div>
         </div>
+        {% endif %}
+      </div>
     </section>
     {% endif %}
 
-    <section class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 shadow-sm p-4 md:p-6">
-        <div class="mb-4 rounded-xl border border-slate-200 bg-white p-3 md:p-4">
-            <h3 class="text-xs font-black uppercase tracking-[0.14em] text-slate-800">What you'll get</h3>
-            <div class="mt-2.5 grid grid-cols-2 lg:grid-cols-4 gap-2">
-                <div class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Certificate</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-800">Completion certificate</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Projects</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-800">Hands-on capstone work</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Support</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-800">Guided mentor support</p>
-                </div>
-                <div class="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2">
-                    <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Career</p>
-                    <p class="mt-0.5 text-xs font-semibold text-slate-800">Placement guidance</p>
-                </div>
+    {# ── 4. Testimonials ── #}
+    {% if course.testimonials %}
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
+        <h2 class="text-base font-black text-slate-900">Student reviews</h2>
+        <div class="flex items-center gap-1">
+          {% for _ in range(5) %}
+          <svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          {% endfor %}
+          <span class="ml-1 text-sm font-black text-slate-800">5.0</span>
+          <span class="text-xs text-slate-500 ml-1">({{ course.testimonials|length }} reviews)</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+        {% for t in course.testimonials %}
+        <div class="p-5 flex flex-col gap-3">
+          <div class="flex gap-0.5 mb-1">
+            {% for _ in range(t.rating) %}
+            <svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            {% endfor %}
+          </div>
+          <p class="text-sm text-slate-700 leading-relaxed flex-1">"{{ t.text }}"</p>
+          <div class="flex items-center gap-2.5 pt-3 border-t border-slate-100">
+            <div class="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white text-sm font-black shrink-0">
+              {{ t.name[0] }}
             </div>
+            <div>
+              <p class="text-xs font-black text-slate-900">{{ t.name }}</p>
+              <p class="text-[10px] text-slate-500 font-medium">{{ t.role }} · {{ t.city }}</p>
+            </div>
+          </div>
         </div>
-        <h2 class="text-xs font-black uppercase tracking-[0.14em] text-emerald-900">Secure checkout</h2>
-        <p class="text-sm text-emerald-900/90 mt-2 leading-relaxed">Razorpay — UPI, cards &amp; wallets. Your cart opens after you add this course.</p>
-        {% if pending_course_referrer_code and not referral_price_unlocked %}
-        <p class="mt-3 text-xs font-bold text-emerald-900 leading-snug rounded-lg bg-white/80 border border-emerald-200/80 px-3 py-2">
-            Submit <strong>Enroll now</strong> above while logged in — you'll unlock <strong>{{ referral_lead_discount_pct }}% off</strong> this course at payment.
-        </p>
-        {% elif referral_price_unlocked %}
-        <p class="mt-3 text-xs font-bold text-emerald-900 leading-snug rounded-lg bg-white/80 border border-emerald-200/80 px-3 py-2">
-            Referral pricing active: pay <strong>₹{{ course_checkout_price_inr }}</strong> ({{ referral_lead_discount_pct }}% off list) in cart checkout.
-        </p>
-        {% endif %}
-        {% if owns_course %}
-        <p class="mt-4 text-sm font-semibold text-emerald-800">You already own this course.</p>
-        {% elif request.user.is_authenticated %}
-        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2.5">
-            <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <button type="submit" class="rj-cta-primary w-full px-5 py-3 font-black uppercase text-white">
-                    Add to cart
-                </button>
-            </form>
-            <a href="{{ url('core:course_cart') }}" class="inline-flex items-center justify-center rounded-xl border-2 border-emerald-700/25 bg-white px-5 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-900 hover:bg-emerald-50/80 transition-colors">
-                View cart
-            </a>
-        </div>
-        {% else %}
-        <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}" class="rj-cta-primary mt-4 inline-flex w-full md:w-auto items-center justify-center px-5 py-3 font-black uppercase text-white">
-            Log in to purchase
-        </a>
-        {% endif %}
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {# ── 5. Enroll form ── #}
+    <section class="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 md:p-6 shadow-sm">
+      <h2 class="text-sm font-black text-indigo-900 mb-1">Register your interest</h2>
+      <p class="text-xs text-indigo-800 mb-3">Submit your details and we'll reach out with course start dates and offers.</p>
+      {% if pending_course_referrer_code %}
+      <p class="mb-3 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-700 border border-indigo-100 shadow-sm">
+        Referral active: {{ pending_course_referrer_code }}
+      </p>
+      {% endif %}
+      <form method="post" class="flex flex-col sm:flex-row gap-2">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="text" name="lead_name" placeholder="Your name"
+               class="flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <input type="email" name="lead_email" placeholder="Your email" required
+               value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}"
+               class="flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
+        <button type="submit"
+                class="shrink-0 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 transition-colors">
+          Enroll now
+        </button>
+      </form>
     </section>
 
-    <section class="mt-4 rounded-xl border border-indigo-200 bg-indigo-50/90 p-3 md:p-4 shadow-sm">
-        <h2 class="text-sm font-black text-indigo-900">Enroll now</h2>
-        <p class="text-xs text-indigo-800 mt-1 leading-relaxed">Submit your details to register interest for this course.</p>
-        {% if pending_course_referrer_code %}
-        <p class="mt-2 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-700 border border-indigo-100 shadow-sm">
-            Referral link active: {{ pending_course_referrer_code }}
-        </p>
-        {% endif %}
-        <form method="post" class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            <input type="text" name="lead_name" placeholder="Your name" class="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs md:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200">
-            <input type="email" name="lead_email" placeholder="Your email" value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}" class="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs md:text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-200" required>
-            <button type="submit" class="rj-cta-primary w-full px-3 py-2 text-[11px] md:text-xs font-black uppercase text-white">
-                Submit enrollment
-            </button>
-        </form>
-    </section>
+  </div>{# end main col #}
 
-    <div class="h-20 lg:hidden"></div>
+  {# ── Right sidebar (desktop) ── #}
+  <div class="hidden lg:block w-80 shrink-0 course-sticky">
+    {% include "core/partials/_course_buy_card.jinja" %}
+  </div>
+
 </div>
 
+{# Mobile spacer for fixed buy bar #}
+<div class="h-24 lg:hidden"></div>
+
+{# ── Mobile fixed buy bar ── #}
 {% if not owns_course %}
 <div class="mobile-buybar lg:hidden">
-    <div class="max-w-5xl mx-auto px-4 py-2.5">
-        <div class="flex items-center justify-between gap-2 mb-2">
-            <p class="text-[11px] font-black uppercase tracking-wider text-slate-700">{{ course.title }}</p>
-            {% if referral_price_unlocked %}
-            <p class="text-sm font-black text-emerald-700">₹{{ course_checkout_price_inr }}</p>
-            {% else %}
-            <p class="text-sm font-black text-emerald-700">₹{{ course_list_price_inr }}</p>
-            {% endif %}
-        </div>
-        {% if request.user.is_authenticated %}
-        <div class="grid grid-cols-2 gap-2">
-            <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <button type="submit" class="rj-cta-primary w-full px-3 py-2.5 text-[11px] font-black uppercase text-white">
-                    Add to cart
-                </button>
-            </form>
-            <a href="{{ url('core:course_cart') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-[11px] font-black uppercase text-slate-700">
-                View cart
-            </a>
-        </div>
+  <div class="max-w-lg mx-auto px-4 py-3">
+    <div class="flex items-center justify-between mb-2.5">
+      <div>
+        <p class="text-[11px] font-black uppercase tracking-wider text-slate-600 leading-none">{{ course.title|truncate(32, true, '…') }}</p>
+        {% if referral_price_unlocked %}
+        <p class="text-lg font-black text-emerald-700 leading-snug">₹{{ course_checkout_price_inr }}
+          <span class="text-xs font-bold text-slate-400 line-through ml-1">₹{{ course_list_price_inr }}</span>
+        </p>
         {% else %}
-        <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}" class="rj-cta-primary inline-flex w-full items-center justify-center px-3 py-2.5 text-[11px] font-black uppercase text-white">
-            Log in to purchase
-        </a>
+        <p class="text-lg font-black text-emerald-700 leading-snug">₹{{ course_list_price_inr }}</p>
         {% endif %}
+      </div>
+      {% if request.user.is_authenticated %}
+      <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <button type="submit"
+                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors">
+          Add to cart
+        </button>
+      </form>
+      {% else %}
+      <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
+         class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors">
+        Log in to buy
+      </a>
+      {% endif %}
     </div>
+  </div>
 </div>
 {% endif %}
+
 {% endblock %}

@@ -1,0 +1,90 @@
+{# Reusable course buy card — used in both hero sidebar and body #}
+<div class="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+
+  {% if course.thumbnail_url %}
+  <div class="aspect-video overflow-hidden">
+    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+  </div>
+  {% else %}
+  <div class="aspect-video bg-gradient-to-br from-indigo-700 to-violet-700 flex items-center justify-center">
+    <svg class="h-14 w-14 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
+    </svg>
+  </div>
+  {% endif %}
+
+  <div class="p-5">
+    {# Price #}
+    <div class="flex items-end justify-between gap-2 mb-4">
+      <div>
+        {% if referral_price_unlocked %}
+        <p class="text-3xl font-black text-slate-900">₹{{ course_checkout_price_inr }}</p>
+        <p class="text-sm text-slate-400 line-through">₹{{ course_list_price_inr }}</p>
+        {% else %}
+        <p class="text-3xl font-black text-slate-900">₹{{ course_list_price_inr }}</p>
+        {% endif %}
+      </div>
+      {% if referral_price_unlocked %}
+      <span class="inline-flex rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
+        {{ referral_lead_discount_pct }}% OFF
+      </span>
+      {% endif %}
+    </div>
+
+    {# CTA #}
+    {% if owns_course %}
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
+      <p class="text-sm font-black text-emerald-800">✓ You own this course</p>
+    </div>
+    {% elif request.user.is_authenticated %}
+    <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 mb-2">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      <button type="submit"
+              class="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20">
+        Add to cart — ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
+      </button>
+    </form>
+    <a href="{{ url('core:course_cart') }}"
+       class="block w-full text-center rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors">
+      View cart
+    </a>
+    {% else %}
+    <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
+       class="block w-full text-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20 mb-2">
+      Log in to purchase
+    </a>
+    {% endif %}
+
+    {# Course facts #}
+    <div class="mt-4 space-y-2 pt-4 border-t border-slate-100">
+      <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">This course includes</p>
+      {% set facts = [
+        ('🕐', course.duration_weeks|string + ' weeks of content'),
+        ('📜', 'Completion certificate'),
+        ('🎯', 'Hands-on projects'),
+        ('💬', 'Mentor support'),
+        ('♾️', 'Lifetime access'),
+        ('📱', 'Mobile friendly'),
+      ] %}
+      {% for icon, label in facts %}
+      <div class="flex items-center gap-2">
+        <span class="text-base leading-none">{{ icon }}</span>
+        <span class="text-xs text-slate-700 font-semibold">{{ label }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if course.salary_after_min and course.salary_after_max %}
+    <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
+      <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Avg salary after completion</p>
+      <p class="text-xl font-black text-emerald-900 mt-0.5">₹{{ course.salary_after_min|int }}–{{ course.salary_after_max|int }} LPA</p>
+    </div>
+    {% endif %}
+
+    {% if pending_course_referrer_code and not referral_price_unlocked %}
+    <p class="mt-3 text-[11px] text-emerald-800 font-bold rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2">
+      Enroll below to unlock {{ referral_lead_discount_pct }}% referral discount at checkout.
+    </p>
+    {% endif %}
+  </div>
+</div>
