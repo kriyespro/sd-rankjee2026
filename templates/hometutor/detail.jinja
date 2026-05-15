@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}{{ t.display_name }} · Home tutor · RankJee{% endblock %}
+{% block title %}{{ seo_title if seo_title is defined and seo_title else t.display_name + ' · Home tutor · RankJee' }}{% endblock %}
 
 {% block content %}
 <section class="bg-gradient-to-b from-indigo-50 to-slate-50 border-b border-indigo-100/80 pt-10 pb-8 px-4">

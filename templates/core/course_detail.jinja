@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}{{ course.title }} - RankJee{% endblock %}
+{% block title %}{{ seo_title if seo_title is defined and seo_title else course.title + ' - RankJee' }}{% endblock %}
 {% block extra_head %}
 <style>
     .course-content {

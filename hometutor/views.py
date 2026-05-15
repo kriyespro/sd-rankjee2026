@@ -255,6 +255,17 @@ def tutor_detail(request, slug):
     if can_request_demo:
         demo_form = DemoRequestForm()
 
+    subjects_str = (profile.subjects or "").strip()
+    city_str = (profile.city or PILOT_CITY).strip()
+    _seo_title = f"{profile.display_name} — Home Tutor in {city_str} | RankJee"
+    _seo_description = (
+        f"{profile.display_name} is a verified home tutor in {city_str}"
+        + (f" for {subjects_str}" if subjects_str else "")
+        + ". View profile, subjects, fees, and request a free demo on RankJee."
+    )[:160]
+    _canonical_url = request.build_absolute_uri(
+        reverse("hometutor:tutor_detail", kwargs={"slug": profile.slug})
+    )
     return render(
         request,
         'hometutor/detail.jinja',
@@ -264,6 +275,9 @@ def tutor_detail(request, slug):
             'viewer_is_owner': viewer_owner,
             'demo_form': demo_form,
             'can_request_demo': can_request_demo,
+            'seo_title': _seo_title,
+            'seo_description': _seo_description,
+            'canonical_url': _canonical_url,
         },
     )
 

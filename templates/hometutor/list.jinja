@@ -1,5 +1,5 @@
 {% extends "base.jinja" %}
-{% block title %}Find home tutors · {{ hometutor_pilot_city }} · RankJee{% endblock %}
+{% block title %}{{ seo_title if seo_title is defined and seo_title else 'Find home tutors · ' + hometutor_pilot_city + ' · RankJee' }}{% endblock %}
 {% block schema %}
 {% if is_seo_landing %}
 <script type="application/ld+json">
