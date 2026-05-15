@@ -47,6 +47,32 @@ class Course(models.Model):
     is_featured = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    # Career outcomes
+    salary_after_min = models.DecimalField(
+        max_digits=5, decimal_places=1, null=True, blank=True,
+        help_text="Min expected salary in LPA after completing this course",
+    )
+    salary_after_max = models.DecimalField(
+        max_digits=5, decimal_places=1, null=True, blank=True,
+        help_text="Max expected salary in LPA after completing this course",
+    )
+    job_roles = models.TextField(
+        blank=True,
+        help_text="Comma-separated job roles after this course. e.g. SEO Analyst, Content Strategist",
+    )
+
+    # Structured curriculum — list of {module, title, topics:[...]}
+    curriculum = models.JSONField(
+        default=list, blank=True,
+        help_text='JSON: [{"module":"M1","title":"Foundations","topics":["Topic A","Topic B"]}]',
+    )
+
+    # Student testimonials — list of {name, role, city, text, rating}
+    testimonials = models.JSONField(
+        default=list, blank=True,
+        help_text='JSON: [{"name":"Priya","role":"Marketer","city":"Mumbai","text":"...","rating":5}]',
+    )
+
     class Meta:
         ordering = ["-is_featured", "title"]
 
