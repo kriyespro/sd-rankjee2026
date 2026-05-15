@@ -44,97 +44,100 @@
 {% endblock %}
 
 {% block content %}
-<section class="bg-slate-100 border-b border-slate-200/80 pt-8 pb-10 px-4">
-    <div class="max-w-6xl mx-auto">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Home tutors</p>
-        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
+{# ── City-based hero palette ────────────────────────────────── #}
+{% set _cs = (landing_city or hometutor_pilot_city)|lower|replace(' ', '-') %}
+{% set _p = {
+    'ahmedabad': {'bg1':'#b45309','bg2':'#d97706','accent':'#fef3c7','ring':'#fbbf24','label':'text-amber-100','sub':'text-amber-200'},
+    'surat':     {'bg1':'#6d28d9','bg2':'#7c3aed','accent':'#ede9fe','ring':'#a78bfa','label':'text-violet-100','sub':'text-violet-200'},
+    'mumbai':    {'bg1':'#075985','bg2':'#0284c7','accent':'#e0f2fe','ring':'#38bdf8','label':'text-sky-100','sub':'text-sky-200'},
+    'delhi':     {'bg1':'#9f1239','bg2':'#be123c','accent':'#ffe4e6','ring':'#fb7185','label':'text-rose-100','sub':'text-rose-200'},
+    'bengaluru': {'bg1':'#065f46','bg2':'#059669','accent':'#d1fae5','ring':'#34d399','label':'text-emerald-100','sub':'text-emerald-200'},
+    'pune':      {'bg1':'#0f4c8a','bg2':'#1d4ed8','accent':'#dbeafe','ring':'#60a5fa','label':'text-blue-100','sub':'text-blue-200'},
+    'kolkata':   {'bg1':'#92400e','bg2':'#b45309','accent':'#fef3c7','ring':'#fbbf24','label':'text-amber-100','sub':'text-amber-200'},
+    'chennai':   {'bg1':'#881337','bg2':'#e11d48','accent':'#ffe4e6','ring':'#fb7185','label':'text-rose-100','sub':'text-rose-200'},
+    'hyderabad': {'bg1':'#1e1b4b','bg2':'#4338ca','accent':'#e0e7ff','ring':'#818cf8','label':'text-indigo-100','sub':'text-indigo-200'},
+    'jaipur':    {'bg1':'#7c2d12','bg2':'#ea580c','accent':'#ffedd5','ring':'#fb923c','label':'text-orange-100','sub':'text-orange-200'},
+}.get(_cs, {'bg1':'#312e81','bg2':'#4338ca','accent':'#e0e7ff','ring':'#818cf8','label':'text-indigo-100','sub':'text-indigo-200'}) %}
+
+<section style="background: linear-gradient(135deg, {{ _p.bg1 }} 0%, {{ _p.bg2 }} 100%); border-bottom: 3px solid {{ _p.ring }}40;" class="pt-10 pb-12 px-4 relative overflow-hidden">
+    {# decorative circles #}
+    <div style="background:{{ _p.ring }}18; width:320px; height:320px; border-radius:50%; position:absolute; top:-80px; right:-60px; pointer-events:none;"></div>
+    <div style="background:{{ _p.ring }}0e; width:180px; height:180px; border-radius:50%; position:absolute; bottom:-40px; left:40px; pointer-events:none;"></div>
+    <div class="max-w-6xl mx-auto relative">
+        <p style="color:{{ _p.ring }}; background:{{ _p.ring }}22;" class="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.25em] px-3 py-1 rounded-full mb-4">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0z"/></svg>
+            Home tutors
+        </p>
+        <h1 class="text-3xl md:text-5xl font-black tracking-tight mb-3 {{ _p.label }}">
             {% if is_seo_landing %}{{ seo_heading }}{% else %}Browse verified tutors{% endif %}
         </h1>
-        <p class="text-slate-600 text-sm md:text-base max-w-2xl">
-            {% if is_seo_landing %}
-            Discover verified tutor profiles, compare class fit, and request a free demo.
-            {% else %}
-            Pilot: <strong>{{ hometutor_pilot_city }}</strong>. Filter by subject, area, or class.
-            {% endif %}
+        <p class="text-base max-w-xl mb-6 {{ _p.sub }}">
+            {% if is_seo_landing %}Verified tutors — compare profiles, fees, and book a free demo.
+            {% else %}Find the best home tutor near you. Filter by subject, class, or area.{% endif %}
         </p>
-        {% if is_seo_landing and related_subjects %}
-        <div class="mt-4 flex flex-wrap gap-2">
-            {% for s in related_subjects %}
-            <a href="{{ url('hometutor:tutor_city_subject_landing', city_slug=landing_city|lower|replace(' ', '-'), subject_slug=s.slug) }}"
-               class="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-50">
-                {{ s.label }} tutors in {{ landing_city }}
-            </a>
-            {% endfor %}
-        </div>
-        {% endif %}
+
+        {# ── Compact inline search bar ──────────────────────────── #}
+        <form method="get" action="{{ url('hometutor:tutor_list') }}"
+              class="flex flex-wrap md:flex-nowrap items-end gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-3">
+            <div class="flex-1 min-w-[140px]">
+                <label class="block text-[10px] font-black uppercase tracking-wider mb-1 {{ _p.sub }}">Subject</label>
+                <input type="text" name="subject" value="{{ filter_subject }}" placeholder="e.g. Physics, Maths…"
+                       class="w-full rounded-xl bg-white/95 border-0 px-3 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-white focus:outline-none">
+            </div>
+            <div class="flex-1 min-w-[120px]">
+                <label class="block text-[10px] font-black uppercase tracking-wider mb-1 {{ _p.sub }}">City</label>
+                <input type="text" name="city" value="{{ filter_city }}" placeholder="{{ landing_city or hometutor_pilot_city }}"
+                       class="w-full rounded-xl bg-white/95 border-0 px-3 py-2.5 text-sm font-medium text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-white focus:outline-none">
+            </div>
+            <div class="w-36">
+                <label class="block text-[10px] font-black uppercase tracking-wider mb-1 {{ _p.sub }}">Mode</label>
+                <select name="mode" class="w-full rounded-xl bg-white/95 border-0 px-3 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-white focus:outline-none">
+                    <option value="">Any mode</option>
+                    <option value="OFFLINE" {% if filter_mode == 'OFFLINE' %}selected{% endif %}>Offline</option>
+                    <option value="ONLINE"  {% if filter_mode == 'ONLINE'  %}selected{% endif %}>Online</option>
+                    <option value="HYBRID"  {% if filter_mode == 'HYBRID'  %}selected{% endif %}>Hybrid</option>
+                </select>
+            </div>
+            {# preserve other filters silently #}
+            {% if filter_q %}<input type="hidden" name="q" value="{{ filter_q }}">{% endif %}
+            {% if filter_area %}<input type="hidden" name="area" value="{{ filter_area }}">{% endif %}
+            {% if filter_language %}<input type="hidden" name="language" value="{{ filter_language }}">{% endif %}
+            {% if filter_class_min %}<input type="hidden" name="class_min" value="{{ filter_class_min }}">{% endif %}
+            {% if filter_pincode %}<input type="hidden" name="pincode" value="{{ filter_pincode }}">{% endif %}
+            {% if filter_radius_km %}<input type="hidden" name="radius_km" value="{{ filter_radius_km }}">{% endif %}
+            <div class="flex gap-2 items-end pb-0.5">
+                <button type="submit"
+                        style="background:{{ _p.ring }}; color:{{ _p.bg1 }};"
+                        class="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-sm font-black whitespace-nowrap hover:opacity-90 transition-opacity">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="m21 21-4.35-4.35"/></svg>
+                    Find tutors
+                </button>
+                {% if filter_subject or filter_city or filter_mode %}
+                <a href="{{ url('hometutor:tutor_list') }}"
+                   class="inline-flex items-center rounded-xl px-3 py-2.5 text-xs font-bold border border-white/30 text-white/80 hover:bg-white/10 transition-colors whitespace-nowrap">Reset</a>
+                {% endif %}
+            </div>
+        </form>
     </div>
 </section>
 
+{# ── SEO keyword links — visually hidden, crawlable by Google ── #}
+{% if is_seo_landing and related_subjects %}
+<div class="sr-only" aria-hidden="true">
+    {% for s in related_subjects %}
+    <a href="{{ url('hometutor:tutor_city_subject_landing', city_slug=(landing_city or '')|lower|replace(' ', '-'), subject_slug=s.slug) }}">
+        {{ s.label }} tutors in {{ landing_city }}
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
 <section class="max-w-6xl mx-auto px-4 py-8">
-    <form method="get" action="{{ url('hometutor:tutor_list') }}" class="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-                <label for="id_q" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Search</label>
-                <input type="search" name="q" id="id_q" value="{{ filter_q }}" placeholder="Name, subject, area…"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_subject" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Subject</label>
-                <input type="text" name="subject" id="id_subject" value="{{ filter_subject }}" placeholder="e.g. Physics"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_mode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Mode</label>
-                <select name="mode" id="id_mode" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Any mode</option>
-                    <option value="OFFLINE" {% if filter_mode == 'OFFLINE' %}selected{% endif %}>Offline</option>
-                    <option value="ONLINE" {% if filter_mode == 'ONLINE' %}selected{% endif %}>Online</option>
-                    <option value="HYBRID" {% if filter_mode == 'HYBRID' %}selected{% endif %}>Hybrid</option>
-                </select>
-            </div>
-            <div>
-                <label for="id_area" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Area</label>
-                <input type="text" name="area" id="id_area" value="{{ filter_area }}" placeholder="e.g. Satellite"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_language" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Language</label>
-                <input type="text" name="language" id="id_language" value="{{ filter_language }}" placeholder="e.g. Hindi"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_city" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">City</label>
-                <input type="text" name="city" id="id_city" value="{{ filter_city }}" placeholder="{{ hometutor_pilot_city }}"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_class_min" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Student class (1–12)</label>
-                <input type="number" name="class_min" id="id_class_min" value="{{ filter_class_min }}" min="1" max="12" placeholder="10"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_pincode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Pincode (radius search)</label>
-                <input type="text" name="pincode" id="id_pincode" value="{{ filter_pincode }}" placeholder="e.g. 380015"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_radius_km" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Radius (km)</label>
-                <input type="number" name="radius_km" id="id_radius_km" value="{{ filter_radius_km }}" min="1" max="100" placeholder="5"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-        </div>
-        <div class="mt-4 flex flex-wrap gap-3">
-            <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
-                Apply filters
-            </button>
-            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">
-                Reset
-            </a>
-        </div>
-    </form>
+    <form id="full-filter-form" method="get" action="{{ url('hometutor:tutor_list') }}" class="hidden"></form>
 
     {% if tutor_cards %}
     <p class="text-sm text-slate-600 mb-4 font-medium">{{ tutor_cards|length }} tutor{% if tutor_cards|length != 1 %}s{% endif %} match.</p>
+    {# hidden inputs so the full-filter-form can still carry city when submitting from the detail filter UI #}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for t in tutor_cards %}
         {% include "hometutor/partials/_tutor_card.jinja" %}
