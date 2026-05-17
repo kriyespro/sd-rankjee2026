@@ -1,9 +1,11 @@
 {
   "private": true,
   "scripts": {
-    "build:css": "tailwindcss -i ./static/css/src/input.css -o ./static/css/app.css --minify"
+    "build:css": "tailwindcss -i ./static/css/src/input.css -o ./static/css/app.css --minify && node scripts/minify-page-css.mjs",
+    "build:page-css": "node scripts/minify-page-css.mjs"
   },
   "devDependencies": {
+    "clean-css": "^5.3.3",
     "tailwindcss": "^3.4.17"
   }
 }
