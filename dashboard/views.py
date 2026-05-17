@@ -1006,6 +1006,81 @@ def dashboard_study_assignment(request, pk):
     return ts_student_assignment_detail(request, pk, study_urls=_study_urls_for_dashboard_role(role))
 
 
+def _server_buy_access_queryset(request):
+    """Shared filters for server buy access management."""
+    q = (request.GET.get("q") or "").strip()
+    status_filter = (request.GET.get("status") or "all").strip().lower()
+    role_filter = (request.GET.get("role") or "STUDENT").strip().upper()
+
+    qs = User.objects.all().order_by("-show_server_buy_button", "username")
+    if role_filter and role_filter != "ALL":
+        qs = qs.filter(role=role_filter)
+    if status_filter == "on":
+        qs = qs.filter(show_server_buy_button=True)
+    elif status_filter == "off":
+        qs = qs.filter(show_server_buy_button=False)
+    if q:
+        qs = qs.filter(Q(username__icontains=q) | Q(email__icontains=q))
+    return qs, q, status_filter, role_filter
+
+
+def _server_buy_access_query_suffix(q, status_filter, role_filter):
+    params = {}
+    if q:
+        params["q"] = q
+    if status_filter and status_filter != "all":
+        params["status"] = status_filter
+    if role_filter and role_filter != "STUDENT":
+        params["role"] = role_filter
+    return urlencode(params)
+
+
+@login_required
+def server_buy_access_manage(request):
+    if not request.user.is_superuser:
+        raise PermissionDenied
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "").strip().lower()
+        user_ids = request.POST.getlist("user_ids")
+        redirect_to = (request.POST.get("next") or "").strip()
+
+        if action in ("enable", "disable") and user_ids:
+            enabled = action == "enable"
+            count = User.objects.filter(pk__in=user_ids).update(show_server_buy_button=enabled)
+            verb = "enabled" if enabled else "disabled"
+            messages.success(request, f"Server buy button {verb} for {count} user(s).")
+        elif action in ("enable", "disable"):
+            messages.warning(request, "Select at least one user.")
+        else:
+            messages.error(request, "Invalid bulk action.")
+
+        if redirect_to.startswith("/"):
+            return redirect(redirect_to)
+        return redirect("dashboard:server_buy_access_manage")
+
+    qs, q, status_filter, role_filter = _server_buy_access_queryset(request)
+    enabled_count = qs.filter(show_server_buy_button=True).count()
+    disabled_count = qs.filter(show_server_buy_button=False).count()
+
+    paginator = Paginator(qs, 25)
+    users_page = paginator.get_page(request.GET.get("page", 1))
+
+    return render(
+        request,
+        "dashboard/server_buy_access.jinja",
+        {
+            "users_page": users_page,
+            "search_query": q,
+            "status_filter": status_filter,
+            "role_filter": role_filter,
+            "enabled_count": enabled_count,
+            "disabled_count": disabled_count,
+            "query_suffix": _server_buy_access_query_suffix(q, status_filter, role_filter),
+        },
+    )
+
+
 @login_required
 def toggle_user_server_buy(request, user_id):
     if request.method != "POST" or not request.user.is_superuser:
@@ -1027,7 +1102,7 @@ def toggle_user_server_buy(request, user_id):
     redirect_to = (request.POST.get("next") or "").strip()
     if redirect_to.startswith("/"):
         return redirect(redirect_to)
-    return redirect("dashboard:index")
+    return redirect("dashboard:server_buy_access_manage")
 
 
 def update_tutor_request_status(request, request_id):

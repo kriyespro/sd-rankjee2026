@@ -105,14 +105,17 @@ class CustomUserAdmin(UserAdmin):
         'username',
         'email',
         'role',
+        'show_server_buy_button',
         'state',
         'is_vip_testing_user',
-        'show_server_buy_button',
         'streak_days',
         'xp_points',
         'wallet_balance',
         'referral_code',
     )
+    list_display_links = ('username',)
+    list_editable = ('show_server_buy_button',)
+    list_per_page = 50
     list_filter = (
         'role',
         'is_vip_testing_user',
@@ -164,7 +167,10 @@ class CustomUserAdmin(UserAdmin):
             'Server buy',
             {
                 'fields': ('show_server_buy_button',),
-                'description': 'When enabled, student accounts see “Server buy now” on the dashboard and can access /server-buy/ checkout.',
+                'description': (
+                    'When enabled, student accounts see “Server buy now” on the dashboard and can access /server-buy/ checkout. '
+                    'For bulk toggles use Command Center → Server buy access, or tick rows here and click Save.'
+                ),
             },
         ),
     )

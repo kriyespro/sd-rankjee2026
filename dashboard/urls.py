@@ -28,6 +28,7 @@ urlpatterns = [
     path('attempts/<int:attempt_id>/review/', views.attempt_review, name='attempt_review'),
     path('students/attempts/<int:attempt_id>/review/', views.student_attempt_review, name='student_attempt_review'),
     path('users/referrals/', views.users_referral_table, name='users_referral_table'),
+    path('users/server-buy-access/', views.server_buy_access_manage, name='server_buy_access_manage'),
     path('users/<int:user_id>/server-buy-toggle/', views.toggle_user_server_buy, name='toggle_user_server_buy'),
     path('leaderboard/', views.leaderboard, name='leaderboard'),
     path('notifications/', views.notifications, name='notifications'),

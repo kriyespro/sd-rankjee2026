@@ -1,0 +1,157 @@
+{% extends "base.jinja" %}
+{% block title %}Server buy access — Superadmin{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto px-4 py-8" x-data="{ selectAll: false }">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900">Server buy access</h1>
+            <p class="text-sm text-slate-600 font-medium mt-1">
+                Bulk enable or disable the <strong>Server buy now</strong> button on the student dashboard.
+                Only students with access on can open checkout.
+            </p>
+            <p class="mt-2 text-xs font-bold text-slate-500">
+                <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-violet-800">{{ enabled_count }} enabled</span>
+                <span class="mx-1">·</span>
+                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ disabled_count }} disabled</span>
+                <span class="mx-1">·</span>
+                {{ users_page.paginator.count }} matching users
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ url('dashboard:index') }}" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 uppercase tracking-widest">Command center</a>
+            <a href="/sd/users/customuser/" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 uppercase tracking-widest">/sd/ users</a>
+        </div>
+    </div>
+
+    <form method="get" class="mb-4 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="md:col-span-2">
+                <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Search</label>
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ search_query }}"
+                    placeholder="Username or email…"
+                    class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-500"
+                >
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Button status</label>
+                <select name="status" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800">
+                    <option value="all" {{ 'selected' if status_filter == 'all' else '' }}>All</option>
+                    <option value="on" {{ 'selected' if status_filter == 'on' else '' }}>Enabled only</option>
+                    <option value="off" {{ 'selected' if status_filter == 'off' else '' }}>Disabled only</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">Role</label>
+                <select name="role" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold text-slate-800">
+                    <option value="STUDENT" {{ 'selected' if role_filter == 'STUDENT' else '' }}>Students</option>
+                    <option value="ALL" {{ 'selected' if role_filter == 'ALL' else '' }}>All roles</option>
+                    <option value="VIP_USER" {{ 'selected' if role_filter == 'VIP_USER' else '' }}>VIP user</option>
+                    <option value="TUTOR" {{ 'selected' if role_filter == 'TUTOR' else '' }}>Tutor</option>
+                    <option value="PARENT" {{ 'selected' if role_filter == 'PARENT' else '' }}>Parent</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-3 flex gap-2">
+            <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-lg uppercase tracking-widest">Apply filters</button>
+            <a href="{{ url('dashboard:server_buy_access_manage') }}" class="px-4 py-2 border border-slate-200 text-slate-700 text-xs font-black rounded-lg uppercase tracking-widest hover:bg-slate-50">Reset</a>
+        </div>
+    </form>
+
+    <form id="server-buy-bulk-form" method="post" action="{{ url('dashboard:server_buy_access_manage') }}">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ request.get_full_path() }}">
+    </form>
+
+    <div class="mb-3 flex flex-wrap items-center gap-2 sticky top-2 z-10 bg-slate-50/95 backdrop-blur border border-slate-200 rounded-xl p-3 shadow-sm">
+        <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mr-1">Bulk actions</span>
+        <button form="server-buy-bulk-form" type="submit" name="action" value="enable" class="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-black rounded-lg uppercase tracking-widest">
+                Enable selected
+            </button>
+        <button form="server-buy-bulk-form" type="submit" name="action" value="disable" class="px-4 py-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs font-black rounded-lg uppercase tracking-widest">
+                Disable selected
+            </button>
+            <span class="text-xs text-slate-500 font-medium ml-auto">Tick rows below, then apply</span>
+        </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[720px]">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr class="text-xs font-black uppercase tracking-widest text-slate-600">
+                            <th class="px-4 py-3 w-10">
+                                <input
+                                    type="checkbox"
+                                    class="rounded border-slate-300"
+                                    x-model="selectAll"
+                                    @change="document.querySelectorAll('[data-server-buy-row]').forEach(el => { el.checked = selectAll })"
+                                    title="Select all on this page"
+                                >
+                            </th>
+                            <th class="px-4 py-3">User</th>
+                            <th class="px-4 py-3">Role</th>
+                            <th class="px-4 py-3">Server buy button</th>
+                            <th class="px-4 py-3">Joined</th>
+                            <th class="px-4 py-3 text-right">Quick</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for u in users_page %}
+                        <tr class="hover:bg-violet-50/30 transition-colors {{ 'bg-violet-50/40' if u.show_server_buy_button else '' }}">
+                            <td class="px-4 py-3">
+                                <input type="checkbox" form="server-buy-bulk-form" name="user_ids" value="{{ u.id }}" data-server-buy-row class="rounded border-slate-300">
+                            </td>
+                            <td class="px-4 py-3">
+                                <p class="text-sm font-black text-slate-900">{{ u.username }}</p>
+                                <p class="text-xs text-slate-600">{{ u.email }}</p>
+                            </td>
+                            <td class="px-4 py-3 text-xs font-bold text-slate-700">{{ u.get_role_display() }}</td>
+                            <td class="px-4 py-3">
+                                {% if u.show_server_buy_button %}
+                                <span class="inline-flex rounded-full bg-violet-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-violet-800">On</span>
+                                {% else %}
+                                <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-500">Off</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-xs font-medium text-slate-600 whitespace-nowrap">{{ u.date_joined.strftime('%d %b %Y') }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <form method="post" action="{{ url('dashboard:toggle_user_server_buy', user_id=u.id) }}" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <input type="hidden" name="enabled" value="{{ '0' if u.show_server_buy_button else '1' }}">
+                                    <input type="hidden" name="next" value="{{ request.get_full_path() }}">
+                                    <button type="submit" class="text-[10px] font-black uppercase tracking-wider {{ 'text-slate-600 hover:text-slate-900' if u.show_server_buy_button else 'text-violet-700 hover:text-violet-900' }}">
+                                        {{ 'Turn off' if u.show_server_buy_button else 'Turn on' }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-10 text-center text-sm font-bold text-slate-500">No users match these filters.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="px-4 py-3 border-t border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-3">
+                <p class="text-xs font-bold text-slate-600">
+                    Page {{ users_page.number }} of {{ users_page.paginator.num_pages }}
+                </p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <button form="server-buy-bulk-form" type="submit" name="action" value="enable" class="px-3 py-1.5 bg-violet-600 text-white text-xs font-black rounded-md uppercase tracking-wider hover:bg-violet-700">Enable selected</button>
+                    <button form="server-buy-bulk-form" type="submit" name="action" value="disable" class="px-3 py-1.5 border border-slate-200 bg-white text-xs font-black rounded-md uppercase tracking-wider hover:bg-slate-50">Disable selected</button>
+                    {% if users_page.has_previous() %}
+                    <a href="?page={{ users_page.previous_page_number() }}{% if query_suffix %}&{{ query_suffix }}{% endif %}" class="px-3 py-1.5 text-xs font-black border border-slate-200 rounded-md bg-white hover:bg-slate-50">Prev</a>
+                    {% endif %}
+                    {% if users_page.has_next() %}
+                    <a href="?page={{ users_page.next_page_number() }}{% if query_suffix %}&{{ query_suffix }}{% endif %}" class="px-3 py-1.5 text-xs font-black border border-slate-200 rounded-md bg-white hover:bg-slate-50">Next</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+</section>
+{% endblock %}

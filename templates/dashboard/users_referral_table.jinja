@@ -10,6 +10,7 @@
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ url('dashboard:index') }}" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 uppercase tracking-widest">Back</a>
+            <a href="{{ url('dashboard:server_buy_access_manage') }}" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg bg-violet-600 hover:bg-violet-700 text-white uppercase tracking-widest">Server buy access</a>
             <a href="/sd/users/customuser/" class="inline-flex items-center px-3 py-2 text-xs font-black rounded-lg bg-slate-900 hover:bg-indigo-600 text-white uppercase tracking-widest">Open /sd/users</a>
         </div>
     </div>
@@ -43,9 +44,6 @@
                         <th class="px-4 py-3">IP Address</th>
                         <th class="px-4 py-3">Location</th>
                         <th class="px-4 py-3">Joined</th>
-                        {% if request.user.is_superuser %}
-                        <th class="px-4 py-3">Server buy</th>
-                        {% endif %}
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -71,26 +69,10 @@
                         <td class="px-4 py-3 text-xs font-mono text-slate-700">{{ u.last_login_ip or "-" }}</td>
                         <td class="px-4 py-3 text-xs font-bold text-slate-700">{{ u.ip_location or (u.get_state_display() if u.state else "Unknown") }}</td>
                         <td class="px-4 py-3 text-xs font-medium text-slate-600">{{ u.date_joined.strftime('%d %b %Y %I:%M %p') }}</td>
-                        {% if request.user.is_superuser %}
-                        <td class="px-4 py-3">
-                            <form method="post" action="{{ url('dashboard:toggle_user_server_buy', user_id=u.id) }}" class="inline-flex items-center gap-2">
-                                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                <input type="hidden" name="enabled" value="{{ '0' if u.show_server_buy_button else '1' }}">
-                                <input type="hidden" name="next" value="{{ request.get_full_path() }}">
-                                {% if u.show_server_buy_button %}
-                                <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-800">On</span>
-                                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Hide</button>
-                                {% else %}
-                                <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Off</span>
-                                <button type="submit" class="rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-violet-800 hover:bg-violet-100">Show</button>
-                                {% endif %}
-                            </form>
-                        </td>
-                        {% endif %}
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ 9 if request.user.is_superuser else 8 }}" class="px-4 py-8 text-center text-sm font-bold text-slate-500">No users found for this filter.</td>
+                        <td colspan="8" class="px-4 py-8 text-center text-sm font-bold text-slate-500">No users found for this filter.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
