@@ -1,73 +1,301 @@
 {% extends "base.jinja" %}
 {% block title %}{{ seo_title if seo_title is defined and seo_title else 'Courses - RankJee' }}{% endblock %}
+
 {% block extra_head %}
 <style>
-    .course-card {
-        border-color: color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
-    }
-    .course-card:hover {
-        border-color: color-mix(in srgb, var(--rj-saffron) 36%, #e2e8f0);
-    }
+:root {
+  --ca1:#4f46e5; --ca2:#6366f1; --ca3:#e0e7ff; --ca4:#818cf8;
+}
+
+.cl-accent-bar {
+  height:4px;
+  background:linear-gradient(90deg, var(--ca1), var(--ca2), var(--ca4));
+}
+
+.cl-hero {
+  position:relative; overflow:hidden;
+  border-bottom:1px solid color-mix(in srgb, var(--ca2) 12%, #e2e8f0);
+  background:
+    linear-gradient(168deg,
+      color-mix(in srgb, var(--ca3) 70%, #f8fafc) 0%,
+      #ffffff 42%,
+      color-mix(in srgb, var(--ca3) 22%, #ffffff) 100%);
+}
+.cl-hero::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 70% at 100% 0%,
+      color-mix(in srgb, var(--ca4) 20%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 55% at 0% 100%,
+      color-mix(in srgb, var(--ca3) 45%, transparent) 0%, transparent 62%);
+}
+.cl-hero-inner {
+  position:relative; z-index:1;
+  max-width:72rem; margin:0 auto;
+  padding:2.25rem 1rem 2.5rem;
+}
+@media(min-width:640px){ .cl-hero-inner{ padding:2.75rem 1.5rem 3rem; } }
+
+.cl-eyebrow {
+  display:inline-flex; align-items:center; gap:.4rem;
+  font-size:.6875rem; font-weight:800; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ca1);
+  background:color-mix(in srgb, var(--ca3) 65%, #fff);
+  border:1px solid color-mix(in srgb, var(--ca2) 18%, #e2e8f0);
+  border-radius:9999px; padding:.35rem .75rem; margin-bottom:1rem;
+}
+.cl-title {
+  font-size:clamp(1.75rem, 4vw, 2.35rem);
+  font-weight:900; letter-spacing:-.03em; color:#0f172a;
+  line-height:1.15; margin:0 0 .65rem;
+}
+.cl-lead {
+  font-size:1rem; line-height:1.6; color:#64748b;
+  max-width:40rem; margin:0;
+}
+.cl-alert {
+  margin-top:1.25rem; max-width:40rem;
+  border-radius:.875rem; border:1px solid #a7f3d0;
+  background:#ecfdf5; padding:.85rem 1rem;
+  font-size:.875rem; font-weight:600; color:#065f46;
+}
+
+.cl-main {
+  max-width:72rem; margin:0 auto;
+  padding:1.75rem 1rem 3rem;
+}
+@media(min-width:640px){ .cl-main{ padding:2rem 1.5rem 3.5rem; } }
+
+.cl-grid {
+  display:grid; grid-template-columns:minmax(0,1fr); gap:1.25rem;
+}
+@media(min-width:768px){ .cl-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.35rem; } }
+@media(min-width:1280px){ .cl-grid{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+
+.cl-card {
+  display:flex; flex-direction:column; height:100%;
+  border-radius:1rem; border:1px solid #e2e8f0;
+  background:#fff; overflow:hidden;
+  box-shadow:0 1px 3px rgba(15,23,42,.06);
+  transition:border-color .2s, box-shadow .2s, transform .2s;
+}
+.cl-card:hover {
+  border-color:color-mix(in srgb, var(--ca2) 32%, #e2e8f0);
+  box-shadow:0 14px 36px -20px color-mix(in srgb, var(--ca1) 28%, transparent);
+  transform:translateY(-2px);
+}
+.cl-card-thumb {
+  display:block; position:relative; overflow:hidden;
+  aspect-ratio:16/9; background:color-mix(in srgb, var(--ca3) 40%, #f1f5f9);
+}
+.cl-card-thumb img {
+  width:100%; height:100%; object-fit:cover;
+  transition:transform .35s ease;
+}
+.cl-card:hover .cl-card-thumb img { transform:scale(1.03); }
+.cl-card-thumb-placeholder {
+  display:flex; align-items:center; justify-content:center;
+  width:100%; height:100%; min-height:9rem;
+  font-size:2.5rem; font-weight:900; color:var(--ca2);
+  background:linear-gradient(135deg, color-mix(in srgb, var(--ca3) 80%, #fff), #fff);
+}
+.cl-featured {
+  position:absolute; top:.65rem; left:.65rem; z-index:2;
+  font-size:.625rem; font-weight:800; letter-spacing:.08em;
+  text-transform:uppercase; color:#fff;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2));
+  border-radius:9999px; padding:.28rem .55rem;
+  box-shadow:0 4px 12px -4px color-mix(in srgb, var(--ca1) 60%, transparent);
+}
+
+.cl-card-body { padding:1.1rem 1.15rem 1.2rem; flex:1; display:flex; flex-direction:column; }
+.cl-card-title {
+  font-size:1.05rem; font-weight:800; line-height:1.3;
+  color:#0f172a; margin:0 0 .45rem;
+}
+.cl-card-title a { color:inherit; text-decoration:none; }
+.cl-card-title a:hover { color:var(--ca1); }
+.cl-card-desc {
+  font-size:.8125rem; line-height:1.55; color:#64748b;
+  margin:0 0 .85rem;
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.cl-meta-grid {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:.5rem; margin-bottom:.85rem;
+}
+.cl-meta-cell {
+  background:#f8fafc; border:1px solid #e2e8f0; border-radius:.65rem;
+  padding:.45rem .55rem;
+}
+.cl-meta-label {
+  display:block; font-size:.5625rem; font-weight:700;
+  letter-spacing:.08em; text-transform:uppercase; color:#94a3b8;
+}
+.cl-meta-value {
+  display:block; font-size:.75rem; font-weight:700; color:#0f172a;
+  line-height:1.25; margin-top:.1rem;
+}
+.cl-salary-pill {
+  display:inline-flex; align-items:center; gap:.35rem;
+  font-size:.6875rem; font-weight:700; color:#047857;
+  background:#ecfdf5; border:1px solid #a7f3d0;
+  border-radius:9999px; padding:.25rem .55rem;
+  margin-bottom:.75rem;
+}
+.cl-price-row {
+  display:flex; align-items:flex-end; justify-content:space-between;
+  gap:.75rem; margin-top:auto; padding-top:.25rem;
+}
+.cl-price {
+  font-size:1.35rem; font-weight:900; color:#047857; letter-spacing:-.02em;
+}
+.cl-price-free { color:var(--ca1); }
+
+.cl-card-actions {
+  display:flex; flex-direction:column; gap:.5rem;
+  margin-top:.85rem; padding-top:.85rem;
+  border-top:1px solid #f1f5f9;
+}
+.cl-card-actions-row { display:flex; gap:.5rem; }
+.cl-card-actions-row > * { flex:1; min-width:0; }
+
+.cd-btn-primary,
+.cd-btn-primary[type="submit"] {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:2.5rem; padding:.6rem 1rem; border-radius:.75rem;
+  border:none; box-sizing:border-box;
+  font-family:inherit; font-size:.8125rem; font-weight:700;
+  color:#fff !important; text-decoration:none; cursor:pointer;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2)) !important;
+  box-shadow:0 8px 20px -10px color-mix(in srgb, var(--ca1) 70%, transparent);
+  transition:transform .15s, filter .15s;
+}
+.cd-btn-primary:hover,
+.cd-btn-primary[type="submit"]:hover {
+  filter:brightness(1.05); transform:translateY(-1px);
+}
+.cd-btn-primary.w-full,
+form .cd-btn-primary { width:100%; }
+
+.cd-btn-secondary {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:2.5rem; padding:.6rem 1rem; border-radius:.75rem;
+  box-sizing:border-box; width:100%;
+  font-family:inherit; font-size:.8125rem; font-weight:600;
+  color:#334155 !important; text-decoration:none;
+  background:#fff !important; border:1px solid #cbd5e1;
+  transition:background .15s, border-color .15s;
+}
+.cd-btn-secondary:hover { background:#f8fafc !important; border-color:#94a3b8; }
+
+.cl-owned {
+  display:inline-flex; align-items:center; justify-content:center;
+  min-height:2.5rem; width:100%; border-radius:.75rem;
+  font-size:.8125rem; font-weight:700; color:#065f46;
+  background:#d1fae5; border:1px solid #6ee7b7;
+}
+
+.cl-empty {
+  grid-column:1 / -1;
+  border-radius:1rem; border:1px solid #fde68a;
+  background:#fffbeb; padding:1.5rem; color:#92400e;
+  font-size:.9rem; font-weight:600;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-8 md:py-10">
-    <div class="mb-6 md:mb-8">
-        <h1 class="text-2xl md:text-3xl font-black text-slate-900">Courses</h1>
-        <p class="text-sm md:text-base text-slate-600 mt-2">Explore job-focused courses and start learning with a clean, guided flow.</p>
-        {% if request.GET.get('purchased') == '1' %}
-        <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
-            Payment successful — your courses are unlocked. We&apos;ll follow up with access details by email where applicable.
-        </div>
+<div class="cl-accent-bar" aria-hidden="true"></div>
+
+<section class="cl-hero">
+  <div class="cl-hero-inner">
+    <p class="cl-eyebrow">RankJee · Job-ready programs</p>
+    <h1 class="cl-title">Courses</h1>
+    <p class="cl-lead">Explore practical, outcome-focused programs — clear pricing, duration, and career paths on every course page.</p>
+    {% if request.GET.get('purchased') == '1' %}
+    <div class="cl-alert" role="status">
+      Payment successful — your courses are unlocked. We&apos;ll follow up with access details by email where applicable.
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<div class="cl-main">
+  <div class="cl-grid">
+    {% for c in courses %}
+    <article class="cl-card">
+      <a href="{{ url('core:course_detail', c.slug) }}" class="cl-card-thumb">
+        {% if c.is_featured %}
+        <span class="cl-featured">Featured</span>
         {% endif %}
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-        {% for c in courses %}
-        <article class="course-card group rounded-2xl border bg-white shadow-sm hover:shadow-md transition-all p-4 md:p-5 flex flex-col">
-            {% if c.thumbnail_url %}
-            <a href="{{ url('core:course_detail', c.slug) }}" class="block overflow-hidden rounded-xl mb-4">
-                <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" class="w-full h-44 md:h-40 object-cover transition-transform duration-300 group-hover:scale-[1.02]">
-            </a>
-            {% endif %}
-            <h2 class="text-lg md:text-xl font-black text-slate-900 leading-tight">
-                <a href="{{ url('core:course_detail', c.slug) }}" class="rj-link-accent transition-colors">{{ c.title }}</a>
-            </h2>
-            <p class="text-sm text-slate-500 mt-2">{{ c.short_description or c.description[:140] }}</p>
-            <div class="mt-4 flex items-center justify-between text-xs text-slate-600 font-semibold">
-                <span>{{ c.level or "All levels" }}</span>
-                <span>{{ c.duration_weeks }} weeks</span>
-            </div>
-            <div class="mt-3 text-xl font-black text-emerald-700">{% if c.price_inr and c.price_inr > 0 %}₹{{ c.price_inr }}{% else %}Free{% endif %}</div>
-            <div class="mt-4 flex flex-col gap-2">
-                <a href="{{ url('core:course_detail', c.slug) }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">
-                    Details
-                </a>
-                {% if request.user.is_authenticated %}
-                    {% if c.id in course_purchased_ids %}
-                    <span class="inline-flex items-center justify-center rounded-xl bg-emerald-100 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-emerald-800">Owned</span>
-                    {% else %}
-                    <form method="post" action="{{ url('core:course_cart_add', c.id) }}" class="m-0">
-                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                        <button type="submit" class="rj-cta-primary w-full px-5 py-3 font-black uppercase text-white">
-                            Add to cart
-                        </button>
-                    </form>
-                    {% endif %}
-                {% else %}
-                <a href="{{ url('users:login') }}?next=/courses/" class="rj-cta-primary inline-flex items-center justify-center px-5 py-3 font-black uppercase text-white">
-                    Log in to buy
-                </a>
-                {% endif %}
-            </div>
-        </article>
+        {% if c.thumbnail_url %}
+        <img src="{{ c.thumbnail_url }}" alt="" loading="lazy">
         {% else %}
-        <div class="md:col-span-2 xl:col-span-3 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-            No active courses yet. Add from admin CMS.
-        </div>
-        {% endfor %}
-    </div>
+        <span class="cl-card-thumb-placeholder" aria-hidden="true">{{ c.title[:1] }}</span>
+        {% endif %}
+      </a>
+      <div class="cl-card-body">
+        <h2 class="cl-card-title">
+          <a href="{{ url('core:course_detail', c.slug) }}">{{ c.title }}</a>
+        </h2>
+        <p class="cl-card-desc">{{ c.short_description or c.description[:200] }}</p>
 
+        {% if c.salary_after_min and c.salary_after_max %}
+        <p class="cl-salary-pill">
+          <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/></svg>
+          ₹{{ c.salary_after_min|int }}–{{ c.salary_after_max|int }} LPA
+        </p>
+        {% endif %}
+
+        <div class="cl-meta-grid">
+          <div class="cl-meta-cell">
+            <span class="cl-meta-label">Level</span>
+            <span class="cl-meta-value">{{ c.level or 'All levels' }}</span>
+          </div>
+          <div class="cl-meta-cell">
+            <span class="cl-meta-label">Duration</span>
+            <span class="cl-meta-value">{{ c.duration_weeks }} weeks</span>
+          </div>
+          <div class="cl-meta-cell">
+            <span class="cl-meta-label">Format</span>
+            <span class="cl-meta-value">Self-paced</span>
+          </div>
+          <div class="cl-meta-cell">
+            <span class="cl-meta-label">Modules</span>
+            <span class="cl-meta-value">{{ c.curriculum|length if c.curriculum else '—' }}</span>
+          </div>
+        </div>
+
+        <div class="cl-price-row">
+          <p class="cl-price{% if not c.price_inr or c.price_inr <= 0 %} cl-price-free{% endif %}">
+            {% if c.price_inr and c.price_inr > 0 %}₹{{ c.price_inr|int }}{% else %}Free{% endif %}
+          </p>
+        </div>
+
+        <div class="cl-card-actions">
+          <div class="cl-card-actions-row">
+            <a href="{{ url('core:course_detail', c.slug) }}" class="cd-btn-secondary">View course</a>
+            {% if request.user.is_authenticated %}
+              {% if c.id in course_purchased_ids %}
+              <span class="cl-owned">Owned</span>
+              {% else %}
+              <form method="post" action="{{ url('core:course_cart_add', c.id) }}" class="m-0" style="flex:1;">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <button type="submit" class="cd-btn-primary w-full">Add to cart</button>
+              </form>
+              {% endif %}
+            {% else %}
+            <a href="{{ url('users:login') }}?next={{ url('core:course_detail', c.slug) }}" class="cd-btn-primary w-full">Log in to buy</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </article>
+    {% else %}
+    <p class="cl-empty">No active courses yet. Add courses from the admin CMS.</p>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}

@@ -522,6 +522,22 @@ form .cd-btn-primary { width:100%; }
   border-radius:.5rem; padding:.35rem .8rem;
   font-size:.75rem; font-weight:700; color:#1e293b;
 }
+
+/* ── career job-role pills (no Tailwind color deps) ── */
+.cd-career-roles-label {
+  font-size:.6875rem; font-weight:800; letter-spacing:.14em;
+  text-transform:uppercase; color:#64748b; margin:0 0 .85rem;
+}
+.cd-role-chips { display:flex; flex-wrap:wrap; gap:.5rem; }
+.cd-role-chip {
+  display:inline-flex; align-items:center; gap:.4rem;
+  padding:.4rem .85rem; border-radius:9999px;
+  font-size:.75rem; font-weight:600; line-height:1.35;
+  border:1px solid color-mix(in srgb, var(--ca2) 22%, #e2e8f0);
+  background:color-mix(in srgb, var(--ca3) 55%, #fff);
+  color:var(--ca1);
+}
+.cd-role-chip svg { width:.875rem; height:.875rem; flex-shrink:0; opacity:.65; }
 </style>
 {% endblock %}
 
@@ -916,15 +932,16 @@ form .cd-btn-primary { width:100%; }
         {% endif %}
 
         {% if course.job_roles %}
-        <div class="p-5">
-          <p class="text-[11px] font-black uppercase tracking-[.18em] text-slate-400 mb-4">Job roles you can apply for</p>
-          {% set rc = ['bg-blue-50 border-blue-200 text-blue-800','bg-violet-50 border-violet-200 text-violet-800','bg-emerald-50 border-emerald-200 text-emerald-800','bg-amber-50 border-amber-200 text-amber-800','bg-rose-50 border-rose-200 text-rose-800','bg-cyan-50 border-cyan-200 text-cyan-800'] %}
-          <div class="flex flex-wrap gap-2.5">
+        <div class="p-5 md:p-6">
+          <p class="cd-career-roles-label">Job roles you can apply for</p>
+          <div class="cd-role-chips">
             {% for role in course.job_roles.split(',') %}
-            <div class="flex items-center gap-2 rounded-xl border px-3.5 py-2 {{ rc[loop.index0 % 6] }} transition-transform hover:-translate-y-0.5 cursor-default">
-              <svg class="h-3.5 w-3.5 shrink-0 opacity-70" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-              <span class="text-xs font-bold">{{ role.strip() }}</span>
-            </div>
+            {% if role.strip() %}
+            <span class="cd-role-chip">
+              <svg fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+              {{ role.strip() }}
+            </span>
+            {% endif %}
             {% endfor %}
           </div>
         </div>
