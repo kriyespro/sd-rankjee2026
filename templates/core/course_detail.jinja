@@ -1,100 +1,527 @@
 {% extends "base.jinja" %}
-{% block title %}{{ seo_title if seo_title is defined and seo_title else course.title + ' - RankJee' }}{% endblock %}
+{% block title %}{{ seo_title if seo_title is defined and seo_title else course.title + ' – RankJee' }}{% endblock %}
 
 {% block extra_head %}
 <style>
-  /* ── Course-domain accent colour ─────────────────────────── */
-  {% set _t = course.title|lower %}
-  {% if 'seo' in _t or 'search' in _t %}
-    :root{ --ca1:#0369a1; --ca2:#0284c7; --ca3:#e0f2fe; --ca4:#38bdf8; --ca5:#bae6fd; }
-  {% elif 'social' in _t or 'instagram' in _t %}
-    :root{ --ca1:#7c3aed; --ca2:#8b5cf6; --ca3:#ede9fe; --ca4:#a78bfa; --ca5:#ddd6fe; }
-  {% elif 'email' in _t %}
-    :root{ --ca1:#d97706; --ca2:#f59e0b; --ca3:#fef3c7; --ca4:#fbbf24; --ca5:#fde68a; }
-  {% elif 'ecommerce' in _t or 'amazon' in _t or 'shopify' in _t %}
-    :root{ --ca1:#0f766e; --ca2:#0d9488; --ca3:#ccfbf1; --ca4:#2dd4bf; --ca5:#99f6e4; }
-  {% elif 'prompt' in _t or 'chatgpt' in _t or 'claude' in _t %}
-    :root{ --ca1:#6d28d9; --ca2:#7c3aed; --ca3:#ede9fe; --ca4:#a78bfa; --ca5:#ddd6fe; }
-  {% elif 'agent' in _t or 'langchain' in _t or 'agentic' in _t %}
-    :root{ --ca1:#1e3a8a; --ca2:#1d4ed8; --ca3:#dbeafe; --ca4:#60a5fa; --ca5:#bfdbfe; }
-  {% elif 'performance' in _t or 'paid' in _t %}
-    :root{ --ca1:#be123c; --ca2:#e11d48; --ca3:#ffe4e6; --ca4:#fb7185; --ca5:#fecdd3; }
-  {% else %}
-    :root{ --ca1:#4f46e5; --ca2:#6366f1; --ca3:#e0e7ff; --ca4:#818cf8; --ca5:#c7d2fe; }
-  {% endif %}
+/* ── course accent palette (domain-specific) ── */
+{% set _t = course.title|lower %}
+{% if 'seo' in _t or 'search' in _t %}
+  :root{ --ca1:#0369a1; --ca2:#0284c7; --ca3:#e0f2fe; --ca4:#38bdf8; }
+{% elif 'social' in _t or 'instagram' in _t %}
+  :root{ --ca1:#7c3aed; --ca2:#8b5cf6; --ca3:#ede9fe; --ca4:#a78bfa; }
+{% elif 'email' in _t %}
+  :root{ --ca1:#b45309; --ca2:#d97706; --ca3:#fef3c7; --ca4:#fbbf24; }
+{% elif 'ecommerce' in _t or 'amazon' in _t or 'shopify' in _t %}
+  :root{ --ca1:#0f766e; --ca2:#0d9488; --ca3:#ccfbf1; --ca4:#2dd4bf; }
+{% elif 'prompt' in _t or 'chatgpt' in _t or 'claude' in _t %}
+  :root{ --ca1:#6d28d9; --ca2:#7c3aed; --ca3:#ede9fe; --ca4:#a78bfa; }
+{% elif 'agent' in _t or 'langchain' in _t or 'agentic' in _t %}
+  :root{ --ca1:#1e3a8a; --ca2:#1d4ed8; --ca3:#dbeafe; --ca4:#60a5fa; }
+{% elif 'performance' in _t or 'paid' in _t %}
+  :root{ --ca1:#be123c; --ca2:#e11d48; --ca3:#ffe4e6; --ca4:#fb7185; }
+{% elif 'marketing' in _t or 'digital' in _t or 'branding' in _t or 'content' in _t or 'ads' in _t %}
+  :root{ --ca1:#c2410c; --ca2:#ea580c; --ca3:#fff7ed; --ca4:#fb923c; }
+{% else %}
+  :root{ --ca1:#4f46e5; --ca2:#6366f1; --ca3:#e0e7ff; --ca4:#818cf8; }
+{% endif %}
 
-  /* ── Markdown ─────────────────────────────────────────────── */
-  .rj-md ul { list-style: none; padding: 0; }
-  .rj-md ul li { padding-left: 1.4rem; position: relative; margin: .35rem 0; color: #334155; font-size: .9rem; }
-  .rj-md ul li::before { content:'✓'; position:absolute; left:0; color: var(--ca2); font-weight:900; }
-  .rj-md ol { list-style: decimal; padding-left: 1.2rem; }
-  .rj-md li,
-  .rj-md p { color: #334155; font-size:.9rem; margin:.35rem 0; }
-  .rj-md strong { color: #0f172a; }
+/* ── markdown rendering ── */
+.rj-md ul { list-style:none; padding:0; }
+.rj-md ul li { padding-left:1.5rem; position:relative; margin:.4rem 0; color:#334155; font-size:.9rem; line-height:1.65; }
+.rj-md ul li::before { content:'✓'; position:absolute; left:0; color:var(--ca2); font-weight:900; }
+.rj-md ol { list-style:decimal; padding-left:1.2rem; }
+.rj-md li, .rj-md p { color:#334155; font-size:.9rem; margin:.4rem 0; line-height:1.65; }
+.rj-md strong { color:#0f172a; }
+.rj-md h3,.rj-md h4 { font-size:.95rem; font-weight:800; color:#0f172a; margin:.9rem 0 .3rem; }
 
-  /* ── CSS accordion (no JS plugin) ─────────────────────────── */
-  .acc-body { max-height:0; overflow:hidden; transition:max-height .35s cubic-bezier(.4,0,.2,1); }
-  .acc-item input[type=checkbox]:checked ~ .acc-body { max-height:700px; }
-  .acc-item input[type=checkbox]:checked ~ label .acc-chevron { transform:rotate(180deg); }
-  .acc-chevron { transition:transform .25s ease; display:inline-block; }
+/* ── CSS accordion (no JS) ── */
+.acc-body { max-height:0; overflow:hidden; transition:max-height .35s cubic-bezier(.4,0,.2,1); }
+.acc-item input[type=checkbox]:checked ~ .acc-body { max-height:900px; }
+.acc-item input[type=checkbox]:checked ~ label .acc-chevron { transform:rotate(180deg); }
+.acc-item input[type=checkbox]:checked ~ label .acc-num {
+  background: var(--ca1) !important; color:#fff !important;
+}
+.acc-chevron { transition:transform .25s ease; display:inline-block; }
 
-  /* ── Sticky sidebar ────────────────────────────────────────── */
-  @media(min-width:1024px){ .rj-sticky{ position:sticky; top:1.5rem; } }
+/* ── sticky sidebar ── */
+@media(min-width:1024px){ .rj-sticky{ position:sticky; top:1.25rem; } }
 
-  /* ── Mobile bar ────────────────────────────────────────────── */
-  .rj-mobile-bar {
-    position:fixed; left:0; right:0; bottom:0; z-index:55;
-    background:rgba(255,255,255,.96); backdrop-filter:blur(12px);
-    border-top:1px solid #e2e8f0;
-    box-shadow: 0 -6px 30px rgba(15,23,42,.12);
+/* ── mobile fixed bottom bar ── */
+.rj-mob-bar {
+  position:fixed; left:0; right:0; bottom:0; z-index:55;
+  background:rgba(255,255,255,.97); backdrop-filter:blur(14px);
+  border-top:1px solid #e2e8f0;
+  box-shadow: 0 -6px 36px rgba(15,23,42,.12);
+}
+@media(min-width:1024px){ .rj-mob-bar{ display:none !important; } }
+.rj-mob-bar .cd-btn-primary { padding:.65rem 1rem; font-size:.75rem; white-space:nowrap; min-height:2.5rem; }
+
+/* ── hero – light palette ── */
+.cd-hero {
+  position:relative; overflow:hidden;
+  border-bottom:1px solid color-mix(in srgb, var(--ca2) 12%, #e2e8f0);
+  background:
+    linear-gradient(168deg,
+      color-mix(in srgb, var(--ca3) 70%, #f8fafc) 0%,
+      #ffffff 38%,
+      color-mix(in srgb, var(--ca3) 25%, #ffffff) 100%);
+}
+.cd-hero::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 70% at 100% 0%,
+      color-mix(in srgb, var(--ca4) 22%, transparent) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 55% at 0% 100%,
+      color-mix(in srgb, var(--ca3) 50%, transparent) 0%, transparent 62%);
+}
+.cd-hero::after {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--ca2) 10%, transparent) 1px, transparent 1px);
+  background-size:28px 28px; opacity:.25;
+}
+.cd-hero-inner {
+  position:relative; z-index:1;
+  max-width:72rem; margin:0 auto;
+  padding:2.5rem 1rem 3rem;
+}
+@media(min-width:640px){ .cd-hero-inner{ padding:3rem 1.5rem 3.5rem; } }
+@media(min-width:1024px){
+  .cd-hero-inner{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(300px,340px);
+    gap:2rem;
+    align-items:stretch;
   }
-  @media(min-width:1024px){ .rj-mobile-bar{ display:none; } }
+  .cd-hero-main,
+  .cd-hero-aside{
+    min-height:100%;
+    align-self:stretch;
+  }
+  .cd-hero-main{
+    display:flex; flex-direction:column;
+  }
+  .cd-hero-main .cd-hero-grow{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    margin:1rem 0 1.25rem;
+    min-height:0;
+  }
+  .cd-hero-main .cd-meta-grid{
+    margin-top:0;
+    padding-top:0;
+    flex-shrink:0;
+  }
+  .cd-hero-usps{ margin-bottom:1.15rem; }
+  .cd-hero-lead{ margin-bottom:1.15rem; }
+}
 
-  /* ── Hero light bg ─────────────────────────────────────────── */
-  .rj-hero-bg {
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
+/* left hero — what you'll gain + perks */
+.cd-hero-gain {
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:1rem;
+  padding:1rem 1.1rem 1.05rem;
+  box-shadow:0 4px 18px -14px rgba(15,23,42,.12);
+}
+.cd-hero-gain-label {
+  font-size:.6875rem; font-weight:800; letter-spacing:.12em;
+  text-transform:uppercase; color:#94a3b8; margin:0 0 .65rem;
+}
+.cd-hero-outcomes-list {
+  list-style:none; margin:0 0 .85rem; padding:0;
+  display:flex; flex-direction:column; gap:.55rem;
+}
+.cd-hero-outcomes-list li {
+  display:flex; align-items:flex-start; gap:.55rem;
+  font-size:.8125rem; line-height:1.5; color:#475569;
+}
+.cd-hero-outcomes-list strong { color:#0f172a; font-weight:700; }
+.cd-hero-outcomes-icon {
+  flex-shrink:0; width:1.25rem; height:1.25rem; margin-top:.05rem;
+  border-radius:.4rem; display:flex; align-items:center; justify-content:center;
+  font-size:.65rem; font-weight:900; color:#fff;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2));
+}
+.cd-hero-perks-list {
+  list-style:none; margin:0; padding:.75rem 0 0;
+  border-top:1px solid #f1f5f9;
+  display:flex; flex-direction:column; gap:.45rem;
+}
+.cd-hero-perk {
+  display:flex; align-items:flex-start; gap:.5rem;
+  font-size:.75rem; line-height:1.45; color:#64748b;
+}
+.cd-hero-perk svg { flex-shrink:0; margin-top:.1rem; color:var(--ca2); }
+@media(min-width:640px){
+  .cd-hero-perks-list{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:.5rem .65rem;
   }
-  /* subtle dot-grid pattern */
-  .rj-hero-bg::before {
-    content:'';
-    position:absolute;inset:0;
-    background-image: radial-gradient(circle, var(--ca2) 1px, transparent 1px);
-    background-size: 28px 28px;
-    opacity: .045;
-    pointer-events:none;
-  }
-  /* accent glow top-right */
-  .rj-hero-bg::after {
-    content:'';
-    position:absolute;
-    top:-120px; right:-80px;
-    width:480px; height:480px;
-    border-radius:50%;
-    background: var(--ca2);
-    opacity:.07;
-    filter:blur(70px);
-    pointer-events:none;
-  }
+  .cd-hero-perk{ font-size:.7rem; }
+}
 
-  /* What you'll learn check card */
-  .rj-learn-card {
-    background: var(--ca3);
-    border: 1px solid color-mix(in srgb, var(--ca2) 25%, transparent);
-    border-radius: 1rem;
-  }
+/* typography */
+.cd-hero-eyebrow {
+  font-size:.6875rem; font-weight:700; letter-spacing:.14em;
+  text-transform:uppercase; color:#94a3b8;
+}
+.cd-hero-eyebrow a { color:#64748b; text-decoration:none; transition:color .15s; }
+.cd-hero-eyebrow a:hover { color:var(--ca1); }
+.cd-hero-title {
+  font-size:clamp(1.75rem, 4.2vw, 2.85rem);
+  font-weight:800; letter-spacing:-.03em; line-height:1.08;
+  color:#0f172a; margin:0 0 1rem;
+}
+.cd-hero-lead {
+  font-size:1.0625rem; line-height:1.65; color:#475569;
+  max-width:38rem; margin:0 0 1.5rem;
+}
+.cd-hero-usp { font-size:.875rem; line-height:1.55; color:#64748b; }
+.cd-hero-usp strong { color:#1e293b; font-weight:700; }
 
-  /* ── Trust badge shimmer ────────────────────────────────────── */
-  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
-  .shimmer-btn {
-    background: linear-gradient(90deg, var(--ca1) 0%, var(--ca2) 40%, rgba(255,255,255,.15) 50%, var(--ca2) 60%, var(--ca1) 100%);
-    background-size:200% auto;
-    animation: shimmer 3s linear infinite;
-  }
+/* meta grid (replaces broken divide-x strip) */
+.cd-meta-grid {
+  display:grid; grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:.65rem; margin-bottom:1.75rem;
+}
+@media(min-width:640px){ .cd-meta-grid{ grid-template-columns:repeat(4, minmax(0,1fr)); gap:.75rem; } }
+@media(min-width:1024px){ .cd-meta-grid{ margin-bottom:0; } }
+.cd-meta-cell {
+  background:#fff; border:1px solid #e2e8f0; border-radius:.875rem;
+  padding:.75rem .9rem; box-shadow:0 1px 2px rgba(15,23,42,.04);
+}
+.cd-meta-label {
+  display:block; font-size:.625rem; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; color:#94a3b8;
+  margin-bottom:.2rem;
+}
+.cd-meta-value {
+  display:block; font-size:.9375rem; font-weight:700;
+  color:#0f172a; line-height:1.25;
+}
 
-  /* Rating stars pulse on hover */
-  .rj-stars:hover svg { transform:scale(1.15); }
-  .rj-stars svg { transition: transform .15s; }
+/* hero CTAs — custom breakpoints (Tailwind lg:block not always compiled) */
+.cd-hero-actions {
+  display:flex; flex-wrap:wrap; align-items:stretch; gap:.75rem;
+  margin-top:.25rem;
+}
+@media(min-width:1024px){ .cd-hero-actions{ display:none; } }
+@media(max-width:1023px){
+  .cd-hero-actions .cd-btn-primary,
+  .cd-hero-actions .cd-btn-secondary,
+  .cd-hero-actions form { flex:1 1 100%; width:100%; min-width:0; }
+  .cd-hero-actions form .cd-btn-primary { width:100%; }
+}
+
+.cd-btn-primary,
+.cd-btn-primary[type="submit"] {
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  min-height:2.75rem; padding:.75rem 1.35rem; border-radius:.75rem;
+  border:none; box-sizing:border-box;
+  font-family:inherit; font-size:.875rem; font-weight:700; line-height:1.2;
+  letter-spacing:.01em; text-transform:none; color:#fff !important;
+  text-decoration:none; cursor:pointer; -webkit-appearance:none; appearance:none;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2)) !important;
+  box-shadow:0 10px 24px -12px color-mix(in srgb, var(--ca1) 75%, transparent);
+  transition:transform .15s, box-shadow .15s, filter .15s;
+}
+.cd-btn-primary:hover,
+.cd-btn-primary[type="submit"]:hover {
+  filter:brightness(1.05); transform:translateY(-1px);
+}
+.cd-btn-primary.w-full,
+form .cd-btn-primary { width:100%; }
+
+.cd-btn-secondary {
+  display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+  min-height:2.75rem; padding:.75rem 1.25rem; border-radius:.75rem;
+  box-sizing:border-box;
+  font-family:inherit; font-size:.875rem; font-weight:600; line-height:1.2;
+  color:#334155 !important; text-decoration:none;
+  background:#fff !important; border:1px solid #cbd5e1;
+  box-shadow:0 1px 3px rgba(15,23,42,.06);
+  transition:background .15s, border-color .15s;
+}
+.cd-btn-secondary:hover { background:#f8fafc !important; border-color:#94a3b8; }
+.cd-btn-secondary.w-full { width:100%; display:flex; }
+
+.cd-hero-buy-wrap { display:none; }
+@media(min-width:1024px){ .cd-hero-buy-wrap{ display:block; } }
+
+/* right aside */
+.cd-hero-aside { display:flex; flex-direction:column; gap:.75rem; width:100%; }
+@media(min-width:1024px){
+  .cd-hero-aside{
+    margin-top:0;
+    gap:0;
+    position:sticky;
+    top:1rem;
+    display:flex;
+    flex-direction:column;
+    min-height:100%;
+  }
+  .cd-hero-preview{ display:none !important; }
+  .cd-hero-buy-wrap{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:100%;
+  }
+}
+.cd-hero-aside .cd-buy-card > .aspect-video:first-child,
+.cd-hero-aside .cd-buy-card > div.aspect-video:first-child { display:none; }
+.cd-hero-preview {
+  border-radius:1rem; overflow:hidden; border:1px solid #e2e8f0;
+  background:#fff; box-shadow:0 10px 28px -22px rgba(15,23,42,.18);
+}
+.cd-hero-preview-media {
+  position:relative; aspect-ratio:16/9;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2));
+}
+.cd-hero-preview-media img { width:100%; height:100%; object-fit:cover; }
+.cd-hero-preview-badge {
+  position:absolute; left:.6rem; bottom:.6rem;
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.3rem .55rem; border-radius:9999px;
+  background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+  font-size:.625rem; font-weight:700; color:#0f172a;
+}
+.cd-hero-preview-stats {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:0; border-top:1px solid #f1f5f9;
+}
+.cd-hero-preview-stat {
+  padding:.75rem .5rem; text-align:center; border-right:1px solid #f1f5f9;
+}
+.cd-hero-preview-stat:last-child { border-right:none; }
+.cd-hero-preview-stat strong {
+  display:block; font-size:.875rem; font-weight:800; color:#0f172a;
+}
+.cd-hero-preview-stat span {
+  display:block; font-size:.625rem; font-weight:600;
+  text-transform:uppercase; letter-spacing:.06em; color:#94a3b8; margin-top:.15rem;
+}
+
+/* buy card mini lines (hero sidebar desktop) */
+.cd-buy-mini-lines {
+  display:none;
+  margin-top:.75rem;
+  padding-top:.75rem;
+  border-top:1px solid #f1f5f9;
+}
+.cd-buy-mini-line {
+  display:flex; align-items:flex-start; gap:.5rem;
+  font-size:.75rem; line-height:1.45; color:#475569;
+  margin-bottom:.45rem;
+}
+.cd-buy-mini-line:last-child { margin-bottom:0; }
+.cd-buy-mini-line svg { flex-shrink:0; margin-top:.1rem; color:var(--ca2); }
+
+/* buy card middle — career paths & outcomes (fills hero gap) */
+.cd-buy-middle { display:none; }
+.cd-buy-career-label,
+.cd-buy-starts-label {
+  font-size:.625rem; font-weight:800; letter-spacing:.12em;
+  text-transform:uppercase; color:#94a3b8; margin:0 0 .45rem;
+}
+.cd-buy-career-chips {
+  display:flex; flex-wrap:wrap; gap:.35rem; margin-bottom:.85rem;
+}
+.cd-buy-career-chip {
+  display:inline-block; max-width:100%;
+  padding:.25rem .55rem; border-radius:9999px;
+  font-size:.65rem; font-weight:700; line-height:1.3;
+  color:var(--ca1);
+  background:color-mix(in srgb, var(--ca3) 55%, white);
+  border:1px solid color-mix(in srgb, var(--ca2) 18%, #e2e8f0);
+}
+.cd-buy-starts {
+  margin:0 0 .35rem; padding:.5rem .65rem; border-radius:.5rem;
+  background:#f8fafc; border:1px solid #e2e8f0;
+  font-size:.75rem; line-height:1.4;
+}
+.cd-buy-starts-title { display:block; font-weight:800; color:#0f172a; margin-top:.1rem; }
+.cd-buy-syllabus-link {
+  display:inline-flex; align-items:center; gap:.25rem;
+  font-size:.75rem; font-weight:700; text-decoration:none;
+  color:var(--ca1); margin-bottom:.65rem;
+}
+.cd-buy-syllabus-link:hover { text-decoration:underline; }
+.cd-buy-quote {
+  margin:.5rem 0 0; padding:.65rem .75rem; border-radius:.65rem;
+  background:color-mix(in srgb, var(--ca3) 35%, #f8fafc);
+  border-left:3px solid var(--ca2);
+}
+.cd-buy-quote p {
+  margin:0; font-size:.7rem; line-height:1.5; color:#334155; font-style:italic;
+}
+.cd-buy-quote footer {
+  margin:.35rem 0 0; font-size:.625rem; font-weight:700; color:#64748b;
+}
+
+/* desktop hero: single buy card fills column height */
+@media(min-width:1024px){
+  .cd-hero-aside .cd-buy-card{
+    box-shadow:0 12px 32px -20px rgba(15,23,42,.2);
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:100%;
+    height:100%;
+  }
+  .cd-hero-aside .cd-buy-card .cd-buy-card-body{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
+    gap:.65rem;
+    min-height:100%;
+    padding:1.15rem 1.2rem 1.2rem;
+  }
+  .cd-hero-aside .cd-buy-top{ flex-shrink:0; }
+  .cd-hero-aside .cd-buy-top .cd-btn-secondary{ margin-bottom:0 !important; }
+  .cd-hero-aside .cd-buy-middle{
+    display:block;
+    flex:0 0 auto;
+    padding:.65rem 0 0;
+    margin:0;
+    border-top:1px solid #f1f5f9;
+    border-bottom:none;
+  }
+  .cd-hero-aside .cd-buy-middle-inner{
+    display:flex; flex-direction:column; justify-content:flex-start;
+    gap:.5rem; min-height:0;
+  }
+  .cd-hero-aside .cd-buy-career-chips{ margin-bottom:0; }
+  .cd-hero-aside .cd-buy-syllabus-link{ margin-bottom:0; }
+  .cd-hero-aside .cd-buy-bottom{
+    flex-shrink:0;
+    display:flex;
+    flex-direction:column;
+    gap:.35rem;
+    margin-top:auto;
+    padding-top:.65rem;
+    border-top:1px solid #f1f5f9;
+  }
+  .cd-hero-aside .cd-buy-salary{ margin-top:0 !important; }
+  .cd-hero-aside .cd-buy-card .cd-buy-price{
+    font-size:1.75rem;
+    line-height:1.1;
+  }
+  .cd-hero-aside .cd-buy-salary-pill{ display:none; }
+  .cd-hero-aside .cd-buy-social{ display:none; }
+  .cd-hero-aside .cd-buy-includes{ display:none; }
+  .cd-hero-aside .cd-buy-mini-lines{
+    display:flex;
+    flex-direction:column;
+    gap:.4rem;
+    margin:0;
+    padding:0 0 .5rem;
+    border-top:none;
+  }
+  .cd-hero-aside .cd-buy-guarantee{
+    margin:0;
+    padding-top:.15rem;
+  }
+  .cd-hero-aside .cd-buy-salary{
+    margin:0;
+  }
+  .cd-hero-aside .cd-buy-salary > div{
+    padding:.55rem .75rem;
+  }
+  .cd-hero-aside .cd-buy-salary svg{
+    width:1.25rem;
+    height:1.25rem;
+  }
+}
+
+/* ── section anchor nav ── */
+.cd-sec-nav {
+  position:sticky; top:0; z-index:30;
+  background:rgba(255,255,255,.97); backdrop-filter:blur(12px);
+  border-bottom:1px solid #e2e8f0;
+}
+.cd-sec-nav-inner {
+  max-width:72rem; margin:0 auto; padding:0 1rem;
+  display:flex; align-items:stretch; justify-content:space-between; gap:.75rem;
+}
+@media(min-width:640px){ .cd-sec-nav-inner{ padding:0 1.5rem; } }
+.cd-sec-nav-links {
+  display:flex; align-items:stretch; overflow-x:auto; scrollbar-width:none;
+  flex:1; min-width:0;
+}
+.cd-sec-nav-links::-webkit-scrollbar { display:none; }
+.cd-anc {
+  display:inline-flex; align-items:center; padding:.85rem 1rem;
+  font-size:.6875rem; font-weight:700; letter-spacing:.06em;
+  text-transform:uppercase; color:#64748b; white-space:nowrap;
+  text-decoration:none; border-bottom:2px solid transparent;
+  transition:color .15s, border-color .15s;
+}
+@media(min-width:640px){ .cd-anc{ padding:.85rem 1.15rem; font-size:.72rem; } }
+.cd-anc:hover { color:var(--ca2); border-bottom-color:var(--ca4); }
+.cd-anc.active { color:var(--ca1); border-bottom-color:var(--ca1); }
+.cd-nav-cta {
+  display:none; align-items:center; align-self:center; flex-shrink:0;
+  padding:.6rem 1.15rem; border-radius:9999px;
+  font-size:.75rem; font-weight:700; color:#fff !important; text-decoration:none;
+  background:linear-gradient(135deg, var(--ca1), var(--ca2));
+  box-shadow:0 4px 14px -6px color-mix(in srgb, var(--ca1) 65%, transparent);
+  transition:filter .15s;
+}
+.cd-nav-cta:hover { filter:brightness(1.06); }
+@media(min-width:768px){ .cd-nav-cta{ display:inline-flex; } }
+
+/* ── "what you'll learn" check cards ── */
+.cd-learn-item {
+  display:flex; align-items:flex-start; gap:.7rem;
+  padding:.6rem .75rem; border-radius:.65rem;
+  background:#fff; border:1px solid color-mix(in srgb, var(--ca2) 18%, transparent);
+}
+.cd-learn-check {
+  width:1.25rem; height:1.25rem; border-radius:.35rem;
+  background: color-mix(in srgb, var(--ca2) 12%, white);
+  display:flex; align-items:center; justify-content:center; shrink:0; flex-shrink:0; margin-top:.05rem;
+}
+
+/* ── curriculum topic rows ── */
+.cd-topic {
+  display:flex; align-items:center; gap:.75rem;
+  padding:.6rem 1rem; border-radius:.6rem;
+  background:#f8fafc; border:1px solid #f1f5f9;
+  transition:background .15s;
+}
+.cd-topic:hover { background:#f1f5f9; }
+
+/* ── trust badge shimmer ── */
+@keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+.shimmer-btn {
+  background:linear-gradient(90deg, var(--ca1) 0%, var(--ca2) 40%, rgba(255,255,255,.15) 50%, var(--ca2) 60%, var(--ca1) 100%);
+  background-size:200% auto;
+  animation:shimmer 3s linear infinite;
+}
+
+/* ── section header ── */
+.cd-sec-hd {
+  display:flex; align-items:center; gap:.75rem; margin-bottom:1.4rem;
+}
+.cd-sec-icon {
+  width:2.25rem; height:2.25rem; border-radius:.65rem;
+  background: var(--ca3);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+
+/* ── tool badge ── */
+.cd-tool {
+  display:inline-flex; align-items:center; gap:.4rem;
+  background:#f8fafc; border:1px solid #e2e8f0;
+  border-radius:.5rem; padding:.35rem .8rem;
+  font-size:.75rem; font-weight:700; color:#1e293b;
+}
 </style>
 {% endblock %}
 
@@ -104,200 +531,268 @@
   "@context":"https://schema.org","@type":"Course",
   "name":"{{ course.title|e }}",
   "description":"{{ (course.short_description or '')|e }}",
-  "provider":{"@type":"Organization","name":"RankJee"},
-  "offers":{"@type":"Offer","price":"{{ course.price_inr }}","priceCurrency":"INR",
-            "availability":"https://schema.org/InStock","url":"{{ request.build_absolute_uri(request.path) }}"}
+  "provider":{"@type":"Organization","name":"RankJee","url":"https://rankjee.com"},
+  "offers":{
+    "@type":"Offer","price":"{{ course.price_inr }}","priceCurrency":"INR",
+    "availability":"https://schema.org/InStock",
+    "url":"{{ request.build_absolute_uri(request.path) }}"
+  }
+{% if course.salary_after_min and course.salary_after_max %}
+  ,"educationalCredentialAwarded":"Certificate of Completion"
+{% endif %}
 }
 </script>
 {% endblock %}
 
 {% block content %}
+{% set total_topics = course.curriculum|map(attribute='topics')|map('length')|sum if course.curriculum else 0 %}
+{% set review_count = (course.testimonials or [])|length %}
 
-{# ╔══════════════════════════════════════════════════════╗
-   ║  HERO  (light theme)                                 ║
-   ╚══════════════════════════════════════════════════════╝ #}
+{# ═══════════════════════════════════════════════════════════
+   TOP ACCENT BAR
+══════════════════════════════════════════════════════════════ #}
+<div style="background:linear-gradient(90deg,var(--ca1),var(--ca2),var(--ca4));height:5px;"></div>
 
-{# Accent top-bar #}
-<div style="background:var(--ca1);height:4px;"></div>
+{# ═══════════════════════════════════════════════════════════
+   HERO — dark gradient full bleed  (upGrad-inspired)
+══════════════════════════════════════════════════════════════ #}
+<div class="cd-hero">
+  <div class="cd-hero-inner">
 
-<div class="rj-hero-bg relative overflow-hidden">
-  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-10 md:pt-12 md:pb-14 lg:flex lg:gap-12 lg:items-start">
+    {# ── Left column ── #}
+    <div class="cd-hero-main min-w-0">
 
-    {# ── Left content ── #}
-    <div class="flex-1 min-w-0">
-
-      {# Breadcrumb #}
-      <nav class="flex items-center gap-2 text-xs mb-5">
-        <a href="{{ url('core:courses') }}"
-           class="font-semibold transition-colors hover:underline" style="color:var(--ca2);">Courses</a>
-        <svg class="h-3 w-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        <span class="text-slate-500 font-semibold truncate">{{ course.level or 'All levels' }}</span>
-      </nav>
-
-      {# Category + level badge #}
-      <div class="flex flex-wrap items-center gap-2 mb-4">
-        <span style="background:var(--ca3);color:var(--ca1);border:1px solid color-mix(in srgb,var(--ca2) 30%,transparent);"
-              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-widest">
-          <span class="h-1.5 w-1.5 rounded-full" style="background:var(--ca1);"></span>
-          {{ course.level or 'Course' }}
+      {# ── Credibility trust badges ── #}
+      <div class="flex flex-wrap items-center gap-2 mb-6">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5">
+          <svg class="h-3.5 w-3.5 text-emerald-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+          <span class="text-xs font-bold text-emerald-700">Verified Curriculum</span>
         </span>
-        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-bold text-slate-600">
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          {{ course.duration_weeks }} weeks
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5">
+          <svg class="h-3.5 w-3.5 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <span class="text-xs font-bold text-amber-700">5.0 Rated</span>
         </span>
-        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-bold text-slate-600">
-          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          Online · Self-paced
+        {% if course.salary_after_max %}
+        <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5"
+              style="background:color-mix(in srgb,var(--ca3) 60%,white);border-color:color-mix(in srgb,var(--ca4) 45%,white)">
+          <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="color:var(--ca1)"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          <span class="text-xs font-bold" style="color:var(--ca1)">₹{{ course.salary_after_max|int }} LPA potential</span>
+        </span>
+        {% endif %}
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200 px-3 py-1.5">
+          <svg class="h-3.5 w-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+          <span class="text-xs font-bold text-blue-700">Lifetime Access</span>
         </span>
       </div>
 
+      {# Breadcrumb #}
+      <p class="cd-hero-eyebrow mb-3">
+        <a href="{{ url('core:courses') }}">Courses</a>
+        <span class="mx-1.5 text-slate-300">/</span>
+        <span>{{ course.level or 'Online Learning' }}</span>
+      </p>
+
       {# Title #}
-      <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.1] text-slate-900 mb-4">
-        {{ course.title }}
-      </h1>
+      <h1 class="cd-hero-title">{{ course.title }}</h1>
 
       {# Short description #}
       {% if course.short_description %}
-      <p class="text-slate-600 text-base sm:text-lg max-w-2xl leading-relaxed mb-5">
-        {{ course.short_description }}
-      </p>
+      <p class="cd-hero-lead">{{ course.short_description }}</p>
       {% endif %}
 
-      {# Rating + trust row #}
-      <div class="flex flex-wrap items-center gap-x-5 gap-y-2.5 mb-7">
-
-        {# Stars #}
-        <div class="rj-stars flex items-center gap-0.5">
-          {% for _ in range(5) %}<svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
-          <span class="font-black text-slate-800 text-sm ml-1.5">5.0</span>
-          <span class="text-slate-500 text-xs ml-1">({{ (course.testimonials or [])|length }} reviews)</span>
+      {# ── USP bullet points (admin: hero_usps JSON or auto) ── #}
+      <div class="cd-hero-usps space-y-2.5 mb-6">
+        {% for usp in hero_usps %}
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 h-5 w-5 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center shrink-0">
+            <svg class="h-3 w-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          </span>
+          <span class="cd-hero-usp">{{ format_bold_markers(usp)|safe }}</span>
         </div>
+        {% endfor %}
+      </div>
 
-        {# Divider dot #}
-        <span class="hidden sm:block h-1 w-1 rounded-full bg-slate-300"></span>
-
-        {# Trust badges #}
-        <div class="flex items-center gap-1.5 text-slate-600 text-xs font-semibold">
-          <svg class="h-3.5 w-3.5 shrink-0" style="color:var(--ca2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-          Certificate on completion
+      {# ── Alumni trust row ── #}
+      <div class="flex flex-wrap items-center gap-4 mb-5">
+        <div class="flex items-center gap-3">
+          <div class="flex -space-x-2">
+            <span class="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-[10px] font-black text-white">A</span>
+            <span class="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-[10px] font-black text-white">P</span>
+            <span class="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-[10px] font-black text-white">R</span>
+            <span class="w-8 h-8 rounded-full border-2 border-white bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-[10px] font-black text-white">S</span>
+          </div>
+          <div>
+            <p class="text-sm font-black text-slate-900 leading-none">
+              {{ (course.testimonials or [])|length * 12 + 47 }}+ learners enrolled
+            </p>
+            <div class="flex items-center gap-1 mt-0.5">
+              {% for _ in range(5) %}<svg class="h-3 w-3 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
+              <span class="text-xs text-slate-500 ml-1">5.0 ({{ review_count }} reviews)</span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {% if course.salary_after_max %}
-        <div class="flex items-center gap-1.5 text-xs font-bold rounded-full px-3 py-1"
-             style="background:var(--ca3);color:var(--ca1);">
-          <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-          Up to ₹{{ course.salary_after_max|int }} LPA
+      <div class="cd-hero-grow">
+        {% include "core/partials/_course_hero_gain.jinja" %}
+      </div>
+
+      {# ── Course meta grid ── #}
+      <div class="cd-meta-grid">
+        <div class="cd-meta-cell">
+          <span class="cd-meta-label">Type</span>
+          <span class="cd-meta-value">{{ course.level or 'Online' }}</span>
         </div>
+        <div class="cd-meta-cell">
+          <span class="cd-meta-label">Duration</span>
+          <span class="cd-meta-value">{{ course.duration_weeks }} weeks</span>
+        </div>
+        <div class="cd-meta-cell">
+          <span class="cd-meta-label">Format</span>
+          <span class="cd-meta-value">Self-paced</span>
+        </div>
+        <div class="cd-meta-cell">
+          <span class="cd-meta-label">Modules</span>
+          <span class="cd-meta-value">{{ course.curriculum|length if course.curriculum else '—' }}</span>
+        </div>
+      </div>
+
+      {# ── CTAs (mobile / tablet) ── #}
+      <div class="cd-hero-actions">
+        {% if owns_course %}
+        <a href="{{ url('dashboard:index') }}" class="cd-btn-primary">Go to dashboard</a>
+        {% elif request.user.is_authenticated %}
+        <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <button type="submit" class="cd-btn-primary">
+            Enroll — ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
+          </button>
+        </form>
+        {% else %}
+        <a href="{{ url('users:signup') }}?next={{ course.get_absolute_url() }}" class="cd-btn-primary">Get started free</a>
+        {% endif %}
+        <a href="#curriculum" class="cd-btn-secondary">View curriculum</a>
+        {% if referral_price_unlocked %}
+        <span class="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+          {{ referral_lead_discount_pct }}% off applied
+        </span>
         {% endif %}
       </div>
 
-      {# What you'll learn — light card #}
+    </div>{# /left #}
+
+    {# ── Right: preview + enroll card ── #}
+    <aside class="cd-hero-aside">
+      <div class="cd-hero-preview">
+        <div class="cd-hero-preview-media">
+          {% if course.thumbnail_url %}
+          <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}">
+          {% else %}
+          <div class="absolute inset-0 flex items-center justify-center">
+            <svg class="h-14 w-14 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443"/>
+            </svg>
+          </div>
+          {% endif %}
+          <span class="cd-hero-preview-badge">
+            <svg class="h-3.5 w-3.5" style="color:var(--ca1)" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {{ course.level or 'Online' }} · {{ course.duration_weeks }} weeks
+          </span>
+        </div>
+        <div class="cd-hero-preview-stats">
+          <div class="cd-hero-preview-stat">
+            <strong>{{ course.curriculum|length if course.curriculum else '—' }}</strong>
+            <span>Modules</span>
+          </div>
+          <div class="cd-hero-preview-stat">
+            <strong>{{ total_topics }}+</strong>
+            <span>Topics</span>
+          </div>
+          <div class="cd-hero-preview-stat">
+            <strong>Cert</strong>
+            <span>Included</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cd-hero-buy-wrap rj-sticky">
+        {% include "core/partials/_course_buy_card.jinja" %}
+      </div>
+    </aside>
+
+  </div>
+</div>{# /cd-hero #}
+
+{# ═══════════════════════════════════════════════════════════
+   SECTION ANCHOR NAV (sticky)
+══════════════════════════════════════════════════════════════ #}
+<div class="cd-sec-nav shadow-sm">
+  <div class="cd-sec-nav-inner">
+    <nav class="cd-sec-nav-links" aria-label="Course sections">
+      <a href="#overview" class="cd-anc active">Overview</a>
       {% if course.curriculum %}
-      <div class="rj-learn-card p-5 max-w-2xl">
-        <p class="text-[11px] font-black uppercase tracking-[.2em] mb-4" style="color:var(--ca1);">What you'll learn</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-6">
+      <a href="#curriculum" class="cd-anc">Curriculum</a>
+      {% endif %}
+      {% if course.salary_after_min or course.job_roles %}
+      <a href="#career" class="cd-anc">Career</a>
+      {% endif %}
+      {% if course.testimonials %}
+      <a href="#reviews" class="cd-anc">Reviews</a>
+      {% endif %}
+    </nav>
+    <a href="#enroll" class="cd-nav-cta">Enroll now</a>
+  </div>
+</div>
+
+{# ═══════════════════════════════════════════════════════════
+   BODY  (main + sidebar)
+══════════════════════════════════════════════════════════════ #}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-10 lg:flex lg:gap-10 lg:items-start">
+
+  {# ── MAIN column ── #}
+  <div class="flex-1 min-w-0 space-y-10" id="overview">
+
+    {# ── 1. What you'll learn ── #}
+    {% if course.curriculum %}
+    <section>
+      <div class="cd-sec-hd">
+        <span class="cd-sec-icon">
+          <svg class="h-4 w-4" style="color:var(--ca1);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+        </span>
+        <div>
+          <h2 class="text-xl font-black text-slate-900">What you'll learn</h2>
+          <p class="text-xs text-slate-500 mt-0.5">{{ course.curriculum|length }} modules · {{ total_topics }} topics covered</p>
+        </div>
+      </div>
+      <div style="background:var(--ca3);border:1px solid color-mix(in srgb,var(--ca2) 22%,transparent);"
+           class="rounded-2xl p-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {% for mod in course.curriculum %}
-          <div class="flex items-start gap-2.5">
-            <svg class="mt-0.5 h-4 w-4 shrink-0" style="color:var(--ca2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            <span class="text-sm text-slate-800 leading-snug font-medium">{{ mod.title }}</span>
+          <div class="cd-learn-item">
+            <span class="cd-learn-check">
+              <svg class="h-3 w-3" style="color:var(--ca2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            </span>
+            <span class="text-sm text-slate-800 font-medium leading-snug">{{ mod.title }}</span>
           </div>
           {% endfor %}
         </div>
       </div>
-      {% endif %}
+    </section>
+    {% endif %}
 
-      {# Mobile buy CTA (shown only on mobile, inside hero) #}
-      <div class="mt-6 lg:hidden">
-        <div class="rounded-2xl border border-slate-200 bg-white shadow-md p-4 flex items-center justify-between gap-3">
-          <div>
-            <p class="text-2xl font-black text-slate-900">
-              ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
-            </p>
-            {% if referral_price_unlocked %}
-            <p class="text-xs text-slate-400 line-through">₹{{ course_list_price_inr }}</p>
-            {% endif %}
-            {% if course.salary_after_max %}
-            <p class="text-[11px] font-bold mt-0.5" style="color:var(--ca2);">↑ ₹{{ course.salary_after_max|int }} LPA salary</p>
-            {% endif %}
-          </div>
-          {% if owns_course %}
-          <span class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-black text-emerald-800">
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-            Enrolled
-          </span>
-          {% elif request.user.is_authenticated %}
-          <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
-            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            <button type="submit"
-                    class="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white"
-                    style="background:var(--ca1);">
-              Add to cart
-            </button>
-          </form>
-          {% else %}
-          <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
-             class="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white"
-             style="background:var(--ca1);">
-            Log in
-          </a>
-          {% endif %}
-        </div>
-      </div>
-
-    </div>
-
-    {# ── Right: buy card (desktop) ── #}
-    <div class="hidden lg:block w-[340px] shrink-0 rj-sticky mt-2">
-      {% include "core/partials/_course_buy_card.jinja" %}
-    </div>
-
-  </div>
-</div>
-
-{# ── Quick-stats strip (light) ── #}
-<div class="bg-white border-b border-slate-200 shadow-sm">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6">
-    <div class="flex overflow-x-auto scrollbar-none items-stretch divide-x divide-slate-200">
-      {% set stats = [
-        (course.duration_weeks|string + ' Weeks', 'Duration', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'),
-        ((course.curriculum|length if course.curriculum else '—')|string + ' Modules', 'Curriculum', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>'),
-        (course.level or 'All levels', 'Level', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>'),
-        ('Certificate', 'On Completion', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>'),
-        ('Lifetime', 'Access', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>'),
-      ] %}
-      {% for val, lbl, icon_svg in stats %}
-      <div class="flex items-center gap-2.5 py-3.5 px-5 shrink-0">
-        <span style="color:var(--ca2);" class="shrink-0">{{ icon_svg|safe }}</span>
-        <div>
-          <p class="text-sm font-black text-slate-900 leading-none">{{ val }}</p>
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{{ lbl }}</p>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
-
-{# ╔══════════════════════════════════════════════════════╗
-   ║  BODY                                                ║
-   ╚══════════════════════════════════════════════════════╝ #}
-<div class="max-w-6xl mx-auto px-4 py-10 lg:flex lg:gap-10 lg:items-start">
-
-  {# ── Main column ── #}
-  <div class="flex-1 min-w-0 space-y-8">
-
-    {# 1. Program details ── #}
+    {# ── 2. Program overview ── #}
     {% if course_description_sections %}
     <section>
-      <div class="flex items-center gap-3 mb-5">
-        <span style="background:var(--ca3);color:var(--ca1);" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <div class="cd-sec-hd">
+        <span class="cd-sec-icon">
+          <svg class="h-4 w-4" style="color:var(--ca1);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         </span>
         <h2 class="text-xl font-black text-slate-900">Program overview</h2>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {% for section in course_description_sections %}
-        <div style="border-left:3px solid var(--ca2);" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+        <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
+             style="border-left:3px solid var(--ca2);">
           <p class="text-[10px] font-black uppercase tracking-[.18em] mb-3" style="color:var(--ca2);">{{ section.title }}</p>
           <div class="rj-md">{{ section.html }}</div>
         </div>
@@ -306,41 +801,50 @@
     </section>
     {% endif %}
 
-    {# 2. Curriculum ── #}
+    {# ── 3. Curriculum ── #}
     {% if course.curriculum %}
-    {% set total_topics = course.curriculum|map(attribute='topics')|map('length')|sum %}
-    <section>
-      <div class="flex items-center gap-3 mb-5">
-        <span style="background:var(--ca3);color:var(--ca1);" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+    <section id="curriculum">
+      <div class="cd-sec-hd">
+        <span class="cd-sec-icon">
+          <svg class="h-4 w-4" style="color:var(--ca1);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
         </span>
         <div>
           <h2 class="text-xl font-black text-slate-900">Course curriculum</h2>
-          <p class="text-xs text-slate-500 mt-0.5">{{ course.curriculum|length }} modules · {{ total_topics }} topics</p>
+          <p class="text-xs text-slate-500 mt-0.5">
+            {{ course.curriculum|length }} modules · {{ total_topics }} topics
+            · <span style="color:var(--ca1);" class="font-bold">first 2 modules free preview</span>
+          </p>
         </div>
       </div>
 
       <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden divide-y divide-slate-100">
         {% for mod in course.curriculum %}
+        {% set is_preview = loop.index <= 2 %}
         <div class="acc-item">
-          <input type="checkbox" id="m{{ loop.index }}" class="sr-only" {% if loop.index <= 2 %}checked{% endif %}>
+          <input type="checkbox" id="m{{ loop.index }}" class="sr-only" {% if is_preview %}checked{% endif %}>
           <label for="m{{ loop.index }}"
                  class="flex w-full cursor-pointer items-center gap-4 px-5 py-4 hover:bg-slate-50/80 transition-colors select-none group">
 
-            {# number bubble #}
-            <span class="shrink-0 h-9 w-9 rounded-xl flex items-center justify-center text-sm font-black transition-colors
-                         {% if loop.index <= 2 %}text-white{% else %}text-slate-600 group-hover:text-white{% endif %}"
-                  style="{% if loop.index <= 2 %}background:var(--ca1);{% else %}background:#f1f5f9;{% endif %}"
-                  >
+            {# Module number bubble #}
+            <span class="acc-num shrink-0 h-9 w-9 rounded-xl flex items-center justify-center text-sm font-black transition-colors
+                         {{ 'text-white' if is_preview else 'text-slate-500 group-hover:text-white' }}"
+                  style="{{ 'background:var(--ca1);' if is_preview else 'background:#f1f5f9;' }}">
               {{ loop.index }}
             </span>
 
             <div class="flex-1 min-w-0">
               <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Module {{ loop.index }}</p>
-              <p class="text-sm font-black text-slate-900 leading-snug">{{ mod.title }}</p>
+              <p class="text-sm font-black text-slate-900 leading-snug truncate">{{ mod.title }}</p>
             </div>
 
-            <div class="flex items-center gap-3 shrink-0">
+            <div class="flex items-center gap-2.5 shrink-0">
+              {% if is_preview %}
+              <span class="hidden sm:inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
+                Free preview
+              </span>
+              {% else %}
+              <svg class="hidden sm:block h-3.5 w-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              {% endif %}
               <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold"
                     style="background:var(--ca3);color:var(--ca1);">
                 {{ mod.topics|length }} topics
@@ -352,17 +856,20 @@
           </label>
 
           <div class="acc-body">
-            <ol class="px-5 pb-5 space-y-2 pt-1">
+            <div class="px-5 pb-5 pt-1 space-y-1.5">
               {% for topic in mod.topics %}
-              <li class="flex items-center gap-3 rounded-lg bg-slate-50 border border-slate-100 px-4 py-2.5">
-                <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-black"
-                      style="background:var(--ca3);color:var(--ca1);">
-                  {{ loop.index }}
-                </span>
-                <span class="text-sm text-slate-700">{{ topic }}</span>
-              </li>
+              <div class="cd-topic">
+                <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black flex-shrink-0"
+                      style="background:var(--ca3);color:var(--ca1);">{{ loop.index }}</span>
+                {% if is_preview %}
+                <svg class="h-3.5 w-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {% else %}
+                <svg class="h-3.5 w-3.5 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                {% endif %}
+                <span class="text-sm text-slate-700 flex-1">{{ topic }}</span>
+              </div>
               {% endfor %}
-            </ol>
+            </div>
           </div>
         </div>
         {% endfor %}
@@ -370,12 +877,12 @@
     </section>
     {% endif %}
 
-    {# 3. Career outcomes ── #}
+    {# ── 4. Career outcomes ── #}
     {% if course.salary_after_min or course.job_roles %}
-    <section>
-      <div class="flex items-center gap-3 mb-5">
-        <span style="background:#d1fae5;color:#065f46;" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+    <section id="career">
+      <div class="cd-sec-hd">
+        <span class="cd-sec-icon" style="background:#d1fae5;">
+          <svg class="h-4 w-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
         </span>
         <h2 class="text-xl font-black text-slate-900">Career outcomes</h2>
       </div>
@@ -383,8 +890,8 @@
       <div class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden">
         {% if course.salary_after_min and course.salary_after_max %}
         <div class="p-6 border-b border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-teal-50/50">
-          <p class="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700 mb-3">Expected salary in India · 2025</p>
-          <div class="flex flex-col sm:flex-row sm:items-end gap-6">
+          <p class="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700 mb-4">Expected salary · India market 2025</p>
+          <div class="flex flex-col sm:flex-row sm:items-end gap-5">
             <div>
               <div class="flex items-baseline gap-2">
                 <span class="text-5xl font-black text-slate-900 tracking-tight">₹{{ course.salary_after_min|int }}</span>
@@ -392,16 +899,16 @@
                 <span class="text-5xl font-black text-emerald-700 tracking-tight">{{ course.salary_after_max|int }}</span>
                 <span class="text-xl font-bold text-slate-400 pb-1">LPA</span>
               </div>
-              <p class="text-xs text-slate-500 mt-2">Lakh Per Annum · entry to senior roles</p>
+              <p class="text-xs text-slate-500 mt-2">Lakh Per Annum · entry-level to senior roles</p>
             </div>
-            <div class="flex flex-wrap gap-3 sm:ml-auto">
-              <div class="rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-center min-w-[90px]">
+            <div class="flex gap-3 sm:ml-auto">
+              <div class="rounded-xl border border-emerald-200 bg-white px-4 py-3 text-center min-w-[90px]">
                 <p class="text-xl font-black text-emerald-700">₹{{ course.salary_after_min|int }}L</p>
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Entry level</p>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Entry</p>
               </div>
-              <div class="rounded-xl border border-emerald-300 bg-emerald-600 px-4 py-2.5 text-center min-w-[90px] shadow-md shadow-emerald-500/20">
+              <div class="rounded-xl bg-emerald-600 px-4 py-3 text-center min-w-[90px] shadow-md shadow-emerald-500/20">
                 <p class="text-xl font-black text-white">₹{{ course.salary_after_max|int }}L</p>
-                <p class="text-[10px] font-bold text-emerald-100 uppercase tracking-wider mt-0.5">Senior level</p>
+                <p class="text-[10px] font-bold text-emerald-100 uppercase tracking-wider mt-0.5">Senior</p>
               </div>
             </div>
           </div>
@@ -426,55 +933,48 @@
     </section>
     {% endif %}
 
-    {# 4. Testimonials ── #}
+    {# ── 5. Student testimonials ── #}
     {% if course.testimonials %}
-    <section>
-      <div class="flex items-center gap-3 mb-5">
-        <span class="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+    <section id="reviews">
+      <div class="cd-sec-hd">
+        <span class="cd-sec-icon" style="background:#fef3c7;">
           <svg class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
         </span>
         <div>
           <h2 class="text-xl font-black text-slate-900">Student success stories</h2>
           <div class="flex items-center gap-1 mt-0.5">
-            {% for _ in range(5) %}<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
+            {% for _ in range(5) %}
+            <svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            {% endfor %}
             <span class="text-xs font-black text-slate-700 ml-1">5.0 / 5.0</span>
-            <span class="text-xs text-slate-500 ml-1">from {{ course.testimonials|length }} students</span>
+            <span class="text-xs text-slate-500 ml-1">from {{ review_count }} student{{ 's' if review_count != 1 }}</span>
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {% set av_grads = [
-          'from-indigo-600 to-violet-600',
-          'from-emerald-600 to-teal-600',
-          'from-rose-600 to-pink-600',
-          'from-amber-500 to-orange-500',
-          'from-sky-600 to-blue-600',
-        ] %}
+        {% set av_grads = ['from-indigo-600 to-violet-600','from-emerald-600 to-teal-600','from-rose-600 to-pink-600','from-amber-500 to-orange-500','from-sky-600 to-blue-600'] %}
         {% for t in course.testimonials %}
-        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-4 relative overflow-hidden">
-          {# accent corner #}
-          <div style="background:var(--ca3);width:64px;height:64px;border-radius:50%;position:absolute;top:-20px;right:-20px;opacity:.6;"></div>
-
-          {# quote mark #}
-          <svg class="h-7 w-7 opacity-20" style="color:var(--ca2);" fill="currentColor" viewBox="0 0 24 24">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-3 relative overflow-hidden">
+          {# corner accent #}
+          <div style="background:var(--ca3);width:72px;height:72px;border-radius:50%;position:absolute;top:-24px;right:-24px;opacity:.55;"></div>
+          {# big quote mark #}
+          <svg class="h-8 w-8 opacity-15 relative z-10" style="color:var(--ca2);" fill="currentColor" viewBox="0 0 24 24">
             <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
           </svg>
-
           <p class="text-sm text-slate-700 leading-relaxed flex-1 relative z-10">"{{ t.text }}"</p>
-
-          {# stars #}
-          <div class="flex gap-0.5">
-            {% for _ in range(t.rating) %}<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
+          <div class="flex gap-0.5 mt-1">
+            {% for _ in range(t.rating) %}
+            <svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            {% endfor %}
           </div>
-
           <div class="flex items-center gap-3 pt-3 border-t border-slate-100">
             <div class="h-10 w-10 rounded-full bg-gradient-to-br {{ av_grads[loop.index0 % 5] }} flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm">
               {{ t.name[0] }}
             </div>
-            <div>
-              <p class="text-sm font-black text-slate-900 leading-none">{{ t.name }}</p>
-              <p class="text-[11px] text-slate-500 mt-1">{{ t.role }} · {{ t.city }}</p>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-black text-slate-900 leading-none truncate">{{ t.name }}</p>
+              <p class="text-[11px] text-slate-500 mt-0.5 truncate">{{ t.role }} · {{ t.city }}</p>
             </div>
           </div>
         </div>
@@ -483,68 +983,122 @@
     </section>
     {% endif %}
 
-    {# 5. Enroll CTA band ── #}
-    <section style="background:linear-gradient(135deg,var(--ca1),var(--ca2));" class="rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
-      <div style="background:rgba(255,255,255,.06);width:200px;height:200px;border-radius:50%;position:absolute;top:-60px;right:-40px;pointer-events:none;"></div>
+    {# ── 6. Enroll / CTA section ── #}
+    <section id="enroll"
+             style="background:linear-gradient(135deg,var(--ca1),var(--ca2));"
+             class="rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+      <div style="background:rgba(255,255,255,.05);width:220px;height:220px;border-radius:50%;position:absolute;top:-70px;right:-50px;pointer-events:none;"></div>
+      <div style="background:rgba(255,255,255,.03);width:140px;height:140px;border-radius:50%;position:absolute;bottom:-40px;left:-30px;pointer-events:none;"></div>
+
       <div class="relative">
-        <h2 class="text-xl font-black mb-1">Ready to get started?</h2>
-        <p class="text-sm opacity-80 mb-5">Submit your details and we'll contact you with the next batch dates.</p>
+        {% if owns_course %}
+        <div class="text-center">
+          <div class="inline-flex items-center gap-2 rounded-2xl bg-white/15 border border-white/25 px-5 py-3 mb-4">
+            <svg class="h-5 w-5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="text-white font-black">You're already enrolled!</span>
+          </div>
+          <p class="text-white/70 text-sm mb-4">Head to your dashboard to access course content.</p>
+          <a href="{{ url('dashboard:index') }}"
+             class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-black uppercase tracking-wider"
+             style="color:var(--ca1);">
+            Go to dashboard →
+          </a>
+        </div>
+        {% elif request.user.is_authenticated %}
+        <h2 class="text-xl font-black mb-1">Ready to start learning?</h2>
+        <p class="text-sm opacity-80 mb-5">Add to cart and enroll in under 60 seconds.</p>
         {% if pending_course_referrer_code %}
         <p class="mb-4 inline-flex items-center rounded-full bg-white/15 border border-white/25 px-3 py-1 text-[11px] font-black uppercase tracking-wider">
-          Referral active: {{ pending_course_referrer_code }}
+          🎁 Referral active: {{ pending_course_referrer_code }}
+          — {{ referral_lead_discount_pct }}% off at checkout
         </p>
         {% endif %}
-        <form method="post" class="flex flex-col sm:flex-row gap-2.5">
-          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-          <input type="text" name="lead_name" placeholder="Your name"
-                 class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40">
-          <input type="email" name="lead_email" placeholder="Your email" required
-                 value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}"
-                 class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40">
-          <button type="submit"
-                  class="shrink-0 rounded-xl bg-white px-6 py-3 text-xs font-black uppercase tracking-wider transition-opacity hover:opacity-90"
-                  style="color:var(--ca1);">
-            Enroll now →
-          </button>
-        </form>
+        <div class="flex flex-wrap gap-3">
+          <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+                    style="color:var(--ca1);">
+              <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+              Add to cart — ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
+            </button>
+          </form>
+          <a href="{{ url('core:course_cart') }}"
+             class="inline-flex items-center rounded-xl border border-white/30 px-5 py-3 text-sm font-bold text-white/80 hover:bg-white/10 transition-colors">
+            View cart →
+          </a>
+        </div>
+        {# Referral lead form (only if a valid referrer is in session) #}
+        {% if pending_course_referrer_code %}
+        <div class="mt-5 border-t border-white/15 pt-5">
+          <p class="text-xs text-white/60 mb-3">Or register your interest with referral discount locked in:</p>
+          <form method="post" class="flex flex-col sm:flex-row gap-2">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="text" name="lead_name" placeholder="Your name"
+                   class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30">
+            <input type="email" name="lead_email" placeholder="Email" required
+                   value="{{ request.user.email if request.user.is_authenticated else '' }}"
+                   class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/30">
+            <button type="submit"
+                    class="shrink-0 rounded-xl bg-white/20 border border-white/30 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-white/30 transition-colors">
+              Confirm interest →
+            </button>
+          </form>
+        </div>
+        {% endif %}
+        {% else %}
+        <h2 class="text-xl font-black mb-1">Ready to get started?</h2>
+        <p class="text-sm opacity-80 mb-5">Create a free RankJee account and enroll in minutes.</p>
+        <div class="flex flex-wrap gap-3">
+          <a href="{{ url('users:signup') }}?next={{ course.get_absolute_url() }}"
+             class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-sm font-black uppercase tracking-wider hover:opacity-90 transition-opacity"
+             style="color:var(--ca1);">
+            Sign up free →
+          </a>
+          <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
+             class="inline-flex items-center rounded-xl border border-white/30 px-5 py-3 text-sm font-bold text-white/80 hover:bg-white/10 transition-colors">
+            Log in
+          </a>
+        </div>
+        {% endif %}
       </div>
     </section>
 
-  </div>
+  </div>{# /main #}
 
-  {# ── Right sidebar (desktop) ── #}
-  <div class="hidden lg:block w-[340px] shrink-0 rj-sticky">
-    {% include "core/partials/_course_buy_card.jinja" %}
-  </div>
-</div>
+</div>{# /body #}
 
-{# Mobile spacer so content doesn't hide behind fixed bar when scrolled #}
-<div class="h-20 lg:hidden"></div>
+{# mobile spacer #}
+<div class="h-24 lg:hidden"></div>
 
-{# ── Mobile fixed bottom bar (shows when user scrolls past hero CTA) ── #}
+{# ═══════════════════════════════════════════════════════════
+   MOBILE FIXED BOTTOM BAR
+══════════════════════════════════════════════════════════════ #}
 {% if not owns_course %}
-<div class="rj-mobile-bar lg:hidden">
+<div class="rj-mob-bar lg:hidden">
   <div class="max-w-lg mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
     <div class="min-w-0">
-      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate leading-none">{{ course.title|truncate(28, true, '…') }}</p>
+      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate leading-none">
+        {{ course.title|truncate(28, true, '…') }}
+      </p>
       <p class="text-lg font-black leading-tight mt-0.5" style="color:var(--ca1);">
         ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
-        {% if referral_price_unlocked %}<span class="text-xs font-bold text-slate-400 line-through ml-1">₹{{ course_list_price_inr }}</span>{% endif %}
+        {% if referral_price_unlocked %}
+        <span class="text-xs font-bold text-slate-400 line-through ml-1">₹{{ course_list_price_inr }}</span>
+        {% endif %}
       </p>
     </div>
     {% if request.user.is_authenticated %}
     <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 shrink-0">
       <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-      <button type="submit"
-              class="shimmer-btn inline-flex items-center gap-1.5 rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md">
+      <button type="submit" class="cd-btn-primary">
         <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
         Add to cart
       </button>
     </form>
     {% else %}
-    <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
-       class="shimmer-btn shrink-0 inline-flex items-center gap-1.5 rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md">
-      Log in to buy
+    <a href="{{ url('users:signup') }}?next={{ course.get_absolute_url() }}" class="cd-btn-primary shrink-0">
+      Sign up &amp; enroll
     </a>
     {% endif %}
   </div>

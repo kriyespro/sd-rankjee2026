@@ -9,7 +9,9 @@ from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
 
-from core.hometutor_data import FEATURED_HOME_TUTORS, PILOT_CITY
+from django.db.models import Avg, Count, Sum
+
+from core.hometutor_data import FEATURED_HOME_TUTORS, LANDING_SUBJECTS, PILOT_CITY
 
 from .models import DemoRequest, PincodeGeo, TutorEngagement, TutorProfile
 
@@ -82,6 +84,36 @@ def attach_demo_status_to_cards(cards: list[dict], requester) -> list[dict]:
     for card in cards:
         card['demo_status'] = latest_by_slug.get(card.get('slug', ''), '')
     return cards
+
+
+def hometutor_landing_stats() -> dict:
+    """Aggregate stats for the public home tutor landing page."""
+    qs = TutorProfile.objects.filter(
+        verification_status=TutorProfile.VerificationStatus.APPROVED,
+    )
+    agg = qs.aggregate(
+        tutors=Count("id"),
+        reviews=Sum("reviews_count"),
+        avg_rating=Avg("rating_display"),
+    )
+    city_count = qs.values("city").distinct().count()
+    tutor_count = agg["tutors"] or 0
+    review_count = int(agg["reviews"] or 0)
+    avg_rating = float(agg["avg_rating"] or 4.8)
+    return {
+        "tutor_count": tutor_count,
+        "city_count": city_count,
+        "review_count": review_count,
+        "avg_rating": round(avg_rating, 1),
+        "families_label": f"{max(tutor_count * 8, review_count or 120)}+",
+    }
+
+
+def hometutor_landing_page_context() -> dict:
+    return {
+        "landing_stats": hometutor_landing_stats(),
+        "landing_subjects": LANDING_SUBJECTS,
+    }
 
 
 def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:

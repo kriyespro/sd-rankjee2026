@@ -65,6 +65,56 @@ class CourseAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "is_featured", "level")
     search_fields = ("title", "slug")
     prepopulated_fields = {"slug": ("title",)}
+    fieldsets = (
+        (
+            "Basics",
+            {
+                "fields": (
+                    "title",
+                    "slug",
+                    "short_description",
+                    "price_inr",
+                    "duration_weeks",
+                    "level",
+                    "thumbnail_url",
+                    "is_active",
+                    "is_featured",
+                ),
+            },
+        ),
+        (
+            "Hero & buy card copy",
+            {
+                "description": (
+                    "Leave JSON lists empty [] to auto-fill from curriculum, salary, and duration. "
+                    "Each field is a JSON array of plain strings. Use **double asterisks** for bold in hero USPs and gain outcomes."
+                ),
+                "fields": ("hero_usps", "gain_outcomes", "gain_perks", "course_includes"),
+            },
+        ),
+        (
+            "Career outcomes",
+            {
+                "fields": ("salary_after_min", "salary_after_max", "job_roles"),
+            },
+        ),
+        (
+            "Curriculum & reviews",
+            {
+                "fields": ("curriculum", "testimonials"),
+            },
+        ),
+        (
+            "Program overview (page body)",
+            {
+                "description": (
+                    "Markdown body shown under Overview. Start lines with ### Section title "
+                    "to split into multiple cards on the course page."
+                ),
+                "fields": ("description",),
+            },
+        ),
+    )
 
 
 @admin.action(description="Mark selected referrals SUCCESS and pay commission (default 18%%)")

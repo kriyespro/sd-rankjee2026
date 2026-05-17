@@ -2,6 +2,18 @@
 
 PILOT_CITY = "Ahmedabad"
 
+# Popular subjects for home tutor landing browse chips
+LANDING_SUBJECTS = (
+    ("Mathematics", "📐"),
+    ("Science", "⚗️"),
+    ("English", "📚"),
+    ("Physics", "🔭"),
+    ("Chemistry", "🧪"),
+    ("Computer Science", "🖥️"),
+    ("Hindi", "🌐"),
+    ("Exam Prep", "🏆"),
+)
+
 # Single-segment URLs like `/surat/` redirect to `/hometutor/city/<slug>/`. Only these slugs (plus DB-backed tutor cities in `city_tutor_redirect`) are allowed so `/earn/` etc. do not become fake city pages.
 SHORT_LINK_CITY_SLUGS = frozenset(
     {

@@ -13,6 +13,13 @@ import re
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
 from .models import Course, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
+from .course_content import (
+    format_bold_markers,
+    resolve_course_includes,
+    resolve_gain_outcomes,
+    resolve_gain_perks,
+    resolve_hero_usps,
+)
 from .services_course_checkout import (
     REFERRAL_COMMISSION_PERCENT_DEFAULT,
     REFERRAL_LEAD_DISCOUNT_PERCENT,
@@ -467,11 +474,21 @@ def course_detail(request, slug):
                 }
             )
 
+    total_topics = sum(
+        len(m.get("topics") or []) for m in (course.curriculum or [])
+    )
+
     return render(
         request,
         "core/course_detail.jinja",
         {
             "course": course,
+            "total_topics": total_topics,
+            "hero_usps": resolve_hero_usps(course, total_topics),
+            "gain_outcomes": resolve_gain_outcomes(course, total_topics),
+            "gain_perks": resolve_gain_perks(course),
+            "course_includes": resolve_course_includes(course),
+            "format_bold_markers": format_bold_markers,
             "course_description_sections": description_sections,
             "owns_course": owns_course,
             "course_list_price_inr": list_inr,

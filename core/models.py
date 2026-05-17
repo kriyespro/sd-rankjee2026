@@ -73,6 +73,28 @@ class Course(models.Model):
         help_text='JSON: [{"name":"Priya","role":"Marketer","city":"Mumbai","text":"...","rating":5}]',
     )
 
+    # Course page copy (optional — leave [] to use auto-generated defaults on the site)
+    hero_usps = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Hero bullet lines. JSON array of strings. Use **text** for bold. Example: ["**6 modules** covering AI agents"]',
+    )
+    gain_outcomes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Left card "What you\'ll gain" lines. JSON array of strings.',
+    )
+    gain_perks = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Left card perk lines (3 recommended). JSON array of strings.',
+    )
+    course_includes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='"This course includes" list on mobile buy card. JSON array of strings.',
+    )
+
     class Meta:
         ordering = ["-is_featured", "title"]
 

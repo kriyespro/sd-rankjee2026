@@ -29,6 +29,7 @@ from .services import (
     apply_engagement_confirm,
     ensure_engagement,
     get_tutor_profile,
+    hometutor_landing_page_context,
     notify_demo_request_created,
     notify_demo_resolved_for_requester,
     notify_engagement_confirm,
@@ -71,7 +72,9 @@ def tutor_list(request):
         {
             'tutor_cards': cards,
             'hometutor_pilot_city': PILOT_CITY,
+            'featured_tutor_cards': cards[:3],
             **_tutor_filter_context(request),
+            **hometutor_landing_page_context(),
         },
     )
 
@@ -174,7 +177,9 @@ def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, locati
             "seo_description": seo_description,
             "canonical_url": request.build_absolute_uri(canonical_path),
             "faq_items": faq_items,
+            "featured_tutor_cards": cards[:3],
             **_tutor_filter_context(request),
+            **hometutor_landing_page_context(),
         },
     )
 

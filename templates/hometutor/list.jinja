@@ -1,23 +1,22 @@
 {% extends "base.jinja" %}
 {% block title %}{{ seo_title if seo_title is defined and seo_title else 'Find home tutors · ' + hometutor_pilot_city + ' · RankJee' }}{% endblock %}
+
+{% block extra_head %}
+{% include "hometutor/partials/_landing_styles.jinja" %}
+{% endblock %}
+
 {% block schema %}
 {% if is_seo_landing %}
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "RankJee Home Tutors - {{ landing_city|e }}",
-  "description": "Verified home tutors in {{ landing_city|e }} for subject and class-specific learning support.",
-  "areaServed": {
-    "@type": "City",
-    "name": "{{ landing_city|e }}"
-  },
+  "name": "RankJee Home Tutors – {{ landing_city|e }}",
+  "description": "Verified home tutors in {{ landing_city|e }} for subject and class-specific learning.",
+  "areaServed": { "@type": "City", "name": "{{ landing_city|e }}" },
   "serviceType": "Home Tutor Services",
   "url": "{{ canonical_url if canonical_url is defined else request.build_absolute_uri(request.path) }}",
-  "provider": {
-    "@type": "Organization",
-    "name": "RankJee"
-  }
+  "provider": { "@type": "Organization", "name": "RankJee" }
 }
 </script>
 {% endif %}
@@ -31,10 +30,7 @@
     {
       "@type": "Question",
       "name": "{{ item.q|e }}",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "{{ item.a|e }}"
-      }
+      "acceptedAnswer": { "@type": "Answer", "text": "{{ item.a|e }}" }
     }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]
@@ -44,134 +40,505 @@
 {% endblock %}
 
 {% block content %}
-<section class="bg-slate-100 border-b border-slate-200/80 pt-8 pb-10 px-4">
-    <div class="max-w-6xl mx-auto">
-        <p class="text-xs font-black uppercase tracking-[0.2em] text-indigo-600 mb-2">Home tutors</p>
-        <h1 class="text-3xl md:text-4xl font-black text-slate-900 tracking-tight mb-2">
-            {% if is_seo_landing %}{{ seo_heading }}{% else %}Browse verified tutors{% endif %}
-        </h1>
-        <p class="text-slate-600 text-sm md:text-base max-w-2xl">
-            {% if is_seo_landing %}
-            Discover verified tutor profiles, compare class fit, and request a free demo.
-            {% else %}
-            Pilot: <strong>{{ hometutor_pilot_city }}</strong>. Filter by subject, area, or class.
-            {% endif %}
+{% set display_city = landing_city if is_seo_landing else (filter_city or hometutor_pilot_city) %}
+{% set hero_tutor = featured_tutor_cards[0] if featured_tutor_cards else none %}
+{% set active_filters = filter_q or filter_subject or filter_mode or filter_area or filter_language or filter_class_min or filter_pincode %}
+
+<div class="ht-land w-full max-w-none">
+
+{# ═══════════════════════════════════════════════════════════
+   HERO
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-hero-wrap">
+  <div class="ht-wrap">
+    <div class="ht-hero-grid">
+
+      {# ── Left: copy ── #}
+      <div>
+        <p class="ht-badge">
+          <span class="ht-badge-dot"></span>
+          {% if is_seo_landing %}Verified tutors in {{ display_city }}
+          {% else %}Trusted home tutoring · {{ display_city }}{% endif %}
         </p>
+
+        <h1 class="ht-hero-title">
+          {% if is_seo_landing %}
+          {{ seo_heading }}
+          {% else %}
+          <span class="ht-accent">Expert tutors</span><br>
+          who come to your<br>
+          <span class="ht-underline">home.</span>
+          {% endif %}
+        </h1>
+
+        <p class="ht-hero-sub">
+          {% if is_seo_landing %}
+          Discover verified tutor profiles in {{ display_city }}, compare class fit, and
+          request a free demo before you commit — no upfront payment.
+          {% else %}
+          Find the right home tutor for your child in minutes. One-on-one sessions
+          around your schedule — offline, online, or hybrid in {{ display_city }}.
+          {% endif %}
+        </p>
+
+        <div class="flex flex-wrap items-center gap-3">
+          <a href="#find-tutors" class="ht-btn ht-btn-primary">Find a tutor</a>
+          <a href="#how" class="ht-btn ht-btn-secondary">How it works</a>
+        </div>
+
+        {# ── Trust row ── #}
+        <div class="ht-trust mt-5">
+          <div class="ht-trust-avs">
+            <span class="ht-trust-av" style="background:linear-gradient(135deg,#F5B731,#F4711C)">RK</span>
+            <span class="ht-trust-av" style="background:linear-gradient(135deg,#1CA97B,#0D2B5E)">PM</span>
+            <span class="ht-trust-av" style="background:linear-gradient(135deg,#60a5fa,#0D2B5E)">SJ</span>
+            <span class="ht-trust-av" style="background:linear-gradient(135deg,#f472b6,#db2777)">AV</span>
+          </div>
+          <div>
+            <div class="ht-stars">★★★★★</div>
+            <p class="text-xs text-slate-600 mt-0.5">
+              <strong class="text-slate-800">{{ landing_stats.avg_rating }}/5</strong>
+              &nbsp;·&nbsp;{{ landing_stats.review_count }}+ reviews
+            </p>
+          </div>
+        </div>
+
+        {# ── City-specific related-subject chips ── #}
         {% if is_seo_landing and related_subjects %}
         <div class="mt-4 flex flex-wrap gap-2">
-            {% for s in related_subjects %}
-            <a href="{{ url('hometutor:tutor_city_subject_landing', city_slug=landing_city|lower|replace(' ', '-'), subject_slug=s.slug) }}"
-               class="inline-flex items-center rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-50">
-                {{ s.label }} tutors in {{ landing_city }}
-            </a>
-            {% endfor %}
+          {% for s in related_subjects %}
+          <a href="{{ url('hometutor:tutor_city_subject_landing', city_slug=landing_city|lower|replace(' ','-'), subject_slug=s.slug) }}"
+             class="ht-chip">{{ s.label }} tutors</a>
+          {% endfor %}
         </div>
         {% endif %}
-    </div>
+      </div>{# /left #}
+
+      {# ── Right: tutor preview card ── #}
+      <div class="ht-hero-visual">
+        <div class="ht-float ht-float-t">
+          <span class="ht-ficon ht-ficon-n">🎓</span>
+          <div>
+            <p class="text-sm font-black text-slate-900 leading-none">Verified</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">Background-checked tutors</p>
+          </div>
+        </div>
+        <div class="ht-float ht-float-b">
+          <span class="ht-ficon ht-ficon-g">⏱</span>
+          <div>
+            <p class="text-sm font-black text-slate-900 leading-none">Free demo</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">Try before you pay</p>
+          </div>
+        </div>
+
+        <div class="ht-card-main">
+          {% if hero_tutor %}
+          <div class="flex items-start gap-3 mb-4">
+            {% if hero_tutor.image_url %}
+            <img src="{{ hero_tutor.image_url }}" alt="{{ hero_tutor.name }}"
+                 class="w-14 h-14 rounded-xl object-cover shrink-0">
+            {% else %}
+            <div class="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center text-xl font-black text-white"
+                 style="background:linear-gradient(135deg,var(--ht-navy),#1e40af)">
+              {{ hero_tutor.name[0] }}
+            </div>
+            {% endif %}
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-slate-900 truncate">{{ hero_tutor.name }}</p>
+              <p class="text-xs text-slate-500 truncate mt-0.5">{{ hero_tutor.subjects }}</p>
+              <p class="text-xs text-slate-400 truncate">{{ hero_tutor.area }}, {{ display_city }}</p>
+            </div>
+            <p class="text-sm font-black shrink-0" style="color:var(--ht-navy)">★ {{ hero_tutor.rating }}</p>
+          </div>
+          <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">This week</p>
+          <div class="ht-card-week">
+            <span class="ht-day ht-day-done">Mon</span>
+            <span class="ht-day ht-day-done">Wed</span>
+            <span class="ht-day ht-day-today">Fri</span>
+            <span class="ht-day ht-day-open">Sat</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 mt-3">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800">
+              {{ hero_tutor.teaching_mode | title }}
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-900">
+              {{ hero_tutor.class_range }}
+            </span>
+          </div>
+          {% if hero_tutor.demo_status == 'pending' or not hero_tutor.demo_requested %}
+          <a href="{{ url('hometutor:tutor_detail', slug=hero_tutor.slug) }}"
+             class="mt-4 block w-full text-center ht-btn ht-btn-accent text-sm !py-2.5">
+            View profile →
+          </a>
+          {% endif %}
+          {% else %}
+          <p class="text-slate-700 font-bold mb-1.5">Browse verified tutors</p>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Profiles with subjects, fees, and demo requests — all in one place on RankJee.
+          </p>
+          <a href="#find-tutors" class="mt-4 block w-full text-center ht-btn ht-btn-primary text-sm !py-2.5">
+            Browse tutors →
+          </a>
+          {% endif %}
+        </div>
+      </div>{# /hero-visual #}
+    </div>{# /hero-grid #}
+  </div>
 </section>
 
-<section class="max-w-6xl mx-auto px-4 py-8">
-    <form method="get" action="{{ url('hometutor:tutor_list') }}" class="bg-white rounded-2xl border border-slate-200 p-4 md:p-6 shadow-sm mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-                <label for="id_q" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Search</label>
-                <input type="search" name="q" id="id_q" value="{{ filter_q }}" placeholder="Name, subject, area…"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_subject" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Subject</label>
-                <input type="text" name="subject" id="id_subject" value="{{ filter_subject }}" placeholder="e.g. Physics"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_mode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Mode</label>
-                <select name="mode" id="id_mode" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="">Any mode</option>
-                    <option value="OFFLINE" {% if filter_mode == 'OFFLINE' %}selected{% endif %}>Offline</option>
-                    <option value="ONLINE" {% if filter_mode == 'ONLINE' %}selected{% endif %}>Online</option>
-                    <option value="HYBRID" {% if filter_mode == 'HYBRID' %}selected{% endif %}>Hybrid</option>
-                </select>
-            </div>
-            <div>
-                <label for="id_area" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Area</label>
-                <input type="text" name="area" id="id_area" value="{{ filter_area }}" placeholder="e.g. Satellite"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_language" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Language</label>
-                <input type="text" name="language" id="id_language" value="{{ filter_language }}" placeholder="e.g. Hindi"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_city" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">City</label>
-                <input type="text" name="city" id="id_city" value="{{ filter_city }}" placeholder="{{ hometutor_pilot_city }}"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_class_min" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Student class (1–12)</label>
-                <input type="number" name="class_min" id="id_class_min" value="{{ filter_class_min }}" min="1" max="12" placeholder="10"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_pincode" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Pincode (radius search)</label>
-                <input type="text" name="pincode" id="id_pincode" value="{{ filter_pincode }}" placeholder="e.g. 380015"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-            <div>
-                <label for="id_radius_km" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Radius (km)</label>
-                <input type="number" name="radius_km" id="id_radius_km" value="{{ filter_radius_km }}" min="1" max="100" placeholder="5"
-                       class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-            </div>
-        </div>
-        <div class="mt-4 flex flex-wrap gap-3">
-            <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
-                Apply filters
-            </button>
-            <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center justify-center px-6 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-sm font-bold hover:bg-slate-50 transition-colors">
-                Reset
-            </a>
-        </div>
-    </form>
-
-    {% if tutor_cards %}
-    <p class="text-sm text-slate-600 mb-4 font-medium">{{ tutor_cards|length }} tutor{% if tutor_cards|length != 1 %}s{% endif %} match.</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for t in tutor_cards %}
-        {% include "hometutor/partials/_tutor_card.jinja" %}
-        {% endfor %}
+{# ═══════════════════════════════════════════════════════════
+   STATS BAR — full-width navy
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-stats-wrap" aria-label="Platform statistics">
+  <div class="ht-wrap">
+    <div class="ht-stats-inner">
+      <div class="ht-stat">
+        <p class="ht-stat-n">{{ landing_stats.families_label }}</p>
+        <p class="ht-stat-l">Learners connected</p>
+      </div>
+      <div class="ht-stat">
+        <p class="ht-stat-n">{{ landing_stats.tutor_count }}<sup>+</sup></p>
+        <p class="ht-stat-l">Verified tutors</p>
+      </div>
+      <div class="ht-stat">
+        <p class="ht-stat-n">{{ landing_stats.city_count }}<sup>+</sup></p>
+        <p class="ht-stat-l">Cities covered</p>
+      </div>
+      <div class="ht-stat">
+        <p class="ht-stat-n">{{ landing_stats.avg_rating }}<sup>★</sup></p>
+        <p class="ht-stat-l">Avg tutor rating</p>
+      </div>
     </div>
-    {% else %}
-    <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center">
-        <p class="text-slate-700 font-bold mb-2">No tutors match these filters.</p>
-        <p class="text-slate-500 text-sm mb-4">Try clearing subject or area, or check back as we onboard more supply.</p>
-        <a href="{{ url('hometutor:tutor_list') }}" class="text-indigo-600 font-black text-sm hover:underline">View all in {{ hometutor_pilot_city }}</a>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   HOW IT WORKS
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec bg-white" id="how">
+  <div class="ht-wrap">
+    <p class="ht-lbl">How it works</p>
+    <h2 class="ht-title">From search to first session — <em>three steps</em></h2>
+    <p class="ht-sub">No long-term lock-in. Request a free demo from any tutor before you commit.</p>
+    <div class="ht-how-grid">
+      <article class="ht-how-card">
+        <p class="ht-step-n">01</p>
+        <div class="ht-step-icon">🔍</div>
+        <h3 class="font-bold text-slate-900 mb-2">Tell us what you need</h3>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Filter by subject, class, area, and teaching mode. We surface the best-fit tutors
+          in {{ display_city }} instantly.
+        </p>
+      </article>
+      <article class="ht-how-card">
+        <p class="ht-step-n">02</p>
+        <div class="ht-step-icon">✅</div>
+        <h3 class="font-bold text-slate-900 mb-2">Compare &amp; request demo</h3>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Read verified profiles, fees, and ratings. Send a demo request — both tutor and family
+          confirm before the first paid session.
+        </p>
+      </article>
+      <article class="ht-how-card">
+        <p class="ht-step-n">03</p>
+        <div class="ht-step-icon">🏠</div>
+        <h3 class="font-bold text-slate-900 mb-2">Learn at home, your way</h3>
+        <p class="text-sm text-slate-600 leading-relaxed">
+          Offline home visits or online sessions. Track engagement on RankJee and
+          pair tutoring with practice tests and concept videos.
+        </p>
+      </article>
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   SUBJECTS
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec" style="background:var(--ht-bg-alt)" id="subjects">
+  <div class="ht-wrap">
+    <p class="ht-lbl">Subjects</p>
+    <h2 class="ht-title">Every subject, <em>every level</em></h2>
+    <p class="ht-sub">
+      School basics to competitive exam prep — tap a subject to see matching tutors in {{ display_city }}.
+    </p>
+    <div class="ht-subj-grid">
+      {% for subject_name, emoji in landing_subjects %}
+      <a href="{{ url('hometutor:tutor_list') }}?subject={{ subject_name|urlencode }}&city={{ display_city|urlencode }}"
+         class="ht-subj-card">
+        <span class="ht-subj-emoji">{{ emoji }}</span>
+        <span class="ht-subj-name">{{ subject_name }}</span>
+        <span class="ht-subj-meta">Browse tutors</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   TUTOR SEARCH + GRID
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec" style="background:var(--ht-bg)" id="find-tutors">
+  <div class="ht-wrap">
+    <p class="ht-lbl">Find tutors</p>
+    <h2 class="ht-title">
+      {% if tutor_cards %}
+        {{ tutor_cards|length }} tutor{{ 's' if tutor_cards|length != 1 else '' }} in {{ display_city }}
+      {% else %}
+        Search our directory
+      {% endif %}
+    </h2>
+    <p class="ht-sub">Refine by subject, class, pincode radius, or teaching mode.</p>
+
+    {# ── Active filter chips ── #}
+    {% if active_filters %}
+    <div class="flex flex-wrap gap-2 mt-3 mb-1">
+      {% if filter_q %}<span class="ht-chip">Search: {{ filter_q }}</span>{% endif %}
+      {% if filter_subject %}<span class="ht-chip">{{ filter_subject }}</span>{% endif %}
+      {% if filter_mode %}<span class="ht-chip">{{ filter_mode|title }}</span>{% endif %}
+      {% if filter_area %}<span class="ht-chip">{{ filter_area }}</span>{% endif %}
+      {% if filter_class_min %}<span class="ht-chip">Class {{ filter_class_min }}</span>{% endif %}
+      {% if filter_pincode %}<span class="ht-chip">📍 {{ filter_pincode }}</span>{% endif %}
+      {% if filter_language %}<span class="ht-chip">{{ filter_language }}</span>{% endif %}
+      <a href="{{ url('hometutor:tutor_list') }}"
+         class="text-[11px] font-black text-slate-400 hover:text-red-500 flex items-center gap-1 ml-1">✕ Clear all</a>
     </div>
     {% endif %}
+
+    {# ── Filter form with progressive disclosure ── #}
+    <div x-data="{ showAdv: {{ 'true' if (filter_area or filter_language or filter_class_min or filter_pincode) else 'false' }} }"
+         class="ht-filter-form mt-5">
+      <form method="get" action="{{ url('hometutor:tutor_list') }}">
+        {# Basic: search + subject + mode ── always visible #}
+        <div class="ht-filter-basic">
+          <div>
+            <label for="ht_q" class="ht-filter-label">Search</label>
+            <input type="search" name="q" id="ht_q" value="{{ filter_q }}"
+                   placeholder="Name, area, subject…" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_sub" class="ht-filter-label">Subject</label>
+            <input type="text" name="subject" id="ht_sub" value="{{ filter_subject }}"
+                   placeholder="e.g. Physics, Maths" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_mode" class="ht-filter-label">Mode</label>
+            <select name="mode" id="ht_mode" class="ht-input">
+              <option value="">Any</option>
+              <option value="OFFLINE" {% if filter_mode == 'OFFLINE' %}selected{% endif %}>Offline</option>
+              <option value="ONLINE"  {% if filter_mode == 'ONLINE'  %}selected{% endif %}>Online</option>
+              <option value="HYBRID"  {% if filter_mode == 'HYBRID'  %}selected{% endif %}>Hybrid</option>
+            </select>
+          </div>
+        </div>
+
+        {# Advanced: hidden by default ── toggle via Alpine #}
+        <div x-show="showAdv" x-cloak class="ht-filter-adv">
+          <div>
+            <label for="ht_area" class="ht-filter-label">Area / Locality</label>
+            <input type="text" name="area" id="ht_area" value="{{ filter_area }}"
+                   placeholder="e.g. Satellite, Bopal" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_lang" class="ht-filter-label">Language</label>
+            <input type="text" name="language" id="ht_lang" value="{{ filter_language }}"
+                   placeholder="e.g. Hindi, English" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_city" class="ht-filter-label">City</label>
+            <input type="text" name="city" id="ht_city" value="{{ filter_city }}"
+                   placeholder="{{ hometutor_pilot_city }}" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_cls" class="ht-filter-label">Student class (1–12)</label>
+            <input type="number" name="class_min" id="ht_cls" value="{{ filter_class_min }}"
+                   min="1" max="12" placeholder="e.g. 10" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_pin" class="ht-filter-label">Pincode</label>
+            <input type="text" name="pincode" id="ht_pin" value="{{ filter_pincode }}"
+                   placeholder="e.g. 380015" class="ht-input">
+          </div>
+          <div>
+            <label for="ht_rad" class="ht-filter-label">Radius (km)</label>
+            <input type="number" name="radius_km" id="ht_rad" value="{{ filter_radius_km }}"
+                   min="1" max="100" placeholder="5" class="ht-input">
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          <button type="submit" class="ht-btn ht-btn-primary !py-2.5 !px-6">Apply filters</button>
+          <button type="button" @click="showAdv = !showAdv"
+                  class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1">
+            <span x-text="showAdv ? '▲ Less filters' : '▼ More filters'">▼ More filters</span>
+          </button>
+          {% if active_filters %}
+          <a href="{{ url('hometutor:tutor_list') }}"
+             class="text-xs font-bold text-slate-400 hover:text-red-500">Reset</a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    {# ── Tutor grid ── #}
+    {% if tutor_cards %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
+      {% for t in tutor_cards %}
+      {% include "hometutor/partials/_tutor_card.jinja" %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center mt-2">
+      <p class="text-3xl mb-3">🔍</p>
+      <p class="text-slate-700 font-bold mb-1.5">No tutors match these filters yet.</p>
+      <p class="text-slate-500 text-sm mb-5">
+        Try removing a filter, or browse all tutors in {{ hometutor_pilot_city }}.
+      </p>
+      <a href="{{ url('hometutor:tutor_list') }}"
+         class="ht-btn ht-btn-primary !text-sm">View all tutors in {{ hometutor_pilot_city }}</a>
+    </div>
+    {% endif %}
+  </div>
 </section>
 
-<section class="max-w-6xl mx-auto px-4 pb-10">
-    <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-6">
-        <h2 class="text-sm font-black uppercase tracking-wider text-indigo-800 mb-2">Prepare online on RankJee</h2>
-        <p class="text-slate-700 text-sm mb-4">After shortlisting a tutor, run diagnostic tests and video lessons in the same account.</p>
-        <div class="flex flex-wrap gap-3">
-            <a href="{{ url('assessment:index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">Start diagnostics</a>
-            <a href="{{ url('learning:index') }}" class="inline-flex items-center justify-center px-5 py-2.5 rounded-xl border border-indigo-200 text-indigo-700 text-sm font-black hover:bg-indigo-100 transition-colors">Watch concept videos</a>
+{# ═══════════════════════════════════════════════════════════
+   TESTIMONIALS — full-width dark navy
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec ht-sec-dark" id="reviews">
+  <div class="ht-wrap">
+    <p class="ht-lbl">What families say</p>
+    <h2 class="ht-title">Real feedback from parents &amp; <em>students</em></h2>
+    <p class="ht-sub">Verified reviews from families who found tutors through RankJee.</p>
+    <div class="ht-testi-grid">
+      <article class="ht-testi-card">
+        <div class="ht-stars">★★★★★</div>
+        <p class="ht-testi-body">
+          "We found a Maths tutor in two days. The demo flow was crystal clear —
+          we only paid after both sides confirmed. Best decision for our son."
+        </p>
+        <div class="ht-testi-foot">
+          <span class="ht-testi-av">PR</span>
+          <div>
+            <p class="ht-testi-name">Priya R.</p>
+            <p class="ht-testi-role">Parent · {{ display_city }} · Class 9</p>
+          </div>
         </div>
+      </article>
+      <article class="ht-testi-card">
+        <div class="ht-stars">★★★★★</div>
+        <p class="ht-testi-body">
+          "Offline classes at home plus RankJee practice tests helped my daughter
+          stay consistent between sessions. Marks improved by 20 points."
+        </p>
+        <div class="ht-testi-foot">
+          <span class="ht-testi-av">SM</span>
+          <div>
+            <p class="ht-testi-name">Savita M.</p>
+            <p class="ht-testi-role">Parent · Class 10 · Science</p>
+          </div>
+        </div>
+      </article>
+      <article class="ht-testi-card">
+        <div class="ht-stars">★★★★★</div>
+        <p class="ht-testi-body">
+          "Verified profiles and transparent fees made it easy to compare three
+          tutors side-by-side before booking a trial. Very professional platform."
+        </p>
+        <div class="ht-testi-foot">
+          <span class="ht-testi-av">AK</span>
+          <div>
+            <p class="ht-testi-name">Arun K.</p>
+            <p class="ht-testi-role">Parent · Hybrid mode · JEE prep</p>
+          </div>
+        </div>
+      </article>
     </div>
+  </div>
 </section>
-{% if is_seo_landing and faq_items %}
-<section class="max-w-6xl mx-auto px-4 pb-10">
-    <div class="rounded-2xl border border-slate-200 bg-white p-6">
-        <h2 class="text-lg font-black text-slate-900 mb-4">Frequently asked questions</h2>
-        <div class="space-y-4">
-            {% for item in faq_items %}
-            <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <h3 class="text-sm font-black text-slate-800">{{ item.q }}</h3>
-                <p class="mt-1 text-sm text-slate-600">{{ item.a }}</p>
-            </div>
-            {% endfor %}
+
+{# ═══════════════════════════════════════════════════════════
+   DUAL CTA: Become a tutor + Prepare online
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec bg-white">
+  <div class="ht-wrap">
+    <div class="ht-dual-grid">
+      {# Become a tutor #}
+      <div class="ht-dual-card"
+           style="background:linear-gradient(135deg,color-mix(in srgb,var(--ht-navy) 8%,#fff),#fff)">
+        <p class="text-2xl mb-3">🧑‍🏫</p>
+        <h3 class="text-lg font-bold text-slate-900 mb-1.5">Are you a tutor in {{ display_city }}?</h3>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+          List your profile on RankJee for free. Get demo requests from families near you
+          — offline, online, or hybrid. No commission until you confirm.
+        </p>
+        <a href="{{ url('hometutor:my_profile') }}" class="ht-btn ht-btn-primary !text-sm">
+          Create your listing →
+        </a>
+      </div>
+      {# Prepare online #}
+      <div class="ht-dual-card"
+           style="background:linear-gradient(135deg,color-mix(in srgb,var(--ht-saffron) 6%,#fff),#fff)"
+           where="var(--ht-saffron)">
+        <p class="text-2xl mb-3">📊</p>
+        <h3 class="text-lg font-bold text-slate-900 mb-1.5">Prepare online on RankJee</h3>
+        <p class="text-sm text-slate-600 leading-relaxed mb-4">
+          After shortlisting a tutor, run diagnostic skill tests and concept videos
+          in the same account. Track exactly where your child needs help.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <a href="{{ url('assessment:index') }}" class="ht-btn ht-btn-accent !text-sm">Start diagnostics</a>
+          <a href="{{ url('learning:index') }}" class="ht-btn ht-btn-secondary !text-sm">Watch videos</a>
         </div>
+      </div>
     </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   BOTTOM CTA
+══════════════════════════════════════════════════════════════ #}
+<section class="ht-sec ht-cta-wrap">
+  <div class="ht-wrap">
+    <span class="ht-cta-badge">✨ Free demo request</span>
+    <h2 class="ht-cta-h">Ready to find your <em>perfect tutor</em><br>in {{ display_city }}?</h2>
+    <p class="ht-cta-sub">
+      Join families on RankJee who book verified home tutors with confidence
+      — no hidden contracts, no upfront payment.
+    </p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="#find-tutors" class="ht-btn ht-btn-primary">Find my tutor →</a>
+      {% if not request.user.is_authenticated %}
+      <a href="{{ url('users:signup') }}" class="ht-btn ht-btn-secondary">Sign up free</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ═══════════════════════════════════════════════════════════
+   FAQ — SEO landing pages only (Alpine.js accordion)
+══════════════════════════════════════════════════════════════ #}
+{% if is_seo_landing and faq_items %}
+<section class="ht-sec-sm bg-white">
+  <div class="ht-wrap">
+    <p class="ht-lbl">FAQ</p>
+    <h2 class="ht-title">Frequently asked questions</h2>
+    <div class="mt-6" x-data="{ open: null }">
+      {% for item in faq_items %}
+      <div class="ht-faq-item">
+        <button class="ht-faq-q" @click="open = (open === {{ loop.index }}) ? null : {{ loop.index }}"
+                type="button">
+          <span>{{ item.q }}</span>
+          <span class="ht-faq-icon" :class="open === {{ loop.index }} ? 'open' : ''">▼</span>
+        </button>
+        <div x-show="open === {{ loop.index }}" x-cloak class="ht-faq-a">
+          {{ item.a }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 </section>
 {% endif %}
+
+</div>{# /ht-land #}
 {% endblock %}

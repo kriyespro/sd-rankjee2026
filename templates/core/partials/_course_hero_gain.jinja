@@ -1,0 +1,12 @@
+{# What you'll gain + course perks — left hero column #}
+<section class="cd-hero-gain" aria-label="Course benefits">
+  <p class="cd-hero-gain-label">What you'll gain</p>
+  <ul class="cd-hero-outcomes-list">
+    {% for line in gain_outcomes %}
+    <li>
+      <span class="cd-hero-outcomes-icon" aria-hidden="true">{{ loop.index }}</span>
+      <span>{{ format_bold_markers(line)|safe }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
