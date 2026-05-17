@@ -3,207 +3,366 @@
 
 {% block extra_head %}
 <style>
-  /* Course content markdown render */
-  .rj-course-md ul { list-style: disc; padding-left: 1.2rem; }
-  .rj-course-md ol { list-style: decimal; padding-left: 1.2rem; }
-  .rj-course-md li { margin: 0.3rem 0; color: #334155; font-size: 0.9rem; }
-  .rj-course-md p  { margin: 0.5rem 0; color: #334155; font-size: 0.9rem; }
-  .rj-course-md strong { color: #0f172a; }
+  /* ── Course-domain accent colour ─────────────────────────── */
+  {% set _t = course.title|lower %}
+  {% if 'seo' in _t or 'search' in _t %}
+    :root{ --ca1:#0369a1; --ca2:#0284c7; --ca3:#e0f2fe; --ca4:#38bdf8; --ca5:#bae6fd; }
+  {% elif 'social' in _t or 'instagram' in _t %}
+    :root{ --ca1:#7c3aed; --ca2:#8b5cf6; --ca3:#ede9fe; --ca4:#a78bfa; --ca5:#ddd6fe; }
+  {% elif 'email' in _t %}
+    :root{ --ca1:#d97706; --ca2:#f59e0b; --ca3:#fef3c7; --ca4:#fbbf24; --ca5:#fde68a; }
+  {% elif 'ecommerce' in _t or 'amazon' in _t or 'shopify' in _t %}
+    :root{ --ca1:#0f766e; --ca2:#0d9488; --ca3:#ccfbf1; --ca4:#2dd4bf; --ca5:#99f6e4; }
+  {% elif 'prompt' in _t or 'chatgpt' in _t or 'claude' in _t %}
+    :root{ --ca1:#6d28d9; --ca2:#7c3aed; --ca3:#ede9fe; --ca4:#a78bfa; --ca5:#ddd6fe; }
+  {% elif 'agent' in _t or 'langchain' in _t or 'agentic' in _t %}
+    :root{ --ca1:#1e3a8a; --ca2:#1d4ed8; --ca3:#dbeafe; --ca4:#60a5fa; --ca5:#bfdbfe; }
+  {% elif 'performance' in _t or 'paid' in _t %}
+    :root{ --ca1:#be123c; --ca2:#e11d48; --ca3:#ffe4e6; --ca4:#fb7185; --ca5:#fecdd3; }
+  {% else %}
+    :root{ --ca1:#4f46e5; --ca2:#6366f1; --ca3:#e0e7ff; --ca4:#818cf8; --ca5:#c7d2fe; }
+  {% endif %}
 
-  /* Curriculum toggle — pure CSS, no plugin needed */
-  .cur-body { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
-  .cur-item input:checked ~ .cur-body { max-height: 600px; }
-  .cur-item input:checked ~ label .cur-arrow { transform: rotate(180deg); }
-  .cur-arrow { transition: transform .25s ease; }
+  /* ── Markdown ─────────────────────────────────────────────── */
+  .rj-md ul { list-style: none; padding: 0; }
+  .rj-md ul li { padding-left: 1.4rem; position: relative; margin: .35rem 0; color: #334155; font-size: .9rem; }
+  .rj-md ul li::before { content:'✓'; position:absolute; left:0; color: var(--ca2); font-weight:900; }
+  .rj-md ol { list-style: decimal; padding-left: 1.2rem; }
+  .rj-md li,
+  .rj-md p { color: #334155; font-size:.9rem; margin:.35rem 0; }
+  .rj-md strong { color: #0f172a; }
 
-  /* Sticky sidebar */
-  @media (min-width: 1024px) {
-    .course-sticky { position: sticky; top: 1.5rem; }
+  /* ── CSS accordion (no JS plugin) ─────────────────────────── */
+  .acc-body { max-height:0; overflow:hidden; transition:max-height .35s cubic-bezier(.4,0,.2,1); }
+  .acc-item input[type=checkbox]:checked ~ .acc-body { max-height:700px; }
+  .acc-item input[type=checkbox]:checked ~ label .acc-chevron { transform:rotate(180deg); }
+  .acc-chevron { transition:transform .25s ease; display:inline-block; }
+
+  /* ── Sticky sidebar ────────────────────────────────────────── */
+  @media(min-width:1024px){ .rj-sticky{ position:sticky; top:1.5rem; } }
+
+  /* ── Mobile bar ────────────────────────────────────────────── */
+  .rj-mobile-bar {
+    position:fixed; left:0; right:0; bottom:0; z-index:55;
+    background:rgba(255,255,255,.96); backdrop-filter:blur(12px);
+    border-top:1px solid #e2e8f0;
+    box-shadow: 0 -6px 30px rgba(15,23,42,.12);
+  }
+  @media(min-width:1024px){ .rj-mobile-bar{ display:none; } }
+
+  /* ── Hero light bg ─────────────────────────────────────────── */
+  .rj-hero-bg {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  /* subtle dot-grid pattern */
+  .rj-hero-bg::before {
+    content:'';
+    position:absolute;inset:0;
+    background-image: radial-gradient(circle, var(--ca2) 1px, transparent 1px);
+    background-size: 28px 28px;
+    opacity: .045;
+    pointer-events:none;
+  }
+  /* accent glow top-right */
+  .rj-hero-bg::after {
+    content:'';
+    position:absolute;
+    top:-120px; right:-80px;
+    width:480px; height:480px;
+    border-radius:50%;
+    background: var(--ca2);
+    opacity:.07;
+    filter:blur(70px);
+    pointer-events:none;
   }
 
-  /* Mobile buy bar */
-  .mobile-buybar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-    background: rgba(255,255,255,.97); backdrop-filter: blur(10px);
-    border-top: 1px solid #e2e8f0;
-    box-shadow: 0 -8px 24px rgba(15,23,42,.1);
+  /* What you'll learn check card */
+  .rj-learn-card {
+    background: var(--ca3);
+    border: 1px solid color-mix(in srgb, var(--ca2) 25%, transparent);
+    border-radius: 1rem;
   }
-  @media (min-width: 1024px) { .mobile-buybar { display: none; } }
 
-  /* Hero gradient */
-  .course-hero {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #1e3a5f 100%);
+  /* ── Trust badge shimmer ────────────────────────────────────── */
+  @keyframes shimmer { 0%{background-position:200% center} 100%{background-position:-200% center} }
+  .shimmer-btn {
+    background: linear-gradient(90deg, var(--ca1) 0%, var(--ca2) 40%, rgba(255,255,255,.15) 50%, var(--ca2) 60%, var(--ca1) 100%);
+    background-size:200% auto;
+    animation: shimmer 3s linear infinite;
   }
+
+  /* Rating stars pulse on hover */
+  .rj-stars:hover svg { transform:scale(1.15); }
+  .rj-stars svg { transition: transform .15s; }
 </style>
 {% endblock %}
 
 {% block schema %}
 <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
-  "@type": "Course",
-  "name": "{{ course.title|e }}",
-  "description": "{{ (course.short_description or '')|e }}",
-  "provider": {"@type": "Organization", "name": "RankJee"},
-  "offers": {
-    "@type": "Offer",
-    "price": "{{ course.price_inr }}",
-    "priceCurrency": "INR",
-    "availability": "https://schema.org/InStock",
-    "url": "{{ request.build_absolute_uri(request.path) }}"
-  }
+  "@context":"https://schema.org","@type":"Course",
+  "name":"{{ course.title|e }}",
+  "description":"{{ (course.short_description or '')|e }}",
+  "provider":{"@type":"Organization","name":"RankJee"},
+  "offers":{"@type":"Offer","price":"{{ course.price_inr }}","priceCurrency":"INR",
+            "availability":"https://schema.org/InStock","url":"{{ request.build_absolute_uri(request.path) }}"}
 }
 </script>
 {% endblock %}
 
 {% block content %}
 
-{# ═══════════════════════════════════════════════
-   HERO
-═══════════════════════════════════════════════ #}
-<div class="course-hero text-white">
-  <div class="max-w-6xl mx-auto px-4 py-10 md:py-14 lg:flex lg:gap-12 lg:items-start">
+{# ╔══════════════════════════════════════════════════════╗
+   ║  HERO  (light theme)                                 ║
+   ╚══════════════════════════════════════════════════════╝ #}
 
-    {# Left — main content #}
+{# Accent top-bar #}
+<div style="background:var(--ca1);height:4px;"></div>
+
+<div class="rj-hero-bg relative overflow-hidden">
+  <div class="relative max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-10 md:pt-12 md:pb-14 lg:flex lg:gap-12 lg:items-start">
+
+    {# ── Left content ── #}
     <div class="flex-1 min-w-0">
-      <a href="{{ url('core:courses') }}"
-         class="inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 text-xs font-bold mb-5 transition-colors">
-        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-        All courses
-      </a>
 
-      <p class="text-xs font-black uppercase tracking-[0.25em] text-[#f4711c] mb-3">
-        {{ course.level or "All levels" }} · {{ course.duration_weeks }} weeks
-      </p>
-      <h1 class="text-2xl md:text-3xl lg:text-4xl font-black tracking-tight leading-tight text-white mb-3">
-        {{ course.title }}
-      </h1>
-      {% if course.short_description %}
-      <p class="text-slate-300 text-base max-w-2xl leading-relaxed mb-5">{{ course.short_description }}</p>
-      {% endif %}
+      {# Breadcrumb #}
+      <nav class="flex items-center gap-2 text-xs mb-5">
+        <a href="{{ url('core:courses') }}"
+           class="font-semibold transition-colors hover:underline" style="color:var(--ca2);">Courses</a>
+        <svg class="h-3 w-3 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-500 font-semibold truncate">{{ course.level or 'All levels' }}</span>
+      </nav>
 
-      {# Stats bar #}
-      <div class="flex flex-wrap items-center gap-3 mb-6">
-        <div class="flex items-center gap-1">
-          {% for _ in range(5) %}
-          <svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-          {% endfor %}
-          <span class="text-amber-400 font-black text-sm ml-1">5.0</span>
-          <span class="text-slate-400 text-xs ml-1">({{ course.testimonials|length if course.testimonials else 0 }} reviews)</span>
-        </div>
-        <span class="text-slate-500 text-xs">·</span>
-        <span class="text-slate-300 text-xs font-semibold">Certificate on completion</span>
-        <span class="text-slate-500 text-xs">·</span>
-        <span class="text-slate-300 text-xs font-semibold">Online · Self-paced</span>
+      {# Category + level badge #}
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        <span style="background:var(--ca3);color:var(--ca1);border:1px solid color-mix(in srgb,var(--ca2) 30%,transparent);"
+              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-widest">
+          <span class="h-1.5 w-1.5 rounded-full" style="background:var(--ca1);"></span>
+          {{ course.level or 'Course' }}
+        </span>
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-bold text-slate-600">
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          {{ course.duration_weeks }} weeks
+        </span>
+        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200 px-3 py-1 text-[11px] font-bold text-slate-600">
+          <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Online · Self-paced
+        </span>
       </div>
 
-      {# What you'll learn — quick bullets from description #}
-      {% if course_description_sections %}
-      <div class="rounded-xl border border-white/10 bg-white/5 p-4 max-w-2xl">
-        <p class="text-xs font-black uppercase tracking-wider text-slate-400 mb-3">What you'll learn</p>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-4">
-          {% set learn_section = namespace(found=false, lines=[]) %}
-          {% for sec in course_description_sections %}
-            {% if "learn" in sec.title|lower and not learn_section.found %}
-              {% set learn_section.found = true %}
-            {% endif %}
+      {# Title #}
+      <h1 class="text-3xl sm:text-4xl lg:text-[2.75rem] font-black tracking-tight leading-[1.1] text-slate-900 mb-4">
+        {{ course.title }}
+      </h1>
+
+      {# Short description #}
+      {% if course.short_description %}
+      <p class="text-slate-600 text-base sm:text-lg max-w-2xl leading-relaxed mb-5">
+        {{ course.short_description }}
+      </p>
+      {% endif %}
+
+      {# Rating + trust row #}
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-2.5 mb-7">
+
+        {# Stars #}
+        <div class="rj-stars flex items-center gap-0.5">
+          {% for _ in range(5) %}<svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
+          <span class="font-black text-slate-800 text-sm ml-1.5">5.0</span>
+          <span class="text-slate-500 text-xs ml-1">({{ (course.testimonials or [])|length }} reviews)</span>
+        </div>
+
+        {# Divider dot #}
+        <span class="hidden sm:block h-1 w-1 rounded-full bg-slate-300"></span>
+
+        {# Trust badges #}
+        <div class="flex items-center gap-1.5 text-slate-600 text-xs font-semibold">
+          <svg class="h-3.5 w-3.5 shrink-0" style="color:var(--ca2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+          Certificate on completion
+        </div>
+
+        {% if course.salary_after_max %}
+        <div class="flex items-center gap-1.5 text-xs font-bold rounded-full px-3 py-1"
+             style="background:var(--ca3);color:var(--ca1);">
+          <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          Up to ₹{{ course.salary_after_max|int }} LPA
+        </div>
+        {% endif %}
+      </div>
+
+      {# What you'll learn — light card #}
+      {% if course.curriculum %}
+      <div class="rj-learn-card p-5 max-w-2xl">
+        <p class="text-[11px] font-black uppercase tracking-[.2em] mb-4" style="color:var(--ca1);">What you'll learn</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-6">
+          {% for mod in course.curriculum %}
+          <div class="flex items-start gap-2.5">
+            <svg class="mt-0.5 h-4 w-4 shrink-0" style="color:var(--ca2);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <span class="text-sm text-slate-800 leading-snug font-medium">{{ mod.title }}</span>
+          </div>
           {% endfor %}
-          {% if course.curriculum %}
-            {% for mod in course.curriculum[:6] %}
-            <div class="flex items-start gap-2">
-              <svg class="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-              <span class="text-sm text-slate-200">{{ mod.title }}</span>
-            </div>
-            {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Mobile buy CTA (shown only on mobile, inside hero) #}
+      <div class="mt-6 lg:hidden">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-md p-4 flex items-center justify-between gap-3">
+          <div>
+            <p class="text-2xl font-black text-slate-900">
+              ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
+            </p>
+            {% if referral_price_unlocked %}
+            <p class="text-xs text-slate-400 line-through">₹{{ course_list_price_inr }}</p>
+            {% endif %}
+            {% if course.salary_after_max %}
+            <p class="text-[11px] font-bold mt-0.5" style="color:var(--ca2);">↑ ₹{{ course.salary_after_max|int }} LPA salary</p>
+            {% endif %}
+          </div>
+          {% if owns_course %}
+          <span class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-black text-emerald-800">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            Enrolled
+          </span>
+          {% elif request.user.is_authenticated %}
+          <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <button type="submit"
+                    class="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white"
+                    style="background:var(--ca1);">
+              Add to cart
+            </button>
+          </form>
+          {% else %}
+          <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
+             class="inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white"
+             style="background:var(--ca1);">
+            Log in
+          </a>
           {% endif %}
         </div>
       </div>
-      {% endif %}
+
     </div>
 
-    {# Right — price card (desktop sidebar) #}
-    <div class="hidden lg:block w-80 shrink-0 course-sticky mt-2">
+    {# ── Right: buy card (desktop) ── #}
+    <div class="hidden lg:block w-[340px] shrink-0 rj-sticky mt-2">
       {% include "core/partials/_course_buy_card.jinja" %}
+    </div>
+
+  </div>
+</div>
+
+{# ── Quick-stats strip (light) ── #}
+<div class="bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6">
+    <div class="flex overflow-x-auto scrollbar-none items-stretch divide-x divide-slate-200">
+      {% set stats = [
+        (course.duration_weeks|string + ' Weeks', 'Duration', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'),
+        ((course.curriculum|length if course.curriculum else '—')|string + ' Modules', 'Curriculum', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>'),
+        (course.level or 'All levels', 'Level', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>'),
+        ('Certificate', 'On Completion', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>'),
+        ('Lifetime', 'Access', '<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>'),
+      ] %}
+      {% for val, lbl, icon_svg in stats %}
+      <div class="flex items-center gap-2.5 py-3.5 px-5 shrink-0">
+        <span style="color:var(--ca2);" class="shrink-0">{{ icon_svg|safe }}</span>
+        <div>
+          <p class="text-sm font-black text-slate-900 leading-none">{{ val }}</p>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">{{ lbl }}</p>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </div>
 
-{# ═══════════════════════════════════════════════
-   BODY
-═══════════════════════════════════════════════ #}
-<div class="max-w-6xl mx-auto px-4 py-8 lg:flex lg:gap-12 lg:items-start">
+{# ╔══════════════════════════════════════════════════════╗
+   ║  BODY                                                ║
+   ╚══════════════════════════════════════════════════════╝ #}
+<div class="max-w-6xl mx-auto px-4 py-10 lg:flex lg:gap-10 lg:items-start">
 
   {# ── Main column ── #}
   <div class="flex-1 min-w-0 space-y-8">
 
-    {# ── 1. Program Details ── #}
+    {# 1. Program details ── #}
     {% if course_description_sections %}
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-        <h2 class="text-base font-black text-slate-900">Program details</h2>
+    <section>
+      <div class="flex items-center gap-3 mb-5">
+        <span style="background:var(--ca3);color:var(--ca1);" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </span>
+        <h2 class="text-xl font-black text-slate-900">Program overview</h2>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         {% for section in course_description_sections %}
-        <div class="rounded-xl border border-slate-100 bg-slate-50 p-4">
-          <p class="text-[10px] font-black uppercase tracking-wider text-indigo-600 mb-2">{{ section.title }}</p>
-          <div class="rj-course-md">{{ section.html }}</div>
+        <div style="border-left:3px solid var(--ca2);" class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
+          <p class="text-[10px] font-black uppercase tracking-[.18em] mb-3" style="color:var(--ca2);">{{ section.title }}</p>
+          <div class="rj-md">{{ section.html }}</div>
         </div>
         {% endfor %}
       </div>
     </section>
     {% endif %}
 
-    {# ── 2. Curriculum ── #}
+    {# 2. Curriculum ── #}
     {% if course.curriculum %}
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-        <h2 class="text-base font-black text-slate-900">Course curriculum</h2>
-        <div class="flex items-center gap-2">
-          <span class="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700">
-            {{ course.curriculum|length }} modules
-          </span>
-          <span class="text-[11px] text-slate-500 font-semibold">
-            {{ course.curriculum|map(attribute='topics')|map('length')|sum }} topics
-          </span>
+    {% set total_topics = course.curriculum|map(attribute='topics')|map('length')|sum %}
+    <section>
+      <div class="flex items-center gap-3 mb-5">
+        <span style="background:var(--ca3);color:var(--ca1);" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+        </span>
+        <div>
+          <h2 class="text-xl font-black text-slate-900">Course curriculum</h2>
+          <p class="text-xs text-slate-500 mt-0.5">{{ course.curriculum|length }} modules · {{ total_topics }} topics</p>
         </div>
       </div>
-      <div class="divide-y divide-slate-100">
+
+      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden divide-y divide-slate-100">
         {% for mod in course.curriculum %}
-        <div class="cur-item">
-          {# Hidden checkbox drives CSS-only expand/collapse #}
-          <input type="checkbox" id="cur-{{ loop.index }}" class="sr-only"
-                 {% if loop.index == 1 %}checked{% endif %}>
-          <label for="cur-{{ loop.index }}"
-                 class="flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-4 hover:bg-slate-50/70 transition-colors select-none">
-            <div class="flex items-center gap-3 min-w-0">
-              <span class="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg
-                           {% if loop.index == 1 %}bg-indigo-600 text-white{% else %}bg-slate-100 text-slate-700{% endif %}
-                           text-sm font-black border border-transparent">
-                {{ loop.index }}
-              </span>
-              <div class="min-w-0">
-                <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Module {{ loop.index }}</p>
-                <p class="text-sm font-black text-slate-900 leading-snug">{{ mod.title }}</p>
-              </div>
+        <div class="acc-item">
+          <input type="checkbox" id="m{{ loop.index }}" class="sr-only" {% if loop.index <= 2 %}checked{% endif %}>
+          <label for="m{{ loop.index }}"
+                 class="flex w-full cursor-pointer items-center gap-4 px-5 py-4 hover:bg-slate-50/80 transition-colors select-none group">
+
+            {# number bubble #}
+            <span class="shrink-0 h-9 w-9 rounded-xl flex items-center justify-center text-sm font-black transition-colors
+                         {% if loop.index <= 2 %}text-white{% else %}text-slate-600 group-hover:text-white{% endif %}"
+                  style="{% if loop.index <= 2 %}background:var(--ca1);{% else %}background:#f1f5f9;{% endif %}"
+                  >
+              {{ loop.index }}
+            </span>
+
+            <div class="flex-1 min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-wider text-slate-400">Module {{ loop.index }}</p>
+              <p class="text-sm font-black text-slate-900 leading-snug">{{ mod.title }}</p>
             </div>
-            <div class="flex items-center gap-2 shrink-0">
-              <span class="text-[10px] font-bold text-slate-500 whitespace-nowrap">{{ mod.topics|length }} topics</span>
-              <svg class="cur-arrow h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+
+            <div class="flex items-center gap-3 shrink-0">
+              <span class="hidden sm:inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold"
+                    style="background:var(--ca3);color:var(--ca1);">
+                {{ mod.topics|length }} topics
+              </span>
+              <svg class="acc-chevron h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
               </svg>
             </div>
           </label>
-          <div class="cur-body">
-            <ul class="pb-4 pl-16 pr-5 space-y-2">
+
+          <div class="acc-body">
+            <ol class="px-5 pb-5 space-y-2 pt-1">
               {% for topic in mod.topics %}
-              <li class="flex items-center gap-2.5">
-                <span class="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-white text-[10px] font-black text-slate-500">
+              <li class="flex items-center gap-3 rounded-lg bg-slate-50 border border-slate-100 px-4 py-2.5">
+                <span class="shrink-0 h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-black"
+                      style="background:var(--ca3);color:var(--ca1);">
                   {{ loop.index }}
                 </span>
                 <span class="text-sm text-slate-700">{{ topic }}</span>
               </li>
               {% endfor %}
-            </ul>
+            </ol>
           </div>
         </div>
         {% endfor %}
@@ -211,41 +370,54 @@
     </section>
     {% endif %}
 
-    {# ── 3. Career Outcomes ── #}
+    {# 3. Career outcomes ── #}
     {% if course.salary_after_min or course.job_roles %}
-    <section class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50/60">
-        <h2 class="text-base font-black text-slate-900">Career outcomes</h2>
+    <section>
+      <div class="flex items-center gap-3 mb-5">
+        <span style="background:#d1fae5;color:#065f46;" class="h-9 w-9 rounded-xl flex items-center justify-center shrink-0">
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        </span>
+        <h2 class="text-xl font-black text-slate-900">Career outcomes</h2>
       </div>
-      <div class="p-5">
+
+      <div class="rounded-2xl border border-emerald-200 bg-white shadow-sm overflow-hidden">
         {% if course.salary_after_min and course.salary_after_max %}
-        <div class="flex flex-col sm:flex-row gap-4 mb-5">
-          <div class="flex-1 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
-            <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700 mb-1">Average salary after course</p>
-            <p class="text-4xl font-black text-slate-900 tracking-tight">
-              ₹{{ course.salary_after_min|int }}
-              <span class="text-2xl text-slate-500">–</span>
-              {{ course.salary_after_max|int }}<span class="text-xl font-bold text-slate-500 ml-1">LPA</span>
-            </p>
-            <p class="text-xs text-slate-500 mt-1.5">Lakh Per Annum · India market rate 2025</p>
-          </div>
-          <div class="sm:w-40 rounded-xl border border-emerald-200 bg-emerald-600 p-4 flex flex-col items-center justify-center text-white text-center">
-            <svg class="h-6 w-6 mb-1 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-            <p class="text-2xl font-black">₹{{ course.salary_after_max|int }}L</p>
-            <p class="text-[10px] font-black uppercase tracking-wider opacity-80">Max/year</p>
+        <div class="p-6 border-b border-emerald-100 bg-gradient-to-br from-emerald-50/80 to-teal-50/50">
+          <p class="text-[11px] font-black uppercase tracking-[.2em] text-emerald-700 mb-3">Expected salary in India · 2025</p>
+          <div class="flex flex-col sm:flex-row sm:items-end gap-6">
+            <div>
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-black text-slate-900 tracking-tight">₹{{ course.salary_after_min|int }}</span>
+                <span class="text-2xl font-black text-slate-400">–</span>
+                <span class="text-5xl font-black text-emerald-700 tracking-tight">{{ course.salary_after_max|int }}</span>
+                <span class="text-xl font-bold text-slate-400 pb-1">LPA</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-2">Lakh Per Annum · entry to senior roles</p>
+            </div>
+            <div class="flex flex-wrap gap-3 sm:ml-auto">
+              <div class="rounded-xl border border-emerald-200 bg-white px-4 py-2.5 text-center min-w-[90px]">
+                <p class="text-xl font-black text-emerald-700">₹{{ course.salary_after_min|int }}L</p>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-0.5">Entry level</p>
+              </div>
+              <div class="rounded-xl border border-emerald-300 bg-emerald-600 px-4 py-2.5 text-center min-w-[90px] shadow-md shadow-emerald-500/20">
+                <p class="text-xl font-black text-white">₹{{ course.salary_after_max|int }}L</p>
+                <p class="text-[10px] font-bold text-emerald-100 uppercase tracking-wider mt-0.5">Senior level</p>
+              </div>
+            </div>
           </div>
         </div>
         {% endif %}
+
         {% if course.job_roles %}
-        <div>
-          <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3">Job roles you can target</p>
-          <div class="flex flex-wrap gap-2">
-            {% set role_colors = ['bg-blue-50 border-blue-200 text-blue-800', 'bg-violet-50 border-violet-200 text-violet-800', 'bg-emerald-50 border-emerald-200 text-emerald-800', 'bg-amber-50 border-amber-200 text-amber-800', 'bg-rose-50 border-rose-200 text-rose-800'] %}
+        <div class="p-5">
+          <p class="text-[11px] font-black uppercase tracking-[.18em] text-slate-400 mb-4">Job roles you can apply for</p>
+          {% set rc = ['bg-blue-50 border-blue-200 text-blue-800','bg-violet-50 border-violet-200 text-violet-800','bg-emerald-50 border-emerald-200 text-emerald-800','bg-amber-50 border-amber-200 text-amber-800','bg-rose-50 border-rose-200 text-rose-800','bg-cyan-50 border-cyan-200 text-cyan-800'] %}
+          <div class="flex flex-wrap gap-2.5">
             {% for role in course.job_roles.split(',') %}
-            <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold {{ role_colors[loop.index0 % 5] }}">
-              <svg class="h-3 w-3 opacity-70" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
-              {{ role.strip() }}
-            </span>
+            <div class="flex items-center gap-2 rounded-xl border px-3.5 py-2 {{ rc[loop.index0 % 6] }} transition-transform hover:-translate-y-0.5 cursor-default">
+              <svg class="h-3.5 w-3.5 shrink-0 opacity-70" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+              <span class="text-xs font-bold">{{ role.strip() }}</span>
+            </div>
             {% endfor %}
           </div>
         </div>
@@ -254,35 +426,55 @@
     </section>
     {% endif %}
 
-    {# ── 4. Testimonials ── #}
+    {# 4. Testimonials ── #}
     {% if course.testimonials %}
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/60">
-        <h2 class="text-base font-black text-slate-900">Student reviews</h2>
-        <div class="flex items-center gap-1">
-          {% for _ in range(5) %}
-          <svg class="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-          {% endfor %}
-          <span class="ml-1 text-sm font-black text-slate-800">5.0</span>
-          <span class="text-xs text-slate-500 ml-1">({{ course.testimonials|length }} reviews)</span>
+    <section>
+      <div class="flex items-center gap-3 mb-5">
+        <span class="h-9 w-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+          <svg class="h-4 w-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </span>
+        <div>
+          <h2 class="text-xl font-black text-slate-900">Student success stories</h2>
+          <div class="flex items-center gap-1 mt-0.5">
+            {% for _ in range(5) %}<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
+            <span class="text-xs font-black text-slate-700 ml-1">5.0 / 5.0</span>
+            <span class="text-xs text-slate-500 ml-1">from {{ course.testimonials|length }} students</span>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% set av_grads = [
+          'from-indigo-600 to-violet-600',
+          'from-emerald-600 to-teal-600',
+          'from-rose-600 to-pink-600',
+          'from-amber-500 to-orange-500',
+          'from-sky-600 to-blue-600',
+        ] %}
         {% for t in course.testimonials %}
-        <div class="p-5 flex flex-col gap-3">
-          <div class="flex gap-0.5 mb-1">
-            {% for _ in range(t.rating) %}
-            <svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-            {% endfor %}
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow p-5 flex flex-col gap-4 relative overflow-hidden">
+          {# accent corner #}
+          <div style="background:var(--ca3);width:64px;height:64px;border-radius:50%;position:absolute;top:-20px;right:-20px;opacity:.6;"></div>
+
+          {# quote mark #}
+          <svg class="h-7 w-7 opacity-20" style="color:var(--ca2);" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+          </svg>
+
+          <p class="text-sm text-slate-700 leading-relaxed flex-1 relative z-10">"{{ t.text }}"</p>
+
+          {# stars #}
+          <div class="flex gap-0.5">
+            {% for _ in range(t.rating) %}<svg class="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>{% endfor %}
           </div>
-          <p class="text-sm text-slate-700 leading-relaxed flex-1">"{{ t.text }}"</p>
-          <div class="flex items-center gap-2.5 pt-3 border-t border-slate-100">
-            <div class="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center text-white text-sm font-black shrink-0">
+
+          <div class="flex items-center gap-3 pt-3 border-t border-slate-100">
+            <div class="h-10 w-10 rounded-full bg-gradient-to-br {{ av_grads[loop.index0 % 5] }} flex items-center justify-center text-white font-black text-sm shrink-0 shadow-sm">
               {{ t.name[0] }}
             </div>
             <div>
-              <p class="text-xs font-black text-slate-900">{{ t.name }}</p>
-              <p class="text-[10px] text-slate-500 font-medium">{{ t.role }} · {{ t.city }}</p>
+              <p class="text-sm font-black text-slate-900 leading-none">{{ t.name }}</p>
+              <p class="text-[11px] text-slate-500 mt-1">{{ t.role }} · {{ t.city }}</p>
             </div>
           </div>
         </div>
@@ -291,71 +483,70 @@
     </section>
     {% endif %}
 
-    {# ── 5. Enroll form ── #}
-    <section class="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-5 md:p-6 shadow-sm">
-      <h2 class="text-sm font-black text-indigo-900 mb-1">Register your interest</h2>
-      <p class="text-xs text-indigo-800 mb-3">Submit your details and we'll reach out with course start dates and offers.</p>
-      {% if pending_course_referrer_code %}
-      <p class="mb-3 inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-700 border border-indigo-100 shadow-sm">
-        Referral active: {{ pending_course_referrer_code }}
-      </p>
-      {% endif %}
-      <form method="post" class="flex flex-col sm:flex-row gap-2">
-        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-        <input type="text" name="lead_name" placeholder="Your name"
-               class="flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-        <input type="email" name="lead_email" placeholder="Your email" required
-               value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}"
-               class="flex-1 rounded-xl border border-indigo-200 bg-white px-3 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-        <button type="submit"
-                class="shrink-0 inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 transition-colors">
-          Enroll now
-        </button>
-      </form>
+    {# 5. Enroll CTA band ── #}
+    <section style="background:linear-gradient(135deg,var(--ca1),var(--ca2));" class="rounded-2xl p-6 md:p-8 text-white relative overflow-hidden">
+      <div style="background:rgba(255,255,255,.06);width:200px;height:200px;border-radius:50%;position:absolute;top:-60px;right:-40px;pointer-events:none;"></div>
+      <div class="relative">
+        <h2 class="text-xl font-black mb-1">Ready to get started?</h2>
+        <p class="text-sm opacity-80 mb-5">Submit your details and we'll contact you with the next batch dates.</p>
+        {% if pending_course_referrer_code %}
+        <p class="mb-4 inline-flex items-center rounded-full bg-white/15 border border-white/25 px-3 py-1 text-[11px] font-black uppercase tracking-wider">
+          Referral active: {{ pending_course_referrer_code }}
+        </p>
+        {% endif %}
+        <form method="post" class="flex flex-col sm:flex-row gap-2.5">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <input type="text" name="lead_name" placeholder="Your name"
+                 class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40">
+          <input type="email" name="lead_email" placeholder="Your email" required
+                 value="{% if request.user.is_authenticated and request.user.email %}{{ request.user.email }}{% endif %}"
+                 class="flex-1 rounded-xl bg-white/15 border border-white/20 px-4 py-3 text-sm text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40">
+          <button type="submit"
+                  class="shrink-0 rounded-xl bg-white px-6 py-3 text-xs font-black uppercase tracking-wider transition-opacity hover:opacity-90"
+                  style="color:var(--ca1);">
+            Enroll now →
+          </button>
+        </form>
+      </div>
     </section>
 
-  </div>{# end main col #}
-
-  {# ── Right sidebar (desktop) ── #}
-  <div class="hidden lg:block w-80 shrink-0 course-sticky">
-    {% include "core/partials/_course_buy_card.jinja" %}
   </div>
 
+  {# ── Right sidebar (desktop) ── #}
+  <div class="hidden lg:block w-[340px] shrink-0 rj-sticky">
+    {% include "core/partials/_course_buy_card.jinja" %}
+  </div>
 </div>
 
-{# Mobile spacer for fixed buy bar #}
-<div class="h-24 lg:hidden"></div>
+{# Mobile spacer so content doesn't hide behind fixed bar when scrolled #}
+<div class="h-20 lg:hidden"></div>
 
-{# ── Mobile fixed buy bar ── #}
+{# ── Mobile fixed bottom bar (shows when user scrolls past hero CTA) ── #}
 {% if not owns_course %}
-<div class="mobile-buybar lg:hidden">
-  <div class="max-w-lg mx-auto px-4 py-3">
-    <div class="flex items-center justify-between mb-2.5">
-      <div>
-        <p class="text-[11px] font-black uppercase tracking-wider text-slate-600 leading-none">{{ course.title|truncate(32, true, '…') }}</p>
-        {% if referral_price_unlocked %}
-        <p class="text-lg font-black text-emerald-700 leading-snug">₹{{ course_checkout_price_inr }}
-          <span class="text-xs font-bold text-slate-400 line-through ml-1">₹{{ course_list_price_inr }}</span>
-        </p>
-        {% else %}
-        <p class="text-lg font-black text-emerald-700 leading-snug">₹{{ course_list_price_inr }}</p>
-        {% endif %}
-      </div>
-      {% if request.user.is_authenticated %}
-      <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
-        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-        <button type="submit"
-                class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors">
-          Add to cart
-        </button>
-      </form>
-      {% else %}
-      <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
-         class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors">
-        Log in to buy
-      </a>
-      {% endif %}
+<div class="rj-mobile-bar lg:hidden">
+  <div class="max-w-lg mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+    <div class="min-w-0">
+      <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 truncate leading-none">{{ course.title|truncate(28, true, '…') }}</p>
+      <p class="text-lg font-black leading-tight mt-0.5" style="color:var(--ca1);">
+        ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
+        {% if referral_price_unlocked %}<span class="text-xs font-bold text-slate-400 line-through ml-1">₹{{ course_list_price_inr }}</span>{% endif %}
+      </p>
     </div>
+    {% if request.user.is_authenticated %}
+    <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 shrink-0">
+      <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+      <button type="submit"
+              class="shimmer-btn inline-flex items-center gap-1.5 rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md">
+        <svg class="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Add to cart
+      </button>
+    </form>
+    {% else %}
+    <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
+       class="shimmer-btn shrink-0 inline-flex items-center gap-1.5 rounded-xl px-5 py-3 text-xs font-black uppercase tracking-wider text-white shadow-md">
+      Log in to buy
+    </a>
+    {% endif %}
   </div>
 </div>
 {% endif %}

@@ -44,6 +44,16 @@ def user_set_role_vip_user(modeladmin, request, queryset):
     queryset.update(role=CustomUser.Role.VIP_USER)
 
 
+@admin.action(description='Show “Server buy now” on dashboard for selected users')
+def user_enable_server_buy_button(modeladmin, request, queryset):
+    queryset.update(show_server_buy_button=True)
+
+
+@admin.action(description='Hide “Server buy now” for selected users')
+def user_disable_server_buy_button(modeladmin, request, queryset):
+    queryset.update(show_server_buy_button=False)
+
+
 @admin.action(description='Mark withdrawals as processed')
 def withdrawal_mark_processed(modeladmin, request, queryset):
     now = timezone.now()
@@ -97,6 +107,7 @@ class CustomUserAdmin(UserAdmin):
         'role',
         'state',
         'is_vip_testing_user',
+        'show_server_buy_button',
         'streak_days',
         'xp_points',
         'wallet_balance',
@@ -105,6 +116,7 @@ class CustomUserAdmin(UserAdmin):
     list_filter = (
         'role',
         'is_vip_testing_user',
+        'show_server_buy_button',
         'state',
         'is_staff',
         'is_superuser',
@@ -117,6 +129,8 @@ class CustomUserAdmin(UserAdmin):
         user_mark_vip_testing,
         user_unmark_vip_testing,
         user_set_role_vip_user,
+        user_enable_server_buy_button,
+        user_disable_server_buy_button,
     )
     readonly_fields = ('referral_code', 'last_ad_claim_at', 'signup_pro_trial_applied_at')
     fieldsets = UserAdmin.fieldsets + (
@@ -144,6 +158,13 @@ class CustomUserAdmin(UserAdmin):
                     'signup_pro_trial_applied_at',
                 ),
                 'description': 'VIP testers always unlock exam Pro features. Use list actions to grant 7/30 day complimentary access (same as /payments/plans/).',
+            },
+        ),
+        (
+            'Server buy',
+            {
+                'fields': ('show_server_buy_button',),
+                'description': 'When enabled, student accounts see “Server buy now” on the dashboard and can access /server-buy/ checkout.',
             },
         ),
     )

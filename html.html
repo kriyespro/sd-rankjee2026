@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BrightMind Tutors — Expert Home Tutoring</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #fdf6ed;
+    --cream-dark: #f5e9d4;
+    --forest: #1c4a35;
+    --forest-mid: #2d6b4e;
+    --forest-light: #3d8c65;
+    --gold: #c9973a;
+    --gold-light: #e8b55a;
+    --charcoal: #1e1e1e;
+    --charcoal-mid: #3a3a3a;
+    --muted: #6b6b6b;
+    --muted-light: #9a9a9a;
+    --white: #ffffff;
+    --card-border: rgba(28,74,53,0.12);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    overflow-x: hidden;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.1rem 5vw;
+    background: rgba(253,246,237,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,151,58,0.18);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 2px 24px rgba(28,74,53,0.08); }
+
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem; font-weight: 700;
+    color: var(--forest);
+    text-decoration: none;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); display: inline-block; }
+
+  .nav-links { display: flex; align-items: center; gap: 2.2rem; }
+  .nav-links a {
+    font-size: 0.88rem; font-weight: 500; color: var(--charcoal-mid);
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--forest); }
+
+  .nav-cta {
+    background: var(--forest);
+    color: var(--cream) !important;
+    padding: 0.55rem 1.4rem;
+    border-radius: 50px;
+    transition: background 0.2s, transform 0.15s !important;
+  }
+  .nav-cta:hover { background: var(--forest-mid) !important; transform: translateY(-1px); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 0 5vw;
+    padding-top: 80px;
+    gap: 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 60% at 90% 50%, rgba(201,151,58,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 70% at 10% 80%, rgba(28,74,53,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: rgba(28,74,53,0.08);
+    border: 1px solid rgba(28,74,53,0.2);
+    color: var(--forest);
+    font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.4rem 1rem; border-radius: 50px;
+    margin-bottom: 1.8rem;
+    animation: fadeUp 0.7s ease both;
+  }
+  .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 5vw, 4.2rem);
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--charcoal);
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.7s 0.1s ease both;
+  }
+  .hero-title em { font-style: italic; color: var(--forest); }
+  .hero-title .underline-gold {
+    position: relative; display: inline-block;
+  }
+  .hero-title .underline-gold::after {
+    content: '';
+    position: absolute; left: 0; bottom: -4px; right: 0; height: 3px;
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  .hero-sub {
+    font-size: 1.05rem; line-height: 1.75; color: var(--muted);
+    max-width: 480px;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.7s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex; align-items: center; gap: 1.2rem;
+    animation: fadeUp 0.7s 0.3s ease both;
+  }
+
+  .btn-primary {
+    background: var(--forest);
+    color: var(--cream);
+    padding: 0.85rem 2rem;
+    border-radius: 50px;
+    font-size: 0.95rem; font-weight: 500;
+    text-decoration: none;
+    border: none; cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(28,74,53,0.25);
+  }
+  .btn-primary:hover { background: var(--forest-mid); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(28,74,53,0.3); }
+
+  .btn-outline {
+    color: var(--charcoal);
+    font-size: 0.95rem; font-weight: 500;
+    text-decoration: none;
+    display: flex; align-items: center; gap: 0.5rem;
+    transition: color 0.2s;
+  }
+  .btn-outline:hover { color: var(--forest); }
+  .btn-outline .play-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,0.18);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .btn-outline:hover .play-icon { border-color: var(--forest); }
+
+  .hero-trust {
+    display: flex; align-items: center; gap: 1rem;
+    margin-top: 2.5rem;
+    animation: fadeUp 0.7s 0.4s ease both;
+  }
+  .trust-avatars { display: flex; }
+  .trust-avatars img, .trust-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 2px solid var(--cream);
+    margin-left: -10px; object-fit: cover;
+  }
+  .trust-avatar:first-child { margin-left: 0; }
+  .trust-text { font-size: 0.83rem; color: var(--muted); }
+  .trust-text strong { color: var(--charcoal); }
+  .stars { color: var(--gold); font-size: 0.85rem; letter-spacing: 1px; }
+
+  /* Hero Visual */
+  .hero-visual {
+    position: relative;
+    animation: fadeUp 0.9s 0.2s ease both;
+  }
+
+  .hero-card-main {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 2rem;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 20px 60px rgba(28,74,53,0.1);
+    position: relative; z-index: 2;
+  }
+
+  .tutor-profile { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+  .tutor-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--forest-light), var(--forest));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem; color: var(--cream); font-weight: 700;
+  }
+  .tutor-name { font-weight: 600; font-size: 1rem; color: var(--charcoal); }
+  .tutor-subject { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+  .tutor-rating { margin-left: auto; font-weight: 600; font-size: 0.9rem; color: var(--charcoal); }
+  .tutor-rating span { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+
+  .session-label { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted-light); margin-bottom: 0.7rem; }
+  .session-timeline { display: flex; gap: 0.4rem; }
+  .session-block {
+    height: 36px; border-radius: 8px; flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.72rem; font-weight: 500;
+  }
+  .session-block.filled { background: var(--forest); color: var(--cream); }
+  .session-block.empty { background: var(--cream-dark); color: var(--muted-light); }
+  .session-block.active { background: var(--gold); color: var(--white); }
+
+  .subject-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.2rem; }
+  .pill {
+    padding: 0.35rem 0.9rem; border-radius: 50px;
+    font-size: 0.78rem; font-weight: 500;
+  }
+  .pill-green { background: rgba(28,74,53,0.1); color: var(--forest); }
+  .pill-gold { background: rgba(201,151,58,0.12); color: #7a5a18; }
+  .pill-gray { background: var(--cream-dark); color: var(--muted); }
+
+  .hero-card-float {
+    position: absolute;
+    background: var(--white);
+    border-radius: 16px;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.1);
+    padding: 1rem 1.2rem;
+  }
+  .float-top {
+    top: -1.5rem; right: -2rem;
+    display: flex; align-items: center; gap: 0.7rem;
+    z-index: 3;
+    animation: float1 4s ease-in-out infinite;
+  }
+  .float-bottom {
+    bottom: -1.5rem; left: -2rem;
+    display: flex; align-items: center; gap: 0.7rem;
+    z-index: 3;
+    animation: float2 4s ease-in-out infinite;
+  }
+  @keyframes float1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  @keyframes float2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+
+  .float-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+  }
+  .float-icon.green { background: rgba(28,74,53,0.1); }
+  .float-icon.gold { background: rgba(201,151,58,0.12); }
+  .float-num { font-size: 1rem; font-weight: 700; color: var(--charcoal); }
+  .float-label { font-size: 0.73rem; color: var(--muted); margin-top: 1px; }
+
+  .bg-circle {
+    position: absolute; border-radius: 50%;
+    background: rgba(201,151,58,0.08);
+    border: 1px solid rgba(201,151,58,0.15);
+  }
+  .bg-circle-1 { width: 300px; height: 300px; top: -60px; right: -60px; z-index: 0; }
+  .bg-circle-2 { width: 180px; height: 180px; bottom: -40px; left: 50px; z-index: 0; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── STATS ── */
+  .stats {
+    background: var(--forest);
+    padding: 3.5rem 5vw;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+  }
+  .stat-item { text-align: center; }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.8rem; font-weight: 700;
+    color: var(--cream);
+    line-height: 1;
+  }
+  .stat-num sup { font-size: 1.2rem; vertical-align: super; color: var(--gold); }
+  .stat-label { font-size: 0.85rem; color: rgba(253,246,237,0.6); margin-top: 0.5rem; letter-spacing: 0.03em; }
+
+  /* ── SECTION HEADER ── */
+  .section { padding: 5.5rem 5vw; }
+  .section-label {
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gold);
+    margin-bottom: 0.8rem;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.9rem, 3.5vw, 2.8rem);
+    font-weight: 700; line-height: 1.2;
+    color: var(--charcoal);
+    max-width: 560px;
+  }
+  .section-title em { font-style: italic; color: var(--forest); }
+  .section-sub {
+    font-size: 0.98rem; color: var(--muted); line-height: 1.75;
+    max-width: 520px; margin-top: 1rem;
+  }
+
+  /* ── HOW IT WORKS ── */
+  .how-it-works { background: var(--white); }
+  .how-grid {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 2rem; margin-top: 3.5rem;
+  }
+  .how-card {
+    padding: 2rem;
+    border-radius: 20px;
+    border: 1px solid var(--card-border);
+    position: relative; overflow: hidden;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .how-card:hover { transform: translateY(-4px); box-shadow: 0 16px 48px rgba(28,74,53,0.1); }
+  .how-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--forest);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .how-card:hover::before { transform: scaleX(1); }
+
+  .step-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem; font-weight: 700;
+    color: rgba(28,74,53,0.08);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+  .step-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: rgba(28,74,53,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    margin-bottom: 1.2rem;
+  }
+  .how-card h3 { font-size: 1.1rem; font-weight: 600; color: var(--charcoal); margin-bottom: 0.6rem; }
+  .how-card p { font-size: 0.88rem; color: var(--muted); line-height: 1.7; }
+
+  /* ── SUBJECTS ── */
+  .subjects-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem; margin-top: 3rem;
+  }
+  .subject-card {
+    background: var(--white);
+    border-radius: 18px; padding: 1.6rem;
+    border: 1px solid var(--card-border);
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: center;
+  }
+  .subject-card:hover {
+    background: var(--forest);
+    border-color: var(--forest);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(28,74,53,0.2);
+  }
+  .subject-card:hover .subject-emoji { filter: none; }
+  .subject-card:hover .subject-name { color: var(--cream); }
+  .subject-card:hover .subject-count { color: rgba(253,246,237,0.65); }
+
+  .subject-emoji { font-size: 2rem; margin-bottom: 0.8rem; display: block; }
+  .subject-name { font-weight: 600; font-size: 0.95rem; color: var(--charcoal); }
+  .subject-count { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+
+  /* ── TUTORS ── */
+  .tutors-section { background: var(--cream-dark); }
+  .tutors-grid {
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1.5rem; margin-top: 3rem;
+  }
+  .tutor-card {
+    background: var(--white);
+    border-radius: 20px; padding: 1.8rem;
+    border: 1px solid var(--card-border);
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .tutor-card:hover { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+
+  .tutor-card-header { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.2rem; }
+  .tutor-card-avatar {
+    width: 60px; height: 60px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .av-green { background: rgba(28,74,53,0.12); color: var(--forest); }
+  .av-gold { background: rgba(201,151,58,0.15); color: #7a5a18; }
+  .av-blue { background: rgba(59,99,196,0.1); color: #3b63c4; }
+
+  .tutor-card-name { font-weight: 600; font-size: 1rem; color: var(--charcoal); }
+  .tutor-card-sub { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+  .tutor-card-rate { margin-left: auto; font-weight: 700; font-size: 0.95rem; color: var(--forest); white-space: nowrap; }
+  .tutor-card-rate small { font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+
+  .tutor-card-bio { font-size: 0.85rem; color: var(--muted); line-height: 1.65; margin-bottom: 1.2rem; }
+
+  .tutor-card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.3rem; }
+  .tag {
+    font-size: 0.72rem; font-weight: 500;
+    padding: 0.3rem 0.75rem; border-radius: 50px;
+  }
+  .tag-green { background: rgba(28,74,53,0.08); color: var(--forest); }
+  .tag-gray { background: var(--cream-dark); color: var(--muted); }
+
+  .tutor-card-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 1.2rem; border-top: 1px solid var(--card-border); }
+  .rating-row { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; }
+  .rating-num { font-weight: 600; color: var(--charcoal); }
+  .rating-cnt { color: var(--muted); }
+  .btn-book {
+    background: var(--forest);
+    color: var(--cream);
+    font-size: 0.82rem; font-weight: 500;
+    padding: 0.5rem 1.1rem; border-radius: 50px;
+    border: none; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-book:hover { background: var(--forest-mid); }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials { background: var(--forest); overflow: hidden; position: relative; }
+  .testimonials .section-title { color: var(--cream); }
+  .testimonials .section-label { color: var(--gold-light); }
+  .testimonials .section-sub { color: rgba(253,246,237,0.65); }
+
+  .testimonials::before {
+    content: '\201C';
+    font-family: 'Playfair Display', serif;
+    font-size: 20rem;
+    color: rgba(255,255,255,0.03);
+    position: absolute; top: -2rem; right: 5vw;
+    line-height: 1; pointer-events: none;
+  }
+
+  .testi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3rem; }
+  .testi-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 1.8rem;
+    backdrop-filter: blur(10px);
+  }
+  .testi-stars { color: var(--gold-light); font-size: 0.85rem; letter-spacing: 2px; margin-bottom: 1rem; }
+  .testi-quote { font-size: 0.92rem; color: rgba(253,246,237,0.9); line-height: 1.75; margin-bottom: 1.5rem; font-style: italic; }
+  .testi-author { display: flex; align-items: center; gap: 0.8rem; }
+  .testi-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(201,151,58,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 0.85rem; color: var(--gold-light);
+  }
+  .testi-name { font-size: 0.88rem; font-weight: 600; color: var(--cream); }
+  .testi-role { font-size: 0.76rem; color: rgba(253,246,237,0.5); margin-top: 1px; }
+
+  /* ── CTA ── */
+  .cta-section {
+    padding: 6rem 5vw;
+    text-align: center;
+    background: var(--cream);
+    position: relative; overflow: hidden;
+  }
+  .cta-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 80% at 50% 50%, rgba(28,74,53,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-badge {
+    display: inline-block;
+    background: rgba(201,151,58,0.12);
+    color: #7a5a18;
+    font-size: 0.78rem; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.4rem 1rem; border-radius: 50px;
+    margin-bottom: 1.5rem;
+  }
+  .cta-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700; line-height: 1.15;
+    color: var(--charcoal); margin-bottom: 1.2rem;
+  }
+  .cta-title em { font-style: italic; color: var(--forest); }
+  .cta-sub { font-size: 1rem; color: var(--muted); max-width: 480px; margin: 0 auto 2.5rem; line-height: 1.7; }
+  .cta-actions { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+  .btn-ghost {
+    color: var(--forest); font-size: 0.95rem; font-weight: 500;
+    text-decoration: none; padding: 0.85rem 2rem;
+    border: 1.5px solid rgba(28,74,53,0.3); border-radius: 50px;
+    transition: all 0.2s;
+  }
+  .btn-ghost:hover { border-color: var(--forest); background: rgba(28,74,53,0.05); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--charcoal);
+    color: rgba(255,255,255,0.55);
+    padding: 3.5rem 5vw 2rem;
+  }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
+  .footer-brand .nav-logo { color: var(--cream); margin-bottom: 1rem; display: inline-flex; }
+  .footer-desc { font-size: 0.85rem; line-height: 1.75; max-width: 240px; }
+  .footer-col h4 { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-bottom: 1.2rem; }
+  .footer-col a { display: block; font-size: 0.85rem; color: rgba(255,255,255,0.5); text-decoration: none; margin-bottom: 0.7rem; transition: color 0.2s; }
+  .footer-col a:hover { color: var(--cream); }
+  .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.8rem; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding-top: 100px; }
+    .hero-visual { display: none; }
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .how-grid, .tutors-grid, .testi-grid { grid-template-columns: 1fr; }
+    .subjects-grid { grid-template-columns: repeat(2,1fr); }
+    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-logo"><span class="logo-dot"></span>BrightMind</a>
+  <div class="nav-links">
+    <a href="#how">How it Works</a>
+    <a href="#subjects">Subjects</a>
+    <a href="#tutors">Tutors</a>
+    <a href="#reviews">Reviews</a>
+    <a href="#" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><span class="hero-badge-dot"></span> Trusted by 12,000+ families</div>
+    <h1 class="hero-title">
+      <em>Expert tutors</em><br>
+      who come to your<br>
+      <span class="underline-gold">home.</span>
+    </h1>
+    <p class="hero-sub">
+      Find the perfect home tutor for your child in minutes. One-on-one sessions designed around your schedule, your pace, your goals.
+    </p>
+    <div class="hero-actions">
+      <a href="#tutors" class="btn-primary">Find a Tutor</a>
+      <a href="#how" class="btn-outline">
+        <div class="play-icon">▶</div>
+        See how it works
+      </a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-avatars">
+        <div class="trust-avatar" style="background:linear-gradient(135deg,#e8b55a,#c9973a);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.7rem;color:white">RK</div>
+        <div class="trust-avatar" style="background:linear-gradient(135deg,#5ca87a,#1c4a35);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.7rem;color:white">PM</div>
+        <div class="trust-avatar" style="background:linear-gradient(135deg,#7a8fe8,#3b63c4);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.7rem;color:white">SJ</div>
+        <div class="trust-avatar" style="background:linear-gradient(135deg,#e87a8f,#c43b5a);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.7rem;color:white">AV</div>
+      </div>
+      <div>
+        <div class="stars">★★★★★</div>
+        <div class="trust-text"><strong>4.9/5</strong> from over 3,200 reviews</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="bg-circle bg-circle-1"></div>
+    <div class="bg-circle bg-circle-2"></div>
+
+    <!-- Floating badges -->
+    <div class="hero-card-float float-top">
+      <div class="float-icon green">🎓</div>
+      <div>
+        <div class="float-num">98%</div>
+        <div class="float-label">Grade improvement</div>
+      </div>
+    </div>
+    <div class="hero-card-float float-bottom">
+      <div class="float-icon gold">⏱</div>
+      <div>
+        <div class="float-num">24h</div>
+        <div class="float-label">Average match time</div>
+      </div>
+    </div>
+
+    <!-- Main card -->
+    <div class="hero-card-main">
+      <div class="tutor-profile">
+        <div class="tutor-avatar">AR</div>
+        <div>
+          <div class="tutor-name">Aarav Ramesh, MSc</div>
+          <div class="tutor-subject">Mathematics & Physics • IIT Graduate</div>
+        </div>
+        <div class="tutor-rating">⭐ 4.97 <span>(214)</span></div>
+      </div>
+      <div class="session-label">This Week's Sessions</div>
+      <div class="session-timeline">
+        <div class="session-block filled">Mon</div>
+        <div class="session-block filled">Wed</div>
+        <div class="session-block active">Fri</div>
+        <div class="session-block empty">Sat</div>
+        <div class="session-block empty">Sun</div>
+      </div>
+      <div class="subject-pills">
+        <span class="pill pill-green">Calculus</span>
+        <span class="pill pill-green">Physics</span>
+        <span class="pill pill-gold">JEE Prep</span>
+        <span class="pill pill-gray">Class 11–12</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="stats">
+  <div class="stat-item">
+    <div class="stat-num">12<sup>K</sup></div>
+    <div class="stat-label">Families Served</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">850<sup>+</sup></div>
+    <div class="stat-label">Verified Tutors</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">98<sup>%</sup></div>
+    <div class="stat-label">Grade Improvement Rate</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">4.9<sup>★</sup></div>
+    <div class="stat-label">Average Tutor Rating</div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section how-it-works" id="how">
+  <div class="section-label">How it Works</div>
+  <h2 class="section-title">Learning made <em>effortless,</em> three simple steps</h2>
+  <p class="section-sub">From sign-up to your first session in under 24 hours. No long-term commitments required.</p>
+
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔍</div>
+      <h3>Tell us what you need</h3>
+      <p>Share your subject, grade level, goals, and preferred schedule. We'll understand exactly what kind of tutor will be the best fit.</p>
+    </div>
+    <div class="how-card">
+      <div class="step-num">02</div>
+      <div class="step-icon">✅</div>
+      <h3>Get matched instantly</h3>
+      <p>Our smart matching connects you with 3–5 vetted tutors within hours. Browse profiles, read reviews, and pick your favourite.</p>
+    </div>
+    <div class="how-card">
+      <div class="step-num">03</div>
+      <div class="step-icon">🏠</div>
+      <h3>Learn at home, your way</h3>
+      <p>Your tutor arrives at your door, or joins online — your choice. Pay only after each session. Cancel or reschedule any time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SUBJECTS -->
+<section class="section" id="subjects">
+  <div class="section-label">Subjects</div>
+  <h2 class="section-title">Every subject, <em>every level</em></h2>
+  <p class="section-sub">From primary school basics to competitive exam prep — we have expert tutors across all major subjects.</p>
+
+  <div class="subjects-grid">
+    <div class="subject-card">
+      <span class="subject-emoji">📐</span>
+      <div class="subject-name">Mathematics</div>
+      <div class="subject-count">214 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">⚗️</span>
+      <div class="subject-name">Science</div>
+      <div class="subject-count">187 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">📚</span>
+      <div class="subject-name">English</div>
+      <div class="subject-count">162 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">🖥️</span>
+      <div class="subject-name">Computer Science</div>
+      <div class="subject-count">98 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">🌐</span>
+      <div class="subject-name">Languages</div>
+      <div class="subject-count">143 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">📜</span>
+      <div class="subject-name">History & Civics</div>
+      <div class="subject-count">76 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">🎨</span>
+      <div class="subject-name">Arts & Music</div>
+      <div class="subject-count">54 tutors available</div>
+    </div>
+    <div class="subject-card">
+      <span class="subject-emoji">🏆</span>
+      <div class="subject-name">Exam Prep</div>
+      <div class="subject-count">JEE · NEET · UPSC</div>
+    </div>
+  </div>
+</section>
+
+<!-- TUTORS -->
+<section class="section tutors-section" id="tutors">
+  <div class="section-label">Featured Tutors</div>
+  <h2 class="section-title">Meet some of our <em>finest</em> educators</h2>
+  <p class="section-sub">Every tutor is background-verified, interview-tested, and reviewed by real families.</p>
+
+  <div class="tutors-grid">
+    <div class="tutor-card">
+      <div class="tutor-card-header">
+        <div class="tutor-card-avatar av-green">SR</div>
+        <div>
+          <div class="tutor-card-name">Shreya Rajan</div>
+          <div class="tutor-card-sub">Mathematics • 8 yrs experience</div>
+        </div>
+        <div class="tutor-card-rate">₹700<small>/hr</small></div>
+      </div>
+      <p class="tutor-card-bio">IIT Bombay alumna specialising in JEE Advanced prep. Known for making complex calculus concepts intuitive and approachable.</p>
+      <div class="tutor-card-tags">
+        <span class="tag tag-green">JEE</span>
+        <span class="tag tag-green">Calculus</span>
+        <span class="tag tag-gray">Class 9–12</span>
+        <span class="tag tag-gray">Home visits</span>
+      </div>
+      <div class="tutor-card-footer">
+        <div class="rating-row">
+          <span style="color:var(--gold)">★</span>
+          <span class="rating-num">4.98</span>
+          <span class="rating-cnt">(312 reviews)</span>
+        </div>
+        <button class="btn-book">Book Trial</button>
+      </div>
+    </div>
+
+    <div class="tutor-card">
+      <div class="tutor-card-header">
+        <div class="tutor-card-avatar av-gold">KP</div>
+        <div>
+          <div class="tutor-card-name">Kiran Patel</div>
+          <div class="tutor-card-sub">Physics & Chemistry • 6 yrs experience</div>
+        </div>
+        <div class="tutor-card-rate">₹650<small>/hr</small></div>
+      </div>
+      <p class="tutor-card-bio">NEET specialist and former coaching faculty. Has mentored 400+ students through board exams and competitive entrance tests.</p>
+      <div class="tutor-card-tags">
+        <span class="tag tag-green">NEET</span>
+        <span class="tag tag-green">Physics</span>
+        <span class="tag tag-gray">Class 11–12</span>
+        <span class="tag tag-gray">Online also</span>
+      </div>
+      <div class="tutor-card-footer">
+        <div class="rating-row">
+          <span style="color:var(--gold)">★</span>
+          <span class="rating-num">4.95</span>
+          <span class="rating-cnt">(278 reviews)</span>
+        </div>
+        <button class="btn-book">Book Trial</button>
+      </div>
+    </div>
+
+    <div class="tutor-card">
+      <div class="tutor-card-header">
+        <div class="tutor-card-avatar av-blue">AM</div>
+        <div>
+          <div class="tutor-card-name">Aditya Mehta</div>
+          <div class="tutor-card-sub">English & Writing • 5 yrs experience</div>
+        </div>
+        <div class="tutor-card-rate">₹500<small>/hr</small></div>
+      </div>
+      <p class="tutor-card-bio">Published author and English Literature graduate. Specialises in creative writing, comprehension, and IELTS / TOEFL coaching.</p>
+      <div class="tutor-card-tags">
+        <span class="tag tag-green">IELTS</span>
+        <span class="tag tag-green">Writing</span>
+        <span class="tag tag-gray">All grades</span>
+        <span class="tag tag-gray">Home visits</span>
+      </div>
+      <div class="tutor-card-footer">
+        <div class="rating-row">
+          <span style="color:var(--gold)">★</span>
+          <span class="rating-num">4.93</span>
+          <span class="rating-cnt">(196 reviews)</span>
+        </div>
+        <button class="btn-book">Book Trial</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section testimonials" id="reviews">
+  <div class="section-label">Testimonials</div>
+  <h2 class="section-title">What families are saying</h2>
+  <p class="section-sub">Real stories from real parents and students across India.</p>
+
+  <div class="testi-grid">
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">"My son's maths grade went from a D to an A in just two months. The tutor was patient, structured, and genuinely cared. Best decision we made this year."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">RK</div>
+        <div>
+          <div class="testi-name">Rekha Krishnan</div>
+          <div class="testi-role">Parent, Chennai • Class 10</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">"I cleared NEET on my first attempt after joining BrightMind. The tutor mapped out my weak areas and fixed them systematically. Highly recommended."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">VP</div>
+        <div>
+          <div class="testi-name">Vikram Pillai</div>
+          <div class="testi-role">Student, Pune • NEET 2024</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card">
+      <div class="testi-stars">★★★★★</div>
+      <p class="testi-quote">"The convenience of home sessions is unbeatable. No commuting, no rushing. The tutor adapts to our schedule perfectly. Our daughter looks forward to every class."</p>
+      <div class="testi-author">
+        <div class="testi-avatar">SJ</div>
+        <div>
+          <div class="testi-name">Sunita Joshi</div>
+          <div class="testi-role">Parent, Mumbai • Class 7</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-badge">✨ First trial session free</div>
+  <h2 class="cta-title">Ready to unlock your<br>child's <em>full potential?</em></h2>
+  <p class="cta-sub">Join thousands of families who've already found their perfect home tutor. No contracts, no pressure.</p>
+  <div class="cta-actions">
+    <a href="#tutors" class="btn-primary">Find My Tutor →</a>
+    <a href="#how" class="btn-ghost">Learn More</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="#" class="nav-logo"><span class="logo-dot"></span>BrightMind</a>
+      <p class="footer-desc">India's most trusted home tutoring platform, connecting passionate educators with eager learners across 40+ cities.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="#">Find a Tutor</a>
+      <a href="#">Browse Subjects</a>
+      <a href="#">Exam Prep</a>
+      <a href="#">Online Tutoring</a>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <a href="#">About Us</a>
+      <a href="#">Become a Tutor</a>
+      <a href="#">Blog</a>
+      <a href="#">Careers</a>
+    </div>
+    <div class="footer-col">
+      <h4>Support</h4>
+      <a href="#">Help Centre</a>
+      <a href="#">Contact Us</a>
+      <a href="#">Privacy Policy</a>
+      <a href="#">Terms of Service</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 BrightMind Tutors. All rights reserved.</span>
+    <span>Made with ♥ for learners across India</span>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+</script>
+</body>
+</html>

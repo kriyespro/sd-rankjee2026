@@ -1,90 +1,119 @@
-{# Reusable course buy card — used in both hero sidebar and body #}
-<div class="rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+{# ─── Course buy card — sticky sidebar ─────────────────────── #}
+<div class="rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 overflow-hidden">
 
+  {# Thumbnail / preview #}
   {% if course.thumbnail_url %}
   <div class="aspect-video overflow-hidden">
     <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
   </div>
   {% else %}
-  <div class="aspect-video bg-gradient-to-br from-indigo-700 to-violet-700 flex items-center justify-center">
-    <svg class="h-14 w-14 text-white/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+  <div class="aspect-video relative overflow-hidden flex items-center justify-center"
+       style="background:linear-gradient(135deg,var(--ca1) 0%,var(--ca2) 60%,color-mix(in srgb,var(--ca2) 60%,#000) 100%);">
+    <div style="background:rgba(255,255,255,.07);width:200px;height:200px;border-radius:50%;position:absolute;top:-60px;right:-60px;"></div>
+    <svg class="h-16 w-16 text-white/25 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
       <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5"/>
     </svg>
+    <div class="absolute bottom-3 left-3 right-3">
+      <p class="text-white font-black text-sm leading-tight">{{ course.title }}</p>
+      <p class="text-white/60 text-xs mt-0.5">{{ course.level }} · {{ course.duration_weeks }} weeks</p>
+    </div>
   </div>
   {% endif %}
 
   <div class="p-5">
-    {# Price #}
+
+    {# Price block #}
     <div class="flex items-end justify-between gap-2 mb-4">
       <div>
         {% if referral_price_unlocked %}
-        <p class="text-3xl font-black text-slate-900">₹{{ course_checkout_price_inr }}</p>
-        <p class="text-sm text-slate-400 line-through">₹{{ course_list_price_inr }}</p>
+        <p class="text-4xl font-black tracking-tight" style="color:var(--ca1);">₹{{ course_checkout_price_inr }}</p>
+        <p class="text-sm text-slate-400 line-through leading-none mt-0.5">₹{{ course_list_price_inr }}</p>
         {% else %}
-        <p class="text-3xl font-black text-slate-900">₹{{ course_list_price_inr }}</p>
+        <p class="text-4xl font-black tracking-tight text-slate-900">₹{{ course_list_price_inr }}</p>
         {% endif %}
       </div>
-      {% if referral_price_unlocked %}
-      <span class="inline-flex rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
-        {{ referral_lead_discount_pct }}% OFF
-      </span>
-      {% endif %}
+      <div class="flex flex-col items-end gap-1">
+        {% if referral_price_unlocked %}
+        <span class="inline-flex rounded-full bg-emerald-100 border border-emerald-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-800">
+          {{ referral_lead_discount_pct }}% OFF
+        </span>
+        {% endif %}
+        {% if course.salary_after_max %}
+        <span style="background:var(--ca3);color:var(--ca1);" class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
+          ↑ ₹{{ course.salary_after_max|int }}L salary
+        </span>
+        {% endif %}
+      </div>
     </div>
 
     {# CTA #}
     {% if owns_course %}
-    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
-      <p class="text-sm font-black text-emerald-800">✓ You own this course</p>
+    <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3.5 text-center mb-3">
+      <p class="text-sm font-black text-emerald-800 flex items-center justify-center gap-2">
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        You own this course
+      </p>
     </div>
     {% elif request.user.is_authenticated %}
-    <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 mb-2">
+    <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 mb-2.5">
       <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
       <button type="submit"
-              class="w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20">
+              class="w-full rounded-xl py-3.5 text-sm font-black uppercase tracking-wider text-white transition-opacity hover:opacity-90 shadow-lg"
+              style="background:linear-gradient(135deg,var(--ca1),var(--ca2));box-shadow:0 8px 24px -8px var(--ca2);">
         Add to cart — ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
       </button>
     </form>
     <a href="{{ url('core:course_cart') }}"
        class="block w-full text-center rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition-colors">
-      View cart
+      View cart →
     </a>
     {% else %}
     <a href="{{ url('users:login') }}?next={{ course.get_absolute_url() }}"
-       class="block w-full text-center rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20 mb-2">
+       class="block w-full text-center rounded-xl py-3.5 text-sm font-black uppercase tracking-wider text-white mb-2.5 transition-opacity hover:opacity-90 shadow-lg"
+       style="background:linear-gradient(135deg,var(--ca1),var(--ca2));box-shadow:0 8px 24px -8px var(--ca2);">
       Log in to purchase
     </a>
     {% endif %}
 
-    {# Course facts #}
-    <div class="mt-4 space-y-2 pt-4 border-t border-slate-100">
-      <p class="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">This course includes</p>
+    <p class="text-center text-[10px] text-slate-400 font-semibold mb-4">30-day satisfaction guarantee</p>
+
+    {# What's included #}
+    <div class="border-t border-slate-100 pt-4 space-y-2.5">
+      <p class="text-[10px] font-black uppercase tracking-[.2em] text-slate-400 mb-3">This course includes</p>
       {% set facts = [
-        ('🕐', course.duration_weeks|string + ' weeks of content'),
-        ('📜', 'Completion certificate'),
-        ('🎯', 'Hands-on projects'),
-        ('💬', 'Mentor support'),
-        ('♾️', 'Lifetime access'),
-        ('📱', 'Mobile friendly'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>', course.duration_weeks|string + ' weeks of on-demand content'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>', 'Completion certificate'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg>', 'Hands-on assignments & projects'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>', 'Live mentor Q&A support'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>', 'Mobile & desktop access'),
+        ('<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>', 'Lifetime access'),
       ] %}
-      {% for icon, label in facts %}
-      <div class="flex items-center gap-2">
-        <span class="text-base leading-none">{{ icon }}</span>
+      {% for icon_svg, label in facts %}
+      <div class="flex items-center gap-2.5">
+        <span style="color:var(--ca2);" class="shrink-0">{{ icon_svg|safe }}</span>
         <span class="text-xs text-slate-700 font-semibold">{{ label }}</span>
       </div>
       {% endfor %}
     </div>
 
+    {# Salary teaser #}
     {% if course.salary_after_min and course.salary_after_max %}
-    <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-center">
-      <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Avg salary after completion</p>
-      <p class="text-xl font-black text-emerald-900 mt-0.5">₹{{ course.salary_after_min|int }}–{{ course.salary_after_max|int }} LPA</p>
+    <div class="mt-4 rounded-xl overflow-hidden" style="background:linear-gradient(135deg,var(--ca3),color-mix(in srgb,var(--ca3) 50%,white));">
+      <div class="px-4 py-3 flex items-center justify-between">
+        <div>
+          <p class="text-[10px] font-black uppercase tracking-wider" style="color:var(--ca1);">Salary after course</p>
+          <p class="text-base font-black mt-0.5" style="color:var(--ca1);">₹{{ course.salary_after_min|int }}–{{ course.salary_after_max|int }} LPA</p>
+        </div>
+        <svg class="h-8 w-8 opacity-30" style="color:var(--ca1);" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+      </div>
     </div>
     {% endif %}
 
     {% if pending_course_referrer_code and not referral_price_unlocked %}
-    <p class="mt-3 text-[11px] text-emerald-800 font-bold rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2">
-      Enroll below to unlock {{ referral_lead_discount_pct }}% referral discount at checkout.
+    <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] text-amber-800 font-bold leading-snug">
+      💡 Enroll below to unlock <strong>{{ referral_lead_discount_pct }}% off</strong> via referral at checkout.
     </p>
     {% endif %}
+
   </div>
 </div>

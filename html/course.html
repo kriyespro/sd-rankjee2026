@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Forma — Individual Courses</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,500&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --cream: #FAF8F4;
+    --cream2: #F3EFE7;
+    --cream3: #E9E2D4;
+    --ink: #1C1A17;
+    --ink2: #3D3A34;
+    --ink3: #7A7468;
+    --ink4: #A89F92;
+    --terra: #C45C2B;
+    --terra-light: #F2DDD2;
+    --terra-mid: #E07848;
+    --sage: #4A6741;
+    --sage-light: #D5E4D1;
+    --sand: #B8A88A;
+    --border: #DDD8CF;
+    --border2: #C8C0B0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--terra);
+    color: #fff;
+    text-align: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+  .topbar strong { font-weight: 600; }
+
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(250,248,244,0.95);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3.5rem;
+  }
+  .nav-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.55rem;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .nav-logo .dot { color: var(--terra); }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+    align-items: center;
+  }
+  .nav-links a {
+    color: var(--ink3);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-right { display: flex; gap: 0.75rem; align-items: center; }
+  .btn-sm {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.5rem 1.25rem;
+    border-radius: 100px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: all 0.2s;
+  }
+  .btn-sm-ghost {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--ink2);
+  }
+  .btn-sm-ghost:hover { border-color: var(--ink2); }
+  .btn-sm-solid {
+    background: var(--ink);
+    border: 1px solid var(--ink);
+    color: var(--cream);
+  }
+  .btn-sm-solid:hover { background: var(--terra); border-color: var(--terra); }
+
+  /* ── HERO ── */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 0;
+    min-height: calc(100vh - 100px);
+    padding: 5rem 3.5rem 4rem;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 420px;
+    background: var(--cream2);
+    border-left: 1px solid var(--border);
+  }
+  .hero-left {
+    padding-right: 5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--terra-light);
+    color: var(--terra);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.85rem;
+    border-radius: 100px;
+    margin-bottom: 2rem;
+    width: fit-content;
+    animation: fadeUp 0.7s ease both;
+  }
+  .hero-tag::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--terra);
+  }
+  .hero-headline {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 300;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero-headline em {
+    font-style: italic;
+    color: var(--terra);
+  }
+  .hero-sub {
+    margin-top: 1.75rem;
+    font-size: 1rem;
+    color: var(--ink3);
+    max-width: 480px;
+    line-height: 1.75;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+  .hero-actions {
+    margin-top: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .btn-primary {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.85rem 2rem;
+    border-radius: 100px;
+    cursor: pointer;
+    background: var(--terra);
+    color: #fff;
+    border: none;
+    letter-spacing: 0.01em;
+    transition: all 0.25s;
+    box-shadow: 0 4px 20px rgba(196,92,43,0.3);
+  }
+  .btn-primary:hover {
+    background: var(--terra-mid);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(196,92,43,0.35);
+  }
+  .btn-secondary {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.85rem 1.8rem;
+    border-radius: 100px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--ink2);
+    border: 1.5px solid var(--border2);
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--ink2); }
+  .hero-trust {
+    margin-top: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+  .avatars {
+    display: flex;
+  }
+  .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--cream);
+    margin-left: -8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .avatar:first-child { margin-left: 0; }
+  .a1 { background: #5B8A72; }
+  .a2 { background: #7B5EA7; }
+  .a3 { background: #C45C2B; }
+  .a4 { background: #4A6741; }
+  .hero-trust-text { font-size: 0.8rem; color: var(--ink3); line-height: 1.4; }
+  .hero-trust-text strong { color: var(--ink); font-weight: 600; display: block; }
+  .hero-right {
+    position: relative;
+    z-index: 1;
+    padding: 0 0 0 2.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .hero-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(28,26,23,0.08);
+  }
+  .hero-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+  .card-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+  }
+  .icon-terra { background: var(--terra-light); }
+  .icon-sage  { background: var(--sage-light); }
+  .icon-sand  { background: var(--cream3); }
+  .price-tag {
+    font-family: 'Fraunces', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .price-tag .was {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.75rem;
+    color: var(--ink4);
+    text-decoration: line-through;
+    font-weight: 400;
+    display: block;
+    text-align: right;
+    margin-bottom: -4px;
+  }
+  .card-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink4);
+    margin-bottom: 0.25rem;
+  }
+  .card-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+    line-height: 1.25;
+  }
+  .card-bar-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--ink3);
+    margin-bottom: 0.3rem;
+  }
+  .bar-track {
+    height: 4px;
+    background: var(--cream3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--terra);
+    animation: fillBar 1.4s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .bar-fill.sage { background: var(--sage); }
+  @keyframes fillBar { from { width: 0 !important; } }
+  .card-meta-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.75rem;
+  }
+  .meta-pill {
+    background: var(--cream2);
+    color: var(--ink3);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.25rem 0.65rem;
+    border-radius: 100px;
+  }
+  .hero-stat-row {
+    display: flex;
+    gap: 0;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .hero-stat {
+    flex: 1;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hero-stat-num {
+    font-family: 'Fraunces', serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .hero-stat-label {
+    font-size: 0.7rem;
+    color: var(--ink4);
+    margin-top: 0.1rem;
+  }
+
+  /* ── MARQUEE ── */
+  .marquee-section {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 0.85rem 0;
+    overflow: hidden;
+    background: var(--cream2);
+  }
+  .marquee-track {
+    display: flex;
+    animation: slide 24s linear infinite;
+    white-space: nowrap;
+    width: max-content;
+  }
+  .marquee-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-right: 3rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--ink3);
+    letter-spacing: 0.04em;
+  }
+  .marquee-item span {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--terra);
+    display: inline-block;
+  }
+  @keyframes slide {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* ── SECTION ── */
+  section { padding: 5.5rem 3.5rem; }
+  .section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--terra);
+    margin-bottom: 0.75rem;
+  }
+  .section-eyebrow::after {
+    content: '';
+    flex: 1;
+    max-width: 40px;
+    height: 1.5px;
+    background: var(--terra);
+  }
+  .section-heading {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .section-heading em { font-style: italic; color: var(--terra); }
+
+  /* ── COURSES ── */
+  .courses-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 2.5rem;
+  }
+  .filter-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .filter-btn {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--ink3);
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--ink); }
+  .filter-btn.active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
+
+  /* Course grid: bento */
+  .courses-bento {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: auto;
+    gap: 1rem;
+  }
+  .course-tile {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+  }
+  .course-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(28,26,23,0.1);
+  }
+  .tile-a { grid-column: span 5; }
+  .tile-b { grid-column: span 4; }
+  .tile-c { grid-column: span 3; }
+  .tile-d { grid-column: span 4; }
+  .tile-e { grid-column: span 5; }
+  .tile-f { grid-column: span 3; }
+
+  .tile-cover {
+    width: 100%;
+    aspect-ratio: 16/8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .tile-a .tile-cover { aspect-ratio: 16/9; }
+
+  .tile-cover-emoji {
+    position: relative;
+    z-index: 1;
+    font-size: 3rem;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
+  }
+
+  .badge-new {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    background: var(--terra);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: 100px;
+    z-index: 2;
+  }
+  .badge-hot {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    background: var(--sage);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    border-radius: 100px;
+    z-index: 2;
+  }
+  .wishlist-btn {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.75rem;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    z-index: 2;
+    transition: transform 0.2s;
+  }
+  .wishlist-btn:hover { transform: scale(1.15); }
+
+  .tile-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; }
+  .tile-cat {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--terra);
+    margin-bottom: 0.4rem;
+  }
+  .tile-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.25;
+    margin-bottom: 0.5rem;
+  }
+  .tile-a .tile-title { font-size: 1.4rem; }
+  .tile-desc {
+    font-size: 0.82rem;
+    color: var(--ink3);
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    flex: 1;
+  }
+  .tile-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+  }
+  .stars {
+    font-size: 0.7rem;
+    color: #E8A020;
+    letter-spacing: 0.05em;
+  }
+  .rating-text { font-size: 0.72rem; color: var(--ink4); }
+  .tile-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .tile-meta-info {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.7rem;
+    color: var(--ink4);
+  }
+  .tile-price {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+  .price-now {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .price-was {
+    font-size: 0.78rem;
+    color: var(--ink4);
+    text-decoration: line-through;
+  }
+  .enroll-btn {
+    width: 100%;
+    margin-top: 0.85rem;
+    padding: 0.65rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--terra);
+    color: #fff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: none;
+  }
+  .course-tile:hover .enroll-btn { display: block; }
+  .course-tile:hover .tile-meta-info { display: none; }
+  .course-tile:hover .tile-price { display: none; }
+  .course-tile:hover .tile-footer { border-top: none; padding-top: 0; }
+  .enroll-btn:hover { background: var(--terra-mid); }
+
+  /* ── HOW IT WORKS ── */
+  .how-section {
+    background: var(--ink);
+    color: var(--cream);
+  }
+  .how-section .section-eyebrow { color: var(--terra-mid); }
+  .how-section .section-eyebrow::after { background: var(--terra-mid); }
+  .how-section .section-heading { color: var(--cream); }
+  .how-section .section-heading em { color: var(--terra-mid); }
+  .steps-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin-top: 3.5rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+  .step {
+    padding: 2rem;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    position: relative;
+  }
+  .step:last-child { border-right: none; }
+  .step-num {
+    font-family: 'Fraunces', serif;
+    font-size: 3rem;
+    font-weight: 300;
+    color: rgba(255,255,255,0.12);
+    line-height: 1;
+    margin-bottom: 1.25rem;
+  }
+  .step-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(196,92,43,0.15);
+    border: 1px solid rgba(196,92,43,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1.2rem;
+  }
+  .step-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.6rem;
+    line-height: 1.25;
+  }
+  .step-desc {
+    font-size: 0.83rem;
+    color: rgba(250,248,244,0.5);
+    line-height: 1.7;
+  }
+  .step-arrow {
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px; height: 24px;
+    background: var(--terra);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: #fff;
+    z-index: 2;
+  }
+  .step:last-child .step-arrow { display: none; }
+
+  /* ── INSTRUCTORS ── */
+  .instructors-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+  .instructor-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+  .instructor-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(28,26,23,0.08);
+  }
+  .instructor-avatar {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    margin: 0 auto 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: #fff;
+  }
+  .av1 { background: linear-gradient(135deg, #C45C2B, #E07848); }
+  .av2 { background: linear-gradient(135deg, #4A6741, #7CA06D); }
+  .av3 { background: linear-gradient(135deg, #7B5EA7, #A086C8); }
+  .av4 { background: linear-gradient(135deg, #2B6777, #4A9BB0); }
+  .instructor-name {
+    font-family: 'Fraunces', serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 0.2rem;
+  }
+  .instructor-role { font-size: 0.77rem; color: var(--ink3); margin-bottom: 0.8rem; }
+  .instructor-stats {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    font-size: 0.72rem;
+    color: var(--ink4);
+  }
+  .instructor-stats strong { color: var(--ink); font-weight: 600; display: block; font-size: 0.88rem; }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials-section { background: var(--cream2); }
+  .testi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+  .testi-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem;
+    position: relative;
+  }
+  .testi-card:first-child { grid-row: span 2; }
+  .quote-mark {
+    font-family: 'Fraunces', serif;
+    font-size: 4rem;
+    color: var(--terra-light);
+    line-height: 0.5;
+    margin-bottom: 1rem;
+    display: block;
+  }
+  .testi-text {
+    font-size: 0.9rem;
+    color: var(--ink2);
+    line-height: 1.75;
+    margin-bottom: 1.25rem;
+  }
+  .testi-card:first-child .testi-text { font-size: 1.05rem; }
+  .testi-author { display: flex; align-items: center; gap: 0.75rem; }
+  .testi-av {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #fff;
+  }
+  .tav1 { background: #C45C2B; }
+  .tav2 { background: #4A6741; }
+  .tav3 { background: #7B5EA7; }
+  .testi-name { font-size: 0.85rem; font-weight: 600; color: var(--ink); }
+  .testi-role { font-size: 0.72rem; color: var(--ink4); }
+  .testi-course {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--terra-light);
+    color: var(--terra);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.2rem 0.65rem;
+    border-radius: 100px;
+    margin-bottom: 0.9rem;
+  }
+
+  /* ── PRICING / CTA ── */
+  .cta-section {
+    background: var(--cream);
+    text-align: center;
+    padding: 6rem 3.5rem;
+  }
+  .cta-box {
+    max-width: 680px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 3.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--terra), var(--terra-mid), #E8B070);
+  }
+  .cta-discount {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #FFF5E0;
+    color: #A0620A;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.85rem;
+    border-radius: 100px;
+    margin-bottom: 1.25rem;
+    border: 1px solid #EDD090;
+  }
+  .cta-heading {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 300;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.75rem;
+  }
+  .cta-heading em { font-style: italic; color: var(--terra); }
+  .cta-sub { font-size: 0.92rem; color: var(--ink3); margin-bottom: 2rem; }
+  .cta-buttons { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+  .cta-note {
+    margin-top: 1.25rem;
+    font-size: 0.78rem;
+    color: var(--ink4);
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .cta-note span::before { content: '✓ '; color: var(--sage); font-weight: 700; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 3.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--cream2);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-logo {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .footer-logo .dot { color: var(--terra); }
+  .footer-links {
+    display: flex;
+    gap: 1.75rem;
+    list-style: none;
+  }
+  .footer-links a {
+    font-size: 0.8rem;
+    color: var(--ink3);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--ink); }
+  .footer-copy { font-size: 0.75rem; color: var(--ink4); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal-d1 { transition-delay: 0.1s; }
+  .reveal-d2 { transition-delay: 0.2s; }
+  .reveal-d3 { transition-delay: 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">🎉 Use code <strong>LEARN40</strong> for 40% off any course — ends Sunday</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Forma<span class="dot">.</span></div>
+  <ul class="nav-links">
+    <li><a href="#">Browse</a></li>
+    <li><a href="#">Instructors</a></li>
+    <li><a href="#">Paths</a></li>
+    <li><a href="#">Enterprise</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="btn-sm btn-sm-ghost">Log in</button>
+    <button class="btn-sm btn-sm-solid">Get started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">Individual Courses · No Subscription</div>
+    <h1 class="hero-headline">
+      Skills that<br>stay with <em>you.</em>
+    </h1>
+    <p class="hero-sub">
+      Purchase once, learn forever. Handpicked courses from expert instructors — practical, project-based, and paced entirely by you.
+    </p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})">
+        Explore courses →
+      </button>
+      <button class="btn-secondary">See how it works</button>
+    </div>
+    <div class="hero-trust">
+      <div class="avatars">
+        <div class="avatar a1">AK</div>
+        <div class="avatar a2">PS</div>
+        <div class="avatar a3">RM</div>
+        <div class="avatar a4">JL</div>
+      </div>
+      <div class="hero-trust-text">
+        <strong>42,000+ learners enrolled</strong>
+        Rated 4.9 / 5 across all courses
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <!-- Featured card -->
+    <div class="hero-card">
+      <div class="hero-card-top">
+        <div class="card-icon icon-terra">🎨</div>
+        <div class="price-tag">
+          <span class="was">₹7,999</span>
+          ₹4,799
+        </div>
+      </div>
+      <div class="card-label">Design · 42 hours</div>
+      <div class="card-name">UI/UX Design Masterclass 2025</div>
+      <div class="card-bar-label"><span>Your progress</span><span>67%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:67%"></div></div>
+      <div class="card-meta-row">
+        <span class="meta-pill">⭐ 4.9</span>
+        <span class="meta-pill">📁 18 projects</span>
+        <span class="meta-pill">🏆 Certificate</span>
+      </div>
+    </div>
+    <!-- Second card -->
+    <div class="hero-card">
+      <div class="hero-card-top">
+        <div class="card-icon icon-sage">⚡</div>
+        <div class="price-tag">₹3,499</div>
+      </div>
+      <div class="card-label">Development · 28 hours</div>
+      <div class="card-name">React & Next.js 15 — Professional</div>
+      <div class="card-bar-label"><span>Completion rate</span><span>94%</span></div>
+      <div class="bar-track"><div class="bar-fill sage" style="width:94%; animation-delay:0.3s"></div></div>
+      <div class="card-meta-row">
+        <span class="meta-pill">⭐ 4.8</span>
+        <span class="meta-pill">📁 12 projects</span>
+      </div>
+    </div>
+    <!-- Stats row -->
+    <div class="hero-stat-row">
+      <div class="hero-stat">
+        <div class="hero-stat-num">240+</div>
+        <div class="hero-stat-label">Courses</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">98%</div>
+        <div class="hero-stat-label">Satisfaction</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">∞</div>
+        <div class="hero-stat-label">Lifetime access</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-section">
+  <div class="marquee-track">
+    <div class="marquee-item"><span></span>UX Design</div>
+    <div class="marquee-item"><span></span>Web Development</div>
+    <div class="marquee-item"><span></span>Data Science</div>
+    <div class="marquee-item"><span></span>Brand Strategy</div>
+    <div class="marquee-item"><span></span>Copywriting</div>
+    <div class="marquee-item"><span></span>Photography</div>
+    <div class="marquee-item"><span></span>Motion Design</div>
+    <div class="marquee-item"><span></span>Machine Learning</div>
+    <div class="marquee-item"><span></span>3D Modeling</div>
+    <div class="marquee-item"><span></span>Video Production</div>
+    <div class="marquee-item"><span></span>Illustration</div>
+    <div class="marquee-item"><span></span>Product Management</div>
+    <div class="marquee-item"><span></span>UX Design</div>
+    <div class="marquee-item"><span></span>Web Development</div>
+    <div class="marquee-item"><span></span>Data Science</div>
+    <div class="marquee-item"><span></span>Brand Strategy</div>
+    <div class="marquee-item"><span></span>Copywriting</div>
+    <div class="marquee-item"><span></span>Photography</div>
+    <div class="marquee-item"><span></span>Motion Design</div>
+    <div class="marquee-item"><span></span>Machine Learning</div>
+    <div class="marquee-item"><span></span>3D Modeling</div>
+    <div class="marquee-item"><span></span>Video Production</div>
+    <div class="marquee-item"><span></span>Illustration</div>
+    <div class="marquee-item"><span></span>Product Management</div>
+  </div>
+</div>
+
+<!-- COURSES -->
+<section id="courses">
+  <div class="courses-header reveal">
+    <div>
+      <div class="section-eyebrow">Catalogue</div>
+      <h2 class="section-heading">Featured <em>Courses</em></h2>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="doFilter('all',this)">All</button>
+      <button class="filter-btn" onclick="doFilter('design',this)">Design</button>
+      <button class="filter-btn" onclick="doFilter('dev',this)">Development</button>
+      <button class="filter-btn" onclick="doFilter('business',this)">Business</button>
+      <button class="filter-btn" onclick="doFilter('ai',this)">AI & Data</button>
+    </div>
+  </div>
+
+  <div class="courses-bento reveal" id="courseGrid">
+
+    <!-- Tile A — Large featured -->
+    <div class="course-tile tile-a" data-cat="design">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#FDF0E8 0%,#F5D8C4 100%);">
+        <span class="badge-new">Bestseller</span>
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">🎨</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">Design · Motion</div>
+        <div class="tile-title">Complete UI/UX Design Masterclass 2025</div>
+        <div class="tile-rating">
+          <span class="stars">★★★★★</span>
+          <span class="rating-text">4.9 (2,341 reviews)</span>
+        </div>
+        <div class="tile-desc">From wireframes to pixel-perfect prototypes. Master Figma, user research, and design systems used at top product companies.</div>
+        <div class="tile-footer">
+          <div class="tile-meta-info">
+            <span>⏱ 42h</span><span>📁 18 projects</span><span>🏆 Certificate</span>
+          </div>
+          <div class="tile-price">
+            <span class="price-was">₹7,999</span>
+            <span class="price-now">₹4,799</span>
+          </div>
+          <button class="enroll-btn">Enroll Now — ₹4,799</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile B -->
+    <div class="course-tile tile-b" data-cat="dev">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#E8F4EC 0%,#C8E4D0 100%);">
+        <span class="badge-new">New</span>
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">⚡</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">Development</div>
+        <div class="tile-title">React & Next.js 15 — Professional</div>
+        <div class="tile-rating">
+          <span class="stars">★★★★★</span>
+          <span class="rating-text">4.8 (1,109)</span>
+        </div>
+        <div class="tile-desc">Build full-stack apps with the latest React patterns, server components, and Next.js 15 features.</div>
+        <div class="tile-footer">
+          <div class="tile-meta-info"><span>⏱ 28h</span><span>📁 12 projects</span></div>
+          <div class="tile-price"><span class="price-now">₹3,499</span></div>
+          <button class="enroll-btn">Enroll Now — ₹3,499</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile C -->
+    <div class="course-tile tile-c" data-cat="business">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#FFF5E0 0%,#FFE4A8 100%);">
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">📈</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">Business</div>
+        <div class="tile-title">Brand Strategy from Scratch</div>
+        <div class="tile-rating"><span class="stars">★★★★☆</span><span class="rating-text">4.7 (876)</span></div>
+        <div class="tile-footer">
+          <div class="tile-meta-info"><span>⏱ 16h</span></div>
+          <div class="tile-price"><span class="price-was">₹5,999</span><span class="price-now">₹2,999</span></div>
+          <button class="enroll-btn">Enroll Now — ₹2,999</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile D -->
+    <div class="course-tile tile-d" data-cat="ai">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#EEE8F8 0%,#D8CCF0 100%);">
+        <span class="badge-hot">Hot</span>
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">🤖</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">AI & Data</div>
+        <div class="tile-title">Machine Learning with Python</div>
+        <div class="tile-rating"><span class="stars">★★★★★</span><span class="rating-text">4.8 (2,041)</span></div>
+        <div class="tile-desc">Build real ML models from regression to neural networks using scikit-learn and PyTorch.</div>
+        <div class="tile-footer">
+          <div class="tile-meta-info"><span>⏱ 36h</span><span>📁 10 projects</span></div>
+          <div class="tile-price"><span class="price-was">₹8,499</span><span class="price-now">₹4,999</span></div>
+          <button class="enroll-btn">Enroll Now — ₹4,999</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile E -->
+    <div class="course-tile tile-e" data-cat="design">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#E8F0FA 0%,#C4D8F2 100%);">
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">🎬</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">Design · Motion</div>
+        <div class="tile-title">Motion Design with After Effects</div>
+        <div class="tile-rating"><span class="stars">★★★★★</span><span class="rating-text">4.9 (543)</span></div>
+        <div class="tile-desc">Master keyframing, expressions, and cinematic animation for stunning motion pieces and UI transitions.</div>
+        <div class="tile-footer">
+          <div class="tile-meta-info"><span>⏱ 22h</span><span>📁 9 projects</span></div>
+          <div class="tile-price"><span class="price-now">₹3,999</span></div>
+          <button class="enroll-btn">Enroll Now — ₹3,999</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tile F -->
+    <div class="course-tile tile-f" data-cat="business">
+      <div class="tile-cover" style="background: linear-gradient(135deg,#E8F5EE 0%,#BCDDC8 100%);">
+        <button class="wishlist-btn">♡</button>
+        <div class="tile-cover-emoji">✍️</div>
+      </div>
+      <div class="tile-body">
+        <div class="tile-cat">Business · Writing</div>
+        <div class="tile-title">Copywriting that Converts</div>
+        <div class="tile-rating"><span class="stars">★★★★☆</span><span class="rating-text">4.6 (704)</span></div>
+        <div class="tile-footer">
+          <div class="tile-meta-info"><span>⏱ 12h</span></div>
+          <div class="tile-price"><span class="price-now">₹1,999</span></div>
+          <button class="enroll-btn">Enroll Now — ₹1,999</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="section-eyebrow reveal">Process</div>
+  <h2 class="section-heading reveal">How it <em>works</em></h2>
+  <div class="steps-grid reveal">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-icon">🔍</div>
+      <div class="step-title">Browse the catalogue</div>
+      <p class="step-desc">Filter by topic, skill level, or instructor. Read real student reviews before you commit.</p>
+      <div class="step-arrow">→</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-icon">💳</div>
+      <div class="step-title">Purchase once</div>
+      <p class="step-desc">No subscriptions. Pay once and unlock full lifetime access to your course immediately.</p>
+      <div class="step-arrow">→</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-icon">🎓</div>
+      <div class="step-title">Learn at your pace</div>
+      <p class="step-desc">Watch on any device. Pause, rewind, and return whenever you like — there's no deadline.</p>
+      <div class="step-arrow">→</div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-icon">🏆</div>
+      <div class="step-title">Earn your certificate</div>
+      <p class="step-desc">Complete the projects, pass the final review, and receive a verified certificate of completion.</p>
+    </div>
+  </div>
+</section>
+
+<!-- INSTRUCTORS -->
+<section>
+  <div class="section-eyebrow reveal">Meet the Experts</div>
+  <h2 class="section-heading reveal">Learn from the <em>best</em></h2>
+  <div class="instructors-grid reveal">
+    <div class="instructor-card">
+      <div class="instructor-avatar av1">SP</div>
+      <div class="instructor-name">Shreya Patel</div>
+      <div class="instructor-role">Senior Product Designer, Google</div>
+      <div class="instructor-stats">
+        <div><strong>4</strong>courses</div>
+        <div><strong>12k</strong>students</div>
+        <div><strong>4.9★</strong></div>
+      </div>
+    </div>
+    <div class="instructor-card">
+      <div class="instructor-avatar av2">MK</div>
+      <div class="instructor-name">Marcus Kim</div>
+      <div class="instructor-role">Staff Engineer, Vercel</div>
+      <div class="instructor-stats">
+        <div><strong>6</strong>courses</div>
+        <div><strong>18k</strong>students</div>
+        <div><strong>4.8★</strong></div>
+      </div>
+    </div>
+    <div class="instructor-card">
+      <div class="instructor-avatar av3">RA</div>
+      <div class="instructor-name">Riya Agarwal</div>
+      <div class="instructor-role">ML Lead, DeepMind</div>
+      <div class="instructor-stats">
+        <div><strong>3</strong>courses</div>
+        <div><strong>9k</strong>students</div>
+        <div><strong>4.9★</strong></div>
+      </div>
+    </div>
+    <div class="instructor-card">
+      <div class="instructor-avatar av4">JT</div>
+      <div class="instructor-name">Jonas Teller</div>
+      <div class="instructor-role">Creative Director, Wieden+Kennedy</div>
+      <div class="instructor-stats">
+        <div><strong>5</strong>courses</div>
+        <div><strong>14k</strong>students</div>
+        <div><strong>4.7★</strong></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials-section">
+  <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:0;">
+    <div>
+      <div class="section-eyebrow reveal">Students Say</div>
+      <h2 class="section-heading reveal">Real results,<br>real <em>people</em></h2>
+    </div>
+    <div class="reveal" style="text-align:right;">
+      <div style="font-family:'Fraunces',serif; font-size:2.5rem; font-weight:300; color:var(--ink);">4.9</div>
+      <div style="font-size:0.78rem; color:var(--ink3);">Average rating</div>
+      <div style="color:#E8A020; font-size:0.9rem;">★★★★★</div>
+    </div>
+  </div>
+  <div class="testi-grid">
+    <div class="testi-card reveal">
+      <span class="quote-mark">"</span>
+      <div class="testi-course">🎨 UI/UX Masterclass</div>
+      <p class="testi-text">LearnCraft's UI/UX course completely transformed my career. The projects were so practical that I walked into my portfolio review at Swiggy with 6 ready-to-present case studies. I landed the offer within a month of finishing.</p>
+      <div class="testi-author">
+        <div class="testi-av tav1">AK</div>
+        <div>
+          <div class="testi-name">Arjun Kapoor</div>
+          <div class="testi-role">Product Designer, Swiggy</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card reveal reveal-d1">
+      <span class="quote-mark">"</span>
+      <div class="testi-course">⚡ React & Next.js</div>
+      <p class="testi-text">From spreadsheets to shipping real products — the React course gave me the confidence to build and launch my own SaaS app.</p>
+      <div class="testi-author">
+        <div class="testi-av tav2">PS</div>
+        <div>
+          <div class="testi-name">Priya Sharma</div>
+          <div class="testi-role">Indie Maker & Developer</div>
+        </div>
+      </div>
+    </div>
+    <div class="testi-card reveal reveal-d2">
+      <span class="quote-mark">"</span>
+      <div class="testi-course">🤖 Machine Learning</div>
+      <p class="testi-text">The instructor actually responds to questions in the community. That kind of access is priceless — and it's included.</p>
+      <div class="testi-author">
+        <div class="testi-av tav3">RL</div>
+        <div>
+          <div class="testi-name">Rohan Lim</div>
+          <div class="testi-role">Data Analyst, Flipkart</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-box reveal">
+    <div class="cta-discount">🎉 40% off this week · Use code LEARN40</div>
+    <h2 class="cta-heading">Start learning<br><em>today.</em></h2>
+    <p class="cta-sub">Pick any course. Own it forever. No subscriptions, no pressure.</p>
+    <div class="cta-buttons">
+      <button class="btn-primary" style="font-size:0.95rem; padding:1rem 2.5rem;" onclick="document.getElementById('courses').scrollIntoView({behavior:'smooth'})">
+        Browse all courses →
+      </button>
+      <button class="btn-secondary" style="font-size:0.95rem; padding:1rem 2rem;">View free previews</button>
+    </div>
+    <div class="cta-note">
+      <span>Lifetime access</span>
+      <span>30-day money-back</span>
+      <span>Certificate included</span>
+      <span>Mobile & desktop</span>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Forma<span class="dot">.</span></div>
+  <ul class="footer-links">
+    <li><a href="#">About</a></li>
+    <li><a href="#">Teach with us</a></li>
+    <li><a href="#">Affiliates</a></li>
+    <li><a href="#">Privacy</a></li>
+    <li><a href="#">Terms</a></li>
+    <li><a href="#">Help</a></li>
+  </ul>
+  <div class="footer-copy">© 2025 Forma. All rights reserved.</div>
+</footer>
+
+<script>
+  // Scroll reveal
+  const ro = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+  // Filter
+  function doFilter(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.course-tile').forEach(tile => {
+      const match = cat === 'all' || tile.dataset.cat === cat;
+      tile.style.opacity = match ? '1' : '0.3';
+      tile.style.pointerEvents = match ? '' : 'none';
+      tile.style.transform = match ? '' : 'scale(0.98)';
+    });
+  }
+
+  // Wishlist hearts
+  document.querySelectorAll('.wishlist-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      btn.textContent = btn.textContent === '♡' ? '♥' : '♡';
+      btn.style.color = btn.textContent === '♥' ? '#C45C2B' : '';
+    });
+  });
+</script>
+</body>
+</html>

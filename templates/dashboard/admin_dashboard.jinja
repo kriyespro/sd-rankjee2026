@@ -328,6 +328,9 @@
                                     <th class="px-5 py-3">Student</th>
                                     <th class="px-5 py-3">Streak</th>
                                     <th class="px-5 py-3">Wallet</th>
+                                    {% if request.user.is_superuser %}
+                                    <th class="px-5 py-3">Server buy</th>
+                                    {% endif %}
                                     <th class="px-5 py-3 text-right">Activity</th>
                                 </tr>
                             </thead>
@@ -355,6 +358,22 @@
                                     <td class="px-5 py-3">
                                         <p class="text-xs font-black text-emerald-600">₹{{ s.wallet_balance|int }}</p>
                                     </td>
+                                    {% if request.user.is_superuser %}
+                                    <td class="px-5 py-3">
+                                        <form method="post" action="{{ url('dashboard:toggle_user_server_buy', user_id=s.id) }}" class="inline-flex items-center gap-2">
+                                            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                            <input type="hidden" name="enabled" value="{{ '0' if s.show_server_buy_button else '1' }}">
+                                            <input type="hidden" name="next" value="{{ request.get_full_path() }}">
+                                            {% if s.show_server_buy_button %}
+                                            <span class="inline-flex rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-800">On</span>
+                                            <button type="submit" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Hide</button>
+                                            {% else %}
+                                            <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Off</span>
+                                            <button type="submit" class="rounded-lg border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-violet-800 hover:bg-violet-100">Show</button>
+                                            {% endif %}
+                                        </form>
+                                    </td>
+                                    {% endif %}
                                     <td class="px-5 py-3 text-right">
                                         <div class="flex flex-col items-end">
                                             <p class="text-xs font-black text-slate-900">{{ s.xp_points }} XP</p>

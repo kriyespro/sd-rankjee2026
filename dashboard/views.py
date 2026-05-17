@@ -1007,6 +1007,29 @@ def dashboard_study_assignment(request, pk):
 
 
 @login_required
+def toggle_user_server_buy(request, user_id):
+    if request.method != "POST" or not request.user.is_superuser:
+        raise PermissionDenied
+
+    target = get_object_or_404(get_user_model(), pk=user_id)
+    enabled_raw = (request.POST.get("enabled") or "").strip().lower()
+    if enabled_raw in ("1", "true", "on", "yes"):
+        target.show_server_buy_button = True
+    elif enabled_raw in ("0", "false", "off", "no"):
+        target.show_server_buy_button = False
+    else:
+        target.show_server_buy_button = not target.show_server_buy_button
+    target.save(update_fields=["show_server_buy_button"])
+
+    label = "enabled" if target.show_server_buy_button else "disabled"
+    messages.success(request, f"Server buy button {label} for {target.username}.")
+
+    redirect_to = (request.POST.get("next") or "").strip()
+    if redirect_to.startswith("/"):
+        return redirect(redirect_to)
+    return redirect("dashboard:index")
+
+
 def update_tutor_request_status(request, request_id):
     if request.method != "POST" or not _staff_only(request):
         return redirect("dashboard:index")

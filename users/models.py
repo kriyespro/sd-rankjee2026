@@ -61,6 +61,11 @@ class CustomUser(AbstractUser):
         db_index=True,
         help_text="If set, user always has exam Pro access (feedback / QA). Manage from /sd/.",
     )
+    show_server_buy_button = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="If set, student sees “Server buy now” on dashboard and can open server checkout.",
+    )
     signup_pro_trial_applied_at = models.DateTimeField(
         null=True,
         blank=True,

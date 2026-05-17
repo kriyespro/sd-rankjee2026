@@ -25,11 +25,17 @@ def _is_student(user) -> bool:
     return getattr(user, "role", None) == CustomUser.Role.STUDENT
 
 
+def _can_use_server_buy(user) -> bool:
+    return _is_student(user) and bool(getattr(user, "show_server_buy_button", False))
+
+
 def _student_only(request):
     if not request.user.is_authenticated:
         return redirect(f"{reverse('users:login')}?next={request.path}")
-    if not _is_student(request.user):
-        return HttpResponseForbidden("This page is only for student accounts.")
+    if not _can_use_server_buy(request.user):
+        return HttpResponseForbidden(
+            "Server buy is not enabled for your account. Contact support if you need access."
+        )
     return None
 
 
@@ -37,8 +43,11 @@ def _student_only_api(request):
     """For fetch/JSON endpoints: never return HTML redirects or plain 403 bodies."""
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Not authenticated. Refresh the page and sign in again."}, status=401)
-    if not _is_student(request.user):
-        return JsonResponse({"error": "This checkout is only for student accounts."}, status=403)
+    if not _can_use_server_buy(request.user):
+        return JsonResponse(
+            {"error": "Server buy is not enabled for your account. Contact support if you need access."},
+            status=403,
+        )
     return None
 
 
