@@ -326,6 +326,8 @@ AUTHENTICATION_BACKENDS = [
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # hours
 AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
+AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'
+AXES_CACHE = 'default'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field

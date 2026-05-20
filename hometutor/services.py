@@ -122,14 +122,14 @@ def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
     Prefer approved tutors in the pilot city; fall back to static HT-0 data if none.
     """
     pilot = PILOT_CITY
-    qs = (
+    tutors = list(
         TutorProfile.objects.filter(
             verification_status=TutorProfile.VerificationStatus.APPROVED,
             city__iexact=pilot,
         )
         .order_by('-is_featured_home', '-rating_display', 'display_name')[:limit]
     )
-    if not qs.exists():
+    if not tutors:
         rows = []
         for row in FEATURED_HOME_TUTORS[:limit]:
             r = dict(row)
@@ -138,7 +138,7 @@ def featured_home_tutors(limit: int = 6) -> tuple[list[dict], bool]:
             rows.append(r)
         return rows, False
 
-    return [tutor_to_card_dict(p, pilot) for p in qs], True
+    return [tutor_to_card_dict(p, pilot) for p in tutors], True
 
 
 def public_tutor_queryset(request_get):

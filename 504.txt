@@ -1,0 +1,431 @@
+Here’s a **developer handoff summary** for the RankJee 504 issue.
+
+---
+
+# RankJee 504 Incident – Developer Summary
+
+## Infrastructure status
+
+Infrastructure is healthy.
+
+### Verified healthy
+
+* VPS resources normal
+
+  * RAM ~48%
+  * CPU low
+  * no swap pressure
+* Docker healthy
+* PostgreSQL healthy
+
+  * only ~11 active DB connections
+* Redis healthy
+* Gunicorn process alive
+* Nginx config valid
+* SSL working
+* Public domain responds
+
+Direct tests:
+
+```bash
+curl -I http://127.0.0.1:8889
+```
+
+Result:
+
+```text
+HTTP/1.1 301 Moved Permanently
+Server: gunicorn
+```
+
+Public:
+
+```bash
+curl -I https://rankjee.com
+```
+
+Result:
+
+```text
+HTTP/2 200
+server: nginx
+```
+
+Conclusion:
+
+**Infra is NOT the bottleneck.**
+
+---
+
+# Exact root cause
+
+Nginx logs confirm application timeout:
+
+```text
+upstream timed out (110: Unknown error) while reading response header from upstream
+```
+
+Meaning:
+
+```text
+Nginx → forwarded request to Gunicorn
+Gunicorn accepted request
+Django took too long
+Nginx timed out
+```
+
+This is an **application-layer latency issue**.
+
+---
+
+# Confirmed failing routes
+
+## Homepage
+
+```text
+GET /
+```
+
+Timeout observed.
+
+Implication:
+homepage contains slow/blocking logic.
+
+---
+
+## Google auth callback
+
+```text
+/accounts/google/login/callback/
+```
+
+Timeout observed.
+
+Possible causes:
+
+* slow Google API response
+* social auth pipeline issue
+* blocking DB/auth logic
+* external HTTP call without timeout
+
+---
+
+## Django admin
+
+```text
+/admin/study/
+/admin/?server_paid=1
+```
+
+Timeout observed.
+
+Strong indicator:
+heavy Django admin query / N+1 query issue.
+
+Likely causes:
+
+* expensive list_display properties
+* heavy get_queryset
+* per-row queries
+* **str** hitting DB
+* annotations/counts
+
+---
+
+## Login
+
+```text
+/users/login/
+```
+
+Timeout observed.
+
+Possible:
+middleware/context processor slowdown.
+
+---
+
+## Server quote endpoint
+
+```text
+/server-buy/quote/
+```
+
+Timeout observed.
+
+Very suspicious.
+
+Likely:
+external API / sync HTTP call / DNS lookup / pricing logic.
+
+---
+
+# Infrastructure config review
+
+## Nginx
+
+Healthy.
+
+Current config:
+
+```nginx
+proxy_pass http://127.0.0.1:8889;
+
+proxy_connect_timeout 300;
+proxy_send_timeout 300;
+proxy_read_timeout 300;
+```
+
+So nginx is already generous.
+
+Problem is not nginx timeout config.
+
+---
+
+## Gunicorn
+
+Current:
+
+```text
+worker: gthread
+workers: 3
+```
+
+This may be insufficient if requests block.
+
+Recommended:
+
+```bash
+gunicorn core.wsgi:application \
+  --workers 5 \
+  --threads 4 \
+  --timeout 120
+```
+
+For 6-core VPS.
+
+---
+
+# High-probability root causes
+
+## 1. Blocking external HTTP/API calls
+
+Search for:
+
+```python
+requests.get(...)
+requests.post(...)
+httpx.get(...)
+urllib.request(...)
+socket calls
+```
+
+Bad pattern:
+
+```python
+requests.get(url)
+```
+
+Good:
+
+```python
+requests.get(url, timeout=10)
+```
+
+Check:
+
+* Google auth integration
+* Razorpay
+* SMTP
+* quote generation
+* DNS lookup
+* server pricing APIs
+
+---
+
+## 2. Django admin query inefficiency
+
+Admin endpoints timing out strongly suggest ORM inefficiency.
+
+Audit:
+
+```python
+ModelAdmin.list_display
+ModelAdmin.get_queryset()
+@property in admin display
+__str__()
+foreign key traversal
+count() per row
+```
+
+Fix with:
+
+```python
+select_related()
+prefetch_related()
+```
+
+---
+
+## 3. Heavy middleware / context processors
+
+Because homepage/login also affected.
+
+Check middleware for:
+
+* DB lookups
+* API calls
+* quote calculations
+* user dashboard metrics
+* notification counters
+
+---
+
+## 4. Gunicorn worker starvation
+
+If requests block, 3 workers can be exhausted.
+
+Symptoms:
+random 504 across unrelated routes.
+
+---
+
+# Required developer audit checklist
+
+## Search blocking HTTP calls
+
+Run:
+
+```bash
+grep -R "requests\." .
+grep -R "httpx" .
+grep -R "urllib" .
+```
+
+---
+
+## Audit admin
+
+Check:
+
+```bash
+grep -R "admin.py" .
+```
+
+Focus:
+
+* study admin
+* server buy admin
+
+---
+
+## Review middleware
+
+Check:
+
+```python
+MIDDLEWARE = [...]
+```
+
+Audit custom middleware.
+
+---
+
+## Review context processors
+
+Check:
+
+```python
+TEMPLATES["OPTIONS"]["context_processors"]
+```
+
+Ensure no heavy DB/API work.
+
+---
+
+## Review homepage view
+
+Audit `/`
+
+Look for:
+
+* expensive joins
+* counts
+* external APIs
+* dynamic quote calculations
+
+---
+
+## Review quote endpoint
+
+Audit:
+
+```text
+/server-buy/quote/
+```
+
+Highest suspicion for blocking network calls.
+
+---
+
+## Review Google auth callback
+
+Audit:
+
+* django-allauth pipeline
+* custom social login hooks
+* welcome email sending
+* user provisioning logic
+
+---
+
+# Recommended observability
+
+Install profiling:
+
+## Option 1
+
+```bash
+django-silk
+```
+
+Best for production debugging.
+
+---
+
+## Option 2
+
+```bash
+django-debug-toolbar
+```
+
+For local debugging.
+
+---
+
+## DB query logging
+
+Temporarily enable SQL logging.
+
+---
+
+# Immediate mitigation
+
+Short-term:
+
+Increase Gunicorn concurrency:
+
+```bash
+workers=5
+threads=4
+```
+
+Add timeouts to all external requests.
+
+---
+
+# Final diagnosis
+
+This is **not a server capacity issue**.
+
+This is a **Django application performance issue caused by blocking or expensive request handling.**
