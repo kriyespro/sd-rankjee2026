@@ -326,13 +326,32 @@ AUTHENTICATION_BACKENDS = [
 AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # hours
 AXES_LOCKOUT_PARAMETERS = [["ip_address", "username"]]
-AXES_HANDLER = 'axes.handlers.cache.AxesCacheHandler'
-AXES_CACHE = 'default'
+# Use DB handler — reliable across all worker processes without a shared cache
+AXES_HANDLER = 'axes.handlers.database.AxesDatabaseHandler'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ── Security headers ──────────────────────────────────────────────────────────
+X_FRAME_OPTIONS = 'SAMEORIGIN'          # DENY breaks Django admin iframes
+SECURE_CONTENT_TYPE_NOSNIFF = True      # Prevent MIME-type sniffing
+SECURE_BROWSER_XSS_FILTER = True        # Legacy IE XSS filter (harmless on modern)
+REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# ── Session ───────────────────────────────────────────────────────────────────
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 days
+SESSION_SAVE_EVERY_REQUEST = False       # Only save when modified (performance)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+
+# ── Upload limits ─────────────────────────────────────────────────────────────
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # 5 MB (default 2.5 MB)
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # 5 MB
+
+# ── Database ──────────────────────────────────────────────────────────────────
+# Wrap every view in a transaction — partial DB writes roll back on errors
+ATOMIC_REQUESTS = True
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -361,9 +380,10 @@ CANONICAL_HOST_REDIRECT_ENABLED = _env_bool(
 # django-allauth account settings
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+# New allauth API (replaces deprecated ACCOUNT_EMAIL_REQUIRED / ACCOUNT_USERNAME_REQUIRED /
+# ACCOUNT_AUTHENTICATION_METHOD which produce warnings in allauth ≥ 0.56)
+ACCOUNT_LOGIN_METHODS = {'username', 'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_ADAPTER = 'users.adapters.RoleAwareSocialAccountAdapter'
 

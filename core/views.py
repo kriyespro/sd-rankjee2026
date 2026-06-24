@@ -256,7 +256,16 @@ def home(request):
     now = timezone.now()
     jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
     time_to_go = int((jackpot.scheduled_time - now).total_seconds()) if jackpot else 0
-    featured_rows, featured_from_db = featured_home_tutors()
+
+    # Cache featured tutors for 5 minutes — they change rarely, hit on every home load
+    _cache_key = f"home_featured_tutors_{PILOT_CITY}"
+    _cached = cache.get(_cache_key)
+    if _cached is None:
+        featured_rows, featured_from_db = featured_home_tutors()
+        cache.set(_cache_key, (featured_rows, featured_from_db), timeout=300)
+    else:
+        featured_rows, featured_from_db = _cached
+
     city = PILOT_CITY
     seo_title = f"Get Home Tutors Jobs in {city} | Find Best Home Tutor in {city} | RankJee"
     seo_description = (
@@ -349,7 +358,11 @@ def courses(request):
     ref_code = (request.GET.get("ref") or "").strip().upper()
     if ref_code:
         request.session["pending_course_referrer_code"] = ref_code
-    courses_qs = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    # Cache active courses for 10 minutes — catalogue changes infrequently
+    courses_qs = cache.get("active_courses_qs")
+    if courses_qs is None:
+        courses_qs = list(Course.objects.filter(is_active=True).order_by("-is_featured", "title"))
+        cache.set("active_courses_qs", courses_qs, timeout=600)
     purchased_ids = (
         user_owned_course_ids(request.user)
         if request.user.is_authenticated
@@ -566,8 +579,12 @@ def earnings(request):
     )
 
     total_earned = user.wallet_balance
-    wallet_transactions = user.wallet_transactions.all()[:20]
-    active_courses = Course.objects.filter(is_active=True).order_by("-is_featured", "title")
+    wallet_transactions = user.wallet_transactions.select_related("user").order_by("-created_at")[:20]
+    # Reuse cached catalogue from courses view (10-min TTL)
+    active_courses = cache.get("active_courses_qs")
+    if active_courses is None:
+        active_courses = list(Course.objects.filter(is_active=True).order_by("-is_featured", "title"))
+        cache.set("active_courses_qs", active_courses, timeout=600)
     course_ref_links = {}
     courses_hub_ref_url = ""
     whatsapp_share_all_url = ""
