@@ -411,10 +411,13 @@
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
-                {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' %}
+                {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' or request.user.is_staff or request.user.is_superuser %}
                     <a href="/sd/" class="nav-link">Admin</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
-                    <a href="{{ url('assessment:index') }}" class="nav-link">{{ uil.assess }}</a>
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
+                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
+                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% else %}
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     {% if request.user.is_authenticated %}
@@ -431,7 +434,9 @@
             <!-- Dashboard · Blog · Login/Logout/Join — compact (replaces top utility strip) -->
             <div class="flex shrink-0 items-center justify-end gap-1.5 md:gap-2">
                 <nav class="nav-main-util" aria-label="Account shortcuts">
+                    {% if request.user.is_authenticated %}
                     <a href="{{ url('dashboard:index') }}" class="nav-util-link">{{ uil.dashboard }}</a>
+                    {% endif %}
                     <a href="{{ url('blog:index') }}" class="nav-util-link">Blog</a>
                     {% if request.user.is_authenticated %}
                     <a href="{{ url('core:course_cart') }}" class="nav-util-link">Cart{% if course_cart_count %} {{ course_cart_count }}{% endif %}</a>
@@ -525,7 +530,7 @@
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' not in request.path and request.path.rstrip('/') == '/admin' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
                 </div>
-            {% else %}
+            {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' or request.user.is_staff or request.user.is_superuser %}
                 <a href="/sd/" class="flex flex-col items-center gap-1 p-2 group">
                     <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.startswith('/sd/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🛡️</div>
                     <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/sd/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Admin</span>
