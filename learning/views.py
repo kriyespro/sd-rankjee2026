@@ -1,9 +1,11 @@
 from django.db.models import Count, Q
 from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from assessment.models import UserAttempt, Skill
 from .models import ConceptVideo
 
 
+@login_required
 def learning_index(request):
     skill_id = request.GET.get('skill')
     concept = (request.GET.get('concept') or '').strip()
