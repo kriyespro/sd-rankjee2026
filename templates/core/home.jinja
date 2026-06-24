@@ -798,31 +798,72 @@
 </section>
 
 <!-- Home tutor listings: DB-backed when seeded (HT-1); else static fallback (core/hometutor_data.py) -->
-<section id="find-tutors" class="home-find-tutors border-y scroll-mt-20">
-    <div class="max-w-6xl mx-auto px-4 py-14 md:py-20">
-        <div class="text-center mb-10 md:mb-14">
-            <p class="home-kicker text-xs font-black uppercase tracking-[0.2em] mb-3">Featured in {{ hometutor_pilot_city }}</p>
-            <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-3">Home tutors you can book next</h2>
-            <p class="text-slate-600 max-w-2xl mx-auto text-sm md:text-base">
-                {% if featured_tutors_from_db %}Verified listings — request a demo when the tutor uses a linked RankJee account.{% else %}Placeholder cards until you run <code class="text-xs bg-slate-200 px-1 rounded">python manage.py seed_hometutor_tutors</code>.{% endif %}
-            </p>
+<section id="find-tutors" class="scroll-mt-20 relative overflow-hidden" style="background:linear-gradient(180deg,#f8faff 0%,#f1f5ff 100%);">
+    <!-- subtle dot pattern -->
+    <div class="pointer-events-none absolute inset-0" style="background-image:radial-gradient(circle,rgba(79,70,229,0.07) 1px,transparent 1px);background-size:28px 28px;"></div>
+    <!-- accent blobs -->
+    <div class="pointer-events-none absolute -top-20 -left-20 w-80 h-80 rounded-full" style="background:rgba(79,70,229,0.08);filter:blur(80px);"></div>
+    <div class="pointer-events-none absolute -bottom-20 -right-20 w-80 h-80 rounded-full" style="background:rgba(244,113,28,0.08);filter:blur(80px);"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 py-16 md:py-24">
+
+        <!-- Section header -->
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
+            <div>
+                <span class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-4" style="background:rgba(79,70,229,0.1);color:#4f46e5;border:1px solid rgba(79,70,229,0.2);">
+                    📍 Featured in {{ hometutor_pilot_city }}
+                </span>
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight leading-tight mb-2" style="color:var(--rj-navy);">
+                    Home tutors you can <span style="color:var(--rj-saffron);">book next</span>
+                </h2>
+                <p class="text-slate-500 text-sm md:text-base max-w-lg">
+                    Verified listings — request a free demo before you pay. No upfront commitment.
+                </p>
+            </div>
+            <a href="{{ url('hometutor:tutor_list') }}" class="flex-shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-sm border-2 transition-all hover:opacity-80 whitespace-nowrap" style="border-color:var(--rj-navy);color:var(--rj-navy);">
+                See all tutors →
+            </a>
         </div>
-        <div class="home-tutor-grid grid grid-cols-1 md:grid-cols-3">
-            {% for t in featured_home_tutors %}
+
+        <!-- Trust pills -->
+        <div class="flex flex-wrap gap-3 mb-10">
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0"></span> Background-checked tutors
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0"></span> Free demo class
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span> 3,900+ tutors across India
+            </span>
+            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100">
+                <span class="w-1.5 h-1.5 rounded-full bg-rose-500 flex-shrink-0"></span> 4.5★ average rating
+            </span>
+        </div>
+
+        <!-- Tutor cards — limit to 3 on home -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {% for t in featured_home_tutors[:3] %}
             {% include "hometutor/partials/_tutor_card.jinja" %}
             {% endfor %}
         </div>
-        <div class="mt-10 flex flex-wrap justify-center gap-4">
-            <a href="{{ url('hometutor:tutor_list') }}" class="home-btn-saffron">
-                Browse all tutors →
-            </a>
-            <a href="{{ url('assessment:index') }}" class="home-btn-navy">
-                Start online practice →
-            </a>
-            <a href="{{ url('users:signup') }}" class="home-btn-outline-navy">
-                Create free account
-            </a>
+
+        <!-- Bottom CTA strip -->
+        <div class="mt-12 rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6" style="background:var(--rj-navy);">
+            <div>
+                <p class="text-white font-black text-lg md:text-xl tracking-tight mb-1">Ready to find your perfect tutor?</p>
+                <p class="text-slate-300 text-sm">Browse 3,900+ verified home tutors across 90+ cities in India.</p>
+            </div>
+            <div class="flex flex-wrap gap-3 flex-shrink-0">
+                <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-white uppercase tracking-wide transition-all hover:opacity-90" style="background:var(--rj-saffron);box-shadow:0 12px 28px -10px rgba(244,113,28,0.6);">
+                    Browse all tutors →
+                </a>
+                <a href="{{ url('users:signup') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm border-2 transition-all hover:opacity-80" style="border-color:rgba(255,255,255,0.35);color:#fff;">
+                    Create free account
+                </a>
+            </div>
         </div>
+
     </div>
 </section>
 
@@ -898,6 +939,250 @@
                 </div>
                 <!-- Abstract coins -->
                 <div class="absolute right-[-20px] top-[-20px] text-7xl md:text-9xl opacity-10 rotate-12">💰</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     HOME TUTORS SECTION
+══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden py-20 md:py-28" style="background:#0D2B5E;">
+    <div class="pointer-events-none absolute inset-0" style="background-image:radial-gradient(circle at 80% 20%,rgba(244,113,28,0.22) 0%,transparent 55%),radial-gradient(circle at 10% 80%,rgba(245,183,49,0.14) 0%,transparent 50%);"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
+        <!-- Header -->
+        <div class="text-center mb-14">
+            <span class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-5" style="background:rgba(244,113,28,0.18);color:var(--rj-gold);border:1px solid rgba(244,113,28,0.35);">
+                👨‍🏫 Home Tutors · India-wide
+            </span>
+            <h2 class="text-4xl md:text-5xl font-black tracking-tight text-white leading-tight mb-4">
+                Expert tutors <span style="color:var(--rj-saffron);">who come to you.</span>
+            </h2>
+            <p class="text-slate-300 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+                One-on-one sessions at home, online, or hybrid — verified tutors for CBSE, ICSE &amp; competitive exams. Request a free demo before you pay.
+            </p>
+        </div>
+
+        <!-- 4 feature cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+            <div class="rounded-2xl p-6" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+                <div class="text-4xl mb-4">🎓</div>
+                <p class="text-3xl font-black text-white tracking-tight mb-1">3,900+</p>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color:var(--rj-gold);">Verified tutors</p>
+                <p class="text-slate-400 text-xs mt-2">Across 90+ cities in India</p>
+            </div>
+            <div class="rounded-2xl p-6" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+                <div class="text-4xl mb-4">🆓</div>
+                <p class="text-3xl font-black text-white tracking-tight mb-1">Free</p>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color:var(--rj-gold);">Demo class</p>
+                <p class="text-slate-400 text-xs mt-2">No upfront payment required</p>
+            </div>
+            <div class="rounded-2xl p-6" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+                <div class="text-4xl mb-4">⭐</div>
+                <p class="text-3xl font-black text-white tracking-tight mb-1">4.5★</p>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color:var(--rj-gold);">Avg rating</p>
+                <p class="text-slate-400 text-xs mt-2">32,000+ verified reviews</p>
+            </div>
+            <div class="rounded-2xl p-6" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);">
+                <div class="text-4xl mb-4">📍</div>
+                <p class="text-3xl font-black text-white tracking-tight mb-1">3-in-1</p>
+                <p class="text-xs font-bold uppercase tracking-widest" style="color:var(--rj-gold);">Formats</p>
+                <p class="text-slate-400 text-xs mt-2">Offline · Online · Hybrid</p>
+            </div>
+        </div>
+
+        <!-- Feature list + CTA -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-8 rounded-2xl p-6 md:p-8" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);">
+            <div class="grid grid-cols-2 gap-x-10 gap-y-3">
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0" style="background:var(--rj-emerald);">✓</span>
+                    Background-checked profiles
+                </div>
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0" style="background:var(--rj-emerald);">✓</span>
+                    Same-day matching
+                </div>
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0" style="background:var(--rj-emerald);">✓</span>
+                    Maths, Science, JEE &amp; more
+                </div>
+                <div class="flex items-center gap-2 text-sm font-semibold text-slate-200">
+                    <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0" style="background:var(--rj-emerald);">✓</span>
+                    No lock-in contracts
+                </div>
+            </div>
+            <div class="flex gap-3 flex-shrink-0">
+                <a href="{{ url('hometutor:tutor_list') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-white uppercase tracking-wide transition-all hover:opacity-90" style="background:var(--rj-saffron);box-shadow:0 12px 32px -12px rgba(244,113,28,0.6);">
+                    Find a tutor →
+                </a>
+                <a href="{{ url('core:request_tutor') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm border-2 transition-all hover:opacity-80" style="border-color:rgba(255,255,255,0.35);color:#fff;">
+                    Request tutor
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     ONLINE EXAM / ASSESSMENT SECTION
+══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden py-20 md:py-28 bg-white">
+    <div class="pointer-events-none absolute top-0 left-0 right-0 h-1" style="background:linear-gradient(90deg,var(--rj-emerald),var(--rj-navy),var(--rj-saffron));"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
+        <!-- Header -->
+        <div class="text-center mb-14">
+            <span class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-5" style="background:rgba(28,169,123,0.1);color:var(--rj-emerald);border:1px solid rgba(28,169,123,0.25);">
+                📝 Online Exams &amp; Diagnostics
+            </span>
+            <h2 class="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-4" style="color:var(--rj-navy);">
+                Know exactly <span style="color:var(--rj-emerald);">where you stand.</span>
+            </h2>
+            <p class="text-slate-500 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+                AI-powered diagnostic tests surface your weak spots in minutes. Targeted micro-lessons then close the gap — concept by concept.
+            </p>
+        </div>
+
+        <!-- 3 bold feature cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <!-- Card 1 -->
+            <div class="rounded-2xl p-8 relative overflow-hidden" style="background:var(--rj-emerald);">
+                <div class="absolute -right-4 -bottom-4 text-8xl leading-none" style="opacity:0.15;">📊</div>
+                <p class="text-xs font-black uppercase tracking-widest text-white mb-4" style="opacity:0.75;">Step 01</p>
+                <div class="text-5xl mb-4">📊</div>
+                <h3 class="text-2xl font-black text-white mb-2">AI Skill Diagnosis</h3>
+                <p class="text-sm leading-relaxed" style="color:rgba(255,255,255,0.8);">Take a 10-min diagnostic test. Get a precise skill-gap report across 500+ topics — instantly.</p>
+            </div>
+            <!-- Card 2 -->
+            <div class="rounded-2xl p-8 relative overflow-hidden" style="background:var(--rj-saffron);">
+                <div class="absolute -right-4 -bottom-4 text-8xl leading-none" style="opacity:0.15;">🎯</div>
+                <p class="text-xs font-black uppercase tracking-widest text-white mb-4" style="opacity:0.75;">Step 02</p>
+                <div class="text-5xl mb-4">🎯</div>
+                <h3 class="text-2xl font-black text-white mb-2">Targeted Practice</h3>
+                <p class="text-sm leading-relaxed" style="color:rgba(255,255,255,0.85);">Questions adapt to your weak areas. Practice only what matters, not the full syllabus.</p>
+            </div>
+            <!-- Card 3 -->
+            <div class="rounded-2xl p-8 relative overflow-hidden" style="background:var(--rj-navy);">
+                <div class="absolute -right-4 -bottom-4 text-8xl leading-none" style="opacity:0.12;">🏆</div>
+                <p class="text-xs font-black uppercase tracking-widest mb-4" style="color:var(--rj-gold);">Step 03</p>
+                <div class="text-5xl mb-4">🏆</div>
+                <h3 class="text-2xl font-black text-white mb-2">Mastery Badges</h3>
+                <p class="text-sm leading-relaxed text-slate-300">Score 80%+ on your weak areas and unlock verified digital badges for your skill profile.</p>
+            </div>
+        </div>
+
+        <!-- Stats bar + CTA -->
+        <div class="rounded-2xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6" style="background:linear-gradient(135deg,#f8faff 0%,#eef2ff 100%);border:1px solid #e0e7ff;">
+            <div class="flex flex-wrap justify-center md:justify-start gap-8 md:gap-12">
+                <div class="text-center">
+                    <p class="text-4xl font-black tracking-tight" style="color:var(--rj-navy);">500+</p>
+                    <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Topics</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-black tracking-tight" style="color:var(--rj-navy);">10 min</p>
+                    <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Avg test</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-black tracking-tight" style="color:var(--rj-navy);">80%</p>
+                    <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">Pass bar</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-black tracking-tight" style="color:var(--rj-emerald);">Free</p>
+                    <p class="text-xs font-bold text-slate-500 mt-1 uppercase tracking-widest">To start</p>
+                </div>
+            </div>
+            <a href="{{ url('assessment:index') }}" class="flex-shrink-0 inline-flex items-center gap-2 px-8 py-4 rounded-xl font-black text-base text-white uppercase tracking-wide transition-all hover:opacity-90" style="background:var(--rj-emerald);box-shadow:0 14px 36px -12px rgba(28,169,123,0.55);">
+                Start free exam →
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     COURSES SECTION
+══════════════════════════════════════════════════════ -->
+<section class="relative overflow-hidden py-20 md:py-28" style="background:linear-gradient(160deg,#faf8f5 0%,#fff7ed 50%,#fefce8 100%);">
+    <div class="pointer-events-none absolute -top-16 -right-16 w-96 h-96 rounded-full" style="background:var(--rj-gold);filter:blur(100px);opacity:0.22;"></div>
+    <div class="pointer-events-none absolute bottom-0 -left-20 w-80 h-80 rounded-full" style="background:var(--rj-saffron);filter:blur(90px);opacity:0.1;"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6">
+        <!-- Header -->
+        <div class="text-center mb-14">
+            <span class="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-5" style="background:rgba(244,113,28,0.1);color:var(--rj-saffron);border:1px solid rgba(244,113,28,0.25);">
+                🎓 Job-Ready Courses
+            </span>
+            <h2 class="text-4xl md:text-5xl font-black tracking-tight leading-tight mb-4" style="color:var(--rj-navy);">
+                Learn skills <span style="background:linear-gradient(135deg,var(--rj-saffron) 0%,var(--rj-gold) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">companies pay for.</span>
+            </h2>
+            <p class="text-slate-600 max-w-2xl mx-auto text-base md:text-lg leading-relaxed">
+                Practical, outcome-focused programs in AI, Digital Marketing &amp; Automation. Self-paced, affordable, built for India.
+            </p>
+        </div>
+
+        <!-- Course cards 2×2 grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+            <div class="flex gap-5 rounded-2xl p-5 border-2 border-orange-200 bg-white shadow-sm hover:shadow-md transition-all">
+                <div class="w-14 h-14 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl" style="background:rgba(244,113,28,0.1);">🤖</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <p class="font-black text-base leading-tight" style="color:var(--rj-navy);">AI Automation Engineering Pro</p>
+                        <span class="flex-shrink-0 text-sm font-black text-orange-600 whitespace-nowrap">₹16,999</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">12 weeks · Intermediate · Self-paced</p>
+                    <span class="inline-flex text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(244,113,28,0.1);color:var(--rj-saffron);">₹4–12 LPA potential</span>
+                </div>
+            </div>
+            <div class="flex gap-5 rounded-2xl p-5 border-2 border-yellow-200 bg-white shadow-sm hover:shadow-md transition-all">
+                <div class="w-14 h-14 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl" style="background:rgba(245,183,49,0.12);">🚀</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <p class="font-black text-base leading-tight" style="color:var(--rj-navy);">AI Startup Pro Program</p>
+                        <span class="flex-shrink-0 text-sm font-black text-yellow-600 whitespace-nowrap">₹24,999</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">12 weeks · Intermediate · Self-paced</p>
+                    <span class="inline-flex text-xs font-bold px-2 py-0.5 rounded-full" style="background:rgba(245,183,49,0.15);color:#92400e;">₹4–12 LPA potential</span>
+                </div>
+            </div>
+            <div class="flex gap-5 rounded-2xl p-5 border-2 border-green-200 bg-white shadow-sm hover:shadow-md transition-all">
+                <div class="w-14 h-14 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl" style="background:rgba(22,163,74,0.08);">📈</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <p class="font-black text-base leading-tight" style="color:var(--rj-navy);">AI-Powered Digital Marketing Mastery</p>
+                        <span class="flex-shrink-0 text-sm font-black text-green-700 whitespace-nowrap">₹16,999</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">12 weeks · Intermediate · Self-paced</p>
+                    <span class="inline-flex text-xs font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700">₹3–10 LPA potential</span>
+                </div>
+            </div>
+            <div class="flex gap-5 rounded-2xl p-5 border-2 border-indigo-200 bg-white shadow-sm hover:shadow-md transition-all">
+                <div class="w-14 h-14 flex-shrink-0 rounded-2xl flex items-center justify-center text-3xl" style="background:rgba(79,70,229,0.08);">💡</div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <p class="font-black text-base leading-tight" style="color:var(--rj-navy);">Prompt Engineering Mastery</p>
+                        <span class="flex-shrink-0 text-sm font-black text-indigo-700 whitespace-nowrap">₹2,999</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-2">4 weeks · Beginner · Self-paced</p>
+                    <span class="inline-flex text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">Best for beginners</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA row -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-5 rounded-2xl p-6 bg-white border-2 shadow-sm" style="border-color:rgba(244,113,28,0.2);">
+            <div>
+                <p class="font-black text-lg" style="color:var(--rj-navy);">8 courses available · New batches every month</p>
+                <p class="text-sm text-slate-500 mt-0.5">Completion certificate · Industry-relevant · Built for India</p>
+            </div>
+            <div class="flex gap-3 flex-shrink-0">
+                <a href="{{ url('core:courses') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm text-white uppercase tracking-wide transition-all hover:opacity-90" style="background:linear-gradient(135deg,var(--rj-saffron) 0%,var(--rj-gold) 100%);box-shadow:0 12px 32px -12px rgba(244,113,28,0.5);color:#fff;">
+                    Browse all courses →
+                </a>
+                {% if not request.user.is_authenticated %}
+                <a href="{{ url('users:signup') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-black text-sm border-2 transition-all hover:bg-orange-50" style="border-color:var(--rj-saffron);color:var(--rj-saffron);">
+                    Sign up free
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
