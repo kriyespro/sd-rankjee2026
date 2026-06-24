@@ -1,10 +1,9 @@
 from django.db.models import Count, Q
 from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from assessment.models import UserAttempt, Skill
 from .models import ConceptVideo
 
-@login_required
+
 def learning_index(request):
     skill_id = request.GET.get('skill')
     concept = (request.GET.get('concept') or '').strip()
@@ -21,8 +20,11 @@ def learning_index(request):
     if skill_id:
         selected_skill = Skill.objects.filter(id=skill_id, is_active=True).first()
 
-    latest_attempt = UserAttempt.objects.filter(user=request.user).select_related("skill").order_by("-attempt_date").first()
-    latest_failed_attempt = UserAttempt.objects.filter(user=request.user, passed=False).select_related("skill").order_by("-attempt_date").first()
+    latest_attempt = None
+    latest_failed_attempt = None
+    if request.user.is_authenticated:
+        latest_attempt = UserAttempt.objects.filter(user=request.user).select_related("skill").order_by("-attempt_date").first()
+        latest_failed_attempt = UserAttempt.objects.filter(user=request.user, passed=False).select_related("skill").order_by("-attempt_date").first()
 
     if not selected_skill:
         selected_skill = (latest_attempt.skill if latest_attempt else None) or (category_skills[0] if category_skills else None)
