@@ -22,9 +22,6 @@
             <strong class="text-slate-700">{{ referral_commission_pct }}%</strong> when they pay.
         </p>
     </div>
-    {% if referral_dashboard %}
-    {% include "core/partials/_referral_dashboard.jinja" %}
-    {% endif %}
     {% else %}
     <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
         <p class="font-black">No referral code yet</p>
@@ -32,7 +29,7 @@
     </div>
     {% endif %}
 
-    <div class="mb-10 rounded-3xl border border-indigo-400/25 bg-gradient-to-br from-rj-navy via-indigo-900 to-indigo-950 p-6 sm:p-8 shadow-xl shadow-indigo-950/30 text-white relative overflow-hidden">
+    <div class="mb-6 rounded-3xl border border-indigo-400/25 bg-gradient-to-br from-rj-navy via-indigo-900 to-indigo-950 p-6 sm:p-8 shadow-xl shadow-indigo-950/30 text-white relative overflow-hidden">
         <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-rj-saffron/25 blur-3xl pointer-events-none" aria-hidden="true"></div>
         <div class="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-rj-gold/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
 
@@ -66,6 +63,10 @@
             </div>
         </div>
     </div>
+
+    {% if referral_dashboard %}
+    {% include "core/partials/_referral_dashboard.jinja" %}
+    {% endif %}
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-8">
