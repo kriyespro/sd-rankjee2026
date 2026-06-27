@@ -1,71 +1,104 @@
 {% extends "base.jinja" %}
-{% block title %}Sign Up Free - RankJee{% endblock %}
+{% block title %}Join Free - RankJee{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto mt-16 mb-24 px-4">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-8">
+<div class="max-w-lg mx-auto mt-12 mb-24 px-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8">
         <div class="text-center mb-6">
-            <div class="text-4xl mb-3 drop-shadow-sm">🚀</div>
-            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Start Earning</h2>
-            <p class="text-slate-500 mt-2 text-sm font-medium">Create your free account and get ₹50 free credit instantly!</p>
+            <div class="text-4xl mb-3 drop-shadow-sm">✨</div>
+            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Join RankJee — it's free</h2>
+            <p class="text-slate-500 mt-2 text-sm font-medium leading-relaxed">
+                Students practice for exams. Parents find tutors. Tutors get students.<br>
+                <span class="text-emerald-600 font-bold">Get ₹50 free credit</span> when you sign up.
+            </p>
         </div>
-        {% set google_process = 'signup' %}
-        {% include 'users/partials/_google_signin_button.jinja' %}
-        <div class="relative my-6">
-            <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-slate-200"></div>
-            </div>
-            <div class="relative flex justify-center text-xs uppercase">
-                <span class="bg-white px-3 text-slate-500 font-semibold tracking-wide">or sign up with email</span>
-            </div>
-        </div>
-        <form method="post" action="{{ url('users:signup') }}">
+
+        <p class="text-xs font-black uppercase tracking-wider text-slate-500 mb-3">Step 1 — Pick who you are</p>
+        <form method="post" action="{{ url('users:signup') }}" class="space-y-5">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            <div class="space-y-4 flex flex-col">
-                {% for field in form %}
-                <div class="flex flex-col">
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">{{ field.label }}</label>
-                    {% if field.field.widget.input_type == 'select' %}
-                        <select
-                            name="{{ field.html_name }}"
-                            id="{{ field.id_for_label }}"
-                            class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-slate-50 focus:bg-white text-sm"
-                        >
-                            {% for value, label in field.field.choices %}
-                                <option value="{{ value }}" {% if field.value() == value %}selected{% endif %}>{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    {% else %}
-                        <input type="{{ field.field.widget.input_type }}"
-                            name="{{ field.html_name }}"
-                            id="{{ field.id_for_label }}"
-                            class="w-full border border-slate-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-slate-50 focus:bg-white text-sm"
-                            {% if field.value() %}value="{{ field.value() }}"{% endif %}>
-                    {% endif %}
-                    {% if field.errors %}
-                        {% for error in field.errors %}
-                        <p class="text-rose-500 text-xs font-semibold mt-1">{{ error }}</p>
-                        {% endfor %}
-                    {% endif %}
-                </div>
+
+            <div class="grid gap-3">
+                {% set role_cards = [
+                    ('STUDENT', '📚', 'Student', 'Practice tests, videos & track your progress'),
+                    ('PARENT', '👨‍👩‍👧', 'Parent', 'Find trusted tutors for your child'),
+                    ('TUTOR', '🎓', 'Tutor', 'List yourself & get demo requests'),
+                ] %}
+                {% set selected_role = form.role.value() or selected_role or form.role.initial or 'STUDENT' %}
+                {% for value, icon, title, desc in role_cards %}
+                <label class="flex items-start gap-3 rounded-xl border-2 p-4 cursor-pointer transition-colors
+                    {% if selected_role == value %}border-indigo-500 bg-indigo-50/60{% else %}border-slate-200 hover:border-indigo-200{% endif %}">
+                    <input type="radio" name="role" value="{{ value }}" class="mt-1"
+                           {% if selected_role == value %}checked{% endif %}>
+                    <span class="text-2xl leading-none">{{ icon }}</span>
+                    <span>
+                        <span class="block font-black text-slate-900">{{ title }}</span>
+                        <span class="block text-xs text-slate-500 mt-0.5 font-medium">{{ desc }}</span>
+                    </span>
+                </label>
                 {% endfor %}
             </div>
-            
-            <button type="submit" class="w-full mt-8 bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition-colors shadow-sm focus:ring-4 focus:ring-indigo-100">
-                Create Free Account &rarr;
-            </button>
-            
-            {# Referral code input #}
-            <div class="mt-6 pt-6 border-t border-slate-100 flex flex-col">
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Referral Code <span class="text-slate-400 font-medium normal-case">(optional)</span></label>
+            {% if form.role.errors %}
+            <p class="text-rose-600 text-xs font-semibold">{{ form.role.errors|join(', ') }}</p>
+            {% endif %}
+
+            <div class="relative my-2">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+                <div class="relative flex justify-center text-xs uppercase">
+                    <span class="bg-white px-3 text-slate-500 font-semibold tracking-wide">Step 2 — Your account</span>
+                </div>
+            </div>
+
+            {% set google_process = 'signup' %}
+            {% include 'users/partials/_google_signin_button.jinja' %}
+            <p class="text-center text-xs text-slate-400 font-medium">or use email below</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label for="id_username" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username</label>
+                    <input type="text" name="username" id="id_username" required
+                           value="{{ form.username.value() or '' }}"
+                           placeholder="e.g. priya2026"
+                           class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white">
+                    {% if form.username.errors %}<p class="text-rose-500 text-xs font-semibold mt-1">{{ form.username.errors|join(', ') }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="id_email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Email</label>
+                    <input type="email" name="email" id="id_email" required
+                           value="{{ form.email.value() or '' }}"
+                           placeholder="you@email.com"
+                           class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white">
+                    {% if form.email.errors %}<p class="text-rose-500 text-xs font-semibold mt-1">{{ form.email.errors|join(', ') }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="id_password1" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Password</label>
+                    <input type="password" name="password1" id="id_password1" required
+                           class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white">
+                    {% if form.password1.errors %}<p class="text-rose-500 text-xs font-semibold mt-1">{{ form.password1.errors|join(', ') }}</p>{% endif %}
+                </div>
+                <div>
+                    <label for="id_password2" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Confirm password</label>
+                    <input type="password" name="password2" id="id_password2" required
+                           class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50 focus:bg-white">
+                    {% if form.password2.errors %}<p class="text-rose-500 text-xs font-semibold mt-1">{{ form.password2.errors|join(', ') }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Referral code <span class="text-slate-400 font-medium normal-case">(optional)</span>
+                </label>
                 <input type="text" name="referral_code" value="{{ ref_code }}"
                        placeholder="e.g. A1B2C3D4"
-                       class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow bg-slate-50 focus:bg-white font-mono uppercase">
-                <p class="text-sm text-slate-600 font-semibold mt-2 leading-tight">Got a referral code? Enter it and your referrer earns a bonus!</p>
+                       class="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm font-mono uppercase bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
             </div>
+
+            <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-black text-sm hover:bg-slate-900 transition-colors shadow-sm">
+                Create free account →
+            </button>
         </form>
     </div>
-    <p class="mt-8 text-center text-sm font-medium text-slate-500">Already have an account?
-        <a href="{{ url('users:login') }}" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">Log in</a>
+    <p class="mt-8 text-center text-sm font-medium text-slate-500">
+        Already have an account?
+        <a href="{{ url('users:login') }}" class="text-indigo-600 font-bold hover:text-indigo-800">Log in</a>
     </p>
 </div>
 {% endblock %}

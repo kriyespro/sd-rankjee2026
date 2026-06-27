@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -35,7 +36,9 @@ from .services import (
     notify_engagement_confirm,
     masked_email,
     masked_phone,
+    paginated_tutor_page,
     public_tutor_queryset,
+    top_featured_tutor_cards,
     tutor_to_card_dict,
 )
 
@@ -62,23 +65,32 @@ def _title_case(value: str) -> str:
     return " ".join(part.capitalize() for part in value.split())
 
 
+def _pagination_query(request) -> str:
+    q = request.GET.copy()
+    q.pop("page", None)
+    return q.urlencode()
+
+
+@transaction.non_atomic_requests
 def tutor_list(request):
-    tutors = public_tutor_queryset(request.GET)
-    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
-    cards = attach_demo_status_to_cards(cards, request.user)
+    cards, page_obj = paginated_tutor_page(request.GET, request.GET.get("page"), user=request.user)
+    featured = top_featured_tutor_cards(request.GET, user=request.user)
     return render(
         request,
         'hometutor/list.jinja',
         {
             'tutor_cards': cards,
+            'page_obj': page_obj,
+            'pagination_query': _pagination_query(request),
             'hometutor_pilot_city': PILOT_CITY,
-            'featured_tutor_cards': cards[:3],
+            'featured_tutor_cards': featured,
             **_tutor_filter_context(request),
             **hometutor_landing_page_context(),
         },
     )
 
 
+@transaction.non_atomic_requests
 def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, location_slug=None):
     city = _title_case(_unslug(city_slug))
     subject = _title_case(_unslug(subject_slug or ""))
@@ -92,9 +104,7 @@ def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, locati
     if location:
         filters["area"] = location
 
-    tutors = public_tutor_queryset(filters)
-    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
-    cards = attach_demo_status_to_cards(cards, request.user)
+    cards, page_obj = paginated_tutor_page(filters, request.GET.get("page"), user=request.user)
 
     city_tutors = public_tutor_queryset({"city": city})[:50]
     related_subjects = []
@@ -165,6 +175,8 @@ def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, locati
         "hometutor/list.jinja",
         {
             "tutor_cards": cards,
+            "page_obj": page_obj,
+            "pagination_query": _pagination_query(request),
             "hometutor_pilot_city": PILOT_CITY,
             "is_seo_landing": True,
             "landing_city": city,
@@ -177,7 +189,7 @@ def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, locati
             "seo_description": seo_description,
             "canonical_url": request.build_absolute_uri(canonical_path),
             "faq_items": faq_items,
-            "featured_tutor_cards": cards[:3],
+            "featured_tutor_cards": top_featured_tutor_cards(filters, user=request.user),
             **_tutor_filter_context(request),
             **hometutor_landing_page_context(),
         },
@@ -448,6 +460,12 @@ def my_demo_requests(request):
             )
         }
         demos = [refreshed[d.pk] for d in demos]
+    paid_engagement_ids = set(
+        MarketplaceOrder.objects.filter(
+            engagement__demo_request__requester=request.user,
+            status=MarketplaceOrder.Status.SUCCESS,
+        ).values_list("engagement_id", flat=True)
+    )
     for d in demos:
         d.marketplace_paid = False
         d.engagement_pay_id = None
@@ -460,8 +478,7 @@ def my_demo_requests(request):
         if eng.status != TutorEngagement.Status.ACTIVE:
             continue
         d.engagement_pay_id = eng.pk
-        mo = MarketplaceOrder.objects.filter(engagement_id=eng.pk).first()
-        d.marketplace_paid = bool(mo and mo.status == MarketplaceOrder.Status.SUCCESS)
+        d.marketplace_paid = eng.pk in paid_engagement_ids
     return render(
         request,
         'hometutor/my_demo_requests.jinja',

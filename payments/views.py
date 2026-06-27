@@ -150,6 +150,8 @@ def _apply_successful_order(order: PaymentOrder, user):
         sub.end_date = base + timedelta(days=plan_obj.duration_days)
         sub.is_active = True
         sub.save()
+    from core.middleware import invalidate_user_premium_cache
+    invalidate_user_premium_cache(user.pk)
 
 
 @login_required

@@ -1,0 +1,52 @@
+{# How it works — role-specific signup links (?role= pre-selects on signup page) #}
+<section id="how-it-works" class="home-how-it-works scroll-mt-20 relative overflow-hidden border-b" aria-labelledby="home-how-it-works-title">
+    <div class="pointer-events-none absolute inset-0 opacity-90" style="background-image:radial-gradient(circle at 18% 0%,color-mix(in srgb,var(--rj-gold) 14%,transparent) 0%,transparent 42%),radial-gradient(circle at 88% 100%,color-mix(in srgb,var(--rj-saffron) 10%,transparent) 0%,transparent 40%);"></div>
+
+    <div class="relative z-10 max-w-6xl mx-auto px-4 py-16 md:py-24">
+        <div class="home-services-head home-how-head text-center max-w-3xl mx-auto">
+            <p class="home-kicker text-xs font-black uppercase tracking-[0.2em] mb-3">How it works</p>
+            <div class="home-bento-intro-rule" aria-hidden="true"></div>
+            <h2 id="home-how-it-works-title" class="home-how-title text-3xl md:text-5xl font-black tracking-tight mb-4">
+                Join in <span class="home-how-title-accent">3 simple steps</span>
+            </h2>
+            <p class="home-bento-lead home-how-lead font-medium">
+                Pick who you are, create a free account, and you&apos;re in — no long forms.
+                Get <span class="home-how-credit">₹50 free credit</span> on signup.
+            </p>
+            <ol class="home-how-steps flex flex-wrap items-center justify-center gap-x-2 gap-y-2 md:gap-x-3" aria-label="Signup steps">
+                <li class="home-how-step"><span class="home-how-step-num">1</span> Pick your role</li>
+                <li class="home-how-step-arrow" aria-hidden="true">→</li>
+                <li class="home-how-step"><span class="home-how-step-num">2</span> Free account</li>
+                <li class="home-how-step-arrow" aria-hidden="true">→</li>
+                <li class="home-how-step"><span class="home-how-step-num">3</span> Start in ~30 sec</li>
+            </ol>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-3 md:gap-6">
+            {% set join_cards = [
+                ('STUDENT', '📚', 'Student', 'Practice tests & videos for JEE, NEET & boards', 'Free diagnostics · Track weak topics · Earn while you learn', 'Start learning free'),
+                ('PARENT', '👨‍👩‍👧', 'Parent', 'Find a trusted home tutor for your child', 'Browse verified tutors · Book a free demo · No pressure', 'Find a tutor'),
+                ('TUTOR', '🎓', 'Tutor', 'List yourself & get student demo requests', 'Quick 4-field setup · Grow in your city · Earn from referrals', 'Join as tutor'),
+            ] %}
+            {% for role, icon, title, tagline, perks, cta in join_cards %}
+            <a href="{{ url('users:signup') }}?role={{ role }}"
+               class="home-how-card group flex flex-col rounded-2xl border border-slate-200/90 bg-white/95 p-6 md:p-7 shadow-[0_14px_40px_-28px_rgba(13,43,94,0.22)] transition-all hover:border-indigo-200 hover:shadow-[0_20px_48px_-24px_rgba(13,43,94,0.28)] hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2">
+                <span class="text-3xl mb-4" aria-hidden="true">{{ icon }}</span>
+                <h3 class="text-lg font-black tracking-tight" style="color:var(--rj-navy);">{{ title }}</h3>
+                <p class="text-sm font-semibold text-slate-700 mt-1.5 leading-snug">{{ tagline }}</p>
+                <p class="text-xs text-slate-500 mt-2 leading-relaxed flex-1">{{ perks }}</p>
+                <span class="home-how-card-cta mt-5 inline-flex items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-black text-white transition-colors group-hover:brightness-105"
+                      {% if role == 'TUTOR' %}style="background:var(--rj-saffron);"{% elif role == 'PARENT' %}style="background:var(--rj-navy);"{% else %}style="background:#4f46e5;"{% endif %}>
+                    {{ cta }}
+                    <span aria-hidden="true">→</span>
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <p class="text-center text-sm text-slate-500 font-medium mt-10">
+            Already have an account?
+            <a href="{{ url('users:login') }}" class="font-bold text-indigo-600 hover:text-indigo-800">Log in</a>
+        </p>
+    </div>
+</section>

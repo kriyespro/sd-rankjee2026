@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.contrib import messages
 from django.core.cache import cache
@@ -253,9 +254,18 @@ def handler404(request, exception):
     return redirect("core:home")
 
 
+@transaction.non_atomic_requests
 def home(request):
     now = timezone.now()
-    jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
+    jackpot = cache.get("home_active_jackpot")
+    if jackpot is None:
+        jackpot = (
+            DailyJackpot.objects.filter(is_active=True, is_completed=False)
+            .select_related("skill")
+            .order_by("scheduled_time")
+            .first()
+        )
+        cache.set("home_active_jackpot", jackpot, timeout=60)
     time_to_go = int((jackpot.scheduled_time - now).total_seconds()) if jackpot else 0
 
     # Cache featured tutors for 5 minutes — they change rarely, hit on every home load
@@ -355,6 +365,7 @@ def request_tutor(request):
     )
 
 
+@transaction.non_atomic_requests
 def courses(request):
     ref_code = (request.GET.get("ref") or "").strip().upper()
     if ref_code:
@@ -384,6 +395,7 @@ def courses(request):
     )
 
 
+@transaction.non_atomic_requests
 def course_detail(request, slug):
     ref_code = (request.GET.get("ref") or "").strip().upper()
     if ref_code:
@@ -571,6 +583,7 @@ def course_city_landing(request, slug, city_slug):
 
 
 @login_required
+@transaction.non_atomic_requests
 def earnings(request):
     user = request.user
 
@@ -583,7 +596,7 @@ def earnings(request):
     )
 
     total_earned = user.wallet_balance
-    wallet_transactions = user.wallet_transactions.select_related("user").order_by("-created_at")[:20]
+    wallet_transactions = user.wallet_transactions.order_by("-created_at")[:20]
     # Reuse cached catalogue from courses view (10-min TTL)
     active_courses = cache.get("active_courses_qs")
     if active_courses is None:
@@ -619,13 +632,20 @@ def earnings(request):
         user.course_referrals.select_related("course", "lead_user")
         .order_by("-created_at")[:80]
     )
-    course_ref_agg = user.course_referrals.aggregate(
-        pending_n=Count("id", filter=Q(status=CourseReferral.Status.PENDING)),
-        success_n=Count("id", filter=Q(status=CourseReferral.Status.SUCCESS)),
-        success_total=Sum("commission_amount", filter=Q(status=CourseReferral.Status.SUCCESS)),
-    )
-    course_commission_paid = course_ref_agg["success_total"] or 0
     referral_dashboard = referral_dashboard_stats(user) if ref_code else None
+    if referral_dashboard:
+        course_ref_pending_n = referral_dashboard["pending_n"]
+        course_ref_success_n = referral_dashboard["success_n"]
+        course_commission_paid = referral_dashboard["earned_total"]
+    else:
+        course_ref_agg = user.course_referrals.aggregate(
+            pending_n=Count("id", filter=Q(status=CourseReferral.Status.PENDING)),
+            success_n=Count("id", filter=Q(status=CourseReferral.Status.SUCCESS)),
+            success_total=Sum("commission_amount", filter=Q(status=CourseReferral.Status.SUCCESS)),
+        )
+        course_ref_pending_n = course_ref_agg["pending_n"] or 0
+        course_ref_success_n = course_ref_agg["success_n"] or 0
+        course_commission_paid = course_ref_agg["success_total"] or 0
 
     return render(
         request,
@@ -642,8 +662,8 @@ def earnings(request):
             "whatsapp_share_all_url": whatsapp_share_all_url,
             "course_whatsapp_urls": course_whatsapp_urls,
             "course_referrals": course_referrals,
-            "course_ref_pending_n": course_ref_agg["pending_n"] or 0,
-            "course_ref_success_n": course_ref_agg["success_n"] or 0,
+            "course_ref_pending_n": course_ref_pending_n,
+            "course_ref_success_n": course_ref_success_n,
             "course_commission_paid": course_commission_paid,
             "referral_lead_discount_pct": REFERRAL_LEAD_DISCOUNT_PERCENT,
             "referral_commission_pct": REFERRAL_COMMISSION_PERCENT_DEFAULT,

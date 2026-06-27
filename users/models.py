@@ -106,6 +106,9 @@ class CustomUser(AbstractUser):
     @property
     def is_premium(self):
         """Exam Pro (payments subscription), VIP tester flag, or active paid/complimentary sub."""
+        cached = getattr(self, "_cached_is_premium", None)
+        if cached is not None:
+            return cached
         if getattr(self, 'role', None) == self.Role.VIP_USER:
             return True
         if self.is_vip_testing_user:

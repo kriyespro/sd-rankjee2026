@@ -7,6 +7,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Prefetch
 from django.urls import reverse
 from users.models import CustomUser
 from .models import (
@@ -24,9 +25,15 @@ from users.gamification import on_test_submitted
 from core.hometutor_data import PILOT_CITY
 
 @login_required
+@transaction.non_atomic_requests
 def test_index(request):
-    paths = SkillPath.objects.filter(is_active=True).prefetch_related('skills')
-    unassigned_skills = Skill.objects.filter(is_active=True, path__isnull=True)
+    paths = SkillPath.objects.filter(is_active=True).prefetch_related(
+        Prefetch(
+            "skills",
+            queryset=Skill.objects.filter(is_active=True).order_by("order"),
+        )
+    )
+    unassigned_skills = Skill.objects.filter(is_active=True, path__isnull=True).order_by("order")[:50]
     attempts = UserAttempt.objects.filter(user=request.user).values_list('skill_id', flat=True)
     is_premium_user = bool(request.user.is_premium or request.user.is_staff or request.user.is_superuser)
     pro_locked_skill_ids = set(
@@ -115,7 +122,12 @@ def mock_test_landing(request, exam_slug, city_slug=None):
 def jackpot_lobby(request):
     now = timezone.now()
     # Find the nearest active jackpot (current or future)
-    jackpot = DailyJackpot.objects.filter(is_active=True, is_completed=False).order_by('scheduled_time').first()
+    jackpot = (
+        DailyJackpot.objects.filter(is_active=True, is_completed=False)
+        .select_related("skill")
+        .order_by("scheduled_time")
+        .first()
+    )
     
     if not jackpot:
         return render(request, 'assessment/jackpot_lobby.jinja', {'no_jackpot': True, 'seo_noindex': True})
@@ -133,7 +145,12 @@ def jackpot_lobby(request):
     
     # Get previous winners for social proof
     last_jackpot = DailyJackpot.objects.filter(is_completed=True).order_by('-scheduled_time').first()
-    recent_winners = last_jackpot.winners.all()[:10] if last_jackpot else []
+    recent_winners = (
+        JackpotWinner.objects.filter(jackpot=last_jackpot)
+        .select_related("user")[:10]
+        if last_jackpot
+        else []
+    )
 
     return render(request, 'assessment/jackpot_lobby.jinja', {
         'jackpot': jackpot,

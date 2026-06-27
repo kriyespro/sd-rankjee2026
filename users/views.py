@@ -34,11 +34,30 @@ PUBLIC_SELF_ASSIGNABLE_ROLES = {
     CustomUser.Role.PARENT,
     CustomUser.Role.TUTOR,
 }
+SIGNUP_ROLE_QUERY_VALUES = {r.value for r in PUBLIC_SELF_ASSIGNABLE_ROLES}
 
 
-def _post_auth_redirect(request, fallback="learning:index"):
-    if request.user.is_authenticated and not getattr(request.user, "onboarding_completed", True):
+def _signup_role_from_request(request):
+    role = (request.GET.get("role") or "").strip().upper()
+    if role in SIGNUP_ROLE_QUERY_VALUES:
+        return role
+    return CustomUser.Role.STUDENT
+
+
+def _incomplete_onboarding_url_name(request):
+    """Social signups pick a role first; email signups already chose one at signup."""
+    if request.session.get("needs_role_picker"):
         return "users:onboarding_role"
+    if request.user.role in PUBLIC_SELF_ASSIGNABLE_ROLES:
+        return "users:onboarding_profile"
+    return "users:onboarding_role"
+
+
+def _post_auth_redirect(request, fallback="learning:index", *, from_email_signup=False):
+    if request.user.is_authenticated and not getattr(request.user, "onboarding_completed", True):
+        if from_email_signup:
+            return "users:onboarding_profile"
+        return _incomplete_onboarding_url_name(request)
     next_url = request.POST.get("next") or request.GET.get("next") or ""
     if next_url.startswith("/") and not next_url.startswith("//"):
         return next_url
@@ -105,7 +124,8 @@ def signup_view(request):
             user = form.save()
             if user.role not in PUBLIC_SELF_ASSIGNABLE_ROLES:
                 user.role = CustomUser.Role.STUDENT
-                user.save(update_fields=['role'])
+            user.onboarding_completed = False
+            user.save(update_fields=['role', 'onboarding_completed'])
             user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
             try_apply_signup_pro_trial(user)
 
@@ -118,14 +138,23 @@ def signup_view(request):
             _update_streak(user)
             # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
             transaction.on_commit(lambda uid=user.id: _enqueue_welcome_email(uid))
-            return redirect(_post_auth_redirect(request))
+            return redirect(_post_auth_redirect(request, from_email_signup=True))
     else:
-        form = CustomUserCreationForm()
+        role_initial = _signup_role_from_request(request)
+        form = CustomUserCreationForm(initial={"role": role_initial})
     ref_code = (request.GET.get("ref") or request.POST.get("referral_code") or "").strip().upper()
     if request.method != "POST" and ref_code:
         request.session["pending_referral_code"] = ref_code
         log_referral_click(request, ref_code)
-    return render(request, "users/signup.jinja", {"form": form, "ref_code": ref_code})
+    return render(
+        request,
+        "users/signup.jinja",
+        {
+            "form": form,
+            "ref_code": ref_code,
+            "selected_role": _signup_role_from_request(request) if request.method != "POST" else (request.POST.get("role") or CustomUser.Role.STUDENT),
+        },
+    )
 
 
 def login_view(request):
@@ -172,7 +201,7 @@ def profile_view(request):
         messages.success(request, 'Public hiring profile updated.')
         return redirect('users:profile')
 
-    attempts = UserAttempt.objects.filter(user=request.user).order_by('-attempt_date')
+    attempts = UserAttempt.objects.filter(user=request.user).select_related("skill").order_by('-attempt_date')[:50]
     total_earned = UserTaskSubmission.objects.filter(
         user=request.user, status='APPROVED'
     ).aggregate(total=Sum('task__reward_amount'))['total'] or 0
@@ -284,6 +313,7 @@ def onboarding_role(request):
             role = form.cleaned_data['role']
             request.user.role = role
             request.user.save(update_fields=['role'])
+            request.session.pop('needs_role_picker', None)
             return redirect('users:onboarding_profile')
     else:
         form = RoleSelectionForm(initial={'role': request.user.role})
@@ -307,11 +337,10 @@ def onboarding_profile(request):
             tutor_initial = {
                 'display_name': (request.user.get_full_name() or request.user.username).strip(),
                 'city': PILOT_CITY,
-                'subjects': 'Math, Science',
-                'languages': 'English, Hindi',
-                'area': '',
-                'fee_label': 'from ₹5000/mo',
-                'bio': 'Experienced tutor focused on exam-ready outcomes and consistent practice.',
+                'subjects': '',
+                'teaching_mode': TutorProfile.TeachingMode.HYBRID,
+                'teaches_from': 6,
+                'teaches_to': 12,
             }
         if request.method == 'POST':
             form = TutorOnboardingForm(request.POST, instance=profile)
@@ -333,16 +362,23 @@ def onboarding_profile(request):
                 'form': form,
                 'role': role,
                 'role_label': 'Tutor',
+                'quick_fields': TutorOnboardingForm.QUICK_FIELDS,
+                'optional_fields': TutorOnboardingForm.OPTIONAL_FIELDS,
             },
         )
 
     if request.method == 'POST':
+        if request.POST.get('action') == 'skip':
+            request.user.onboarding_completed = True
+            request.user.save(update_fields=['onboarding_completed'])
+            messages.info(request, 'You can finish your profile anytime from settings.')
+            return redirect('dashboard:index')
         form = StudentParentOnboardingForm(request.POST, instance=request.user)
         if form.is_valid():
             form.save()
             request.user.onboarding_completed = True
             request.user.save(update_fields=['onboarding_completed'])
-            messages.success(request, 'Profile setup complete.')
+            messages.success(request, 'Welcome! Your account is ready.')
             return redirect('dashboard:index')
     else:
         form = StudentParentOnboardingForm(instance=request.user)

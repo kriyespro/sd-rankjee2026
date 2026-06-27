@@ -17,6 +17,8 @@ def on_allauth_user_signed_up(request, user, **kwargs):
         if getattr(user, "onboarding_completed", True):
             user.onboarding_completed = False
             user.save(update_fields=["onboarding_completed"])
+        if request and hasattr(request, "session"):
+            request.session["needs_role_picker"] = True
         try_apply_signup_pro_trial(user)
         pending_code = ""
         if request and hasattr(request, "session"):

@@ -17,6 +17,8 @@ from .models import DemoRequest, PincodeGeo, TutorEngagement, TutorProfile
 
 logger = logging.getLogger('rankjee.hometutor')
 
+TUTORS_PER_PAGE = 24
+
 
 def get_tutor_profile(user) -> TutorProfile | None:
     if not user.is_authenticated:
@@ -203,6 +205,26 @@ def public_tutor_queryset(request_get):
                 qs = qs.none()
 
     return qs.order_by('-is_featured_home', '-rating_display', 'display_name')
+
+
+def paginated_tutor_page(request_get, page_number, user=None):
+    """Return (cards, page_obj) for marketplace listing — one page of tutors only."""
+    from django.core.paginator import Paginator
+
+    page = Paginator(public_tutor_queryset(request_get), TUTORS_PER_PAGE).get_page(page_number or 1)
+    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in page.object_list]
+    if user is not None:
+        cards = attach_demo_status_to_cards(cards, user)
+    return cards, page
+
+
+def top_featured_tutor_cards(request_get, user=None, limit: int = 3):
+    """Top N tutors for hero strip — separate lightweight query."""
+    tutors = list(public_tutor_queryset(request_get)[:limit])
+    cards = [tutor_to_card_dict(t, PILOT_CITY) for t in tutors]
+    if user is not None:
+        cards = attach_demo_status_to_cards(cards, user)
+    return cards
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:

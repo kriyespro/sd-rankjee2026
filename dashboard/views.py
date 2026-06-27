@@ -6,21 +6,22 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.http import FileResponse, Http404, HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.core.cache import cache
-from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max, OuterRef, Subquery
+from django.db.models import Sum, Q, Count, Avg, Case, When, IntegerField, Max, OuterRef, Subquery, Prefetch
 from django.contrib.auth import get_user_model
-from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta, date
-from assessment.models import UserAttempt, Question, Skill, UserSetAttempt
+from assessment.models import UserAttempt, Question, Skill, UserSetAttempt, QuestionSet
 from assessment.models import SkillPath
 from core.models import TutorLeadRequest, UserTaskSubmission
 from core.models import EarningTask
 from learning.models import ConceptVideo
 from users.models import Notification, WithdrawalRequest
+from users.views import _incomplete_onboarding_url_name
 from django.db import transaction
 import csv
 import io
@@ -1540,7 +1541,7 @@ def admin_student_daily_logs(request):
 @login_required
 def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
-        return redirect('users:onboarding_role')
+        return redirect(_incomplete_onboarding_url_name(request))
     role = getattr(request.user, 'role', 'STUDENT')
     if role == User.Role.VIP_USER:
         return vip_smart_dashboard(request)
@@ -1708,10 +1709,15 @@ def index(request):
         for attempt in my_exam_performance
     ]
 
-    attempts_count = UserAttempt.objects.filter(user=request.user).count()
-    passed_count = UserAttempt.objects.filter(user=request.user, passed=True).count()
-    total_attempts = UserAttempt.objects.filter(user=request.user).count()
-    progress = int((passed_count / total_attempts) * 100) if total_attempts > 0 else 0
+    attempt_stats = UserAttempt.objects.filter(user=request.user).aggregate(
+        total=Count("id"),
+        passed=Count("id", filter=Q(passed=True)),
+    )
+    attempts_count = attempt_stats["total"] or 0
+    passed_count = attempt_stats["passed"] or 0
+    total_attempts = attempts_count
+    total_skills = Skill.objects.filter(is_active=True).count()
+    progress = int((passed_count / total_skills) * 100) if total_skills > 0 else 0
 
     from assessment.models import SkillPath
     all_paths = SkillPath.objects.filter(is_active=True).order_by('level_order')
@@ -1724,17 +1730,29 @@ def index(request):
 
     total_earned = request.user.wallet_balance
     
-    # Filter skills by the selected path
-    skills = Skill.objects.filter(is_active=True, path=selected_path).order_by('order')
-    passed_set_ids = UserSetAttempt.objects.filter(user=request.user, passed=True).values_list('question_set_id', flat=True).distinct()
+    passed_set_ids = set(
+        UserSetAttempt.objects.filter(user=request.user, passed=True).values_list(
+            'question_set_id', flat=True
+        )
+    )
+    skills = (
+        Skill.objects.filter(is_active=True, path=selected_path)
+        .prefetch_related(
+            Prefetch(
+                "sets",
+                queryset=QuestionSet.objects.filter(is_active=True).order_by("order"),
+            )
+        )
+        .order_by("order")
+    )
     
     learning_path = []
-    prev_passed = True # First skill in the path is always unlocked
+    prev_passed = True
     
     for s in skills:
-        sets = s.sets.all().order_by('order')
-        total_sets = sets.count()
-        passed_sets_count = sets.filter(id__in=passed_set_ids).count()
+        sets = list(s.sets.all())
+        total_sets = len(sets)
+        passed_sets_count = sum(1 for qs in sets if qs.id in passed_set_ids)
         
         is_fully_passed = (passed_sets_count >= total_sets) if total_sets > 0 else False
         
@@ -1742,23 +1760,19 @@ def index(request):
         if prev_passed:
             status = 'PASSED' if is_fully_passed else 'UNLOCKED'
             
+        next_set = next((qs for qs in sets if qs.id not in passed_set_ids), None)
         learning_path.append({
             'skill': s,
             'status': status,
             'total_sets': total_sets,
             'passed_sets': passed_sets_count,
-            'next_set': sets.exclude(id__in=passed_set_ids).first()
+            'next_set': next_set,
         })
         
-        # Track for next skill unlock logic within this path
         prev_passed = is_fully_passed
 
     # Top 5 users for mini-leaderboard widget
     top_users = User.objects.order_by('-xp_points')[:5]
-
-    passed_count = UserAttempt.objects.filter(user=request.user, passed=True).count()
-    total_skills = Skill.objects.filter(is_active=True).count()
-    progress = int((passed_count / total_skills) * 100) if total_skills > 0 else 0
 
     # QW-04: simple next-badge hint (streak-based + first test)
     if attempts_count < 1:
@@ -1770,7 +1784,7 @@ def index(request):
     else:
         next_badge_hint = "You’re on fire — keep collecting badges by passing new skills."
 
-    latest_attempt = UserAttempt.objects.filter(user=request.user).order_by('-attempt_date').first()
+    latest_attempt = user_exam_attempts.first()
     weak_areas = latest_attempt.weak_concepts if latest_attempt else []
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
@@ -2036,10 +2050,10 @@ def leaderboard(request):
 
 @login_required
 def notifications(request):
-    notes = Notification.objects.filter(user=request.user)
-    # Mark all as read when viewed
-    notes.filter(is_read=False).update(is_read=True)
-    return render(request, 'dashboard/notifications.jinja', {'notifications': notes})
+    notes_qs = Notification.objects.filter(user=request.user).order_by('-created_at')
+    notes_qs.filter(is_read=False).update(is_read=True)
+    page = Paginator(notes_qs, 30).get_page(request.GET.get('page') or 1)
+    return render(request, 'dashboard/notifications.jinja', {'notifications': page, 'page_obj': page})
 
 
 @login_required

@@ -467,6 +467,91 @@
         color: color-mix(in srgb, var(--rj-navy) 58%, #64748b);
     }
 
+    /* How it works / join strip */
+    .home-how-it-works {
+        border-color: color-mix(in srgb, var(--rj-navy) 10%, #e2e8f0);
+        background: linear-gradient(180deg, #f6f4f1 0%, #fff 38%, #f8fafc 100%);
+    }
+    .home-how-head {
+        margin-bottom: 2.5rem;
+    }
+    @media (min-width: 768px) {
+        .home-how-head {
+            margin-bottom: 3rem;
+        }
+    }
+    .home-how-title {
+        color: var(--rj-navy);
+        font-family: Outfit, system-ui, sans-serif;
+        letter-spacing: -0.03em;
+        line-height: 1.08;
+    }
+    .home-how-title-accent {
+        color: var(--rj-saffron);
+        display: inline-block;
+    }
+    .home-how-lead {
+        margin-top: 0;
+        font-size: clamp(0.9375rem, 2.2vw, 1.0625rem);
+    }
+    .home-how-credit {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.12rem 0.5rem;
+        margin-left: 0.15rem;
+        border-radius: 0.375rem;
+        font-weight: 800;
+        font-size: 0.92em;
+        color: var(--rj-navy);
+        background: linear-gradient(135deg, color-mix(in srgb, var(--rj-gold) 32%, #fff) 0%, color-mix(in srgb, var(--rj-emerald) 14%, #fff) 100%);
+        border: 1px solid color-mix(in srgb, var(--rj-gold) 42%, #e2e8f0);
+        white-space: nowrap;
+    }
+    .home-how-steps {
+        list-style: none;
+        margin: 1.75rem auto 0;
+        padding: 0;
+        max-width: 40rem;
+    }
+    .home-how-step {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.45rem 0.9rem;
+        border-radius: 9999px;
+        background: color-mix(in srgb, #fff 88%, var(--rj-navy));
+        border: 1px solid color-mix(in srgb, var(--rj-navy) 12%, #e2e8f0);
+        box-shadow: 0 6px 18px -12px color-mix(in srgb, var(--rj-navy) 28%, transparent);
+        color: color-mix(in srgb, var(--rj-navy) 72%, #475569);
+        font-size: 0.8125rem;
+        font-weight: 800;
+        letter-spacing: 0.01em;
+    }
+    .home-how-step-num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.35rem;
+        height: 1.35rem;
+        border-radius: 9999px;
+        font-size: 0.6875rem;
+        font-weight: 900;
+        color: #fff;
+        background: linear-gradient(135deg, var(--rj-navy) 0%, color-mix(in srgb, var(--rj-navy) 75%, var(--rj-saffron)) 100%);
+        flex-shrink: 0;
+    }
+    .home-how-step-arrow {
+        color: color-mix(in srgb, var(--rj-saffron) 55%, #94a3b8);
+        font-weight: 900;
+        font-size: 0.875rem;
+        line-height: 1;
+    }
+    .home-how-card {
+        text-decoration: none;
+        color: inherit;
+    }
+
     /* Featured tutors strip */
     .home-find-tutors {
         background: var(--rj-surface);
@@ -796,6 +881,8 @@
         {% endif %}
     </div>
 </section>
+
+{% include 'core/partials/_home_how_it_works.jinja' %}
 
 <!-- Home tutor listings: DB-backed when seeded (HT-1); else static fallback (core/hometutor_data.py) -->
 <section id="find-tutors" class="scroll-mt-20 relative overflow-hidden" style="background:linear-gradient(180deg,#f8faff 0%,#f1f5ff 100%);">

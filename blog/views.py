@@ -266,15 +266,23 @@ def post_detail(request, slug):
     ).exclude(pk=post.pk)
     if post.category_id:
         related_posts = list(
-            related_qs.filter(category_id=post.category_id).order_by('-published_at', '-pk')[:3]
+            related_qs.filter(category_id=post.category_id)
+            .select_related("category")
+            .order_by('-published_at', '-pk')[:3]
         )
         if len(related_posts) < 3:
             needed = 3 - len(related_posts)
             existing_ids = [p.pk for p in related_posts]
-            fallback = related_qs.exclude(pk__in=existing_ids).order_by('-published_at', '-pk')[:needed]
+            fallback = (
+                related_qs.exclude(pk__in=existing_ids)
+                .select_related("category")
+                .order_by('-published_at', '-pk')[:needed]
+            )
             related_posts.extend(list(fallback))
     else:
-        related_posts = list(related_qs.order_by('-published_at', '-pk')[:3])
+        related_posts = list(
+            related_qs.select_related("category").order_by('-published_at', '-pk')[:3]
+        )
     seo_title = post.meta_title or f'{post.title} — RankJee Blog'
     seo_description = post.meta_description or (post.excerpt[:315] if post.excerpt else post.title)
     canonical = request.build_absolute_uri(request.path)

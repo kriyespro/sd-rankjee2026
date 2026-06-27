@@ -1,40 +1,87 @@
 {% extends "base.jinja" %}
-{% block title %}Complete profile · RankJee{% endblock %}
+{% block title %}Almost done · RankJee{% endblock %}
 
 {% block content %}
-<section class="max-w-3xl mx-auto px-4 py-12">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
-        <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Complete your {{ role_label }} profile</h1>
-        <p class="text-slate-600 text-sm mt-2">
+<section class="max-w-2xl mx-auto px-4 py-12" {% if role == 'TUTOR' %}x-data="{ showMore: false }"{% endif %}>
+    <div class="text-center mb-8">
+        <p class="text-xs font-black uppercase tracking-widest text-indigo-600">Quick setup · 2 of 2</p>
+        <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-2">
             {% if role == 'TUTOR' %}
-            Add core tutoring details now. You can refine your full listing after this step.
+            Set up your tutor listing
+            {% elif role == 'PARENT' %}
+            Hi parent — just your name
             {% else %}
-            Add basic account details to personalize your experience.
+            Hi — what's your name?
+            {% endif %}
+        </h1>
+        <p class="text-slate-600 text-sm mt-2 max-w-md mx-auto">
+            {% if role == 'TUTOR' %}
+            Only 4 quick fields to go live. Add photo, fees & bio later from your dashboard.
+            {% else %}
+            Takes 10 seconds. You can fill the rest later.
             {% endif %}
         </p>
+    </div>
 
-        <form method="post" class="mt-6 space-y-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
+        <form method="post" class="space-y-4">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            {% for field in form %}
-            <div>
-                <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1">
-                    {{ field.label }}
-                </label>
-                {{ field }}
-                {% if field.help_text %}
-                <p class="text-xs text-slate-500 mt-1">{{ field.help_text }}</p>
-                {% endif %}
-                {% if field.errors %}
-                <p class="text-xs text-rose-700 mt-1">{{ field.errors|join(', ') }}</p>
-                {% endif %}
-            </div>
-            {% endfor %}
+
+            {% if role == 'TUTOR' %}
+                {% for field_name in quick_fields %}
+                {% set field = form[field_name] %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}<p class="text-xs text-rose-700 mt-1 font-semibold">{{ field.errors|join(', ') }}</p>{% endif %}
+                </div>
+                {% endfor %}
+
+                <button type="button" @click="showMore = !showMore"
+                        class="w-full text-left text-sm font-bold text-indigo-600 hover:text-indigo-800 py-2">
+                    <span x-text="showMore ? '− Hide optional details' : '+ Add optional details (area, classes, fee, bio)'"></span>
+                </button>
+
+                <div x-show="showMore" x-cloak class="space-y-4 border-t border-slate-100 pt-4">
+                    {% for field_name in optional_fields %}
+                    {% set field = form[field_name] %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}<p class="text-xs text-rose-700 mt-1">{{ field.errors|join(', ') }}</p>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}" class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5">
+                        {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}<p class="text-xs text-rose-700 mt-1 font-semibold">{{ field.errors|join(', ') }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            {% endif %}
+
             {% if form.non_field_errors() %}
             <p class="text-sm text-rose-700 font-semibold">{{ form.non_field_errors()|join(', ') }}</p>
             {% endif %}
-            <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3 text-white text-sm font-black hover:bg-indigo-500">
-                Finish setup
+
+            <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-3.5 text-white text-sm font-black hover:bg-indigo-500 shadow-sm">
+                {% if role == 'TUTOR' %}Publish my listing →{% else %}Go to my dashboard →{% endif %}
             </button>
+
+            {% if role != 'TUTOR' %}
+            <button type="submit" name="action" value="skip"
+                    class="w-full text-center text-sm font-semibold text-slate-500 hover:text-slate-700 py-2">
+                Skip for now
+            </button>
+            {% endif %}
         </form>
     </div>
 </section>

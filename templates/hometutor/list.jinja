@@ -282,7 +282,9 @@
   <div class="ht-wrap">
     <p class="ht-lbl">Find tutors</p>
     <h2 class="ht-title">
-      {% if tutor_cards %}
+      {% if page_obj and page_obj.paginator.count %}
+        {{ page_obj.paginator.count }} tutor{{ 's' if page_obj.paginator.count != 1 else '' }} in {{ display_city }}
+      {% elif tutor_cards %}
         {{ tutor_cards|length }} tutor{{ 's' if tutor_cards|length != 1 else '' }} in {{ display_city }}
       {% else %}
         Search our directory
@@ -381,12 +383,14 @@
     </div>
 
     {# ── Tutor grid ── #}
+    <div id="tutor-results">
     {% if tutor_cards %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-2">
       {% for t in tutor_cards %}
       {% include "hometutor/partials/_tutor_card.jinja" %}
       {% endfor %}
     </div>
+    {% include "hometutor/partials/_tutor_pagination.jinja" %}
     {% else %}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center mt-2">
       <p class="text-3xl mb-3">🔍</p>
@@ -398,6 +402,7 @@
          class="ht-btn ht-btn-primary !text-sm">View all tutors in {{ hometutor_pilot_city }}</a>
     </div>
     {% endif %}
+    </div>
   </div>
 </section>
 
