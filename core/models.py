@@ -227,7 +227,7 @@ class ReferralLinkClick(models.Model):
     class Meta:
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["referrer", "-created_at"]),
+            models.Index(fields=["referrer", "-created_at"], name="core_referr_referre_0a8f0d_idx"),
         ]
 
     def __str__(self):
