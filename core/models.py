@@ -205,6 +205,36 @@ class CourseReferral(models.Model):
         return f"{self.referrer} → {self.course.title} ({self.status})"
 
 
+class ReferralLinkClick(models.Model):
+    """Anonymous link visits via ?ref=CODE (deduped per session + path per day)."""
+
+    referrer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="referral_link_clicks",
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referral_link_clicks",
+    )
+    path = models.CharField(max_length=200, blank=True)
+    session_key = models.CharField(max_length=40, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["referrer", "-created_at"]),
+        ]
+
+    def __str__(self):
+        label = self.course.title if self.course_id else "catalog"
+        return f"{self.referrer_id} ← click ({label})"
+
+
 class LegalPage(models.Model):
     """Editable legal/policy pages rendered on public routes and managed from /sd/."""
 

@@ -25,6 +25,7 @@ from .gamification import on_streak_login, send_notification
 from .models import CompanyInquiry, CustomUser, PublicProfile
 from .referrals import process_referral_signup
 from .subscription import try_apply_signup_pro_trial
+from core.services_referral_dashboard import log_referral_click
 from .tasks import send_welcome_email
 
 logger = logging.getLogger("rankjee.signup")
@@ -120,10 +121,11 @@ def signup_view(request):
             return redirect(_post_auth_redirect(request))
     else:
         form = CustomUserCreationForm()
-    ref_code = request.GET.get('ref', '')
-    if ref_code:
-        request.session["pending_referral_code"] = ref_code.strip().upper()
-    return render(request, 'users/signup.jinja', {'form': form, 'ref_code': ref_code})
+    ref_code = (request.GET.get("ref") or request.POST.get("referral_code") or "").strip().upper()
+    if request.method != "POST" and ref_code:
+        request.session["pending_referral_code"] = ref_code
+        log_referral_click(request, ref_code)
+    return render(request, "users/signup.jinja", {"form": form, "ref_code": ref_code})
 
 
 def login_view(request):

@@ -2,6 +2,36 @@
 {% block title %}Course earnings - RankJee{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-8 md:py-12" x-data="{ showSignupLink: false }">
+    {% if referral_code and courses_hub_ref_url %}
+    <div class="mb-6 rounded-2xl border border-indigo-200 bg-white p-4 sm:p-5 shadow-sm" x-data="{ copied: false, link: '{{ courses_hub_ref_url }}' }">
+        <p class="text-[10px] font-black uppercase tracking-widest text-indigo-600 mb-2">Your referral link</p>
+        <div class="relative">
+            <input type="text" x-model="link" readonly
+                   class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 pr-28 text-sm text-slate-800 font-mono select-all break-all">
+            <button type="button"
+                    @click="navigator.clipboard.writeText(link); copied = true; setTimeout(() => copied = false, 2000)"
+                    class="absolute right-2 top-2 bottom-2 px-4 rounded-lg bg-indigo-600 text-white text-xs font-black hover:bg-indigo-700 active:scale-[0.98] transition-all">
+                <span x-show="!copied">Copy link</span>
+                <span x-show="copied" x-cloak>Copied ✓</span>
+            </button>
+        </div>
+        <p class="mt-2.5 text-xs text-slate-500 font-medium leading-relaxed">
+            Code <strong class="font-mono text-slate-800">{{ referral_code }}</strong> —
+            share this link so friends browse courses with your referral attached. They get
+            <strong class="text-slate-700">{{ referral_lead_discount_pct }}% off</strong> at checkout; you earn
+            <strong class="text-slate-700">{{ referral_commission_pct }}%</strong> when they pay.
+        </p>
+    </div>
+    {% if referral_dashboard %}
+    {% include "core/partials/_referral_dashboard.jinja" %}
+    {% endif %}
+    {% else %}
+    <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+        <p class="font-black">No referral code yet</p>
+        <p class="mt-1 font-medium text-amber-900">Open your <a href="{{ url('users:profile') }}" class="underline font-black">profile</a> or contact support to get a code for sharing.</p>
+    </div>
+    {% endif %}
+
     <div class="mb-10 rounded-3xl border border-indigo-400/25 bg-gradient-to-br from-rj-navy via-indigo-900 to-indigo-950 p-6 sm:p-8 shadow-xl shadow-indigo-950/30 text-white relative overflow-hidden">
         <div class="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-rj-saffron/25 blur-3xl pointer-events-none" aria-hidden="true"></div>
         <div class="absolute -left-10 bottom-0 h-36 w-36 rounded-full bg-rj-gold/10 blur-3xl pointer-events-none" aria-hidden="true"></div>
@@ -85,119 +115,6 @@
                     {% else %}
                     <p class="text-sm text-slate-500">No active courses yet. Check back soon.</p>
                     {% endif %}
-                </div>
-            </div>
-
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
-                    <h3 class="font-black text-slate-900">Course referral activity</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <span class="text-xs font-black text-amber-800 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">{{ course_ref_pending_n }} pending payment</span>
-                        <span class="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">{{ course_ref_success_n }} paid</span>
-                    </div>
-                </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
-                            <tr>
-                                <th class="px-6 py-4">Course</th>
-                                <th class="px-6 py-4">Lead</th>
-                                <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4 text-right">Commission</th>
-                                <th class="px-6 py-4 text-right whitespace-nowrap">Paid on</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm">
-                            {% for cr in course_referrals %}
-                            <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 font-bold text-slate-900">{{ cr.course.title }}</td>
-                                <td class="px-6 py-4 text-slate-600">
-                                    {% if cr.lead_user %}
-                                    <span class="font-semibold text-slate-800">{{ cr.lead_user.username }}</span>
-                                    <span class="block text-xs text-slate-500">{{ cr.lead_email }}</span>
-                                    {% else %}
-                                    <span class="text-slate-700">{{ cr.lead_email }}</span>
-                                    <span class="block text-xs text-amber-700 font-semibold">Needs same user logged in at enroll + pay</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4">
-                                    {% if cr.status == 'SUCCESS' %}
-                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-100">Paid</span>
-                                    {% elif cr.status == 'REJECTED' %}
-                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-100">Rejected</span>
-                                    {% else %}
-                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-100">Awaiting payment</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-right align-top">
-                                    {% if cr.status == 'SUCCESS' and cr.commission_amount %}
-                                    <span class="font-bold text-emerald-600">+₹{{ cr.commission_amount }}</span>
-                                    {% else %}
-                                    <span class="text-slate-400 font-medium">—</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-right text-slate-600 align-top whitespace-nowrap">
-                                    {% if cr.status == 'SUCCESS' and cr.commission_paid_at %}
-                                    <span class="text-xs font-semibold">{{ cr.commission_paid_at.strftime('%d %b %Y') }}</span>
-                                    <span class="block text-[11px] text-slate-400 font-medium">{{ cr.commission_paid_at.strftime('%I:%M %p') }}</span>
-                                    {% else %}
-                                    <span class="text-slate-400 font-medium">—</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
-                                    <div class="text-3xl mb-3">🎓</div>
-                                    <p class="text-slate-500 font-medium">No course referrals yet. Share a course link above — rows appear when someone submits enroll interest from your link.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-                <div class="p-6 border-b border-slate-100">
-                    <h3 class="font-black text-slate-900">Wallet transactions</h3>
-                    <p class="text-xs text-slate-500 mt-1">Course payouts appear as <span class="font-semibold">Referral Bonus</span>; other rows may be tasks or login rewards.</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
-                            <tr>
-                                <th class="px-6 py-4">Date</th>
-                                <th class="px-6 py-4">Type</th>
-                                <th class="px-6 py-4 text-right">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 text-sm">
-                            {% for tx in transactions %}
-                            <tr class="hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 text-slate-500 font-medium whitespace-nowrap">
-                                    {{ tx.created_at.strftime('%d %b, %I:%M %p') }}
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-slate-900">{{ tx.get_transaction_type_display() }}</div>
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <span class="font-bold {% if tx.amount < 0 %}text-red-600{% else %}text-emerald-600{% endif %}">
-                                        {% if tx.amount > 0 %}+{% endif %}₹{{ tx.amount }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="3" class="px-6 py-12 text-center">
-                                    <div class="text-3xl mb-3">🧾</div>
-                                    <p class="text-slate-400 font-medium italic">No transactions yet.</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
                 </div>
             </div>
 

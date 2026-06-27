@@ -842,9 +842,9 @@
         </div>
 
         <!-- Tutor cards — limit to 3 on home -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {% for t in featured_home_tutors[:3] %}
-            {% include "hometutor/partials/_tutor_card.jinja" %}
+            {% include "hometutor/partials/_tutor_card_home.jinja" %}
             {% endfor %}
         </div>
 

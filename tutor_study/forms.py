@@ -18,6 +18,19 @@ class StudyMaterialForm(forms.ModelForm):
             self.fields['study_topic'].required = False
             self.fields['study_topic'].empty_label = 'General'
 
+    def clean_body(self):
+        """Normalise line endings so Windows copy-paste never stores literal \\r\\n."""
+        text = self.cleaned_data.get('body', '') or ''
+        text = (
+            text
+            .replace('\\r\\n', '\n')
+            .replace('\\r', '')
+            .replace('\\n', '\n')
+            .replace('\r\n', '\n')
+            .replace('\r', '\n')
+        )
+        return text
+
     def clean_study_topic(self):
         topic = self.cleaned_data.get('study_topic')
         if not topic or not self.tutor_user:

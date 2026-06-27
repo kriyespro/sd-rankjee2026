@@ -33,6 +33,7 @@ from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from assessment.models import DailyJackpot
 
+from .services_referral_dashboard import log_referral_click, referral_dashboard_stats
 from hometutor.services import featured_home_tutors
 
 from .hometutor_data import PILOT_CITY, SHORT_LINK_CITY_SLUGS
@@ -358,6 +359,7 @@ def courses(request):
     ref_code = (request.GET.get("ref") or "").strip().upper()
     if ref_code:
         request.session["pending_course_referrer_code"] = ref_code
+        log_referral_click(request, ref_code)
     # Cache active courses for 10 minutes — catalogue changes infrequently
     courses_qs = cache.get("active_courses_qs")
     if courses_qs is None:
@@ -388,6 +390,8 @@ def course_detail(request, slug):
         request.session["pending_course_referrer_code"] = ref_code
     pending_ref = request.session.get("pending_course_referrer_code", "")
     course = get_object_or_404(Course, slug=slug, is_active=True)
+    if ref_code:
+        log_referral_click(request, ref_code, course=course)
 
     if request.method == "POST":
         lead_name = (request.POST.get("lead_name") or "").strip()[:120]
@@ -621,12 +625,14 @@ def earnings(request):
         success_total=Sum("commission_amount", filter=Q(status=CourseReferral.Status.SUCCESS)),
     )
     course_commission_paid = course_ref_agg["success_total"] or 0
+    referral_dashboard = referral_dashboard_stats(user) if ref_code else None
 
     return render(
         request,
         "core/earnings.jinja",
         {
             "referral_link": referral_link,
+            "referral_code": ref_code,
             "referral_code_ready": referral_code_ready,
             "total_earned": total_earned,
             "transactions": wallet_transactions,
@@ -641,6 +647,7 @@ def earnings(request):
             "course_commission_paid": course_commission_paid,
             "referral_lead_discount_pct": REFERRAL_LEAD_DISCOUNT_PERCENT,
             "referral_commission_pct": REFERRAL_COMMISSION_PERCENT_DEFAULT,
+            "referral_dashboard": referral_dashboard,
             "seo_noindex": True,
         },
     )

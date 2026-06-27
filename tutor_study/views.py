@@ -47,6 +47,18 @@ STUDY_URLS_DASHBOARD = {
 def _format_note_body(text: str):
     if not text:
         return mark_safe('')
+    # Normalise all line-ending variants to \n:
+    #   1. Literal escaped strings "\\r\\n" stored as 4 chars (copy-paste artifact)
+    #   2. Actual Windows CRLF \r\n
+    #   3. Bare \r (old Mac)
+    text = (
+        text
+        .replace('\\r\\n', '\n')   # literal 4-char sequence
+        .replace('\\r', '')         # stray escaped CR
+        .replace('\\n', '\n')       # literal 2-char \n sequence
+        .replace('\r\n', '\n')      # real Windows CRLF
+        .replace('\r', '\n')        # bare CR
+    )
     paras = [p.strip() for p in text.split('\n\n') if p.strip()]
     parts = []
     for p in paras:

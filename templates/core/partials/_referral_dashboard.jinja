@@ -1,0 +1,233 @@
+{# Referral funnel dashboard — below “Your referral link” on /earnings/ #}
+{% set d = referral_dashboard %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 p-5 sm:p-6 shadow-sm space-y-5" aria-label="Referral dashboard">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-indigo-600">Referral dashboard</p>
+            <h3 class="text-lg font-black text-slate-900 tracking-tight">Your referrals &amp; earnings</h3>
+        </div>
+        <p class="text-xs text-slate-500 font-medium max-w-xs sm:text-right leading-relaxed">
+            Course leads, wallet payouts, and account signups from your code — all in one place.
+        </p>
+    </div>
+
+    {# —— Stats row (top) —— #}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Link clicks</p>
+            <p class="mt-1 text-2xl font-black text-slate-900 tabular-nums">{{ d.clicks_all }}</p>
+            <p class="mt-1 text-[11px] font-semibold text-slate-500">{{ d.clicks_7d }} last 7d · {{ d.clicks_30d }} last 30d</p>
+        </div>
+        <div class="rounded-xl border border-indigo-100 bg-indigo-50/60 p-4 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-wider text-indigo-600">Course leads</p>
+            <p class="mt-1 text-2xl font-black text-indigo-900 tabular-nums">{{ d.leads_total }}</p>
+            <p class="mt-1 text-[11px] font-semibold text-indigo-700/80">{{ d.unique_emails }} unique email{{ 's' if d.unique_emails != 1 else '' }}</p>
+        </div>
+        <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-4 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-wider text-amber-700">Awaiting payment</p>
+            <p class="mt-1 text-2xl font-black text-amber-900 tabular-nums">{{ d.pending_n }}</p>
+            <p class="mt-1 text-[11px] font-semibold text-amber-800/90">≈ ₹{{ d.predicted_pending }} if all pay</p>
+        </div>
+        <div class="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 shadow-sm">
+            <p class="text-[10px] font-black uppercase tracking-wider text-emerald-700">Earned (paid)</p>
+            <p class="mt-1 text-2xl font-black text-emerald-800 tabular-nums">₹{{ d.earned_total }}</p>
+            <p class="mt-1 text-[11px] font-semibold text-emerald-700/90">{{ d.success_n }} paid{% if d.avg_commission > 0 %} · avg ₹{{ d.avg_commission }}{% endif %}</p>
+        </div>
+    </div>
+
+    {# —— Course referral activity —— #}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap justify-between items-center gap-2">
+            <h4 class="font-black text-slate-900">Course referral activity</h4>
+            <div class="flex flex-wrap gap-2">
+                <span class="text-xs font-black text-amber-800 bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">{{ course_ref_pending_n }} pending payment</span>
+                <span class="text-xs font-black text-emerald-800 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full">{{ course_ref_success_n }} paid</span>
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-4 sm:px-5 py-3">Course</th>
+                        <th class="px-4 sm:px-5 py-3">Email / lead</th>
+                        <th class="px-4 sm:px-5 py-3">Status</th>
+                        <th class="px-4 sm:px-5 py-3 text-right">Commission</th>
+                        <th class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">Paid on</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    {% for cr in course_referrals %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 sm:px-5 py-3 font-bold text-slate-900">{{ cr.course.title }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-slate-600">
+                            <span class="font-semibold text-slate-800 block">{{ cr.lead_email }}</span>
+                            {% if cr.lead_user %}
+                            <span class="text-xs text-slate-500">{{ cr.lead_user.username }}</span>
+                            {% else %}
+                            <span class="text-xs text-amber-700 font-semibold">Log in at enroll + pay</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 sm:px-5 py-3">
+                            {% if cr.status == 'SUCCESS' %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100">Paid</span>
+                            {% elif cr.status == 'REJECTED' %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-rose-50 text-rose-700 border border-rose-100">Rejected</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-amber-50 text-amber-700 border border-amber-100">Awaiting pay</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 sm:px-5 py-3 text-right align-top">
+                            {% if cr.status == 'SUCCESS' and cr.commission_amount %}
+                            <span class="font-bold text-emerald-600">+₹{{ cr.commission_amount }}</span>
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 sm:px-5 py-3 text-right text-slate-600 align-top whitespace-nowrap text-xs">
+                            {% if cr.status == 'SUCCESS' and cr.commission_paid_at %}
+                            {{ cr.commission_paid_at.strftime('%d %b %Y') }}
+                            {% else %}
+                            <span class="text-slate-400">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-4 sm:px-5 py-10 text-center text-slate-500 text-sm font-medium">
+                            No course referrals yet — share your link above.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# —— Wallet transactions —— #}
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-100">
+            <h4 class="font-black text-slate-900">Wallet transactions</h4>
+            <p class="text-xs text-slate-500 mt-1">Course payouts as <span class="font-semibold">Referral Bonus</span>; signup bonus ₹50 when someone joins with your code.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50/50 text-xs font-bold text-slate-600 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-4 sm:px-5 py-3">Date</th>
+                        <th class="px-4 sm:px-5 py-3">Type</th>
+                        <th class="px-4 sm:px-5 py-3 text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    {% for tx in transactions %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 sm:px-5 py-3 text-slate-500 font-medium whitespace-nowrap text-xs">
+                            {{ tx.created_at.strftime('%d %b, %I:%M %p') }}
+                        </td>
+                        <td class="px-4 sm:px-5 py-3 font-bold text-slate-900">{{ tx.get_transaction_type_display() }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-right">
+                            <span class="font-bold {% if tx.amount < 0 %}text-red-600{% else %}text-emerald-600{% endif %}">
+                                {% if tx.amount > 0 %}+{% endif %}₹{{ tx.amount }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="px-4 sm:px-5 py-10 text-center text-slate-400 text-sm italic">No transactions yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {# —— Your account signups (email + status) —— #}
+    <div class="rounded-xl border border-indigo-200 bg-white shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-indigo-100 flex flex-wrap justify-between items-center gap-2">
+            <div>
+                <h4 class="font-black text-slate-900">Your signups</h4>
+                <p class="text-xs text-slate-500 mt-0.5">People who created a RankJee account with your referral code</p>
+            </div>
+            <span class="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-full">{{ d.signup_referrals }} total</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-indigo-50/40 text-xs font-bold text-indigo-800 uppercase tracking-widest">
+                    <tr>
+                        <th class="px-4 sm:px-5 py-3">Email</th>
+                        <th class="px-4 sm:px-5 py-3">Username</th>
+                        <th class="px-4 sm:px-5 py-3">Status</th>
+                        <th class="px-4 sm:px-5 py-3 text-right whitespace-nowrap">Signed up</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    {% for su in d.signup_referral_users %}
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 sm:px-5 py-3 font-semibold text-slate-900">{{ su.email or '—' }}</td>
+                        <td class="px-4 sm:px-5 py-3 text-slate-600">{{ su.username }}</td>
+                        <td class="px-4 sm:px-5 py-3">
+                            {% if su.is_active %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-slate-100 text-slate-600 border border-slate-200">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 sm:px-5 py-3 text-right text-xs text-slate-500 whitespace-nowrap">
+                            {{ su.date_joined.strftime('%d %b %Y') }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-4 sm:px-5 py-10 text-center text-slate-500 text-sm font-medium">
+                            No signups yet — share your signup link or course link with <code class="text-xs bg-slate-100 px-1 rounded">?ref=</code> attached.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if d.clicks_all or d.leads_total %}
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3">Conversion funnel</p>
+        <div class="flex flex-col sm:flex-row sm:items-stretch gap-2 sm:gap-0">
+            <div class="flex-1 text-center sm:border-r border-slate-100 py-2">
+                <p class="text-lg font-black text-slate-900">{{ d.clicks_all }}</p>
+                <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Clicks</p>
+            </div>
+            <div class="hidden sm:flex items-center text-slate-300 px-1">→</div>
+            <div class="flex-1 text-center sm:border-r border-slate-100 py-2">
+                <p class="text-lg font-black text-indigo-700">{{ d.leads_total }}</p>
+                <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Enroll leads</p>
+                {% if d.lead_rate is not none %}<p class="text-[10px] font-semibold text-indigo-600 mt-0.5">{{ d.lead_rate }}% of clicks</p>{% endif %}
+            </div>
+            <div class="hidden sm:flex items-center text-slate-300 px-1">→</div>
+            <div class="flex-1 text-center py-2">
+                <p class="text-lg font-black text-emerald-700">{{ d.success_n }}</p>
+                <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">Paid</p>
+                {% if d.click_to_pay is not none %}<p class="text-[10px] font-semibold text-emerald-600 mt-0.5">{{ d.click_to_pay }}% click→pay</p>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="rounded-xl border border-slate-200 bg-white p-4">
+        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-3">Income predictor</p>
+        <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex justify-between gap-3">
+                <span class="font-medium">If all {{ d.pending_n }} pending lead{{ 's' if d.pending_n != 1 else '' }} pay</span>
+                <span class="font-black text-amber-800 shrink-0">≈ ₹{{ d.predicted_pending }}</span>
+            </li>
+            <li class="flex justify-between gap-3 border-t border-slate-100 pt-2">
+                <span class="font-medium">Already credited</span>
+                <span class="font-black text-emerald-700 shrink-0">₹{{ d.earned_total }}</span>
+            </li>
+            <li class="flex justify-between gap-3 border-t border-slate-100 pt-2 text-xs text-slate-500">
+                <span>Account signups (₹50 bonus each when linked)</span>
+                <span class="font-bold text-slate-700">{{ d.signup_referrals }}</span>
+            </li>
+        </ul>
+        <p class="mt-3 text-[11px] text-slate-500 leading-relaxed">Estimate uses {{ referral_commission_pct }}% of discounted price ({{ referral_lead_discount_pct }}% buyer discount).</p>
+    </div>
+</section>
