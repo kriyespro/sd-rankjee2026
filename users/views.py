@@ -28,40 +28,23 @@ from .subscription import try_apply_signup_pro_trial
 from core.services_referral_dashboard import log_referral_click
 from .tasks import send_welcome_email
 
+from .onboarding import (
+    PUBLIC_SELF_ASSIGNABLE_ROLES,
+    ROLE_PICKER_ROWS,
+    SESSION_NEEDS_ROLE_PICKER,
+    begin_email_signup_onboarding,
+    complete_role_selection,
+    post_auth_redirect_target,
+    signup_role_from_request,
+    store_pending_google_signup_role,
+    user_needs_role_picker,
+)
+
 logger = logging.getLogger("rankjee.signup")
-PUBLIC_SELF_ASSIGNABLE_ROLES = {
-    CustomUser.Role.STUDENT,
-    CustomUser.Role.PARENT,
-    CustomUser.Role.TUTOR,
-}
-SIGNUP_ROLE_QUERY_VALUES = {r.value for r in PUBLIC_SELF_ASSIGNABLE_ROLES}
 
 
-def _signup_role_from_request(request):
-    role = (request.GET.get("role") or "").strip().upper()
-    if role in SIGNUP_ROLE_QUERY_VALUES:
-        return role
-    return CustomUser.Role.STUDENT
-
-
-def _incomplete_onboarding_url_name(request):
-    """Social signups pick a role first; email signups already chose one at signup."""
-    if request.session.get("needs_role_picker"):
-        return "users:onboarding_role"
-    if request.user.role in PUBLIC_SELF_ASSIGNABLE_ROLES:
-        return "users:onboarding_profile"
-    return "users:onboarding_role"
-
-
-def _post_auth_redirect(request, fallback="learning:index", *, from_email_signup=False):
-    if request.user.is_authenticated and not getattr(request.user, "onboarding_completed", True):
-        if from_email_signup:
-            return "users:onboarding_profile"
-        return _incomplete_onboarding_url_name(request)
-    next_url = request.POST.get("next") or request.GET.get("next") or ""
-    if next_url.startswith("/") and not next_url.startswith("//"):
-        return next_url
-    return fallback
+def _auth_redirect(request, *, from_email_signup=False):
+    return redirect(post_auth_redirect_target(request, from_email_signup=from_email_signup))
 
 
 def _enqueue_welcome_email(user_id):
@@ -108,8 +91,8 @@ def _update_streak(user):
 
 def signup_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard:index')
-    
+        return _auth_redirect(request)
+
     if request.method == 'POST':
         ip = request.META.get('REMOTE_ADDR', 'unknown')
         try:
@@ -122,10 +105,7 @@ def signup_view(request):
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            if user.role not in PUBLIC_SELF_ASSIGNABLE_ROLES:
-                user.role = CustomUser.Role.STUDENT
-            user.onboarding_completed = False
-            user.save(update_fields=['role', 'onboarding_completed'])
+            begin_email_signup_onboarding(request, user)
             user.add_wallet(50, transaction_type='CREDIT_SIGNUP')  # Give new user ₹50 free credit on signup
             try_apply_signup_pro_trial(user)
 
@@ -138,28 +118,40 @@ def signup_view(request):
             _update_streak(user)
             # After DB commit, queue welcome email (Redis/Celery failures must not 500 signup)
             transaction.on_commit(lambda uid=user.id: _enqueue_welcome_email(uid))
-            return redirect(_post_auth_redirect(request, from_email_signup=True))
+            return _auth_redirect(request, from_email_signup=True)
     else:
-        role_initial = _signup_role_from_request(request)
+        role_initial = signup_role_from_request(request)
         form = CustomUserCreationForm(initial={"role": role_initial})
     ref_code = (request.GET.get("ref") or request.POST.get("referral_code") or "").strip().upper()
     if request.method != "POST" and ref_code:
         request.session["pending_referral_code"] = ref_code
         log_referral_click(request, ref_code)
+    selected = (
+        request.POST.get("role")
+        if request.method == "POST"
+        else signup_role_from_request(request)
+    )
     return render(
         request,
         "users/signup.jinja",
         {
             "form": form,
             "ref_code": ref_code,
-            "selected_role": _signup_role_from_request(request) if request.method != "POST" else (request.POST.get("role") or CustomUser.Role.STUDENT),
+            "selected_role": selected or CustomUser.Role.STUDENT,
+            "role_rows": ROLE_PICKER_ROWS,
         },
     )
 
 
+def google_signup_start(request):
+    """Store role from signup page, then start Google OAuth (avoids duplicate role screen)."""
+    store_pending_google_signup_role(request)
+    return redirect("/accounts/google/login/?process=signup")
+
+
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('dashboard:index')
+        return _auth_redirect(request)
 
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -167,7 +159,7 @@ def login_view(request):
             user = form.get_user()
             login(request, user)
             _update_streak(user)
-            return redirect(_post_auth_redirect(request))
+            return _auth_redirect(request)
     else:
         form = AuthenticationForm()
     return render(request, 'users/login.jinja', {'form': form})
@@ -307,17 +299,21 @@ def onboarding_role(request):
     if request.user.onboarding_completed:
         return redirect('dashboard:index')
 
+    if not user_needs_role_picker(request):
+        return redirect('users:onboarding_profile')
+
     if request.method == 'POST':
         form = RoleSelectionForm(request.POST)
         if form.is_valid():
-            role = form.cleaned_data['role']
-            request.user.role = role
-            request.user.save(update_fields=['role'])
-            request.session.pop('needs_role_picker', None)
+            complete_role_selection(request, request.user, form.cleaned_data['role'])
             return redirect('users:onboarding_profile')
     else:
         form = RoleSelectionForm(initial={'role': request.user.role})
-    return render(request, 'users/onboarding_role.jinja', {'form': form})
+    return render(
+        request,
+        'users/onboarding_role.jinja',
+        {'form': form, 'role_rows': ROLE_PICKER_ROWS},
+    )
 
 
 @login_required

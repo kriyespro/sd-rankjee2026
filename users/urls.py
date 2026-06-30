@@ -6,6 +6,7 @@ app_name = 'users'
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('signup/', views.signup_view, name='signup'),
+    path('signup/google/', views.google_signup_start, name='google_signup_start'),
     path('onboarding/role/', views.onboarding_role, name='onboarding_role'),
     path('onboarding/profile/', views.onboarding_profile, name='onboarding_profile'),
     path('logout/', views.logout_view, name='logout'),

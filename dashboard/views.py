@@ -21,7 +21,7 @@ from core.models import TutorLeadRequest, UserTaskSubmission
 from core.models import EarningTask
 from learning.models import ConceptVideo
 from users.models import Notification, WithdrawalRequest
-from users.views import _incomplete_onboarding_url_name
+from users.onboarding import incomplete_onboarding_url_name
 from django.db import transaction
 import csv
 import io
@@ -207,7 +207,7 @@ def _role_dashboard_context(request):
             if tutor_profile
             else 0
         )
-        latest_pending_demos = (
+        latest_pending_demos = list(
             DemoRequest.objects.filter(
                 tutor=tutor_profile,
                 status=DemoRequest.Status.PENDING,
@@ -217,7 +217,7 @@ def _role_dashboard_context(request):
             if tutor_profile
             else []
         )
-        latest_active_engagements = (
+        latest_active_engagements = list(
             TutorEngagement.objects.filter(
                 tutor_profile=tutor_profile,
                 status=TutorEngagement.Status.ACTIVE,
@@ -254,7 +254,7 @@ def _role_dashboard_context(request):
             else None
         )
         tutor_current_balance = latest_ledger.balance_after if latest_ledger else 0
-        tutor_recent_ledger = (
+        tutor_recent_ledger = list(
             TutorLedgerEntry.objects.filter(tutor_profile=tutor_profile).order_by('-created_at')[:5]
             if tutor_profile
             else []
@@ -279,9 +279,20 @@ def _role_dashboard_context(request):
         accepted_rate = round((accepted_demos / total_demos) * 100, 1) if total_demos else 0
         active_rate = round((active_engagements / accepted_demos) * 100, 1) if accepted_demos else 0
         paid_rate = round((tutor_paid_count / active_engagements) * 100, 1) if active_engagements else 0
-        tutor_demo_sla_risk_ids = [
+        # IDs from the displayed 5 (for per-row badges in template)
+        tutor_demo_sla_risk_ids = {
             d.pk for d in latest_pending_demos if (now - d.created_at).total_seconds() > (24 * 3600)
-        ]
+        }
+        # Accurate count across ALL pending demos (not just the 5 shown)
+        tutor_demo_sla_risk_count = (
+            DemoRequest.objects.filter(
+                tutor=tutor_profile,
+                status=DemoRequest.Status.PENDING,
+                created_at__lt=now - timedelta(hours=24),
+            ).count()
+            if tutor_profile
+            else 0
+        )
         activity_timeline = []
         for d in latest_pending_demos[:4]:
             activity_timeline.append(
@@ -326,7 +337,7 @@ def _role_dashboard_context(request):
             'paid_rate': paid_rate,
             'tutor_paid_count': tutor_paid_count,
             'tutor_demo_sla_risk_ids': tutor_demo_sla_risk_ids,
-            'tutor_demo_sla_risk_count': len(tutor_demo_sla_risk_ids),
+            'tutor_demo_sla_risk_count': tutor_demo_sla_risk_count,
             'activity_timeline': activity_timeline,
             'template_name': 'dashboard/role_tutor.jinja',
         }
@@ -1541,7 +1552,7 @@ def admin_student_daily_logs(request):
 @login_required
 def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
-        return redirect(_incomplete_onboarding_url_name(request))
+        return redirect(incomplete_onboarding_url_name(request))
     role = getattr(request.user, 'role', 'STUDENT')
     if role == User.Role.VIP_USER:
         return vip_smart_dashboard(request)
@@ -1697,8 +1708,8 @@ def index(request):
         .select_related("skill", "attempted_video")
         .order_by("-attempt_date")
     )
-    latest_attempt = user_exam_attempts.first()
     my_exam_performance = list(user_exam_attempts[:10])
+    latest_attempt = my_exam_performance[0] if my_exam_performance else None
 
     my_exam_performance_rows = [
         {
@@ -1720,13 +1731,13 @@ def index(request):
     progress = int((passed_count / total_skills) * 100) if total_skills > 0 else 0
 
     from assessment.models import SkillPath
-    all_paths = SkillPath.objects.filter(is_active=True).order_by('level_order')
+    all_paths = list(SkillPath.objects.filter(is_active=True).order_by('level_order'))
     selected_path_id = request.GET.get('path')
-    
+    selected_path = None
     if selected_path_id:
-        selected_path = all_paths.filter(id=selected_path_id).first()
-    else:
-        selected_path = all_paths.first()
+        selected_path = next((p for p in all_paths if str(p.id) == str(selected_path_id)), None)
+    if selected_path is None and all_paths:
+        selected_path = all_paths[0]
 
     total_earned = request.user.wallet_balance
     
@@ -1744,7 +1755,7 @@ def index(request):
             )
         )
         .order_by("order")
-    )
+    ) if selected_path else Skill.objects.none()
     
     learning_path = []
     prev_passed = True
@@ -1753,13 +1764,19 @@ def index(request):
         sets = list(s.sets.all())
         total_sets = len(sets)
         passed_sets_count = sum(1 for qs in sets if qs.id in passed_set_ids)
-        
-        is_fully_passed = (passed_sets_count >= total_sets) if total_sets > 0 else False
-        
+
+        # Skills with no question sets don't block the chain — treat as unlocked/passable
+        if total_sets == 0:
+            is_fully_passed = False
+            can_progress = True
+        else:
+            is_fully_passed = passed_sets_count >= total_sets
+            can_progress = is_fully_passed
+
         status = 'LOCKED'
         if prev_passed:
             status = 'PASSED' if is_fully_passed else 'UNLOCKED'
-            
+
         next_set = next((qs for qs in sets if qs.id not in passed_set_ids), None)
         learning_path.append({
             'skill': s,
@@ -1768,8 +1785,8 @@ def index(request):
             'passed_sets': passed_sets_count,
             'next_set': next_set,
         })
-        
-        prev_passed = is_fully_passed
+
+        prev_passed = can_progress
 
     # Top 5 users for mini-leaderboard widget
     top_users = User.objects.order_by('-xp_points')[:5]
@@ -1784,7 +1801,6 @@ def index(request):
     else:
         next_badge_hint = "You’re on fire — keep collecting badges by passing new skills."
 
-    latest_attempt = user_exam_attempts.first()
     weak_areas = latest_attempt.weak_concepts if latest_attempt else []
     user_badges = request.user.badges.select_related('badge').order_by('-awarded_at')
     unread_notifications = Notification.objects.filter(user=request.user, is_read=False).count()
@@ -1859,7 +1875,8 @@ def index(request):
         created_at__lt=now - timedelta(hours=24),
     ).count()
     student_preview_mode = False
-    if student_demo_qs.count() == 0 and student_engagements.count() == 0:
+    _no_demos = (student_demo_pending + student_demo_accepted + student_demo_declined) == 0
+    if _no_demos and student_active_engagements == 0:
         preview_user = User.objects.filter(username='demo_student').first()
         if preview_user:
             student_preview_mode = True

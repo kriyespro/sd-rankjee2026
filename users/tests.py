@@ -1,9 +1,10 @@
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from hometutor.models import TutorProfile
-from .forms import CustomUserCreationForm, TutorOnboardingForm
+from .forms import CustomUserCreationForm
 from .models import CustomUser
+from .onboarding import SESSION_PENDING_SIGNUP_ROLE, apply_social_signup_onboarding
 
 
 class PublicRoleSignupTests(TestCase):
@@ -100,6 +101,28 @@ class OnboardingFlowTests(TestCase):
         self.assertEqual(profile.verification_status, TutorProfile.VerificationStatus.PENDING)
         self.assertTrue(self.user.onboarding_completed)
         self.assertRedirects(res, reverse('hometutor:my_profile'), fetch_redirect_response=False)
+
+    def test_email_user_onboarding_role_redirects_to_profile(self):
+        self.client.force_login(self.user)
+        res = self.client.get(reverse('users:onboarding_role'))
+        self.assertRedirects(res, reverse('users:onboarding_profile'))
+
+    def test_google_signup_start_stores_role(self):
+        res = self.client.get(reverse('users:google_signup_start'), {'role': 'TUTOR'})
+        self.assertEqual(res.status_code, 302)
+        self.assertEqual(self.client.session.get(SESSION_PENDING_SIGNUP_ROLE), 'TUTOR')
+
+    def test_social_signup_with_pending_role_skips_role_picker(self):
+        session = self.client.session
+        session[SESSION_PENDING_SIGNUP_ROLE] = CustomUser.Role.TUTOR
+        session.save()
+        request = RequestFactory().get('/')
+        request.session = session
+        apply_social_signup_onboarding(request, self.user)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.role, CustomUser.Role.TUTOR)
+        self.assertFalse(self.user.onboarding_completed)
+        self.assertNotIn('needs_role_picker', session)
 
     def test_role_picker_clears_social_session_flag(self):
         self.client.force_login(self.user)

@@ -4,36 +4,15 @@
 {% block content %}
 <section class="max-w-2xl mx-auto px-4 py-12">
     <div class="text-center mb-8">
-        <p class="text-xs font-black uppercase tracking-widest text-indigo-600">Quick setup · 1 of 2</p>
+        <p class="text-xs font-black uppercase tracking-widest text-indigo-600">Quick setup · step 1 of 2</p>
         <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-2">Tell us who you are</h1>
         <p class="text-slate-600 text-sm mt-2 max-w-md mx-auto">One tap — we'll show the right dashboard. No long forms here.</p>
     </div>
 
     <form method="post">
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-        <div class="grid gap-4">
-            {% set cards = [
-                ('STUDENT', '📚', 'Student', 'I want to practice tests & learn', 'Best for JEE, NEET, boards prep'),
-                ('PARENT', '👨‍👩‍👧', 'Parent', 'I am looking for a tutor', 'Browse tutors & book free demos'),
-                ('TUTOR', '🎓', 'Tutor', 'I want to teach & earn', 'Create a listing & get student leads'),
-            ] %}
-            {% set picked = form.data.get('role') or form.initial.get('role') or 'STUDENT' %}
-            {% for value, icon, title, tagline, hint in cards %}
-            <label class="block rounded-2xl border-2 p-5 cursor-pointer transition-all
-                {% if picked == value %}border-indigo-500 bg-indigo-50 shadow-sm ring-2 ring-indigo-100{% else %}border-slate-200 bg-white hover:border-indigo-200{% endif %}">
-                <div class="flex items-start gap-4">
-                    <input type="radio" name="role" value="{{ value }}" class="mt-1.5 shrink-0"
-                           {% if picked == value %}checked{% endif %}>
-                    <span class="text-3xl">{{ icon }}</span>
-                    <div class="min-w-0">
-                        <span class="block text-lg font-black text-slate-900">{{ title }}</span>
-                        <span class="block text-sm font-semibold text-slate-700 mt-0.5">{{ tagline }}</span>
-                        <span class="block text-xs text-slate-500 mt-1">{{ hint }}</span>
-                    </div>
-                </div>
-            </label>
-            {% endfor %}
-        </div>
+        {% set selected_role = form.data.get('role') or form.initial.get('role') or 'STUDENT' %}
+        {% include 'users/partials/_role_picker_cards.jinja' %}
         {% if form.errors %}
         <p class="text-rose-700 text-sm font-semibold mt-4 text-center">Please pick one option to continue.</p>
         {% endif %}
