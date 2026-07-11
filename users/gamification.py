@@ -32,7 +32,11 @@ def _try_award_badge(user, badge_type):
 
 
 def send_notification(user, message, link=''):
-    Notification.objects.create(user=user, message=message, link=link)
+    Notification.objects.create(
+        user=user,
+        message=(message or '')[:300],
+        link=(link or '')[:200],
+    )
 
 
 def on_test_submitted(user, passed, skill=None):

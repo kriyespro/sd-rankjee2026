@@ -257,7 +257,17 @@ def masked_phone(value: str) -> str:
 
 
 def notify_demo_request_created(demo: DemoRequest) -> None:
-    """Notify linked tutor, or staff when the listing has no live tutor account."""
+    """Notify linked tutor, or staff when the listing has no live tutor account.
+
+    Never raises — demo save must not fail because of email/notification issues.
+    """
+    try:
+        _notify_demo_request_created_inner(demo)
+    except Exception as exc:
+        logger.warning('notify_demo_request_created failed: %s', exc, exc_info=True)
+
+
+def _notify_demo_request_created_inner(demo: DemoRequest) -> None:
     from django.contrib.auth import get_user_model
 
     from users.gamification import send_notification
@@ -290,7 +300,7 @@ def notify_demo_request_created(demo: DemoRequest) -> None:
                     body,
                     settings.DEFAULT_FROM_EMAIL or 'noreply@localhost',
                     [tutor_user.email],
-                    fail_silently=False,
+                    fail_silently=True,
                 )
             except Exception as exc:
                 logger.warning('Demo request email failed: %s', exc, exc_info=True)
@@ -298,13 +308,18 @@ def notify_demo_request_created(demo: DemoRequest) -> None:
 
     # Unlinked listing → staff inbox (in-app + email)
     staff_qs = User.objects.filter(is_staff=True, is_active=True)
-    admin_link = reverse('admin:hometutor_demorequest_change', args=[demo.pk])
+    try:
+        admin_link = reverse('admin:hometutor_demorequest_change', args=[demo.pk])
+    except Exception:
+        admin_link = f'/sd/hometutor/demorequest/{demo.pk}/change/'
+    note = (
+        f'Demo lead: {demo.tutor.display_name} ← {demo.requester.get_username()}'
+    )[:300]
     for staff in staff_qs[:20]:
-        send_notification(
-            staff,
-            f'Demo lead (unlinked listing): {demo.tutor.display_name} ← {demo.requester.get_username()}',
-            admin_link,
-        )
+        try:
+            send_notification(staff, note, admin_link)
+        except Exception as exc:
+            logger.warning('Staff demo notification failed: %s', exc, exc_info=True)
     staff_emails = list(
         staff_qs.exclude(email='').values_list('email', flat=True)[:10]
     )
@@ -317,7 +332,7 @@ def notify_demo_request_created(demo: DemoRequest) -> None:
                 body,
                 settings.DEFAULT_FROM_EMAIL or 'noreply@localhost',
                 recipients,
-                fail_silently=False,
+                fail_silently=True,
             )
         except Exception as exc:
             logger.warning('Staff demo-lead email failed: %s', exc, exc_info=True)

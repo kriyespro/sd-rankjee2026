@@ -264,13 +264,28 @@ class DemoRequestForm(forms.ModelForm):
         cleaned = super().clean()
         tutor = getattr(self, '_tutor', None)
         requester = getattr(self, '_requester', None)
-        if tutor and requester and DemoRequest.objects.filter(
-            tutor=tutor,
-            requester=requester,
-            status=DemoRequest.Status.PENDING,
-        ).exists():
-            raise ValidationError('You already have a pending demo request for this tutor.')
+        if tutor and requester:
+            existing = DemoRequest.objects.filter(
+                tutor=tutor,
+                requester=requester,
+                status=DemoRequest.Status.PENDING,
+            ).first()
+            if existing:
+                # Soft-update contact/message instead of hard-failing (feels like "form broken")
+                self._existing_pending = existing
         return cleaned
+
+    def save(self, commit=True):
+        existing = getattr(self, '_existing_pending', None)
+        if existing is not None:
+            existing.message = self.cleaned_data.get('message') or existing.message
+            phone = self.cleaned_data.get('contact_phone')
+            if phone:
+                existing.contact_phone = phone
+            if commit:
+                existing.save(update_fields=['message', 'contact_phone', 'updated_at'])
+            return existing
+        return super().save(commit=commit)
 
 
 class DemoAcceptForm(forms.Form):

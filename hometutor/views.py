@@ -323,24 +323,34 @@ def demo_request_create(request, slug):
     form._tutor = profile
     form._requester = request.user
     if form.is_valid():
-        demo = form.save(commit=False)
-        demo.tutor = profile
-        demo.requester = request.user
-        demo.status = DemoRequest.Status.PENDING
-        demo.save()
-        notify_demo_request_created(demo)
-        if profile.user_id:
+        is_update = getattr(form, '_existing_pending', None) is not None
+        if is_update:
+            form.save(commit=True)
             messages.success(
                 request,
-                'Demo request sent. '
-                f'{profile.display_name} will see it in their RankJee inbox.',
+                'Demo request updated. Our team already has your lead and will follow up.',
             )
         else:
-            messages.success(
-                request,
-                'Demo request received. Our team will connect you with this tutor '
-                'and update you under My demo requests.',
-            )
+            demo = form.save(commit=False)
+            demo.tutor = profile
+            demo.requester = request.user
+            demo.status = DemoRequest.Status.PENDING
+            demo.save()
+            from django.db import transaction
+
+            transaction.on_commit(lambda d=demo: notify_demo_request_created(d))
+            if profile.user_id:
+                messages.success(
+                    request,
+                    'Demo request sent. '
+                    f'{profile.display_name} will see it in their RankJee inbox.',
+                )
+            else:
+                messages.success(
+                    request,
+                    'Demo request received. Our team will connect you with this tutor '
+                    'and update you under My demo requests.',
+                )
     else:
         for err in form.non_field_errors():
             messages.error(request, err)

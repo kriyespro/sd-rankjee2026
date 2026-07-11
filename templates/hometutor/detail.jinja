@@ -143,7 +143,7 @@
                 {% else %}
                 <p class="text-slate-600 text-sm mb-4">The tutor will receive your message in RankJee inbox.</p>
                 {% endif %}
-                <form method="post" action="{{ url('hometutor:demo_request_create', t.slug) }}" class="space-y-3">
+                <form method="post" action="{{ url('hometutor:demo_request_create', slug=t.slug) }}" class="space-y-3" id="demo-request-form">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                     <div>
                         <label for="{{ demo_form.message.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Message</label>
@@ -154,7 +154,7 @@
                         {{ demo_form.contact_phone }}
                         <p class="mt-1 text-[11px] text-slate-500">Helps us reach you faster for the demo.</p>
                     </div>
-                    <button type="submit" class="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
+                    <button type="submit" form="demo-request-form" class="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
                         Send demo request
                     </button>
                 </form>
