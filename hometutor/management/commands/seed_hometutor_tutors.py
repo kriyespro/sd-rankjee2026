@@ -11,7 +11,8 @@ from django.utils.text import slugify
 
 from core.hometutor_data import PILOT_CITY
 
-from hometutor.models import DemoRequest, TutorProfile
+from hometutor.models import DemoRequest, TutorProfile, TutorTestimonial
+from hometutor.testimonials_data import build_testimonials_for_tutor
 
 # Realistic full names (common Indian combinations — not first×last grid)
 _FULL_NAMES = [
@@ -173,16 +174,31 @@ class Command(BaseCommand):
             action='store_true',
             help='Only clamp existing fee_label values into ₹5,000–₹10,000 (no new tutors).',
         )
+        parser.add_argument(
+            '--testimonials-only',
+            action='store_true',
+            help='Only (re)seed parent testimonials for existing tutors.',
+        )
+        parser.add_argument(
+            '--per-tutor',
+            type=int,
+            default=4,
+            help='Testimonials per tutor when seeding (default: 4).',
+        )
 
     def handle(self, *args, **options):
         if options.get('fix_fees_only'):
             self._fix_fees_only()
+            return
+        if options.get('testimonials_only'):
+            self._seed_all_testimonials(per_tutor=max(2, int(options.get('per_tutor') or 4)))
             return
 
         city = (options['city'] or PILOT_CITY).strip()
         count = max(1, int(options['count'] or 80))
         use_all_cities = bool(options.get('all_cities'))
         wipe = bool(options.get('wipe'))
+        per_tutor = max(2, int(options.get('per_tutor') or 4))
         created = 0
         updated = 0
         city_names = list(_CITY_PROFILES.keys())
@@ -258,6 +274,7 @@ class Command(BaseCommand):
                 slug=slug,
                 defaults=defaults,
             )
+            self._seed_testimonials_for(obj, per_tutor=per_tutor)
             if was_created:
                 created += 1
             else:
@@ -266,7 +283,33 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f'Done. city={city!r} all_cities={use_all_cities} wipe={wipe} '
-                f'created={created} updated={updated} (total {count} upserts). Fees ₹5,000–₹10,000/mo.'
+                f'created={created} updated={updated} (total {count} upserts). '
+                f'Fees ₹5,000–₹10,000/mo · {per_tutor} testimonials each.'
+            )
+        )
+
+    def _seed_testimonials_for(self, tutor: TutorProfile, *, per_tutor: int = 4) -> int:
+        """Replace published seed testimonials for one tutor; sync reviews_count."""
+        TutorTestimonial.objects.filter(tutor=tutor).delete()
+        rows = build_testimonials_for_tutor(tutor, count=per_tutor)
+        objs = [TutorTestimonial(tutor=tutor, **row) for row in rows]
+        TutorTestimonial.objects.bulk_create(objs)
+        # Keep card badge in sync with visible quotes
+        avg = sum(r['rating'] for r in rows) / len(rows)
+        TutorProfile.objects.filter(pk=tutor.pk).update(
+            reviews_count=max(tutor.reviews_count or 0, per_tutor + (tutor.pk % 20)),
+            rating_display=round(Decimal(str(avg)), 1),
+        )
+        return len(objs)
+
+    def _seed_all_testimonials(self, *, per_tutor: int = 4):
+        n = 0
+        for tutor in TutorProfile.objects.all().iterator():
+            n += self._seed_testimonials_for(tutor, per_tutor=per_tutor)
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'Seeded {n} testimonials across {TutorProfile.objects.count()} tutors '
+                f'({per_tutor} each).'
             )
         )
 

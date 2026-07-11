@@ -117,6 +117,35 @@ class TutorProfile(models.Model):
         return self.teaches_from <= grade <= self.teaches_to
 
 
+class TutorTestimonial(models.Model):
+    """Parent/student quote shown on public tutor profiles (seedable for MVP)."""
+
+    tutor = models.ForeignKey(
+        TutorProfile,
+        on_delete=models.CASCADE,
+        related_name='testimonials',
+    )
+    author_name = models.CharField(max_length=80, help_text='e.g. Sunita M.')
+    author_label = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='e.g. Parent · Class 10 CBSE',
+    )
+    rating = models.PositiveSmallIntegerField(
+        default=5,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+    )
+    comment = models.TextField()
+    is_published = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.author_name} → {self.tutor_id} ({self.rating}/5)'
+
+
 class DemoRequest(models.Model):
     """Parent/student asks a tutor for a trial class — HT-2."""
 

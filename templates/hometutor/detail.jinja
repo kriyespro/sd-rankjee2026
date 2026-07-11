@@ -92,6 +92,38 @@
                 <p class="text-slate-700 whitespace-pre-line leading-relaxed">{{ t.bio }}</p>
             </div>
             {% endif %}
+
+            <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div class="flex flex-wrap items-end justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-sm font-black uppercase tracking-wider text-slate-500">Parent testimonials</h2>
+                        <p class="text-xs text-slate-500 mt-1">What families say after demo / regular classes</p>
+                    </div>
+                    <span class="text-xs font-bold text-slate-600">★ {{ t.rating_display }} · {{ t.reviews_count }} reviews</span>
+                </div>
+                {% if testimonials %}
+                <ul class="space-y-4">
+                    {% for rev in testimonials %}
+                    <li class="rounded-xl border border-slate-100 bg-slate-50/80 p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <p class="text-sm font-black text-slate-900">{{ rev.author_name }}</p>
+                                {% if rev.author_label %}
+                                <p class="text-[11px] font-semibold text-slate-500">{{ rev.author_label }}</p>
+                                {% endif %}
+                            </div>
+                            <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-black text-amber-700">
+                                ★ {{ rev.rating }}/5
+                            </span>
+                        </div>
+                        <p class="mt-2 text-sm text-slate-700 leading-relaxed">“{{ rev.comment }}”</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-slate-500">No testimonials yet — be the first to book a demo and share feedback.</p>
+                {% endif %}
+            </div>
         </div>
 
         <aside class="space-y-6">

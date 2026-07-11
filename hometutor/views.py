@@ -272,6 +272,10 @@ def tutor_detail(request, slug):
     if can_request_demo:
         demo_form = DemoRequestForm()
 
+    testimonials = list(
+        profile.testimonials.filter(is_published=True).order_by('-created_at')[:8]
+    )
+
     subjects_str = (profile.subjects or "").strip()
     city_str = (profile.city or PILOT_CITY).strip()
     _seo_title = f"{profile.display_name} — Home Tutor in {city_str} | RankJee"
@@ -292,6 +296,7 @@ def tutor_detail(request, slug):
             'viewer_is_owner': viewer_owner,
             'demo_form': demo_form,
             'can_request_demo': can_request_demo,
+            'testimonials': testimonials,
             'seo_title': _seo_title,
             'seo_description': _seo_description,
             'canonical_url': _canonical_url,

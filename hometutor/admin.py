@@ -11,6 +11,7 @@ from .models import (
     TutorDocument,
     TutorEngagement,
     TutorProfile,
+    TutorTestimonial,
 )
 
 
@@ -18,6 +19,12 @@ class TutorDocumentInline(admin.TabularInline):
     model = TutorDocument
     extra = 0
     readonly_fields = ('uploaded_at', 'reviewed_at')
+
+
+class TutorTestimonialInline(admin.TabularInline):
+    model = TutorTestimonial
+    extra = 1
+    fields = ('author_name', 'author_label', 'rating', 'comment', 'is_published')
 
 
 @admin.register(TutorProfile)
@@ -38,7 +45,7 @@ class TutorProfileAdmin(admin.ModelAdmin):
     search_fields = ('display_name', 'subjects', 'area', 'slug', 'admin_notes', 'fee_label')
     prepopulated_fields = {'slug': ('display_name',)}
     readonly_fields = ('created_at', 'updated_at')
-    inlines = [TutorDocumentInline]
+    inlines = [TutorDocumentInline, TutorTestimonialInline]
     actions = ('approve_tutors', 'reject_tutors', 'mark_pending')
 
     @admin.action(description='Approve selected tutor profiles')
@@ -52,6 +59,15 @@ class TutorProfileAdmin(admin.ModelAdmin):
     @admin.action(description='Mark selected as pending review')
     def mark_pending(self, request, queryset):
         queryset.update(verification_status=TutorProfile.VerificationStatus.PENDING)
+
+
+@admin.register(TutorTestimonial)
+class TutorTestimonialAdmin(admin.ModelAdmin):
+    list_display = ('author_name', 'tutor', 'rating', 'is_published', 'created_at')
+    list_filter = ('is_published', 'rating')
+    search_fields = ('author_name', 'comment', 'tutor__display_name')
+    raw_id_fields = ('tutor',)
+    list_editable = ('is_published', 'rating')
 
 
 @admin.register(TutorEngagement)
