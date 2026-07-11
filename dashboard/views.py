@@ -1138,6 +1138,33 @@ def update_tutor_request_status(request, request_id):
     return redirect("dashboard:index")
 
 
+def update_demo_request_status(request, demo_id):
+    """Staff quick-status for marketplace demo leads (shown on /admin/ dashboard)."""
+    if request.method != "POST" or not _staff_only(request):
+        return redirect("dashboard:index")
+
+    from hometutor.models import DemoRequest
+
+    item = DemoRequest.objects.select_related("tutor", "requester").filter(pk=demo_id).first()
+    if not item:
+        messages.error(request, "Demo request not found.")
+        return redirect("dashboard:index")
+
+    new_status = (request.POST.get("status") or "").strip().upper()
+    allowed = {choice[0] for choice in DemoRequest.Status.choices}
+    if new_status not in allowed:
+        messages.error(request, "Invalid demo request status.")
+        return redirect("dashboard:index")
+
+    item.status = new_status
+    item.save(update_fields=["status", "updated_at"])
+    messages.success(
+        request,
+        f"Demo #{item.pk}: {item.tutor.display_name} ← {item.requester.get_username()} → {item.get_status_display()}",
+    )
+    return redirect("dashboard:index")
+
+
 def _seed_default_seo_targets():
     if SeoTarget.objects.exists():
         return
@@ -1634,6 +1661,14 @@ def index(request):
         pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
         latest_tutor_requests = TutorLeadRequest.objects.select_related('requester').order_by('-created_at')[:12]
         tutor_requests_count = TutorLeadRequest.objects.count()
+        from hometutor.models import DemoRequest
+
+        latest_demo_requests = (
+            DemoRequest.objects.select_related('tutor', 'requester', 'tutor__user')
+            .order_by('-created_at')[:20]
+        )
+        demo_requests_count = DemoRequest.objects.count()
+        demo_requests_pending = DemoRequest.objects.filter(status=DemoRequest.Status.PENDING).count()
         recent_failed_attempts = (
             UserAttempt.objects.filter(passed=False)
             .select_related("user", "skill")
@@ -1672,6 +1707,9 @@ def index(request):
             'pending_withdrawals_count': pending_withdrawals_count,
             'latest_tutor_requests': latest_tutor_requests,
             'tutor_requests_count': tutor_requests_count,
+            'latest_demo_requests': latest_demo_requests,
+            'demo_requests_count': demo_requests_count,
+            'demo_requests_pending': demo_requests_pending,
             'recent_failed_attempts': recent_failed_attempts,
             'recent_daily_class_logs': recent_daily_class_logs,
             'latest_backups': latest_backups,

@@ -153,6 +153,93 @@
             </div>
         </div>
 
+        {# Marketplace demo leads (from tutor profile "Request a free demo") #}
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <div class="p-4 border-b border-slate-100 bg-indigo-50/50 flex flex-wrap justify-between items-center gap-2">
+                <h3 class="text-xs font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Tutor Demo Leads
+                </h3>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-black text-amber-700">{{ demo_requests_pending }} pending</span>
+                    <span class="text-xs font-black text-slate-600">{{ demo_requests_count }} total</span>
+                    <a href="/sd/hometutor/demorequest/" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Open in /sd/</a>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[960px]">
+                    <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                        <tr>
+                            <th class="px-5 py-3">Created</th>
+                            <th class="px-5 py-3">Parent / student</th>
+                            <th class="px-5 py-3">Tutor listing</th>
+                            <th class="px-5 py-3">Phone</th>
+                            <th class="px-5 py-3">Message</th>
+                            <th class="px-5 py-3">Account</th>
+                            <th class="px-5 py-3">Status</th>
+                            <th class="px-5 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for d in latest_demo_requests %}
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-5 py-3 text-xs font-bold text-slate-600 whitespace-nowrap">{{ d.created_at.strftime('%d %b %Y · %H:%M') }}</td>
+                            <td class="px-5 py-3">
+                                <p class="text-xs font-black text-slate-900">{{ d.requester.get_username() }}</p>
+                                <p class="text-[11px] text-slate-500">{{ d.requester.email or '—' }}</p>
+                            </td>
+                            <td class="px-5 py-3">
+                                <a href="{{ url('hometutor:tutor_detail', slug=d.tutor.slug) }}" class="text-xs font-black text-indigo-700 hover:underline" target="_blank" rel="noopener">{{ d.tutor.display_name }}</a>
+                                <p class="text-[11px] text-slate-500">{{ d.tutor.city }}{% if d.tutor.area %} · {{ d.tutor.area }}{% endif %}</p>
+                            </td>
+                            <td class="px-5 py-3 text-xs font-bold text-slate-800 whitespace-nowrap">{{ d.contact_phone or '—' }}</td>
+                            <td class="px-5 py-3 text-xs text-slate-700 max-w-[220px]">
+                                <span class="line-clamp-2">{{ d.message or '—' }}</span>
+                            </td>
+                            <td class="px-5 py-3">
+                                {% if d.tutor.user_id %}
+                                <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-black bg-emerald-100 text-emerald-800">Linked</span>
+                                {% else %}
+                                <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-black bg-amber-100 text-amber-800">Needs staff</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-3">
+                                <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-black
+                                    {% if d.status == 'PENDING' %}bg-amber-100 text-amber-800
+                                    {% elif d.status == 'ACCEPTED' %}bg-emerald-100 text-emerald-800
+                                    {% elif d.status == 'DECLINED' %}bg-rose-100 text-rose-800
+                                    {% else %}bg-slate-100 text-slate-700{% endif %}">{{ d.get_status_display() }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-right">
+                                <div class="flex justify-end gap-2 flex-wrap">
+                                    <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="PENDING">
+                                        <button type="submit" class="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Pending</button>
+                                    </form>
+                                    <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="ACCEPTED">
+                                        <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Accept</button>
+                                    </form>
+                                    <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                        <input type="hidden" name="status" value="DECLINED">
+                                        <button type="submit" class="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">Decline</button>
+                                    </form>
+                                    <a href="/sd/hometutor/demorequest/{{ d.id }}/change/" class="inline-flex rounded-lg border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">Edit</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No demo requests yet. Leads from tutor profile forms appear here.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         {# Core Performance Cards #}
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
             <div class="p-4 border-b border-slate-100 bg-emerald-50/40 flex justify-between items-center">

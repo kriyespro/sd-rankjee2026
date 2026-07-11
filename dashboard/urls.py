@@ -21,6 +21,7 @@ urlpatterns = [
     path('study/material/<int:pk>/', views.dashboard_study_material, name='study_material'),
     path('study/assignment/<int:pk>/', views.dashboard_study_assignment, name='study_assignment'),
     path('tutor-requests/<int:request_id>/status/', views.update_tutor_request_status, name='update_tutor_request_status'),
+    path('demo-requests/<int:demo_id>/status/', views.update_demo_request_status, name='update_demo_request_status'),
     path('seo/smart-view/', views.seo_smart_view, name='seo_smart_view'),
     path('students/daily-class-log/', views.daily_class_log, name='daily_class_log'),
     path('students/daily-class-log/admin/', views.admin_student_daily_logs, name='admin_student_daily_logs'),
