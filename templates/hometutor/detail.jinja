@@ -136,7 +136,13 @@
             {% if can_request_demo and demo_form %}
             <div id="request-demo" class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                 <h2 class="text-sm font-black uppercase tracking-wider text-slate-500 mb-2">Request a free demo</h2>
+                {% if listing_needs_staff %}
+                <p class="text-slate-600 text-sm mb-4">
+                    Share your class details — RankJee will connect you with this tutor and follow up on your request.
+                </p>
+                {% else %}
                 <p class="text-slate-600 text-sm mb-4">The tutor will receive your message in RankJee inbox.</p>
+                {% endif %}
                 <form method="post" action="{{ url('hometutor:demo_request_create', t.slug) }}" class="space-y-3">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                     <div>
@@ -144,8 +150,9 @@
                         {{ demo_form.message }}
                     </div>
                     <div>
-                        <label for="{{ demo_form.contact_phone.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Contact (optional)</label>
+                        <label for="{{ demo_form.contact_phone.id_for_label }}" class="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">WhatsApp / phone</label>
                         {{ demo_form.contact_phone }}
+                        <p class="mt-1 text-[11px] text-slate-500">Helps us reach you faster for the demo.</p>
                     </div>
                     <button type="submit" class="w-full inline-flex items-center justify-center px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-black hover:bg-indigo-500 transition-colors">
                         Send demo request
@@ -154,11 +161,12 @@
             </div>
             {% elif not request.user.is_authenticated %}
             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-600">
-                <a href="{{ url('users:login') }}?next={{ request.path }}" class="font-black text-indigo-600 hover:underline">Log in</a> to request a demo with this tutor.
+                <a href="{{ url('users:login') }}?next={{ request.path }}#request-demo" class="font-black text-indigo-600 hover:underline">Log in</a> to request a free demo with this tutor.
             </div>
-            {% elif not t.user_id %}
-            <div class="rounded-2xl border border-amber-100 bg-amber-50/80 p-6 text-sm text-amber-900">
-                This listing isn&apos;t linked to a live tutor account yet — demo requests are unavailable.
+            {% elif viewer_is_owner %}
+            <div class="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-6 text-sm text-indigo-900">
+                This is your listing. Demo requests from parents appear in
+                <a href="{{ url('hometutor:tutor_demos') }}" class="font-black underline">your inbox</a>.
             </div>
             {% endif %}
 

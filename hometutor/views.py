@@ -263,12 +263,14 @@ def tutor_detail(request, slug):
         raise Http404()
 
     demo_form = None
-    can_request_demo = (
+    is_owner = (
         request.user.is_authenticated
         and profile.user_id
-        and profile.user_id != request.user.id
-        and public_ok
+        and profile.user_id == request.user.id
     )
+    # Any approved listing can take demos — linked tutor gets inbox; unlinked → staff/admin
+    can_request_demo = request.user.is_authenticated and public_ok and not is_owner
+    listing_needs_staff = public_ok and not profile.user_id
     if can_request_demo:
         demo_form = DemoRequestForm()
 
@@ -296,6 +298,7 @@ def tutor_detail(request, slug):
             'viewer_is_owner': viewer_owner,
             'demo_form': demo_form,
             'can_request_demo': can_request_demo,
+            'listing_needs_staff': listing_needs_staff,
             'testimonials': testimonials,
             'seo_title': _seo_title,
             'seo_description': _seo_description,
@@ -312,8 +315,10 @@ def demo_request_create(request, slug):
         slug=slug,
         verification_status=TutorProfile.VerificationStatus.APPROVED,
     )
-    if not profile.user_id or profile.user_id == request.user.id:
-        raise Http404()
+    # Block only self-requests on own linked listing
+    if profile.user_id and profile.user_id == request.user.id:
+        messages.error(request, 'You cannot request a demo on your own listing.')
+        return redirect('hometutor:tutor_detail', slug=slug)
     form = DemoRequestForm(request.POST)
     form._tutor = profile
     form._requester = request.user
@@ -324,11 +329,18 @@ def demo_request_create(request, slug):
         demo.status = DemoRequest.Status.PENDING
         demo.save()
         notify_demo_request_created(demo)
-        messages.success(
-            request,
-            'Demo request sent. '
-            f'{profile.display_name} will see it in their RankJee inbox and can reply when they respond.',
-        )
+        if profile.user_id:
+            messages.success(
+                request,
+                'Demo request sent. '
+                f'{profile.display_name} will see it in their RankJee inbox.',
+            )
+        else:
+            messages.success(
+                request,
+                'Demo request received. Our team will connect you with this tutor '
+                'and update you under My demo requests.',
+            )
     else:
         for err in form.non_field_errors():
             messages.error(request, err)

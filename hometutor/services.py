@@ -257,10 +257,25 @@ def masked_phone(value: str) -> str:
 
 
 def notify_demo_request_created(demo: DemoRequest) -> None:
-    """In-app notification + best-effort email to tutor."""
+    """Notify linked tutor, or staff when the listing has no live tutor account."""
+    from django.contrib.auth import get_user_model
+
     from users.gamification import send_notification
 
+    User = get_user_model()
     tutor_user = demo.tutor.user
+    subject = f'[RankJee] New demo request for {demo.tutor.display_name}'
+    body = (
+        f'New demo request on RankJee.\n\n'
+        f'Tutor listing: {demo.tutor.display_name} ({demo.tutor.city})\n'
+        f'Slug: {demo.tutor.slug}\n'
+        f'Linked account: {"yes" if tutor_user else "NO — platform-managed listing"}\n'
+        f'From: {demo.requester.get_username()} ({demo.requester.email})\n'
+        f'Phone: {demo.contact_phone or "(none)"}\n'
+        f'Message:\n{demo.message or "(none)"}\n\n'
+        f'Open admin: /sd/hometutor/demorequest/{demo.pk}/change/\n'
+    )
+
     if tutor_user:
         link = reverse('hometutor:tutor_demos')
         send_notification(
@@ -268,23 +283,44 @@ def notify_demo_request_created(demo: DemoRequest) -> None:
             f'New demo request from {demo.requester.get_username()}.',
             link,
         )
-    subject = f'[RankJee] New demo request for {demo.tutor.display_name}'
-    body = (
-        f'You have a new demo request on RankJee.\n\n'
-        f'From: {demo.requester.get_username()} ({demo.requester.email})\n'
-        f'Message:\n{demo.message or "(none)"}\n'
+        if tutor_user.email:
+            try:
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL or 'noreply@localhost',
+                    [tutor_user.email],
+                    fail_silently=False,
+                )
+            except Exception as exc:
+                logger.warning('Demo request email failed: %s', exc, exc_info=True)
+        return
+
+    # Unlinked listing → staff inbox (in-app + email)
+    staff_qs = User.objects.filter(is_staff=True, is_active=True)
+    admin_link = reverse('admin:hometutor_demorequest_change', args=[demo.pk])
+    for staff in staff_qs[:20]:
+        send_notification(
+            staff,
+            f'Demo lead (unlinked listing): {demo.tutor.display_name} ← {demo.requester.get_username()}',
+            admin_link,
+        )
+    staff_emails = list(
+        staff_qs.exclude(email='').values_list('email', flat=True)[:10]
     )
-    if tutor_user and tutor_user.email:
+    fallback = getattr(settings, 'DEFAULT_FROM_EMAIL', '') or ''
+    recipients = staff_emails or ([fallback] if fallback else [])
+    if recipients:
         try:
             send_mail(
-                subject,
+                subject + ' [needs staff follow-up]',
                 body,
                 settings.DEFAULT_FROM_EMAIL or 'noreply@localhost',
-                [tutor_user.email],
+                recipients,
                 fail_silently=False,
             )
         except Exception as exc:
-            logger.warning('Demo request email failed: %s', exc, exc_info=True)
+            logger.warning('Staff demo-lead email failed: %s', exc, exc_info=True)
 
 
 def notify_demo_resolved_for_requester(demo: DemoRequest) -> None:

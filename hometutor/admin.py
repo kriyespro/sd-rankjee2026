@@ -15,6 +15,24 @@ from .models import (
 )
 
 
+class UnlinkedListingFilter(admin.SimpleListFilter):
+    title = 'listing type'
+    parameter_name = 'listing'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('unlinked', 'Needs staff (no tutor account)'),
+            ('linked', 'Linked tutor account'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'unlinked':
+            return queryset.filter(tutor__user__isnull=True)
+        if self.value() == 'linked':
+            return queryset.filter(tutor__user__isnull=False)
+        return queryset
+
+
 class TutorDocumentInline(admin.TabularInline):
     model = TutorDocument
     extra = 0
@@ -88,11 +106,51 @@ class TutorEngagementAdmin(admin.ModelAdmin):
 
 @admin.register(DemoRequest)
 class DemoRequestAdmin(admin.ModelAdmin):
-    list_display = ('id', 'tutor', 'requester', 'status', 'scheduled_at', 'created_at')
-    list_filter = ('status',)
-    search_fields = ('tutor__display_name', 'requester__username', 'requester__email')
+    list_display = (
+        'id',
+        'tutor',
+        'listing_linked',
+        'requester',
+        'contact_phone',
+        'status',
+        'short_message',
+        'scheduled_at',
+        'created_at',
+    )
+    list_filter = ('status', UnlinkedListingFilter)
+    search_fields = (
+        'tutor__display_name',
+        'tutor__slug',
+        'requester__username',
+        'requester__email',
+        'contact_phone',
+        'message',
+    )
     raw_id_fields = ('tutor', 'requester')
     readonly_fields = ('created_at', 'updated_at')
+    list_select_related = ('tutor', 'tutor__user', 'requester')
+    actions = ('mark_accepted', 'mark_declined')
+
+    @admin.display(boolean=True, description='Tutor account')
+    def listing_linked(self, obj):
+        return bool(obj.tutor_id and obj.tutor.user_id)
+
+    @admin.display(description='Message')
+    def short_message(self, obj):
+        text = (obj.message or '').strip()
+        return (text[:48] + '…') if len(text) > 48 else (text or '—')
+
+    @admin.action(description='Mark selected as Accepted (staff follow-up)')
+    def mark_accepted(self, request, queryset):
+        queryset.filter(status=DemoRequest.Status.PENDING).update(
+            status=DemoRequest.Status.ACCEPTED
+        )
+
+    @admin.action(description='Mark selected as Declined')
+    def mark_declined(self, request, queryset):
+        queryset.filter(status=DemoRequest.Status.PENDING).update(
+            status=DemoRequest.Status.DECLINED
+        )
 
 
 @admin.register(TutorDocument)
