@@ -26,14 +26,16 @@ class TutorProfileAdmin(admin.ModelAdmin):
         'display_name',
         'city',
         'area',
+        'fee_label',
         'verification_status',
         'is_featured_home',
         'rating_display',
         'reviews_count',
         'updated_at',
     )
+    list_editable = ('fee_label', 'is_featured_home')
     list_filter = ('verification_status', 'city', 'is_featured_home')
-    search_fields = ('display_name', 'subjects', 'area', 'slug', 'admin_notes')
+    search_fields = ('display_name', 'subjects', 'area', 'slug', 'admin_notes', 'fee_label')
     prepopulated_fields = {'slug': ('display_name',)}
     readonly_fields = ('created_at', 'updated_at')
     inlines = [TutorDocumentInline]

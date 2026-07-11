@@ -15,6 +15,7 @@ from .models import (
 class TutorProfileForm(forms.ModelForm):
     """Tutor-editable listing fields; staff controls verification & ratings."""
 
+    # Fee/bio tweaks stay live — no re-review. Identity/location/subjects still need approval.
     REAPPROVAL_FIELDS = frozenset({
         'display_name',
         'profile_image',
@@ -27,8 +28,6 @@ class TutorProfileForm(forms.ModelForm):
         'classes_label',
         'teaches_from',
         'teaches_to',
-        'fee_label',
-        'bio',
     })
 
     class Meta:
@@ -144,7 +143,7 @@ class TutorProfileForm(forms.ModelForm):
             ),
             'fee_label': forms.TextInput(
                 attrs={
-                    'placeholder': 'e.g. from ₹5,000/mo',
+                    'placeholder': 'e.g. ₹6,500/mo',
                     'class': (
                         'w-full rounded-xl border border-slate-200 px-3 py-2 text-sm '
                         'font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500'
@@ -164,6 +163,10 @@ class TutorProfileForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['fee_label'].label = 'Monthly fee'
+        self.fields['fee_label'].help_text = (
+            'Shown on your public card. Example: ₹6,500/mo (typical home tuition ₹5,000–₹10,000).'
+        )
         if self.instance.pk:
             self._initial_status = self.instance.verification_status
         else:
