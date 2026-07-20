@@ -169,7 +169,8 @@ class LmsReviewForm(forms.Form):
     )
     remark = forms.CharField(
         required=False,
-        widget=forms.Textarea(attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'Staff remark…'}),
+        label='Faculty Remark',
+        widget=forms.Textarea(attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'Faculty remark…'}),
     )
     status = forms.ChoiceField(
         choices=LmsSubmission.Status.choices,
