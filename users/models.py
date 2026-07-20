@@ -113,6 +113,11 @@ class CustomUser(AbstractUser):
     @property
     def is_premium(self):
         """Exam Pro (payments subscription), VIP tester flag, or active paid/complimentary sub."""
+        from django.conf import settings
+
+        # Temporary free access for all until EXAM_PAYWALL_ENABLED is turned back on.
+        if not getattr(settings, 'EXAM_PAYWALL_ENABLED', True):
+            return True
         cached = getattr(self, "_cached_is_premium", None)
         if cached is not None:
             return cached

@@ -56,4 +56,10 @@ def ui_labels(request):
             'watch_earn': 'Watch & earn ₹',
             'enter_jackpot': 'Enter jackpot',
         }
-    return {"uil": labels, "ui_lang": lang, "course_cart_count": _course_cart_count(request)}
+    return {"uil": labels, "ui_lang": lang, "course_cart_count": _course_cart_count(request), "exam_paywall_enabled": _exam_paywall_enabled()}
+
+
+def _exam_paywall_enabled() -> bool:
+    from django.conf import settings
+
+    return bool(getattr(settings, "EXAM_PAYWALL_ENABLED", True))

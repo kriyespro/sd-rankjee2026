@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import transaction
 from django.db.models import Prefetch
+from django.conf import settings
 from django.urls import reverse
 from users.models import CustomUser
 from .models import (
@@ -219,7 +220,8 @@ def take_test(request, skill_id):
             params["concept"] = concept
         return redirect(f"{base}?{urlencode(params)}")
     if (
-        skill.path_id
+        getattr(settings, 'EXAM_PAYWALL_ENABLED', True)
+        and skill.path_id
         and getattr(skill.path, 'level_order', 0) >= 3
         and not (request.user.is_premium or request.user.is_staff or request.user.is_superuser)
     ):
@@ -250,7 +252,7 @@ def take_test(request, skill_id):
         messages.success(request, f"Congratulations! You've mastered all levels of {skill.name}.")
         return _learning_redirect()
 
-    # Monetization: trials or wallet; entitlement row prevents double charge (tabs / races)
+    # Monetization: free while EXAM_PAYWALL_ENABLED is off; else trials / wallet / premium
     session_key = f'active_test_paid_{skill.id}'
     if not request.session.get(session_key):
         if SkillTestEntitlement.objects.filter(user_id=request.user.id, skill_id=skill.id).exists():
@@ -259,6 +261,9 @@ def take_test(request, skill_id):
             with transaction.atomic():
                 u = CustomUser.objects.select_for_update().get(pk=request.user.pk)
                 if SkillTestEntitlement.objects.filter(user_id=u.id, skill_id=skill.id).exists():
+                    request.session[session_key] = True
+                elif not getattr(settings, 'EXAM_PAYWALL_ENABLED', True):
+                    SkillTestEntitlement.objects.create(user=u, skill=skill)
                     request.session[session_key] = True
                 elif u.is_superuser or u.is_staff:
                     SkillTestEntitlement.objects.create(user=u, skill=skill)
@@ -484,8 +489,8 @@ def view_certificate(request, certificate_id):
 def download_certificate(request, certificate_id):
     cert = get_object_or_404(Certificate, certificate_id=certificate_id, user=request.user)
     
-    # Premium Gate: Check if user is premium to download PDF
-    if not request.user.is_premium:
+    # Premium Gate: only when exam paywall is enabled
+    if getattr(settings, 'EXAM_PAYWALL_ENABLED', True) and not request.user.is_premium:
         messages.warning(request, "Premium Subscription required to download PDF certificates. Upgrade now!")
         return redirect('payments:plans')
 

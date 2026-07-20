@@ -451,7 +451,7 @@
                     <a href="{{ url('users:signup') }}" class="nav-util-btn nav-util-btn--join">{{ uil.join }}</a>
                     {% endif %}
                 </nav>
-                {% if request.user.is_authenticated and not request.user.is_premium %}
+                {% if exam_paywall_enabled and request.user.is_authenticated and not request.user.is_premium %}
                 <a href="{{ url('payments:plans') }}" class="hidden sm:inline-flex items-center bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black px-2.5 py-1.5 md:px-3 md:py-2 rounded-lg md:rounded-xl shadow-md shadow-orange-200/80 hover:scale-[1.02] transition-all uppercase tracking-widest">
                     <span>{{ uil.pro }}</span>
                 </a>

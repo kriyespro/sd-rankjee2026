@@ -171,6 +171,10 @@ def _strip_env_value(raw):
     return s
 
 
+# Exam / learning paywall (trials, wallet ₹10, Pro locks, certificate PDF).
+# False = free for all users (temporary). Set EXAM_PAYWALL_ENABLED=1 to re-enable billing.
+EXAM_PAYWALL_ENABLED = _env_bool('EXAM_PAYWALL_ENABLED', default=False)
+
 # Razorpay — use dashboard test keys in .env, or leave empty in DEBUG for dummy checkout
 # Set RAZORPAY_USE_DUMMY=1 to force simulated payments even if keys exist (local only).
 RAZORPAY_KEY_ID = _strip_env_value(os.environ.get("RAZORPAY_KEY_ID"))

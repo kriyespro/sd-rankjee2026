@@ -80,7 +80,7 @@
                             </div>
                         </div>
 
-                        {% set is_locked = (skill.id in pro_locked_skill_ids) and (not is_premium_user) %}
+                        {% set is_locked = exam_paywall_enabled and (skill.id in pro_locked_skill_ids) and (not is_premium_user) %}
                         {% if is_locked %}
                         <a href="{{ url('payments:plans') }}"
                            class="relative z-10 w-full bg-amber-500 text-white text-center py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest hover:bg-amber-400 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
@@ -89,7 +89,7 @@
                         {% else %}
                         <a href="{{ url('assessment:take_test', skill.id) }}"
                            class="relative z-10 w-full bg-slate-900 text-white text-center py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black text-xs md:text-sm uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg hover:shadow-indigo-200 active:scale-95 flex items-center justify-center gap-2">
-                           {% if skill.id in attempted_ids %}Retake Exam{% else %}Unlock Test <span class="bg-white/20 px-2 py-0.5 rounded ml-1">₹10</span>{% endif %}
+                           {% if skill.id in attempted_ids %}Retake Exam{% elif exam_paywall_enabled %}Unlock Test <span class="bg-white/20 px-2 py-0.5 rounded ml-1">₹10</span>{% else %}Take Test{% endif %}
                         </a>
                         {% endif %}
                     </div>

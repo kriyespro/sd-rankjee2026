@@ -49,6 +49,10 @@ class UserPremiumMiddleware:
     def _resolve_premium(self, user) -> bool:
         from users.models import CustomUser
 
+        # Temporary: exams/learning free for everyone until billing is turned back on.
+        if not getattr(settings, "EXAM_PAYWALL_ENABLED", True):
+            return True
+
         if getattr(user, "role", None) == CustomUser.Role.VIP_USER:
             return True
         if getattr(user, "is_vip_testing_user", False):
