@@ -42,6 +42,8 @@ def home(request):
         .order_by('-is_pinned', '-updated_at')[:12]
     )
     sidebar = services.home_sidebar_data(request.user)
+    is_staff = services.is_lms_staff(request.user)
+    admin_stats = services.admin_home_stats() if is_staff else None
     return render(
         request,
         'lms/home.jinja',
@@ -51,7 +53,8 @@ def home(request):
             'top_scores': sidebar['top_scores'],
             'best_likes': sidebar['best_likes'],
             'latest_comments': sidebar['latest_comments'],
-            'is_staff_lms': services.is_lms_staff(request.user),
+            'is_staff_lms': is_staff,
+            'admin_stats': admin_stats,
         },
     )
 

@@ -4,9 +4,33 @@
 {% block content %}
 <div class="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div>
+        <div class="min-w-0">
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
-            <h1 class="text-xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
+            <div class="mt-0.5 flex flex-wrap items-center gap-2">
+                <h1 class="text-xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
+                {% if is_staff_lms and admin_stats %}
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800" title="Students who submitted at least once">
+                    {{ admin_stats.students_submitted }} students
+                </span>
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-amber-800" title="Submissions awaiting review">
+                    {{ admin_stats.pending }} pending
+                </span>
+                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-700" title="Total assignments">
+                    {{ admin_stats.total_assignments }} assignments
+                </span>
+                <span class="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-indigo-800" title="Topics with at least one assignment">
+                    {{ admin_stats.topics_covered }} topics
+                </span>
+                <span class="inline-flex max-w-full items-center truncate rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-rose-800"
+                      title="Topics with pending review: {{ admin_stats.pending_topics_label }}">
+                    {% if admin_stats.pending_topics %}
+                    Pending: {{ admin_stats.pending_topics_label }}
+                    {% else %}
+                    No topic pending
+                    {% endif %}
+                </span>
+                {% endif %}
+            </div>
         </div>
         <div class="flex flex-wrap gap-2">
             {% if is_staff_lms %}

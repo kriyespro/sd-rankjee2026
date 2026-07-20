@@ -172,6 +172,40 @@ def home_sidebar_data(user, limit: int = 5) -> dict:
     }
 
 
+def admin_home_stats() -> dict:
+    """Staff-only LMS overview counts for the home header badges."""
+    total_assignments = LmsAssignment.objects.count()
+    topics_covered = LmsTopic.objects.filter(assignments__isnull=False).distinct().count()
+    students_submitted = (
+        LmsSubmission.objects.values('student_id').distinct().count()
+    )
+    pending = LmsSubmission.objects.filter(status=LmsSubmission.Status.SUBMITTED).count()
+    pending_topic_titles = list(
+        LmsTopic.objects.filter(
+            assignments__submissions__status=LmsSubmission.Status.SUBMITTED,
+        )
+        .distinct()
+        .order_by('title')
+        .values_list('title', flat=True)[:8]
+    )
+    # Also count pending on assignments with no topic (shouldn't happen after General migrate)
+    orphan_pending = LmsSubmission.objects.filter(
+        status=LmsSubmission.Status.SUBMITTED,
+        assignment__topic__isnull=True,
+    ).exists()
+    if orphan_pending and 'General' not in pending_topic_titles:
+        pending_topic_titles = ['General', *pending_topic_titles][:8]
+
+    return {
+        'students_submitted': students_submitted,
+        'pending': pending,
+        'total_assignments': total_assignments,
+        'topics_covered': topics_covered,
+        'pending_topics': pending_topic_titles,
+        'pending_topics_label': ', '.join(pending_topic_titles) if pending_topic_titles else 'None',
+    }
+
+
 def set_reaction(submission: LmsSubmission, user, value: str) -> LmsReaction | None:
     """Toggle: same value removes; opposite updates; new creates."""
     existing = LmsReaction.objects.filter(submission=submission, user=user).first()
