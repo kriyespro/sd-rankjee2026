@@ -32,6 +32,9 @@ def home(request):
         messages.error(request, 'LMS is for students and staff.')
         return redirect('dashboard:index')
 
+    if services.is_lms_staff(request.user):
+        services.attach_orphan_assignments_to_general()
+
     assignments = list(services.assignments_for_user(request.user)[:50])
     topics = services.topics_for_user(request.user)
     recent = (
@@ -60,6 +63,8 @@ def assignment_create(request):
         if form.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
+            if not obj.topic_id:
+                obj.topic = services.ensure_general_topic()
             obj.save()
             if obj.is_published:
                 services.notify_new_assignment(obj)
@@ -88,7 +93,10 @@ def assignment_edit(request, pk):
         form = LmsAssignmentForm(request.POST, instance=assignment)
         if form.is_valid():
             was_published = assignment.is_published
-            obj = form.save()
+            obj = form.save(commit=False)
+            if not obj.topic_id:
+                obj.topic = services.ensure_general_topic()
+            obj.save()
             if obj.is_published and not was_published:
                 services.notify_new_assignment(obj)
             messages.success(request, f'Assignment “{obj.title}” updated.')

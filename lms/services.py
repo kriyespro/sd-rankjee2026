@@ -19,6 +19,25 @@ from .models import (
     LmsTopic,
 )
 
+GENERAL_TOPIC_SLUG = 'general'
+
+
+def ensure_general_topic() -> LmsTopic:
+    topic, _ = LmsTopic.objects.get_or_create(
+        slug=GENERAL_TOPIC_SLUG,
+        defaults={
+            'title': 'General',
+            'description': 'Default topic for assignments without a specific category.',
+        },
+    )
+    return topic
+
+
+def attach_orphan_assignments_to_general() -> int:
+    topic = ensure_general_topic()
+    return LmsAssignment.objects.filter(topic__isnull=True).update(topic=topic)
+
+
 logger = logging.getLogger('rankjee.lms')
 
 
@@ -86,19 +105,19 @@ def can_submit_assignment(user, assignment: LmsAssignment) -> bool:
 
 
 def topics_for_user(user) -> list[dict]:
+    general = ensure_general_topic()
     assignments = list(assignments_for_user(user))
-    grouped: dict[int | str, dict] = {}
+    grouped: dict[int, dict] = {}
     for assignment in assignments:
-        topic = assignment.topic
-        key = topic.pk if topic else 'untagged'
-        if key not in grouped:
-            grouped[key] = {
+        topic = assignment.topic or general
+        if topic.pk not in grouped:
+            grouped[topic.pk] = {
                 'topic': topic,
-                'title': topic.title if topic else 'General',
-                'description': topic.description if topic else '',
+                'title': topic.title,
+                'description': topic.description,
                 'assignments': [],
             }
-        grouped[key]['assignments'].append(assignment)
+        grouped[topic.pk]['assignments'].append(assignment)
     return sorted(grouped.values(), key=lambda item: item['title'].lower())
 
 
