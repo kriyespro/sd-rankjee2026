@@ -92,5 +92,6 @@ def environment(**options):
     env.globals.update({
         'static': static,
         'url': url,
+        'range': range,
     })
     return env

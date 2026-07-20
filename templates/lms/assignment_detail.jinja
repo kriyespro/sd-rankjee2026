@@ -33,16 +33,26 @@
         <h2 class="text-xs font-black uppercase tracking-widest text-indigo-800 mb-3">
             {% if my_sub %}Update your submission{% else %}Submit your work{% endif %}
         </h2>
-        <form method="post" enctype="multipart/form-data" class="space-y-3">
+        <form method="post" class="space-y-3">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <input type="hidden" name="action" value="submit">
-            {% for field in submit_form %}
             <div>
-                <label for="{{ field.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ field.label }}</label>
-                {{ field }}
-                {% if field.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in field.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                <label for="{{ submit_form.caption.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Caption <span class="font-semibold normal-case text-slate-400">(optional)</span></label>
+                {{ submit_form.caption }}
+                {% if submit_form.caption.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in submit_form.caption.errors %}{{ e }}{% endfor %}</p>{% endif %}
             </div>
-            {% endfor %}
+            <div>
+                <label for="{{ submit_form.video_url.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Google Drive file link</label>
+                {{ submit_form.video_url }}
+                <p class="mt-1 text-[11px] leading-relaxed text-slate-500">Paste a shareable Google Drive link to your file (PDF, image, video, etc.).</p>
+                {% if submit_form.video_url.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in submit_form.video_url.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
+            <div>
+                <label for="{{ submit_form.website_url.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Website URL</label>
+                {{ submit_form.website_url }}
+                <p class="mt-1 text-[11px] leading-relaxed text-slate-500">Portfolio page, landing page, or live site you built.</p>
+                {% if submit_form.website_url.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in submit_form.website_url.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            </div>
             {% if submit_form.non_field_errors() %}
             <p class="text-sm text-rose-600">{% for e in submit_form.non_field_errors() %}{{ e }}{% endfor %}</p>
             {% endif %}

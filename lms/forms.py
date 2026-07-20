@@ -44,43 +44,44 @@ class LmsAssignmentForm(forms.ModelForm):
 class LmsSubmissionForm(forms.ModelForm):
     class Meta:
         model = LmsSubmission
-        fields = ['caption', 'image', 'file', 'video_url', 'website_url']
+        fields = ['caption', 'video_url', 'website_url']
         widgets = {
             'caption': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Say something about your work…'}
             ),
-            'image': forms.ClearableFileInput(
-                attrs={'class': 'block w-full text-sm text-slate-600', 'accept': 'image/*'}
-            ),
-            'file': forms.ClearableFileInput(
-                attrs={'class': 'block w-full text-sm text-slate-600', 'accept': '.pdf,application/pdf'}
-            ),
             'video_url': forms.URLInput(
-                attrs={'class': _INPUT, 'placeholder': 'YouTube / Drive video link'}
+                attrs={
+                    'class': _INPUT,
+                    'placeholder': 'https://drive.google.com/file/d/…',
+                }
             ),
             'website_url': forms.URLInput(
-                attrs={'class': _INPUT, 'placeholder': 'Website / portfolio URL'}
+                attrs={'class': _INPUT, 'placeholder': 'https://your-portfolio.com'}
             ),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['caption'].label = 'Caption'
+        self.fields['caption'].required = False
+        self.fields['video_url'].label = 'Google Drive file link'
+        self.fields['video_url'].required = False
+        self.fields['website_url'].label = 'Website URL'
+        self.fields['website_url'].required = False
+
     def clean(self):
         cleaned = super().clean()
-        has_media = bool(
-            cleaned.get('image')
-            or cleaned.get('file')
-            or (cleaned.get('video_url') or '').strip()
+        has_link = bool(
+            (cleaned.get('video_url') or '').strip()
             or (cleaned.get('website_url') or '').strip()
         )
-        # On edit, existing image/file may already be on instance
-        if not has_media and self.instance and self.instance.pk:
-            has_media = bool(
-                self.instance.image
-                or self.instance.file
-                or (self.instance.video_url or '').strip()
+        if not has_link and self.instance and self.instance.pk:
+            has_link = bool(
+                (self.instance.video_url or '').strip()
                 or (self.instance.website_url or '').strip()
             )
-        if not has_media:
-            raise forms.ValidationError('Add an image, PDF, video link, or website URL.')
+        if not has_link:
+            raise forms.ValidationError('Add a Google Drive file link or website URL.')
         return cleaned
 
 

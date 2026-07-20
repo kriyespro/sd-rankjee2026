@@ -27,23 +27,16 @@
     <p class="px-4 pt-3 text-sm leading-relaxed text-slate-800">{{ s.caption }}</p>
     {% endif %}
 
-    <div class="px-4 py-3 space-y-2">
-        {% if s.image %}
-        <a href="{{ s.image.url }}" target="_blank" rel="noopener">
-            <img src="{{ s.image.url }}" alt="Submission by {{ s.student.get_username() }}" class="max-h-80 w-full rounded-xl object-cover border border-slate-100">
-        </a>
-        {% endif %}
-        {% if s.file %}
-        <a href="{{ s.file.url }}" target="_blank" rel="noopener"
-           class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100">
-            PDF / file →
-        </a>
-        {% endif %}
+    <div class="px-4 py-3 flex flex-wrap gap-2">
         {% if s.video_url %}
-        <a href="{{ s.video_url }}" target="_blank" rel="noopener" class="block text-xs font-bold text-indigo-600 hover:underline truncate">Video: {{ s.video_url }}</a>
+        <a href="{{ s.video_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">
+            Google Drive file →
+        </a>
         {% endif %}
         {% if s.website_url %}
-        <a href="{{ s.website_url }}" target="_blank" rel="noopener" class="block text-xs font-bold text-indigo-600 hover:underline truncate">Site: {{ s.website_url }}</a>
+        <a href="{{ s.website_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100">
+            Website →
+        </a>
         {% endif %}
     </div>
 

@@ -94,7 +94,6 @@ def assignment_detail(request, pk):
     if request.method == 'POST' and request.POST.get('action') == 'submit' and show_submit_form:
         submit_form = LmsSubmissionForm(
             request.POST,
-            request.FILES,
             instance=my_sub,
         )
         if submit_form.is_valid():

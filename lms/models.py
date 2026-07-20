@@ -129,14 +129,12 @@ class LmsSubmission(models.Model):
         return f'{self.student_id} → {self.assignment_id}'
 
     def clean(self):
-        has_media = bool(
-            self.image
-            or self.file
-            or (self.video_url or '').strip()
+        has_link = bool(
+            (self.video_url or '').strip()
             or (self.website_url or '').strip()
         )
-        if not has_media:
-            raise ValidationError('Add an image, PDF, video link, or website URL.')
+        if not has_link:
+            raise ValidationError('Add a Google Drive file link or website URL.')
 
     @property
     def star_rating(self) -> int:
