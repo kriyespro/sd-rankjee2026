@@ -2,12 +2,12 @@
 {% block title %}LMS · RankJee{% endblock %}
 
 {% block content %}
-<div class="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+<div class="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
+    <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
             <h1 class="text-2xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
-            <p class="mt-1 text-sm text-slate-600">Pick a topic on the left · see latest work on the right.</p>
+            <p class="mt-1 text-sm text-slate-600">Topics on the left · latest submissions on the right.</p>
         </div>
         <div class="flex flex-wrap gap-2">
             {% if is_staff_lms %}
@@ -18,34 +18,34 @@
         </div>
     </div>
 
-    <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
-        {# Left sidebar — topics #}
-        <aside class="w-full shrink-0 lg:w-64 xl:w-72">
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm lg:sticky lg:top-4">
-                <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
-                    <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">Topics</h2>
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-12 md:items-start md:gap-6">
+        {# Left sidebar — topics (narrow) #}
+        <aside class="md:col-span-4 lg:col-span-3 xl:col-span-2">
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm md:sticky md:top-20">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                    <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Topics</h2>
                     {% if is_staff_lms %}
-                    <a href="{{ url('lms:topic_create') }}" class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600 hover:bg-white">+ New</a>
+                    <a href="{{ url('lms:topic_create') }}" class="rounded border border-slate-200 bg-white px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-600 hover:bg-indigo-50">+ New</a>
                     {% endif %}
                 </div>
                 {% if topics %}
-                <nav class="max-h-[70vh] overflow-y-auto p-2">
-                    <ul class="space-y-1">
+                <nav class="max-h-[calc(100vh-12rem)] overflow-y-auto p-1.5">
+                    <ul class="space-y-0.5">
                         {% for item in topics %}
                         <li>
-                            <div class="group flex items-center gap-2 rounded-xl px-2 py-2 hover:bg-indigo-50/60">
-                                <a href="{{ url('lms:topic_detail', pk=item.topic.pk) }}" class="flex min-w-0 flex-1 items-center gap-2.5">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-[11px] font-black text-indigo-700">
+                            <div class="flex items-center gap-1 rounded-lg px-1.5 py-1.5 hover:bg-indigo-50">
+                                <a href="{{ url('lms:topic_detail', pk=item.topic.pk) }}" class="flex min-w-0 flex-1 items-center gap-2">
+                                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-black text-indigo-700">
                                         {{ item.title[0]|upper }}
                                     </span>
                                     <span class="min-w-0">
-                                        <span class="block truncate text-sm font-bold text-slate-900 group-hover:text-indigo-700">{{ item.title }}</span>
-                                        <span class="block truncate text-[10px] font-semibold text-slate-500">{{ item.assignments|length }} assignment{% if item.assignments|length != 1 %}s{% endif %}</span>
+                                        <span class="block truncate text-xs font-bold text-slate-900">{{ item.title }}</span>
+                                        <span class="block text-[10px] font-medium text-slate-500">{{ item.assignments|length }} assignment{% if item.assignments|length != 1 %}s{% endif %}</span>
                                     </span>
                                 </a>
                                 {% if is_staff_lms and item.topic %}
                                 <a href="{{ url('lms:topic_edit', pk=item.topic.pk) }}"
-                                   class="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-400 opacity-0 transition group-hover:opacity-100 hover:bg-white hover:text-slate-600"
+                                   class="shrink-0 rounded px-1 py-0.5 text-[8px] font-black uppercase tracking-wider text-slate-400 hover:bg-white hover:text-indigo-600"
                                    title="Edit topic">Edit</a>
                                 {% endif %}
                             </div>
@@ -54,45 +54,47 @@
                     </ul>
                 </nav>
                 {% else %}
-                <p class="px-4 py-8 text-center text-sm text-slate-500">
+                <p class="px-3 py-6 text-center text-xs text-slate-500">
                     No topics yet.{% if is_staff_lms %} Create one to get started.{% endif %}
                 </p>
                 {% endif %}
             </div>
         </aside>
 
-        {# Right — recent submissions feed #}
-        <main class="min-w-0 flex-1">
-            <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-100 px-5 py-4">
-                    <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">Recent submissions</h2>
-                    <p class="mt-1 text-sm text-slate-600">Latest student work across all topics.</p>
+        {# Right — recent submissions feed (wide) #}
+        <main class="min-w-0 md:col-span-8 lg:col-span-9 xl:col-span-10">
+            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-100 bg-slate-50/50 px-4 py-3 sm:px-5 sm:py-4">
+                    <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent submissions</h2>
+                    <p class="mt-0.5 text-xs text-slate-600 sm:text-sm">Latest student work across all topics.</p>
                 </div>
                 {% if recent_submissions %}
                 <ul class="divide-y divide-slate-100">
                     {% for s in recent_submissions %}
-                    <li class="flex items-start gap-3 px-5 py-4 transition hover:bg-slate-50/80">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-black text-white">
-                            {{ s.student.get_username()[0]|upper }}
-                        </div>
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="text-sm font-black text-slate-900">{{ s.student.get_username() }}</p>
-                                {% if s.is_pinned %}
-                                <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-800">Pinned</span>
-                                {% endif %}
-                                <span class="text-[11px] font-semibold text-slate-400">{{ s.updated_at.strftime('%d %b · %H:%M') }}</span>
+                    <li class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:gap-4 sm:px-5">
+                        <div class="flex min-w-0 flex-1 items-start gap-3">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-black text-white">
+                                {{ s.student.get_username()[0]|upper }}
                             </div>
-                            <p class="mt-0.5 text-sm text-slate-600">
-                                submitted on
-                                <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="font-bold text-indigo-600 hover:underline">{{ s.assignment.title }}</a>
-                            </p>
-                            {% if s.caption %}
-                            <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{{ s.caption }}</p>
-                            {% endif %}
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <p class="text-sm font-black text-slate-900">{{ s.student.get_username() }}</p>
+                                    {% if s.is_pinned %}
+                                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-800">Pinned</span>
+                                    {% endif %}
+                                    <span class="text-[11px] font-semibold text-slate-400">{{ s.updated_at.strftime('%d %b · %H:%M') }}</span>
+                                </div>
+                                <p class="mt-0.5 text-sm text-slate-600">
+                                    submitted on
+                                    <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="font-bold text-indigo-600 hover:underline">{{ s.assignment.title }}</a>
+                                </p>
+                                {% if s.caption %}
+                                <p class="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{{ s.caption }}</p>
+                                {% endif %}
+                            </div>
                         </div>
                         <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}"
-                           class="hidden shrink-0 self-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50 sm:inline-flex">
+                           class="inline-flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50 sm:mt-1">
                             View
                         </a>
                     </li>
