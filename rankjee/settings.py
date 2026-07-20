@@ -146,6 +146,7 @@ INSTALLED_APPS = [
     'core',
     'blog',
     'tutor_study',
+    'lms',
     'users',
     'dashboard',
     'assessment',

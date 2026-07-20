@@ -1,0 +1,276 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import Http404, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_http_methods, require_POST
+
+from .forms import (
+    LmsAssignmentForm,
+    LmsBatchForm,
+    LmsBatchMemberForm,
+    LmsCommentForm,
+    LmsReviewForm,
+    LmsSubmissionForm,
+)
+from .models import LmsAssignment, LmsBatch, LmsBatchMembership, LmsReaction, LmsSubmission
+from . import services
+
+
+def _require_lms_access(user):
+    if not services.is_lms_student(user) and not services.is_lms_staff(user):
+        return False
+    return True
+
+
+@login_required
+def home(request):
+    if not _require_lms_access(request.user):
+        messages.error(request, 'LMS is for students and staff.')
+        return redirect('dashboard:index')
+
+    assignments = list(services.assignments_for_user(request.user)[:30])
+    recent = (
+        LmsSubmission.objects.filter(assignment__in=[a.pk for a in assignments] or [0])
+        .select_related('student', 'assignment')
+        .order_by('-is_pinned', '-updated_at')[:12]
+    )
+    return render(
+        request,
+        'lms/home.jinja',
+        {
+            'assignments': assignments,
+            'recent_submissions': recent,
+            'is_staff_lms': services.is_lms_staff(request.user),
+        },
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def assignment_create(request):
+    if not services.is_lms_staff(request.user):
+        return HttpResponseForbidden('Staff only.')
+    if request.method == 'POST':
+        form = LmsAssignmentForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.created_by = request.user
+            obj.save()
+            if obj.is_published:
+                services.notify_new_assignment(obj)
+            messages.success(request, f'Assignment “{obj.title}” created.')
+            return redirect('lms:assignment_detail', pk=obj.pk)
+    else:
+        form = LmsAssignmentForm()
+    return render(
+        request,
+        'lms/assignment_form.jinja',
+        {'form': form, 'is_staff_lms': True},
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def assignment_detail(request, pk):
+    assignment = get_object_or_404(LmsAssignment.objects.select_related('batch'), pk=pk)
+    if not services.can_view_assignment(request.user, assignment):
+        raise Http404()
+
+    is_staff = services.is_lms_staff(request.user)
+    my_sub = LmsSubmission.objects.filter(assignment=assignment, student=request.user).first()
+    can_submit = (
+        getattr(request.user, 'role', None) == 'STUDENT'
+        and services.can_view_assignment(request.user, assignment)
+    )
+    can_edit = bool(my_sub and services.can_edit_submission(request.user, my_sub))
+    # New submit allowed if student, no submission yet, and before deadline (or no deadline)
+    from django.utils import timezone
+
+    past_due = bool(assignment.due_at and timezone.now() > assignment.due_at)
+    can_create = can_submit and not my_sub and not past_due
+    show_submit_form = can_create or can_edit
+
+    submit_form = None
+    if request.method == 'POST' and request.POST.get('action') == 'submit' and show_submit_form:
+        submit_form = LmsSubmissionForm(
+            request.POST,
+            request.FILES,
+            instance=my_sub,
+        )
+        if submit_form.is_valid():
+            sub = submit_form.save(commit=False)
+            sub.assignment = assignment
+            sub.student = request.user
+            if not my_sub:
+                sub.status = LmsSubmission.Status.SUBMITTED
+            sub.save()
+            messages.success(request, 'Submission saved — classmates can see it on the feed.')
+            return redirect('lms:assignment_detail', pk=pk)
+    elif show_submit_form:
+        submit_form = LmsSubmissionForm(instance=my_sub)
+
+    if request.method == 'POST' and request.POST.get('action') == 'review' and is_staff:
+        sub_id = request.POST.get('submission_id')
+        sub = get_object_or_404(LmsSubmission, pk=sub_id, assignment=assignment)
+        review_form = LmsReviewForm(request.POST)
+        if review_form.is_valid():
+            services.review_submission(
+                sub,
+                marks=review_form.cleaned_data.get('marks'),
+                remark=review_form.cleaned_data.get('remark') or '',
+                status=review_form.cleaned_data.get('status'),
+                is_pinned=review_form.cleaned_data.get('is_pinned'),
+            )
+            messages.success(request, f'Review saved for {sub.student.get_username()}.')
+            return redirect('lms:assignment_detail', pk=pk)
+
+    feed = list(services.submissions_feed(assignment))
+    # Attach per-user reaction + review form for staff
+    my_reactions = {}
+    if request.user.is_authenticated:
+        for r in LmsReaction.objects.filter(
+            submission_id__in=[s.pk for s in feed],
+            user=request.user,
+        ):
+            my_reactions[r.submission_id] = r.value
+
+    for s in feed:
+        s.user_reaction = my_reactions.get(s.pk)
+        if is_staff:
+            s.review_form = LmsReviewForm(
+                initial={
+                    'marks': s.marks,
+                    'remark': s.remark,
+                    'status': s.status,
+                    'is_pinned': s.is_pinned,
+                }
+            )
+
+    return render(
+        request,
+        'lms/assignment_detail.jinja',
+        {
+            'assignment': assignment,
+            'feed': feed,
+            'submit_form': submit_form,
+            'show_submit_form': show_submit_form,
+            'my_sub': my_sub,
+            'past_due': past_due,
+            'is_staff_lms': is_staff,
+            'comment_form': LmsCommentForm(),
+        },
+    )
+
+
+@login_required
+@require_POST
+def react(request, pk):
+    sub = get_object_or_404(LmsSubmission.objects.select_related('assignment'), pk=pk)
+    if not services.can_view_assignment(request.user, sub.assignment):
+        raise Http404()
+    value = (request.POST.get('value') or '').upper()
+    if value not in LmsReaction.Value.values:
+        return HttpResponseForbidden('Invalid reaction.')
+    services.set_reaction(sub, request.user, value)
+    # Refresh annotated counts
+    sub = services.submissions_feed(sub.assignment).filter(pk=pk).first() or sub
+    user_reaction = (
+        LmsReaction.objects.filter(submission=sub, user=request.user).values_list('value', flat=True).first()
+    )
+    sub.user_reaction = user_reaction
+    return render(
+        request,
+        'lms/partials/_reactions.jinja',
+        {'s': sub, 'assignment': sub.assignment},
+    )
+
+
+@login_required
+@require_POST
+def comment(request, pk):
+    sub = get_object_or_404(LmsSubmission.objects.select_related('assignment', 'student'), pk=pk)
+    if not services.can_view_assignment(request.user, sub.assignment):
+        raise Http404()
+    form = LmsCommentForm(request.POST)
+    if form.is_valid():
+        try:
+            services.add_comment(sub, request.user, form.cleaned_data['body'])
+        except ValueError as exc:
+            messages.error(request, str(exc))
+    else:
+        messages.error(request, 'Could not post comment.')
+    # Re-fetch with comments
+    sub = services.submissions_feed(sub.assignment).filter(pk=pk).first() or sub
+    user_reaction = (
+        LmsReaction.objects.filter(submission_id=pk, user=request.user)
+        .values_list('value', flat=True)
+        .first()
+    )
+    sub.user_reaction = user_reaction
+    if services.is_lms_staff(request.user):
+        sub.review_form = LmsReviewForm(
+            initial={
+                'marks': sub.marks,
+                'remark': sub.remark,
+                'status': sub.status,
+                'is_pinned': sub.is_pinned,
+            }
+        )
+    return render(
+        request,
+        'lms/partials/_submission_card.jinja',
+        {
+            's': sub,
+            'assignment': sub.assignment,
+            'is_staff_lms': services.is_lms_staff(request.user),
+            'comment_form': LmsCommentForm(),
+        },
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def batches(request):
+    if not services.is_lms_staff(request.user):
+        return HttpResponseForbidden('Staff only.')
+
+    batch_form = LmsBatchForm()
+    member_form = LmsBatchMemberForm()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create_batch':
+            batch_form = LmsBatchForm(request.POST)
+            if batch_form.is_valid():
+                batch_form.save()
+                messages.success(request, 'Batch created.')
+                return redirect('lms:batches')
+        elif action == 'add_member':
+            batch = get_object_or_404(LmsBatch, pk=request.POST.get('batch_id'))
+            member_form = LmsBatchMemberForm(request.POST)
+            if member_form.is_valid():
+                user = member_form.cleaned_data['username']
+                services.add_batch_member(batch, user)
+                messages.success(request, f'Added {user.username} to {batch.name}.')
+                return redirect('lms:batches')
+        elif action == 'remove_member':
+            batch = get_object_or_404(LmsBatch, pk=request.POST.get('batch_id'))
+            mid = request.POST.get('membership_id')
+            m = get_object_or_404(LmsBatchMembership, pk=mid, batch=batch)
+            m.delete()
+            messages.success(request, 'Member removed.')
+            return redirect('lms:batches')
+
+    batch_list = list(
+        LmsBatch.objects.prefetch_related('memberships__user').order_by('name')
+    )
+    return render(
+        request,
+        'lms/batches.jinja',
+        {
+            'batches': batch_list,
+            'batch_form': batch_form,
+            'member_form': member_form,
+            'is_staff_lms': True,
+        },
+    )

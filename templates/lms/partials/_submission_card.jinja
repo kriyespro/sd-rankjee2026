@@ -1,0 +1,105 @@
+{# Expects: s (submission), assignment, is_staff_lms, comment_form #}
+<article id="sub-{{ s.pk }}" class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden {% if s.is_pinned %}ring-2 ring-amber-200{% endif %}">
+    <div class="flex items-start gap-3 p-4 border-b border-slate-100">
+        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-black text-white">
+            {{ s.student.get_username()[0]|upper }}
+        </div>
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+                <p class="text-sm font-black text-slate-900">{{ s.student.get_username() }}</p>
+                {% if s.is_pinned %}<span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-800">Pinned</span>{% endif %}
+                <span class="text-[11px] font-semibold text-slate-400">{{ s.updated_at.strftime('%d %b · %H:%M') }}</span>
+            </div>
+            {% if s.marks is not none %}
+            <p class="mt-0.5 text-xs font-bold text-amber-700">
+                {% for i in range(s.star_rating) %}★{% endfor %}{% for i in range(5 - s.star_rating) %}☆{% endfor %}
+                <span class="text-slate-500 font-semibold">{{ s.marks }}/100</span>
+            </p>
+            {% endif %}
+        </div>
+        <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase
+            {% if s.status == 'APPROVED' %}bg-emerald-100 text-emerald-800
+            {% elif s.status == 'CHANGES_REQUESTED' %}bg-rose-100 text-rose-800
+            {% else %}bg-slate-100 text-slate-600{% endif %}">{{ s.get_status_display() }}</span>
+    </div>
+
+    {% if s.caption %}
+    <p class="px-4 pt-3 text-sm leading-relaxed text-slate-800">{{ s.caption }}</p>
+    {% endif %}
+
+    <div class="px-4 py-3 space-y-2">
+        {% if s.image %}
+        <a href="{{ s.image.url }}" target="_blank" rel="noopener">
+            <img src="{{ s.image.url }}" alt="Submission by {{ s.student.get_username() }}" class="max-h-80 w-full rounded-xl object-cover border border-slate-100">
+        </a>
+        {% endif %}
+        {% if s.file %}
+        <a href="{{ s.file.url }}" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100">
+            PDF / file →
+        </a>
+        {% endif %}
+        {% if s.video_url %}
+        <a href="{{ s.video_url }}" target="_blank" rel="noopener" class="block text-xs font-bold text-indigo-600 hover:underline truncate">Video: {{ s.video_url }}</a>
+        {% endif %}
+        {% if s.website_url %}
+        <a href="{{ s.website_url }}" target="_blank" rel="noopener" class="block text-xs font-bold text-indigo-600 hover:underline truncate">Site: {{ s.website_url }}</a>
+        {% endif %}
+    </div>
+
+    {% if s.remark %}
+    <div class="mx-4 mb-3 rounded-xl border border-amber-100 bg-amber-50/80 px-3 py-2">
+        <p class="text-[10px] font-black uppercase tracking-wider text-amber-800">Staff remark</p>
+        <p class="text-sm text-amber-950">{{ s.remark }}</p>
+    </div>
+    {% endif %}
+
+    <div class="border-t border-slate-100 px-4 py-2" id="react-{{ s.pk }}">
+        {% include "lms/partials/_reactions.jinja" %}
+    </div>
+
+    <div class="border-t border-slate-50 px-4 py-3 space-y-2 bg-slate-50/50">
+        {% for c in s.comments.all() %}
+        <div class="flex gap-2 text-sm">
+            <span class="font-black text-slate-800 shrink-0">{{ c.user.get_username() }}</span>
+            <span class="text-slate-700">{{ c.body }}</span>
+        </div>
+        {% endfor %}
+        <form hx-post="{{ url('lms:comment', pk=s.pk) }}"
+              hx-target="#sub-{{ s.pk }}"
+              hx-swap="outerHTML"
+              class="flex gap-2">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="text" name="body" required maxlength="1000" placeholder="Write a comment…"
+                   class="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            <button type="submit" class="rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-slate-700">Post</button>
+        </form>
+    </div>
+
+    {% if is_staff_lms and s.review_form %}
+    <div class="border-t border-slate-200 bg-slate-50 px-4 py-3">
+        <p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">Staff review</p>
+        <form method="post" class="grid gap-2 sm:grid-cols-2">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="review">
+            <input type="hidden" name="submission_id" value="{{ s.pk }}">
+            <div>
+                <label class="text-[10px] font-black uppercase text-slate-500">Marks</label>
+                {{ s.review_form.marks }}
+            </div>
+            <div>
+                <label class="text-[10px] font-black uppercase text-slate-500">Status</label>
+                {{ s.review_form.status }}
+            </div>
+            <div class="sm:col-span-2">
+                <label class="text-[10px] font-black uppercase text-slate-500">Remark</label>
+                {{ s.review_form.remark }}
+            </div>
+            <label class="flex items-center gap-2 text-xs font-bold text-slate-700 sm:col-span-2">
+                {{ s.review_form.is_pinned }} Pin as best work
+            </label>
+            <button type="submit" class="sm:col-span-2 rounded-lg bg-emerald-600 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-500">Save review</button>
+        </form>
+    </div>
+    {% endif %}
+</article>

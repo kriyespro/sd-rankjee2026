@@ -1,0 +1,75 @@
+{% extends "base.jinja" %}
+{% block title %}LMS · RankJee{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
+            <h1 class="text-2xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
+            <p class="mt-1 text-sm text-slate-600">Submit work, see classmates, like &amp; comment — Facebook-style.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            {% if is_staff_lms %}
+            <a href="{{ url('lms:assignment_create') }}" class="inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">New assignment</a>
+            <a href="{{ url('lms:batches') }}" class="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Batches</a>
+            {% endif %}
+            <a href="{{ url('dashboard:index') }}" class="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Dashboard</a>
+        </div>
+    </div>
+
+    <section class="mb-8">
+        <h2 class="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Open assignments</h2>
+        {% if assignments %}
+        <div class="grid gap-3 sm:grid-cols-2">
+            {% for a in assignments %}
+            <a href="{{ url('lms:assignment_detail', pk=a.pk) }}"
+               class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-indigo-200 hover:shadow-md">
+                <p class="text-sm font-black text-slate-900">{{ a.title }}</p>
+                <p class="mt-1 line-clamp-2 text-xs text-slate-500">{{ a.instructions or 'No instructions' }}</p>
+                <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
+                    {% if a.batch %}
+                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ a.batch.name }}</span>
+                    {% else %}
+                    <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">All students</span>
+                    {% endif %}
+                    {% if a.due_at %}
+                    <span class="rounded-full bg-amber-50 px-2 py-0.5 text-amber-800">Due {{ a.due_at.strftime('%d %b %H:%M') }}</span>
+                    {% endif %}
+                    {% if not a.is_published %}
+                    <span class="rounded-full bg-rose-50 px-2 py-0.5 text-rose-700">Draft</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+            No assignments yet.{% if is_staff_lms %} Create one to get started.{% endif %}
+        </p>
+        {% endif %}
+    </section>
+
+    <section>
+        <h2 class="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Recent submissions</h2>
+        {% if recent_submissions %}
+        <ul class="space-y-3">
+            {% for s in recent_submissions %}
+            <li class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-sm font-black text-indigo-700">
+                    {{ s.student.get_username()[0]|upper }}
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-black text-slate-900">{{ s.student.get_username() }}</p>
+                    <p class="truncate text-xs text-slate-500">on <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="font-bold text-indigo-600 hover:underline">{{ s.assignment.title }}</a></p>
+                </div>
+                {% if s.is_pinned %}<span class="text-[10px] font-black uppercase text-amber-600">Pinned</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">No submissions yet — be the first on an assignment.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

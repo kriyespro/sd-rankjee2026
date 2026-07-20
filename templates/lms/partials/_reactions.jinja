@@ -1,0 +1,28 @@
+{# Expects: s with like_count, dislike_count, user_reaction #}
+<div class="flex items-center gap-3">
+    <form hx-post="{{ url('lms:react', pk=s.pk) }}"
+          hx-target="#react-{{ s.pk }}"
+          hx-swap="innerHTML"
+          class="inline">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="value" value="LIKE">
+        <button type="submit"
+                class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition
+                {% if s.user_reaction == 'LIKE' %}bg-rose-100 text-rose-700{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+            ❤️ {{ s.like_count|default(0) }}
+        </button>
+    </form>
+    <form hx-post="{{ url('lms:react', pk=s.pk) }}"
+          hx-target="#react-{{ s.pk }}"
+          hx-swap="innerHTML"
+          class="inline">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="value" value="DISLIKE">
+        <button type="submit"
+                class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold transition
+                {% if s.user_reaction == 'DISLIKE' %}bg-slate-200 text-slate-800{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+            👎 {{ s.dislike_count|default(0) }}
+        </button>
+    </form>
+    <span class="text-[11px] font-semibold text-slate-400">{{ s.comment_count|default(s.comments.all()|length) }} comments</span>
+</div>

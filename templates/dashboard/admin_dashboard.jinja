@@ -38,6 +38,9 @@
                 <a href="{{ url('dashboard:admin_student_daily_logs') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">📓</span> Student Daily Log
                 </a>
+                <a href="{{ url('lms:home') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">📚</span> LMS Portfolio
+                </a>
                 {% if request.user.is_superuser %}
                 <a href="/sd/server_buy/serverpackage/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">🖥️</span> Server packages

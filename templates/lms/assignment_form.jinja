@@ -1,0 +1,28 @@
+{% extends "base.jinja" %}
+{% block title %}New assignment · LMS{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-xl px-4 py-6 sm:px-6">
+    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Staff</p>
+    <h1 class="text-2xl font-black tracking-tight text-slate-900">Create assignment</h1>
+    <p class="mt-1 text-sm text-slate-600 mb-6">Students will see this on their LMS feed and can submit work.</p>
+
+    <form method="post" class="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in field.errors %}{{ e }}{% endfor %}</p>{% endif %}
+        </div>
+        {% endfor %}
+        {% if form.non_field_errors() %}
+        <p class="text-sm text-rose-600">{% for e in form.non_field_errors() %}{{ e }}{% endfor %}</p>
+        {% endif %}
+        <div class="flex gap-2 pt-2">
+            <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Publish</button>
+            <a href="{{ url('lms:home') }}" class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

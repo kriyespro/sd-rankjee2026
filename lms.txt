@@ -1,0 +1,83 @@
+Learning Management System (LMS)
+
+I'd build it like a **private student portfolio + classroom**.
+
+## Features
+
+### 👨‍🎓 Student
+
+* Login
+* View assignments
+* Submit work
+
+  * Images
+  * PDF
+  * Video link (YouTube/Drive)
+  * Website URL
+* Edit submission until deadline
+* View all classmates' submissions
+* Like ❤️ and comment (optional)
+* Search/filter by batch
+
+### 👨‍🏫 Teacher (You)
+
+* Create assignments
+* Set due dates
+* Review each submission
+* Add remarks
+* Give marks (0–100)
+* Approve or request changes
+* Pin the best work
+* Download all submissions
+* Bulk feedback
+
+### 🌟 Student Showcase
+
+Every assignment displays:
+
+```
+Assignment:
+Meta Ads Poster
+
+Sunil
+⭐⭐⭐⭐⭐
+Remark:
+Excellent headline. Improve CTA.
+
+Rahul
+⭐⭐⭐⭐
+Remark:
+Good design, but text is crowded.
+```
+
+Students learn by seeing others' work.
+
+## Leaderboard
+
+* Total points
+* Best student of week
+* Top submissions
+* Badges
+
+  * SEO Expert
+  * Meta Ads Master
+  * Canva Pro
+  * AI Automation
+
+## Notifications
+
+* New assignment
+* Feedback received
+* Deadline reminders
+
+## Admin
+
+* Manage batches
+* Add/remove students
+* Attendance
+* Export marks
+* Analytics
+
+
+i timeline like feacebook 
+( students ll submit project - others will see and comment like or dislike)
