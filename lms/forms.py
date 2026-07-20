@@ -2,7 +2,14 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.core.validators import URLValidator
 
-from .models import LmsAssignment, LmsBatch, LmsComment, LmsSubmission, LmsSubmissionUrl
+from .models import (
+    LmsAssignment,
+    LmsBatch,
+    LmsComment,
+    LmsSubmission,
+    LmsSubmissionUrl,
+    LmsTopic,
+)
 
 User = get_user_model()
 
@@ -16,8 +23,9 @@ _TEXTAREA = _INPUT
 class LmsAssignmentForm(forms.ModelForm):
     class Meta:
         model = LmsAssignment
-        fields = ['title', 'instructions', 'batch', 'due_at', 'is_published']
+        fields = ['topic', 'title', 'instructions', 'batch', 'due_at', 'is_published']
         widgets = {
+            'topic': forms.Select(attrs={'class': _INPUT}),
             'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Meta Ads Poster'}),
             'instructions': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 4, 'placeholder': 'What students should submit…'}
@@ -35,6 +43,9 @@ class LmsAssignmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['topic'].queryset = LmsTopic.objects.order_by('title')
+        self.fields['topic'].required = False
+        self.fields['topic'].empty_label = 'No topic yet'
         self.fields['batch'].queryset = LmsBatch.objects.filter(is_active=True)
         self.fields['batch'].required = False
         self.fields['batch'].empty_label = 'All students (no batch)'
@@ -167,3 +178,15 @@ class LmsBatchMemberForm(forms.Form):
         if not user:
             raise forms.ValidationError('User not found.')
         return user
+
+
+class LmsTopicForm(forms.ModelForm):
+    class Meta:
+        model = LmsTopic
+        fields = ['title', 'description']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. SEO Basics'}),
+            'description': forms.Textarea(
+                attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Short topic summary…'}
+            ),
+        }

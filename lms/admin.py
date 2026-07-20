@@ -7,6 +7,7 @@ from .models import (
     LmsComment,
     LmsReaction,
     LmsSubmission,
+    LmsTopic,
 )
 
 
@@ -25,12 +26,19 @@ class LmsBatchAdmin(admin.ModelAdmin):
     inlines = [LmsBatchMembershipInline]
 
 
+@admin.register(LmsTopic)
+class LmsTopicAdmin(admin.ModelAdmin):
+    list_display = ('title', 'slug', 'created_at')
+    prepopulated_fields = {'slug': ('title',)}
+    search_fields = ('title', 'description')
+
+
 @admin.register(LmsAssignment)
 class LmsAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'batch', 'due_at', 'is_published', 'created_by', 'created_at')
-    list_filter = ('is_published', 'batch')
+    list_display = ('title', 'topic', 'batch', 'due_at', 'is_published', 'created_by', 'created_at')
+    list_filter = ('topic', 'is_published', 'batch')
     search_fields = ('title', 'instructions')
-    raw_id_fields = ('created_by', 'batch')
+    raw_id_fields = ('created_by', 'topic', 'batch')
 
 
 @admin.register(LmsSubmission)

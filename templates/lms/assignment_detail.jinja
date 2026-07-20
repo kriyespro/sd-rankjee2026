@@ -5,6 +5,10 @@
 <div class="mx-auto w-full max-w-2xl px-4 py-6 sm:px-6">
     <nav class="mb-4 text-xs font-bold text-slate-500">
         <a href="{{ url('lms:home') }}" class="text-indigo-600 hover:underline">LMS</a>
+        {% if assignment.topic %}
+        <span class="mx-1.5">/</span>
+        <a href="{{ url('lms:topic_detail', pk=assignment.topic.pk) }}" class="text-indigo-600 hover:underline">{{ assignment.topic.title }}</a>
+        {% endif %}
         <span class="mx-1.5">/</span>
         <span class="text-slate-800">{{ assignment.title }}</span>
     </nav>
@@ -23,6 +27,9 @@
         <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ assignment.instructions }}</p>
         {% endif %}
         <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
+            {% if assignment.topic %}
+            <span class="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">{{ assignment.topic.title }}</span>
+            {% endif %}
             {% if assignment.batch %}
             <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ assignment.batch.name }}</span>
             {% else %}

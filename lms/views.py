@@ -14,8 +14,9 @@ from .forms import (
     LmsCommentForm,
     LmsReviewForm,
     LmsSubmissionForm,
+    LmsTopicForm,
 )
-from .models import LmsAssignment, LmsBatch, LmsBatchMembership, LmsReaction, LmsSubmission
+from .models import LmsAssignment, LmsBatch, LmsBatchMembership, LmsReaction, LmsSubmission, LmsTopic
 from . import services
 
 
@@ -31,7 +32,8 @@ def home(request):
         messages.error(request, 'LMS is for students and staff.')
         return redirect('dashboard:index')
 
-    assignments = list(services.assignments_for_user(request.user)[:30])
+    assignments = list(services.assignments_for_user(request.user)[:50])
+    topics = services.topics_for_user(request.user)
     recent = (
         LmsSubmission.objects.filter(assignment__in=[a.pk for a in assignments] or [0])
         .select_related('student', 'assignment')
@@ -41,7 +43,7 @@ def home(request):
         request,
         'lms/home.jinja',
         {
-            'assignments': assignments,
+            'topics': topics,
             'recent_submissions': recent,
             'is_staff_lms': services.is_lms_staff(request.user),
         },
@@ -64,11 +66,15 @@ def assignment_create(request):
             messages.success(request, f'Assignment “{obj.title}” created.')
             return redirect('lms:assignment_detail', pk=obj.pk)
     else:
-        form = LmsAssignmentForm()
+        initial = {}
+        topic_id = request.GET.get('topic')
+        if topic_id and LmsTopic.objects.filter(pk=topic_id).exists():
+            initial['topic'] = topic_id
+        form = LmsAssignmentForm(initial=initial)
     return render(
         request,
         'lms/assignment_form.jinja',
-        {'form': form, 'is_staff_lms': True, 'is_edit': False},
+        {'form': form, 'is_staff_lms': True, 'is_edit': False, 'topic_form': LmsTopicForm()},
     )
 
 
@@ -97,6 +103,63 @@ def assignment_edit(request, pk):
             'is_staff_lms': True,
             'is_edit': True,
             'assignment': assignment,
+            'topic_form': LmsTopicForm(),
+        },
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def topic_create(request):
+    if not services.is_lms_staff(request.user):
+        return HttpResponseForbidden('Staff only.')
+    form = LmsTopicForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        topic = form.save()
+        messages.success(request, f'Topic “{topic.title}” created.')
+        return redirect('lms:topic_detail', pk=topic.pk)
+    return render(
+        request,
+        'lms/topic_form.jinja',
+        {'form': form, 'is_staff_lms': True, 'is_edit': False},
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def topic_edit(request, pk):
+    if not services.is_lms_staff(request.user):
+        return HttpResponseForbidden('Staff only.')
+    topic = get_object_or_404(LmsTopic, pk=pk)
+    form = LmsTopicForm(request.POST or None, instance=topic)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, f'Topic “{topic.title}” updated.')
+        return redirect('lms:topic_detail', pk=topic.pk)
+    return render(
+        request,
+        'lms/topic_form.jinja',
+        {'form': form, 'topic': topic, 'is_staff_lms': True, 'is_edit': True},
+    )
+
+
+@login_required
+def topic_detail(request, pk):
+    topic = get_object_or_404(LmsTopic, pk=pk)
+    assignments = [
+        assignment
+        for assignment in services.assignments_for_user(request.user)
+        if assignment.topic_id == topic.pk
+    ]
+    if not assignments and not services.is_lms_staff(request.user):
+        raise Http404()
+    return render(
+        request,
+        'lms/topic_detail.jinja',
+        {
+            'topic': topic,
+            'assignments': assignments,
+            'is_staff_lms': services.is_lms_staff(request.user),
         },
     )
 
@@ -104,7 +167,7 @@ def assignment_edit(request, pk):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def assignment_detail(request, pk):
-    assignment = get_object_or_404(LmsAssignment.objects.select_related('batch'), pk=pk)
+    assignment = get_object_or_404(LmsAssignment.objects.select_related('topic', 'batch'), pk=pk)
     if not services.can_view_assignment(request.user, assignment):
         raise Http404()
 

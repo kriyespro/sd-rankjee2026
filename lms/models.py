@@ -49,7 +49,40 @@ class LmsBatchMembership(models.Model):
         return f'{self.user_id} ∈ {self.batch_id}'
 
 
+class LmsTopic(models.Model):
+    title = models.CharField(max_length=160)
+    slug = models.SlugField(max_length=180, unique=True, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['title']
+        verbose_name = 'LMS topic'
+        verbose_name_plural = 'LMS topics'
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title)[:150] or 'topic'
+            candidate = base
+            n = 2
+            while LmsTopic.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
+                candidate = f'{base}-{n}'
+                n += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
+
+
 class LmsAssignment(models.Model):
+    topic = models.ForeignKey(
+        LmsTopic,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assignments',
+    )
     batch = models.ForeignKey(
         LmsBatch,
         on_delete=models.SET_NULL,
@@ -72,7 +105,7 @@ class LmsAssignment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['topic__title', '-created_at']
 
     def __str__(self):
         return self.title

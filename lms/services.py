@@ -16,6 +16,7 @@ from .models import (
     LmsReaction,
     LmsSubmission,
     LmsSubmissionUrl,
+    LmsTopic,
 )
 
 logger = logging.getLogger('rankjee.lms')
@@ -42,7 +43,7 @@ def user_batch_ids(user) -> set[int]:
 
 
 def assignments_for_user(user) -> QuerySet[LmsAssignment]:
-    qs = LmsAssignment.objects.select_related('batch', 'created_by')
+    qs = LmsAssignment.objects.select_related('topic', 'batch', 'created_by')
     if is_lms_staff(user):
         return qs.all()
     # Students: published + (no batch OR member of batch)
@@ -82,6 +83,23 @@ def can_submit_assignment(user, assignment: LmsAssignment) -> bool:
         # Still allow if they already have a submission (edit) — checked separately
         return LmsSubmission.objects.filter(assignment=assignment, student=user).exists()
     return getattr(user, 'role', None) == 'STUDENT'
+
+
+def topics_for_user(user) -> list[dict]:
+    assignments = list(assignments_for_user(user))
+    grouped: dict[int | str, dict] = {}
+    for assignment in assignments:
+        topic = assignment.topic
+        key = topic.pk if topic else 'untagged'
+        if key not in grouped:
+            grouped[key] = {
+                'topic': topic,
+                'title': topic.title if topic else 'General',
+                'description': topic.description if topic else '',
+                'assignments': [],
+            }
+        grouped[key]['assignments'].append(assignment)
+    return sorted(grouped.values(), key=lambda item: item['title'].lower())
 
 
 def submissions_feed(assignment: LmsAssignment) -> QuerySet[LmsSubmission]:

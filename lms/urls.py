@@ -6,6 +6,9 @@ app_name = 'lms'
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('topics/new/', views.topic_create, name='topic_create'),
+    path('topics/<int:pk>/', views.topic_detail, name='topic_detail'),
+    path('topics/<int:pk>/edit/', views.topic_edit, name='topic_edit'),
     path('assignments/new/', views.assignment_create, name='assignment_create'),
     path('a/<int:pk>/edit/', views.assignment_edit, name='assignment_edit'),
     path('a/<int:pk>/', views.assignment_detail, name='assignment_detail'),
