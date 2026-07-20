@@ -25,20 +25,25 @@ def check_and_reset_streaks():
     Runs daily.
     """
     today = timezone.now().date()
-    users = CustomUser.objects.filter(is_active=True)
+    users = CustomUser.objects.filter(is_active=True).only(
+        'id', 'last_active_date', 'streak_days'
+    )
     reset_count = 0
-    
+    to_email = []
+
     for user in users:
         if user.last_active_date:
             days_inactive = (today - user.last_active_date).days
-            if days_inactive > 1:
-                if user.streak_days > 0:
-                    user.streak_days = 0
-                    user.save(update_fields=['streak_days'])
-                    reset_count += 1
-                    # Dispatch reminder email
-                    send_reminder_email.delay(user.id)
-                
+            if days_inactive > 1 and user.streak_days > 0:
+                user.streak_days = 0
+                to_email.append(user.id)
+                reset_count += 1
+
+    if to_email:
+        CustomUser.objects.filter(id__in=to_email).update(streak_days=0)
+        for user_id in to_email:
+            send_reminder_email.delay(user_id)
+
     return f"Reset streaks for {reset_count} users."
 
 @shared_task

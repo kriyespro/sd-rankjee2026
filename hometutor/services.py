@@ -380,6 +380,34 @@ def ensure_engagement(demo: DemoRequest) -> TutorEngagement:
     return eng
 
 
+def ensure_engagements_bulk(demos) -> None:
+    """Batch-create engagement rows for accepted demos missing one — one INSERT instead
+    of a get_or_create() round trip per row. Callers must query `demos` with
+    select_related('engagement') so checking `d.engagement` below is query-free."""
+    missing = []
+    for d in demos:
+        if d.status != DemoRequest.Status.ACCEPTED:
+            continue
+        try:
+            d.engagement
+        except TutorEngagement.DoesNotExist:
+            missing.append(d)
+    if not missing:
+        return
+    TutorEngagement.objects.bulk_create(
+        [
+            TutorEngagement(
+                demo_request=d,
+                tutor_profile=d.tutor,
+                student=d.requester,
+                status=TutorEngagement.Status.PENDING_MUTUAL,
+            )
+            for d in missing
+        ],
+        ignore_conflicts=True,
+    )
+
+
 def apply_engagement_confirm(eng: TutorEngagement, *, as_parent: bool) -> tuple[bool, bool]:
     """
     Record parent or tutor confirmation.

@@ -218,8 +218,8 @@ def razorpay_webhook(request):
     body = request.body
     sig = request.headers.get('X-Razorpay-Signature', '')
 
-    if not secret and not settings.DEBUG:
-        logger.warning('RAZORPAY_WEBHOOK_SECRET unset — refusing webhook in production')
+    if not secret:
+        logger.warning('RAZORPAY_WEBHOOK_SECRET unset — refusing webhook')
         return HttpResponse(status=503)
 
     if secret and body:

@@ -178,6 +178,9 @@ RAZORPAY_KEY_SECRET = _strip_env_value(os.environ.get("RAZORPAY_KEY_SECRET"))
 # Razorpay webhooks (payment.captured) for home tutor marketplace — verify X-Razorpay-Signature
 RAZORPAY_WEBHOOK_SECRET = _strip_env_value(os.environ.get("RAZORPAY_WEBHOOK_SECRET"))
 
+# OpenRouter (admin "AI generate questions" helper) — set in .env, never hardcode.
+OPENROUTER_API_KEY = _strip_env_value(os.environ.get("OPENROUTER_API_KEY"))
+
 # Home tutor marketplace (separate from subscription `payments`)
 HOMETUTOR_DEFAULT_MONTHLY_FEE_INR = os.environ.get('HOMETUTOR_DEFAULT_MONTHLY_FEE_INR', '5000')
 HOMETUTOR_PLATFORM_FEE_PERCENT = os.environ.get('HOMETUTOR_PLATFORM_FEE_PERCENT', '15')

@@ -85,16 +85,23 @@ class CustomUser(AbstractUser):
         import logging
         from decimal import Decimal
 
-        amount_dec = Decimal(str(amount))
-        self.wallet_balance += amount_dec
-        self.save(update_fields=['wallet_balance'])
+        from django.db import transaction as _transaction
+        from django.db.models import F
 
-        WalletTransaction.objects.create(
-            user=self,
-            amount=amount_dec,
-            transaction_type=transaction_type,
-            reference_id=reference_id,
-        )
+        amount_dec = Decimal(str(amount))
+        # Atomic F()-expression update under a row lock — avoids lost updates when two
+        # requests (e.g. concurrent webhook retries) credit/debit the same wallet at once.
+        with _transaction.atomic():
+            type(self).objects.filter(pk=self.pk).select_for_update().update(
+                wallet_balance=F('wallet_balance') + amount_dec
+            )
+            WalletTransaction.objects.create(
+                user=self,
+                amount=amount_dec,
+                transaction_type=transaction_type,
+                reference_id=reference_id,
+            )
+        self.refresh_from_db(fields=['wallet_balance'])
         logging.getLogger('rankjee.wallet').info(
             'wallet user=%s amount=%s type=%s ref=%s balance=%s',
             self.username,
@@ -198,7 +205,7 @@ class WithdrawalRequest(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='withdrawals')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     upi_id = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', db_index=True)
     admin_note = models.TextField(blank=True, null=True)
     requested_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)

@@ -158,7 +158,10 @@ class QuestionAdmin(admin.ModelAdmin):
                 return redirect('..')
 
             # OpenRouter API call
-            OPENROUTER_KEY = "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"
+            OPENROUTER_KEY = getattr(settings, 'OPENROUTER_API_KEY', '')
+            if not OPENROUTER_KEY:
+                self.message_user(request, "AI generation failed: OPENROUTER_API_KEY is not configured.", level=messages.ERROR)
+                return redirect('..')
             models = [
                 "google/gemma-3-27b-it:free",
                 "meta-llama/llama-3.3-70b-instruct:free",
@@ -196,7 +199,7 @@ Return exactly valid JSON with no markdown formatting, structured strictly as:
                 }
                 resp = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=30)
                 if resp.status_code == 401:
-                    self.message_user(request, "AI generation failed: 401 Unauthorized. Your OpenRouter API key is invalid or revoked. Please update OPENROUTER_KEY in assessment/admin.py.", level=messages.ERROR)
+                    self.message_user(request, "AI generation failed: 401 Unauthorized. Your OpenRouter API key is invalid or revoked. Please update OPENROUTER_API_KEY in your environment.", level=messages.ERROR)
                     return redirect('..')
                 resp.raise_for_status()
                 result = resp.json()

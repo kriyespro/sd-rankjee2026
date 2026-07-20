@@ -1,6 +1,10 @@
+import os
+
 import requests
 
-OPENROUTER_KEY = "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"
+OPENROUTER_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+if not OPENROUTER_KEY:
+    raise SystemExit("Set OPENROUTER_API_KEY in your environment before running this script.")
 
 headers = {
     "Authorization": f"Bearer {OPENROUTER_KEY.strip()}",

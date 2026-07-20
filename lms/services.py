@@ -152,7 +152,7 @@ def review_submission(
 def notify_new_assignment(assignment: LmsAssignment) -> None:
     from django.contrib.auth import get_user_model
 
-    from users.gamification import send_notification
+    from users.models import Notification
 
     User = get_user_model()
     link = reverse('lms:assignment_detail', kwargs={'pk': assignment.pk})
@@ -164,11 +164,16 @@ def notify_new_assignment(assignment: LmsAssignment) -> None:
         students = User.objects.filter(id__in=user_ids, is_active=True)
     else:
         students = User.objects.filter(role='STUDENT', is_active=True)
-    for u in students[:200]:
-        try:
-            send_notification(u, msg, link)
-        except Exception as exc:
-            logger.warning('LMS assignment notify failed: %s', exc)
+    student_ids = students.values_list('id', flat=True)[:200]
+    try:
+        Notification.objects.bulk_create(
+            [
+                Notification(user_id=uid, message=msg, link=link[:200])
+                for uid in student_ids
+            ]
+        )
+    except Exception as exc:
+        logger.warning('LMS assignment notify failed: %s', exc)
 
 
 def _notify_feedback(submission: LmsSubmission) -> None:

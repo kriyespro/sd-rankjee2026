@@ -1,8 +1,9 @@
 from django.conf import settings
-from django.core.validators import RegexValidator
+from django.core.validators import FileExtensionValidator, RegexValidator
 from django.db import models
 
 from assessment.models import Skill
+from core.validators import validate_upload_size_mb
 
 drive_link_validator = RegexValidator(
     regex=r'^https?://(drive\.google\.com|docs\.google\.com)/\S+',
@@ -60,6 +61,10 @@ class StudyMaterial(models.Model):
         blank=True,
         null=True,
         help_text='Optional PDF or image.',
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'webp']),
+            validate_upload_size_mb(10),
+        ],
     )
     is_published = models.BooleanField(default=True, db_index=True)
     study_topic = models.ForeignKey(

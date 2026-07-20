@@ -343,6 +343,14 @@ def submit_test(request, skill_id):
     if request.method != 'POST':
         return redirect('assessment:index')
     skill = get_object_or_404(Skill, pk=skill_id)
+
+    # Entitlement was granted by take_test (trial/wallet/premium). Require it still be
+    # present before scoring — otherwise a direct POST here bypasses the paywall entirely.
+    deleted, _ = SkillTestEntitlement.objects.filter(user=request.user, skill=skill).delete()
+    if not deleted:
+        messages.error(request, "Your test session expired or wasn't paid for. Please start again.")
+        return redirect('assessment:take_test', skill_id=skill.id)
+
     set_id = request.POST.get('set_id') or request.session.get(f'test_set_id_{skill.id}')
     current_set = QuestionSet.objects.filter(id=set_id).first() if set_id else None
     attempted_video_id = request.session.get(f'test_video_id_{skill.id}')
@@ -354,12 +362,12 @@ def submit_test(request, skill_id):
     session_key = f'active_test_paid_{skill.id}'
     if session_key in request.session:
         del request.session[session_key]
-    SkillTestEntitlement.objects.filter(user=request.user, skill=skill).delete()
 
     # Get only the questions that were actually in the test
     question_ids = request.session.get(f'test_questions_{skill.id}', [])
     if not question_ids:
-        questions = Question.objects.filter(skill=skill)
+        messages.error(request, "Your test session expired. Please start again.")
+        return redirect('assessment:take_test', skill_id=skill.id)
     else:
         questions = Question.objects.filter(id__in=question_ids)
         del request.session[f'test_questions_{skill.id}']

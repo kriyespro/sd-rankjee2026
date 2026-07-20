@@ -26,6 +26,7 @@ from hometutor_payments.models import MarketplaceOrder
 
 from .models import DemoRequest, EngagementReview, SessionAttendance, TutorEngagement, TutorProfile
 from .services import (
+    ensure_engagements_bulk,
     attach_demo_status_to_cards,
     apply_engagement_confirm,
     ensure_engagement,
@@ -444,9 +445,7 @@ def tutor_incoming_demos(request):
         .select_related('requester', 'engagement')
         .order_by('-updated_at')[:50]
     )
-    for d in other:
-        if d.status == DemoRequest.Status.ACCEPTED:
-            ensure_engagement(d)
+    ensure_engagements_bulk(other)
     if other:
         refreshed = {
             x.pk: x
@@ -475,9 +474,7 @@ def my_demo_requests(request):
         .select_related('tutor', 'engagement')
         .order_by('-created_at')[:100]
     )
-    for d in demos:
-        if d.status == DemoRequest.Status.ACCEPTED:
-            ensure_engagement(d)
+    ensure_engagements_bulk(demos)
     if demos:
         refreshed = {
             x.pk: x

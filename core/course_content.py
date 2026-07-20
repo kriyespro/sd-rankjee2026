@@ -79,10 +79,16 @@ def resolve_course_includes(course) -> list[str]:
 
 
 def format_bold_markers(text: str) -> str:
-    """Turn **phrase** into <strong>phrase</strong> for safe display."""
+    """Turn **phrase** into <strong>phrase</strong> for safe display. Escapes everything
+    else first — this is rendered with `|safe` in templates, so unescaped input here
+    would be a stored-XSS vector via admin-editable fields like `hero_usps`."""
     import re
+
+    from django.utils.html import escape
+
+    escaped = escape(text)
 
     def repl(match):
         return f"<strong>{match.group(1)}</strong>"
 
-    return re.sub(r"\*\*(.+?)\*\*", repl, text)
+    return re.sub(r"\*\*(.+?)\*\*", repl, escaped)

@@ -64,16 +64,21 @@ def on_test_submitted(user, passed, skill=None):
 
 def on_task_approved(user, task):
     """Call when a task submission is auto-approved or manually approved."""
-    from users.models import WalletTransaction
+    from django.db import transaction
+    from users.models import CustomUser, WalletTransaction
 
-    if WalletTransaction.objects.filter(
-        user=user, transaction_type='EARN_TASK', reference_id=str(task.id)
-    ).exists():
-        return
+    # Lock the user row for the whole idempotency-check + credit so a retried Celery task
+    # or a double approval can't both pass the "already paid" check and double-credit.
+    with transaction.atomic():
+        CustomUser.objects.select_for_update().get(pk=user.pk)
+        if WalletTransaction.objects.filter(
+            user=user, transaction_type='EARN_TASK', reference_id=str(task.id)
+        ).exists():
+            return
 
-    from core.models import UserTaskSubmission
-    user.add_xp(XP_TASK_APPROVED)
-    user.add_wallet(task.reward_amount, transaction_type='EARN_TASK', reference_id=str(task.id))
+        from core.models import UserTaskSubmission
+        user.add_xp(XP_TASK_APPROVED)
+        user.add_wallet(task.reward_amount, transaction_type='EARN_TASK', reference_id=str(task.id))
 
     approved_count = UserTaskSubmission.objects.filter(user=user, status='APPROVED').count()
     if approved_count == 1:

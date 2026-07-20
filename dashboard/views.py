@@ -2171,6 +2171,8 @@ def mark_notification_read(request, note_id):
 
 @login_required
 def recharge_wallet(request):
+    if not settings.DEBUG:
+        return redirect('dashboard:index')
     if request.method == 'POST':
         if not cache.add(f'recharge:{request.user.id}', 1, 15):
             messages.warning(request, 'Please wait a few seconds between test recharges.')

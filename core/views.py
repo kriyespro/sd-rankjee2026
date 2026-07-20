@@ -745,6 +745,10 @@ def watch_ads(request):
 @login_required
 def claim_ad_reward(request):
     if request.method == 'POST':
+        if not cache.add(f'rl:ad_claim:{request.user.id}', 1, 30):
+            messages.warning(request, "Please wait for the ad to finish before claiming.")
+            return redirect('core:watch_ads')
+
         now = timezone.now()
         if request.user.last_ad_claim_at:
             elapsed = (now - request.user.last_ad_claim_at).total_seconds()

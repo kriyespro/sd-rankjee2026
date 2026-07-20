@@ -141,9 +141,14 @@ class UserAttempt(models.Model):
     )
     score = models.IntegerField(default=0)
     time_taken_seconds = models.IntegerField(default=0)
-    passed = models.BooleanField(default=False) # >80% to pass
+    passed = models.BooleanField(default=False, db_index=True) # >80% to pass
     weak_concepts = models.JSONField(default=list) # List of failed concept tags
     attempt_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'attempt_date']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.skill.name} - {self.score}%"

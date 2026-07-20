@@ -6,6 +6,7 @@ import razorpay.errors as rz_errors
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -296,51 +297,54 @@ def verify_payment(request):
         return JsonResponse({"status": "failed", "error": "Missing order id"}, status=400)
 
     try:
-        order = StudentServerOrder.objects.get(razorpay_order_id=params_dict["razorpay_order_id"])
+        with transaction.atomic():
+            order = StudentServerOrder.objects.select_for_update().get(
+                razorpay_order_id=params_dict["razorpay_order_id"]
+            )
+
+            if order.user_id != request.user.id:
+                return JsonResponse({"status": "failed", "error": "Forbidden"}, status=403)
+
+            if order.status != StudentServerOrder.Status.PENDING:
+                return JsonResponse({"status": "success", "message": "Already processed"})
+
+            if razorpay_dummy_mode():
+                order.razorpay_payment_id = params_dict["razorpay_payment_id"] or "pay_dummy"
+                order.razorpay_signature = params_dict["razorpay_signature"] or "dummy"
+                order.status = StudentServerOrder.Status.SUCCESS
+                order.save(
+                    update_fields=["razorpay_payment_id", "razorpay_signature", "status", "updated_at"]
+                )
+                return JsonResponse({"status": "success"})
+
+            client = get_razorpay_client()
+            if not client:
+                return JsonResponse({"status": "failed", "error": "Razorpay not configured"}, status=400)
+
+            if not params_dict["razorpay_payment_id"] or not params_dict["razorpay_signature"]:
+                return JsonResponse(
+                    {"status": "failed", "error": "Missing payment id or signature"},
+                    status=400,
+                )
+
+            try:
+                client.utility.verify_payment_signature(params_dict)
+            except rz_errors.SignatureVerificationError as e:
+                order.status = StudentServerOrder.Status.FAILED
+                order.save(update_fields=["status", "updated_at"])
+                return JsonResponse({"status": "failed", "error": str(e)}, status=400)
+
+            order.razorpay_payment_id = params_dict["razorpay_payment_id"]
+            order.razorpay_signature = params_dict["razorpay_signature"]
+            order.status = StudentServerOrder.Status.SUCCESS
+            order.save(
+                update_fields=[
+                    "razorpay_payment_id",
+                    "razorpay_signature",
+                    "status",
+                    "updated_at",
+                ]
+            )
+            return JsonResponse({"status": "success"})
     except StudentServerOrder.DoesNotExist:
         return JsonResponse({"status": "failed", "error": "Order not found"}, status=400)
-
-    if order.user_id != request.user.id:
-        return JsonResponse({"status": "failed", "error": "Forbidden"}, status=403)
-
-    if order.status != StudentServerOrder.Status.PENDING:
-        return JsonResponse({"status": "success", "message": "Already processed"})
-
-    if razorpay_dummy_mode():
-        order.razorpay_payment_id = params_dict["razorpay_payment_id"] or "pay_dummy"
-        order.razorpay_signature = params_dict["razorpay_signature"] or "dummy"
-        order.status = StudentServerOrder.Status.SUCCESS
-        order.save(
-            update_fields=["razorpay_payment_id", "razorpay_signature", "status", "updated_at"]
-        )
-        return JsonResponse({"status": "success"})
-
-    client = get_razorpay_client()
-    if not client:
-        return JsonResponse({"status": "failed", "error": "Razorpay not configured"}, status=400)
-
-    if not params_dict["razorpay_payment_id"] or not params_dict["razorpay_signature"]:
-        return JsonResponse(
-            {"status": "failed", "error": "Missing payment id or signature"},
-            status=400,
-        )
-
-    try:
-        client.utility.verify_payment_signature(params_dict)
-    except rz_errors.SignatureVerificationError as e:
-        order.status = StudentServerOrder.Status.FAILED
-        order.save(update_fields=["status", "updated_at"])
-        return JsonResponse({"status": "failed", "error": str(e)}, status=400)
-
-    order.razorpay_payment_id = params_dict["razorpay_payment_id"]
-    order.razorpay_signature = params_dict["razorpay_signature"]
-    order.status = StudentServerOrder.Status.SUCCESS
-    order.save(
-        update_fields=[
-            "razorpay_payment_id",
-            "razorpay_signature",
-            "status",
-            "updated_at",
-        ]
-    )
-    return JsonResponse({"status": "success"})
