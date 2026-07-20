@@ -1,7 +1,10 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
@@ -65,7 +68,36 @@ def assignment_create(request):
     return render(
         request,
         'lms/assignment_form.jinja',
-        {'form': form, 'is_staff_lms': True},
+        {'form': form, 'is_staff_lms': True, 'is_edit': False},
+    )
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def assignment_edit(request, pk):
+    if not services.is_lms_staff(request.user):
+        return HttpResponseForbidden('Staff only.')
+    assignment = get_object_or_404(LmsAssignment, pk=pk)
+    if request.method == 'POST':
+        form = LmsAssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            was_published = assignment.is_published
+            obj = form.save()
+            if obj.is_published and not was_published:
+                services.notify_new_assignment(obj)
+            messages.success(request, f'Assignment “{obj.title}” updated.')
+            return redirect('lms:assignment_detail', pk=obj.pk)
+    else:
+        form = LmsAssignmentForm(instance=assignment)
+    return render(
+        request,
+        'lms/assignment_form.jinja',
+        {
+            'form': form,
+            'is_staff_lms': True,
+            'is_edit': True,
+            'assignment': assignment,
+        },
     )
 
 
@@ -97,12 +129,16 @@ def assignment_detail(request, pk):
             instance=my_sub,
         )
         if submit_form.is_valid():
-            sub = submit_form.save(commit=False)
-            sub.assignment = assignment
-            sub.student = request.user
-            if not my_sub:
-                sub.status = LmsSubmission.Status.SUBMITTED
-            sub.save()
+            sub = my_sub or LmsSubmission(
+                assignment=assignment,
+                student=request.user,
+                status=LmsSubmission.Status.SUBMITTED,
+            )
+            services.save_submission_with_urls(
+                sub,
+                caption=submit_form.cleaned_data.get('caption', ''),
+                url_items=submit_form.cleaned_data['url_items'],
+            )
             messages.success(request, 'Submission saved — classmates can see it on the feed.')
             return redirect('lms:assignment_detail', pk=pk)
     elif show_submit_form:
@@ -135,6 +171,7 @@ def assignment_detail(request, pk):
 
     for s in feed:
         s.user_reaction = my_reactions.get(s.pk)
+        s.link_rows = services.submission_link_rows(s)
         if is_staff:
             s.review_form = LmsReviewForm(
                 initial={
@@ -157,6 +194,7 @@ def assignment_detail(request, pk):
             'past_due': past_due,
             'is_staff_lms': is_staff,
             'comment_form': LmsCommentForm(),
+            'url_rows_json': mark_safe(json.dumps(submit_form.url_rows if submit_form else [])),
         },
     )
 
@@ -206,6 +244,7 @@ def comment(request, pk):
         .first()
     )
     sub.user_reaction = user_reaction
+    sub.link_rows = services.submission_link_rows(sub)
     if services.is_lms_staff(request.user):
         sub.review_form = LmsReviewForm(
             initial={

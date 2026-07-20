@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.text import slugify
@@ -129,12 +128,8 @@ class LmsSubmission(models.Model):
         return f'{self.student_id} → {self.assignment_id}'
 
     def clean(self):
-        has_link = bool(
-            (self.video_url or '').strip()
-            or (self.website_url or '').strip()
-        )
-        if not has_link:
-            raise ValidationError('Add a Google Drive file link or website URL.')
+        # URL rows validated in LmsSubmissionForm; legacy fields kept for old rows.
+        pass
 
     @property
     def star_rating(self) -> int:
@@ -192,3 +187,24 @@ class LmsComment(models.Model):
 
     def __str__(self):
         return f'Comment {self.pk} on {self.submission_id}'
+
+
+class LmsSubmissionUrl(models.Model):
+    class Kind(models.TextChoices):
+        DRIVE = 'DRIVE', 'Google Drive'
+        WEBSITE = 'WEBSITE', 'Website'
+
+    submission = models.ForeignKey(
+        LmsSubmission,
+        on_delete=models.CASCADE,
+        related_name='urls',
+    )
+    url = models.URLField(max_length=500)
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.DRIVE)
+    sort_order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['sort_order', 'id']
+
+    def __str__(self):
+        return f'{self.get_kind_display()}: {self.url[:60]}'

@@ -28,16 +28,14 @@
     {% endif %}
 
     <div class="px-4 py-3 flex flex-wrap gap-2">
-        {% if s.video_url %}
-        <a href="{{ s.video_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100">
-            Google Drive file →
+        {% for link in s.link_rows %}
+        <a href="{{ link.url }}" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold hover:opacity-90
+           {% if link.kind == 'WEBSITE' %}border-slate-200 bg-slate-50 text-slate-800 hover:bg-slate-100
+           {% else %}border-indigo-100 bg-indigo-50 text-indigo-700 hover:bg-indigo-100{% endif %}">
+            {{ link.label }} →
         </a>
-        {% endif %}
-        {% if s.website_url %}
-        <a href="{{ s.website_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 hover:bg-slate-100">
-            Website →
-        </a>
-        {% endif %}
+        {% endfor %}
     </div>
 
     {% if s.remark %}

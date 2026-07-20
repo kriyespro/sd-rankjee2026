@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.core.validators import URLValidator
 
-from .models import LmsAssignment, LmsBatch, LmsComment, LmsSubmission
+from .models import LmsAssignment, LmsBatch, LmsComment, LmsSubmission, LmsSubmissionUrl
 
 User = get_user_model()
 
@@ -41,47 +42,66 @@ class LmsAssignmentForm(forms.ModelForm):
         self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
 
 
-class LmsSubmissionForm(forms.ModelForm):
-    class Meta:
-        model = LmsSubmission
-        fields = ['caption', 'video_url', 'website_url']
-        widgets = {
-            'caption': forms.Textarea(
-                attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Say something about your work…'}
-            ),
-            'video_url': forms.URLInput(
-                attrs={
-                    'class': _INPUT,
-                    'placeholder': 'https://drive.google.com/file/d/…',
-                }
-            ),
-            'website_url': forms.URLInput(
-                attrs={'class': _INPUT, 'placeholder': 'https://your-portfolio.com'}
-            ),
-        }
+class LmsSubmissionForm(forms.Form):
+    caption = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Say something about your work…'}
+        ),
+    )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
         super().__init__(*args, **kwargs)
-        self.fields['caption'].label = 'Caption'
-        self.fields['caption'].required = False
-        self.fields['video_url'].label = 'Google Drive file link'
-        self.fields['video_url'].required = False
-        self.fields['website_url'].label = 'Website URL'
-        self.fields['website_url'].required = False
+        if instance and instance.pk and not self.data:
+            self.fields['caption'].initial = instance.caption
+
+    @property
+    def url_rows(self):
+        if self.data:
+            return self._parse_url_rows_from_data(self.data)
+        if self.instance and self.instance.pk:
+            rows = [
+                {'url': row.url, 'kind': row.kind}
+                for row in self.instance.urls.all()
+            ]
+            if not rows:
+                if (self.instance.video_url or '').strip():
+                    rows.append({'url': self.instance.video_url.strip(), 'kind': LmsSubmissionUrl.Kind.DRIVE})
+                if (self.instance.website_url or '').strip():
+                    rows.append({'url': self.instance.website_url.strip(), 'kind': LmsSubmissionUrl.Kind.WEBSITE})
+            if rows:
+                return rows
+        return [
+            {'url': '', 'kind': LmsSubmissionUrl.Kind.DRIVE},
+            {'url': '', 'kind': LmsSubmissionUrl.Kind.WEBSITE},
+        ]
+
+    def _parse_url_rows_from_data(self, data):
+        rows = []
+        i = 0
+        while f'url_{i}' in data or f'url_kind_{i}' in data:
+            url = (data.get(f'url_{i}') or '').strip()
+            kind = (data.get(f'url_kind_{i}') or LmsSubmissionUrl.Kind.DRIVE).upper()
+            if kind not in LmsSubmissionUrl.Kind.values:
+                kind = LmsSubmissionUrl.Kind.DRIVE
+            if url:
+                rows.append({'url': url, 'kind': kind})
+            i += 1
+        return rows
 
     def clean(self):
         cleaned = super().clean()
-        has_link = bool(
-            (cleaned.get('video_url') or '').strip()
-            or (cleaned.get('website_url') or '').strip()
-        )
-        if not has_link and self.instance and self.instance.pk:
-            has_link = bool(
-                (self.instance.video_url or '').strip()
-                or (self.instance.website_url or '').strip()
-            )
-        if not has_link:
-            raise forms.ValidationError('Add a Google Drive file link or website URL.')
+        url_items = self._parse_url_rows_from_data(self.data)
+        validator = URLValidator()
+        for item in url_items:
+            try:
+                validator(item['url'])
+            except forms.ValidationError:
+                raise forms.ValidationError(f'Invalid URL: {item["url"]}')
+        if not url_items:
+            raise forms.ValidationError('Add at least one Google Drive or website link.')
+        cleaned['url_items'] = url_items
         return cleaned
 
 

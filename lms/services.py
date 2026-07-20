@@ -15,6 +15,7 @@ from .models import (
     LmsComment,
     LmsReaction,
     LmsSubmission,
+    LmsSubmissionUrl,
 )
 
 logger = logging.getLogger('rankjee.lms')
@@ -98,6 +99,7 @@ def submissions_feed(assignment: LmsAssignment) -> QuerySet[LmsSubmission]:
                 queryset=LmsComment.objects.select_related('user').order_by('created_at'),
             ),
             'reactions',
+            'urls',
         )
         .order_by('-is_pinned', '-updated_at')
     )
@@ -200,3 +202,47 @@ def add_batch_member(batch: LmsBatch, user) -> LmsBatchMembership:
 def remove_batch_member(batch: LmsBatch, user) -> int:
     deleted, _ = LmsBatchMembership.objects.filter(batch=batch, user=user).delete()
     return deleted
+
+
+def save_submission_with_urls(
+    submission: LmsSubmission,
+    *,
+    caption: str = '',
+    url_items: list[dict],
+) -> LmsSubmission:
+    submission.caption = caption or ''
+    submission.video_url = ''
+    submission.website_url = ''
+    submission.save()
+    submission.urls.all().delete()
+    for i, item in enumerate(url_items):
+        LmsSubmissionUrl.objects.create(
+            submission=submission,
+            url=item['url'],
+            kind=item['kind'],
+            sort_order=i,
+        )
+    return submission
+
+
+def submission_link_rows(submission: LmsSubmission) -> list[dict]:
+    rows = [
+        {'url': row.url, 'kind': row.kind, 'label': row.get_kind_display()}
+        for row in submission.urls.all()
+    ]
+    if rows:
+        return rows
+    legacy = []
+    if (submission.video_url or '').strip():
+        legacy.append({
+            'url': submission.video_url.strip(),
+            'kind': LmsSubmissionUrl.Kind.DRIVE,
+            'label': 'Google Drive',
+        })
+    if (submission.website_url or '').strip():
+        legacy.append({
+            'url': submission.website_url.strip(),
+            'kind': LmsSubmissionUrl.Kind.WEBSITE,
+            'label': 'Website',
+        })
+    return legacy
