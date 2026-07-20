@@ -4,7 +4,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
@@ -264,7 +263,7 @@ def assignment_detail(request, pk):
             'past_due': past_due,
             'is_staff_lms': is_staff,
             'comment_form': LmsCommentForm(),
-            'url_rows_json': mark_safe(json.dumps(submit_form.url_rows if submit_form else [])),
+            'url_rows_json': json.dumps(submit_form.url_rows if submit_form else []),
         },
     )
 

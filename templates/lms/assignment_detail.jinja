@@ -52,11 +52,13 @@
             {% if my_sub %}Update your submission{% else %}Submit your work{% endif %}
         </h2>
         <form method="post" class="space-y-3"
+              data-rows="{{ url_rows_json|e }}"
               x-data="{
-                  rows: {{ url_rows_json }},
+                  rows: [],
                   addRow() { this.rows.push({ url: '', kind: 'DRIVE' }); },
                   removeRow(i) { if (this.rows.length > 1) this.rows.splice(i, 1); }
-              }">
+              }"
+              x-init="rows = JSON.parse($el.getAttribute('data-rows') || '[]')">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
             <input type="hidden" name="action" value="submit">
             <div>
