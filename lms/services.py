@@ -142,6 +142,36 @@ def submissions_feed(assignment: LmsAssignment) -> QuerySet[LmsSubmission]:
     )
 
 
+def home_sidebar_data(user, limit: int = 5) -> dict:
+    """Top scores, most-liked submissions, and latest comments for LMS home."""
+    assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True)[:80]) or [0]
+    base = LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
+
+    top_scores = list(
+        base.filter(marks__isnull=False)
+        .select_related('student', 'assignment')
+        .order_by('-marks', '-updated_at')[:limit]
+    )
+    best_likes = list(
+        base.annotate(
+            like_count=Count('reactions', filter=Q(reactions__value=LmsReaction.Value.LIKE)),
+        )
+        .filter(like_count__gt=0)
+        .select_related('student', 'assignment')
+        .order_by('-like_count', '-updated_at')[:limit]
+    )
+    latest_comments = list(
+        LmsComment.objects.filter(submission__assignment_id__in=assignment_ids)
+        .select_related('user', 'submission', 'submission__assignment', 'submission__student')
+        .order_by('-created_at')[:limit]
+    )
+    return {
+        'top_scores': top_scores,
+        'best_likes': best_likes,
+        'latest_comments': latest_comments,
+    }
+
+
 def set_reaction(submission: LmsSubmission, user, value: str) -> LmsReaction | None:
     """Toggle: same value removes; opposite updates; new creates."""
     existing = LmsReaction.objects.filter(submission=submission, user=user).first()

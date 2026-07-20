@@ -41,12 +41,16 @@ def home(request):
         .select_related('student', 'assignment')
         .order_by('-is_pinned', '-updated_at')[:12]
     )
+    sidebar = services.home_sidebar_data(request.user)
     return render(
         request,
         'lms/home.jinja',
         {
             'topics': topics,
             'recent_submissions': recent,
+            'top_scores': sidebar['top_scores'],
+            'best_likes': sidebar['best_likes'],
+            'latest_comments': sidebar['latest_comments'],
             'is_staff_lms': services.is_lms_staff(request.user),
         },
     )
