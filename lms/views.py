@@ -74,7 +74,7 @@ def assignment_create(request):
     return render(
         request,
         'lms/assignment_form.jinja',
-        {'form': form, 'is_staff_lms': True, 'is_edit': False, 'topic_form': LmsTopicForm()},
+        {'form': form, 'is_staff_lms': True, 'is_edit': False},
     )
 
 
@@ -103,7 +103,6 @@ def assignment_edit(request, pk):
             'is_staff_lms': True,
             'is_edit': True,
             'assignment': assignment,
-            'topic_form': LmsTopicForm(),
         },
     )
 

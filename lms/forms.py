@@ -21,6 +21,34 @@ _TEXTAREA = _INPUT
 
 
 class LmsAssignmentForm(forms.ModelForm):
+    TOPIC_EXISTING = 'existing'
+    TOPIC_NEW = 'new'
+
+    topic_mode = forms.ChoiceField(
+        choices=[
+            (TOPIC_EXISTING, 'Select existing topic'),
+            (TOPIC_NEW, 'Create new topic'),
+        ],
+        initial=TOPIC_EXISTING,
+        widget=forms.RadioSelect(
+            attrs={'class': 'text-indigo-600 focus:ring-indigo-500'},
+        ),
+        label='Topic',
+    )
+    new_topic_title = forms.CharField(
+        required=False,
+        max_length=160,
+        widget=forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. SEO Basics'}),
+        label='New topic title',
+    )
+    new_topic_description = forms.CharField(
+        required=False,
+        widget=forms.Textarea(
+            attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'Short topic summary (optional)…'}
+        ),
+        label='New topic description',
+    )
+
     class Meta:
         model = LmsAssignment
         fields = ['topic', 'title', 'instructions', 'batch', 'due_at', 'is_published']
@@ -45,12 +73,28 @@ class LmsAssignmentForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['topic'].queryset = LmsTopic.objects.order_by('title')
         self.fields['topic'].required = False
-        self.fields['topic'].empty_label = 'No topic yet'
+        self.fields['topic'].empty_label = 'Choose a topic…'
         self.fields['batch'].queryset = LmsBatch.objects.filter(is_active=True)
         self.fields['batch'].required = False
         self.fields['batch'].empty_label = 'All students (no batch)'
         self.fields['due_at'].required = False
         self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
+        if self.instance and self.instance.pk and self.instance.topic_id and not self.data:
+            self.fields['topic_mode'].initial = self.TOPIC_EXISTING
+
+    def clean(self):
+        cleaned = super().clean()
+        mode = cleaned.get('topic_mode') or self.TOPIC_EXISTING
+        if mode == self.TOPIC_NEW:
+            title = (cleaned.get('new_topic_title') or '').strip()
+            if not title:
+                self.add_error('new_topic_title', 'Enter a title for the new topic.')
+            else:
+                cleaned['topic'] = LmsTopic.objects.create(
+                    title=title,
+                    description=(cleaned.get('new_topic_description') or '').strip(),
+                )
+        return cleaned
 
 
 class LmsSubmissionForm(forms.Form):
