@@ -180,7 +180,10 @@ def topic_detail(request, pk):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def assignment_detail(request, pk):
-    assignment = get_object_or_404(LmsAssignment.objects.select_related('topic', 'batch'), pk=pk)
+    assignment = get_object_or_404(
+        LmsAssignment.objects.select_related('topic', 'batch', 'concept_video', 'concept_video__skill'),
+        pk=pk,
+    )
     if not services.can_view_assignment(request.user, assignment):
         raise Http404()
 

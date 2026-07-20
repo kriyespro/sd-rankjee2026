@@ -51,13 +51,22 @@ class LmsAssignmentForm(forms.ModelForm):
 
     class Meta:
         model = LmsAssignment
-        fields = ['topic', 'title', 'instructions', 'batch', 'due_at', 'is_published']
+        fields = [
+            'topic',
+            'title',
+            'instructions',
+            'concept_video',
+            'batch',
+            'due_at',
+            'is_published',
+        ]
         widgets = {
             'topic': forms.Select(attrs={'class': _INPUT}),
             'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Meta Ads Poster'}),
             'instructions': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 4, 'placeholder': 'What students should submit…'}
             ),
+            'concept_video': forms.Select(attrs={'class': _INPUT}),
             'batch': forms.Select(attrs={'class': _INPUT}),
             'due_at': forms.DateTimeInput(
                 attrs={'class': _INPUT, 'type': 'datetime-local'},
@@ -68,12 +77,31 @@ class LmsAssignmentForm(forms.ModelForm):
             ),
         }
         input_formats = {'due_at': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']}
+        labels = {
+            'concept_video': 'Lecture recording',
+        }
+        help_texts = {
+            'concept_video': 'Opens the matching video on /learning/ for students.',
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from learning.models import ConceptVideo
+
         self.fields['topic'].queryset = LmsTopic.objects.order_by('title')
         self.fields['topic'].required = False
         self.fields['topic'].empty_label = 'Choose a topic…'
+        self.fields['concept_video'].queryset = ConceptVideo.objects.select_related('skill').order_by(
+            'concept_tag', 'title'
+        )
+        self.fields['concept_video'].required = False
+        self.fields['concept_video'].empty_label = 'No lecture linked…'
+        self.fields['concept_video'].label_from_instance = (
+            lambda obj: (
+                f'[{obj.concept_tag}] {obj.title}'
+                + (f' · {obj.skill.name}' if obj.skill_id else '')
+            )
+        )
         self.fields['batch'].queryset = LmsBatch.objects.filter(is_active=True)
         self.fields['batch'].required = False
         self.fields['batch'].empty_label = 'All students (no batch)'

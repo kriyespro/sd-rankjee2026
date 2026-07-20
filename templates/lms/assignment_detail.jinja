@@ -26,6 +26,13 @@
         {% if assignment.instructions %}
         <p class="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">{{ assignment.instructions }}</p>
         {% endif %}
+        {% if assignment.concept_video_id %}
+        <a href="{{ assignment.learning_lecture_url() }}"
+           class="mt-4 inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-violet-500">
+            ▶ Watch lecture recording
+            <span class="font-semibold normal-case tracking-normal opacity-90">· {{ assignment.concept_video.title }}</span>
+        </a>
+        {% endif %}
         <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
             {% if assignment.topic %}
             <span class="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">{{ assignment.topic.title }}</span>

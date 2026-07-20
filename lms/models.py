@@ -100,6 +100,14 @@ class LmsAssignment(models.Model):
         null=True,
         related_name='lms_assignments_created',
     )
+    concept_video = models.ForeignKey(
+        'learning.ConceptVideo',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_assignments',
+        help_text='Optional lecture recording from /learning/ linked to this assignment.',
+    )
     is_published = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -109,6 +117,21 @@ class LmsAssignment(models.Model):
 
     def __str__(self):
         return self.title
+
+    def learning_lecture_url(self) -> str:
+        """Deep-link to /learning/ scrolled to this lecture video."""
+        from django.urls import reverse
+        from urllib.parse import urlencode
+
+        if not self.concept_video_id:
+            return reverse('learning:index')
+        video = self.concept_video
+        params = {'video_id': video.pk}
+        if video.skill_id:
+            params['skill'] = video.skill_id
+        if video.concept_tag:
+            params['concept'] = video.concept_tag
+        return f"{reverse('learning:index')}?{urlencode(params)}"
 
 
 class LmsSubmission(models.Model):

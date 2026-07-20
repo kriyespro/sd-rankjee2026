@@ -35,10 +35,19 @@ class LmsTopicAdmin(admin.ModelAdmin):
 
 @admin.register(LmsAssignment)
 class LmsAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'topic', 'batch', 'due_at', 'is_published', 'created_by', 'created_at')
+    list_display = (
+        'title',
+        'topic',
+        'concept_video',
+        'batch',
+        'due_at',
+        'is_published',
+        'created_by',
+        'created_at',
+    )
     list_filter = ('topic', 'is_published', 'batch')
     search_fields = ('title', 'instructions')
-    raw_id_fields = ('created_by', 'topic', 'batch')
+    raw_id_fields = ('created_by', 'topic', 'batch', 'concept_video')
 
 
 @admin.register(LmsSubmission)

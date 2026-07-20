@@ -66,6 +66,14 @@
             {% if form.instructions.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.instructions.errors %}{{ e }}{% endfor %}</p>{% endif %}
         </div>
         <div>
+            <label for="{{ form.concept_video.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">
+                Lecture recording <span class="font-semibold normal-case text-slate-400">(optional)</span>
+            </label>
+            {{ form.concept_video }}
+            <p class="mt-1 text-[11px] text-slate-500">Students get a “Watch lecture” button that opens this video on <span class="font-semibold">/learning/</span>. Manage videos under CMS → Videos.</p>
+            {% if form.concept_video.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.concept_video.errors %}{{ e }}{% endfor %}</p>{% endif %}
+        </div>
+        <div>
             <label for="{{ form.batch.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.batch.label }}</label>
             {{ form.batch }}
             {% if form.batch.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.batch.errors %}{{ e }}{% endfor %}</p>{% endif %}
