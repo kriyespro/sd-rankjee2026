@@ -215,15 +215,26 @@ def set_reaction(submission: LmsSubmission, user, value: str) -> LmsReaction | N
             return None
         existing.value = value
         existing.save(update_fields=['value'])
-        return existing
-    return LmsReaction.objects.create(submission=submission, user=user, value=value)
+        reaction = existing
+    else:
+        reaction = LmsReaction.objects.create(submission=submission, user=user, value=value)
+
+    if (
+        reaction.value == LmsReaction.Value.LIKE
+        and reaction.user_id != submission.student_id
+    ):
+        _notify_like(submission, user)
+    return reaction
 
 
 def add_comment(submission: LmsSubmission, user, body: str) -> LmsComment:
     body = (body or '').strip()
     if not body:
         raise ValueError('Comment cannot be empty.')
-    return LmsComment.objects.create(submission=submission, user=user, body=body[:1000])
+    comment = LmsComment.objects.create(submission=submission, user=user, body=body[:1000])
+    if user.pk != submission.student_id:
+        _notify_comment(submission, user, comment.body)
+    return comment
 
 
 def review_submission(
@@ -279,16 +290,60 @@ def notify_new_assignment(assignment: LmsAssignment) -> None:
         logger.warning('LMS assignment notify failed: %s', exc)
 
 
+def lms_notifications_for_user(user, limit: int = 15) -> dict:
+    from users.models import Notification
+
+    qs = Notification.objects.filter(user=user, link__contains='/lms/')
+    return {
+        'items': list(qs.order_by('-created_at')[:limit]),
+        'unread_count': qs.filter(is_read=False).count(),
+    }
+
+
+def _submission_link(submission: LmsSubmission) -> str:
+    return reverse('lms:assignment_detail', kwargs={'pk': submission.assignment_id})
+
+
+def _display_name(user) -> str:
+    return (user.get_full_name() or user.username or 'Someone').strip()
+
+
+def _notify_like(submission: LmsSubmission, reactor) -> None:
+    from users.gamification import send_notification
+
+    title = submission.assignment.title
+    msg = f'👍 {_display_name(reactor)} liked your work on “{title}”'
+    try:
+        send_notification(submission.student, msg[:300], _submission_link(submission))
+    except Exception as exc:
+        logger.warning('LMS like notify failed: %s', exc)
+
+
+def _notify_comment(submission: LmsSubmission, commenter, body: str) -> None:
+    from users.gamification import send_notification
+
+    preview = body[:80] + ('…' if len(body) > 80 else '')
+    title = submission.assignment.title
+    msg = f'💬 {_display_name(commenter)} commented on “{title}”: {preview}'
+    try:
+        send_notification(submission.student, msg[:300], _submission_link(submission))
+    except Exception as exc:
+        logger.warning('LMS comment notify failed: %s', exc)
+
+
 def _notify_feedback(submission: LmsSubmission) -> None:
     from users.gamification import send_notification
 
-    link = reverse('lms:assignment_detail', kwargs={'pk': submission.assignment_id})
-    bits = []
-    if submission.marks is not None:
-        bits.append(f'{submission.marks}/100')
-    if submission.remark:
-        bits.append('remark updated')
-    msg = f'Feedback on “{submission.assignment.title}”' + (f': {", ".join(bits)}' if bits else '')
+    link = _submission_link(submission)
+    title = submission.assignment.title
+    if submission.marks is not None and submission.remark:
+        msg = f'📊 Faculty reviewed “{title}”: {submission.marks}/100'
+    elif submission.marks is not None:
+        msg = f'📊 Marks updated on “{title}”: {submission.marks}/100'
+    elif submission.remark:
+        msg = f'💬 Faculty left a remark on “{title}”'
+    else:
+        msg = f'📝 Update on “{title}”'
     try:
         send_notification(submission.student, msg[:300], link)
     except Exception as exc:

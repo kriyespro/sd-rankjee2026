@@ -44,6 +44,7 @@ def home(request):
     sidebar = services.home_sidebar_data(request.user)
     is_staff = services.is_lms_staff(request.user)
     admin_stats = services.admin_home_stats() if is_staff else None
+    lms_notify = services.lms_notifications_for_user(request.user) if not is_staff else None
     return render(
         request,
         'lms/home.jinja',
@@ -55,8 +56,24 @@ def home(request):
             'latest_comments': sidebar['latest_comments'],
             'is_staff_lms': is_staff,
             'admin_stats': admin_stats,
+            'lms_notify': lms_notify,
         },
     )
+
+
+@login_required
+def notification_read(request, note_id):
+    from users.models import Notification
+
+    note = Notification.objects.filter(pk=note_id, user=request.user).first()
+    if not note:
+        return redirect('lms:home')
+    if not note.is_read:
+        note.is_read = True
+        note.save(update_fields=['is_read'])
+    if note.link:
+        return redirect(note.link)
+    return redirect('lms:home')
 
 
 @login_required

@@ -8,6 +8,9 @@
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
             <div class="mt-0.5 flex flex-wrap items-center gap-2">
                 <h1 class="text-xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
+                {% if not is_staff_lms and lms_notify %}
+                {% include "lms/partials/_notifications_bell.jinja" %}
+                {% endif %}
                 {% if is_staff_lms and admin_stats %}
                 <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-800" title="Students who submitted at least once">
                     {{ admin_stats.students_submitted }} students

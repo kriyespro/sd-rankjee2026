@@ -15,4 +15,5 @@ urlpatterns = [
     path('submissions/<int:pk>/react/', views.react, name='react'),
     path('submissions/<int:pk>/comment/', views.comment, name='comment'),
     path('batches/', views.batches, name='batches'),
+    path('notifications/<int:note_id>/read/', views.notification_read, name='notification_read'),
 ]
