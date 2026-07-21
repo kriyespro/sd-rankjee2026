@@ -1,7 +1,24 @@
 {# Expects: lms_notify, student_name (optional — falls back to username) #}
 {% set greet_name = (student_name or request.user.first_name or request.user.username)|title %}
 
-<div class="flex min-w-0 max-w-full items-start gap-2.5 sm:gap-3" x-data="{ open: false }">
+<div class="flex min-w-0 max-w-full items-start gap-3 sm:gap-4"
+     x-data="{
+         open: false,
+         checked: {},
+         markAndGo(event, id, href) {
+             if (id) {
+                 const nid = parseInt(id, 10);
+                 this.checked[nid] = true;
+                 fetch('/admin/lms/notifications/' + nid + '/read/?ajax=1', {
+                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                 }).catch(() => {});
+             }
+             if (href) {
+                 setTimeout(() => { window.location.href = href; }, 120);
+             }
+             event.preventDefault();
+         }
+     }">
     <div class="relative shrink-0">
         <button type="button"
                 @click="open = !open"
@@ -26,15 +43,15 @@
              x-transition:enter-end="opacity-100 translate-y-0 scale-100"
              @click.outside="open = false"
              @keydown.escape.window="open = false"
-             class="absolute left-0 top-full z-[60] mt-2 w-[min(100vw-2rem,24rem)] overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl ring-1 ring-black/5 sm:left-0">
-            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-white">
-                <div class="flex items-start justify-between gap-2">
+             class="absolute left-0 top-full z-[60] mt-2 w-[min(100vw-1.5rem,32rem)] overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-2xl ring-1 ring-black/5 sm:w-[36rem]">
+            <div class="bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-3.5 text-white">
+                <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-sm font-black tracking-tight">Hi {{ greet_name }} 👋</p>
-                        <p class="mt-0.5 text-[11px] font-medium leading-snug text-indigo-100">Your latest classroom updates</p>
+                        <p class="text-base font-black tracking-tight">Hi {{ greet_name }} 👋</p>
+                        <p class="mt-0.5 text-xs font-medium leading-snug text-indigo-100">Your latest classroom updates</p>
                     </div>
                     {% if lms_notify.unread_count %}
-                    <span class="shrink-0 rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-black text-white backdrop-blur-sm">
+                    <span class="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[11px] font-black text-white backdrop-blur-sm">
                         {{ lms_notify.unread_count }} new
                     </span>
                     {% endif %}
@@ -42,25 +59,45 @@
             </div>
 
             {% if lms_notify.notifications %}
-            <div class="max-h-[min(70vh,22rem)] overflow-y-auto overscroll-contain bg-slate-50/40 p-2">
+            <div class="max-h-[min(70vh,24rem)] overflow-y-auto overscroll-contain bg-slate-50/40 p-3">
                 {% if lms_notify.own_work %}
-                <div class="mb-2">
-                    <p class="px-2 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">On your work</p>
-                    <ul class="space-y-1">
+                <div class="mb-3">
+                    <p class="px-1 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">On your work</p>
+                    <ul class="space-y-1.5">
                         {% for note in lms_notify.own_work %}
+                        {% set note_href = note.notification_id and url('lms:notification_read', note_id=note.notification_id) or note.link %}
                         <li>
-                            <a href="{% if note.notification_id %}{{ url('lms:notification_read', note_id=note.notification_id) }}{% else %}{{ note.link }}{% endif %}"
+                            <a href="{{ note_href }}"
+                               {% if note.notification_id %}
+                               data-note-id="{{ note.notification_id }}"
+                               data-note-link="{{ note.link or note_href }}"
+                               @click="markAndGo($event, $el.dataset.noteId, $el.dataset.noteLink)"
+                               {% else %}
                                @click="open = false"
-                               class="flex gap-3 rounded-xl border px-3 py-2.5 transition
-                                      {% if not note.is_read %}border-indigo-200 bg-white shadow-sm{% else %}border-transparent bg-white/80 hover:border-slate-200 hover:bg-white{% endif %}">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base ring-1 ring-slate-100">{{ note.icon }}</span>
+                               {% endif %}
+                               class="flex gap-3 rounded-xl border px-3.5 py-2.5 transition
+                                      {% if not note.is_read %}border-indigo-200 bg-white shadow-sm{% else %}border-transparent bg-white/90 hover:border-slate-200{% endif %}"
+                               {% if note.notification_id %}:class="checked[{{ note.notification_id }}] ? 'border-transparent bg-white/90' : ''"{% endif %}>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base ring-1 ring-slate-100">{{ note.icon }}</span>
                                 <span class="min-w-0 flex-1">
-                                    <span class="flex items-center gap-1.5">
-                                        <span class="truncate text-xs font-black text-slate-900">{{ note.title }}</span>
-                                        {% if not note.is_read %}<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>{% endif %}
+                                    <span class="flex items-center gap-2">
+                                        <span class="truncate text-sm font-black text-slate-900">{{ note.title }}</span>
+                                        {% if not note.is_read %}
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"
+                                              {% if note.notification_id %}x-show="!checked[{{ note.notification_id }}]"{% endif %}></span>
+                                        {% endif %}
+                                        <span class="ml-auto shrink-0 text-[10px] font-semibold text-slate-400">{{ note.created_at.strftime('%d %b · %I:%M %p') }}</span>
                                     </span>
-                                    <span class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-600">{{ note.body }}</span>
-                                    <span class="mt-1 block text-[10px] font-semibold text-slate-400">{{ note.created_at.strftime('%d %b · %I:%M %p') }}</span>
+                                    {% if not note.is_read %}
+                                    <span class="mt-1 block text-xs leading-snug text-slate-600"
+                                          {% if note.notification_id %}x-show="!checked[{{ note.notification_id }}]" x-transition{% endif %}>
+                                        {{ note.body }}
+                                    </span>
+                                    {% endif %}
+                                    <span class="mt-1 hidden text-[10px] font-bold uppercase tracking-wide text-emerald-600"
+                                          {% if note.notification_id %}x-show="checked[{{ note.notification_id }}]"{% endif %}>
+                                        ✓ Checked — opening your work
+                                    </span>
                                 </span>
                             </a>
                         </li>
@@ -71,22 +108,42 @@
 
                 {% if lms_notify.classroom %}
                 <div>
-                    <p class="px-2 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">New assignments</p>
-                    <ul class="space-y-1">
+                    <p class="px-1 py-1.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400">New assignments</p>
+                    <ul class="space-y-1.5">
                         {% for note in lms_notify.classroom %}
+                        {% set note_href = note.notification_id and url('lms:notification_read', note_id=note.notification_id) or note.link %}
                         <li>
-                            <a href="{% if note.notification_id %}{{ url('lms:notification_read', note_id=note.notification_id) }}{% else %}{{ note.link }}{% endif %}"
+                            <a href="{{ note_href }}"
+                               {% if note.notification_id %}
+                               data-note-id="{{ note.notification_id }}"
+                               data-note-link="{{ note.link or note_href }}"
+                               @click="markAndGo($event, $el.dataset.noteId, $el.dataset.noteLink)"
+                               {% else %}
                                @click="open = false"
-                               class="flex gap-3 rounded-xl border px-3 py-2.5 transition
-                                      {% if not note.is_read %}border-violet-200 bg-white shadow-sm{% else %}border-transparent bg-white/80 hover:border-slate-200 hover:bg-white{% endif %}">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base ring-1 ring-slate-100">{{ note.icon }}</span>
+                               {% endif %}
+                               class="flex gap-3 rounded-xl border px-3.5 py-2.5 transition
+                                      {% if not note.is_read %}border-violet-200 bg-white shadow-sm{% else %}border-transparent bg-white/90 hover:border-slate-200{% endif %}"
+                               {% if note.notification_id %}:class="checked[{{ note.notification_id }}] ? 'border-transparent bg-white/90' : ''"{% endif %}>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-50 text-base ring-1 ring-slate-100">{{ note.icon }}</span>
                                 <span class="min-w-0 flex-1">
-                                    <span class="flex items-center gap-1.5">
-                                        <span class="truncate text-xs font-black text-slate-900">{{ note.title }}</span>
-                                        {% if not note.is_read %}<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500"></span>{% endif %}
+                                    <span class="flex items-center gap-2">
+                                        <span class="truncate text-sm font-black text-slate-900">{{ note.title }}</span>
+                                        {% if not note.is_read %}
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500"
+                                              {% if note.notification_id %}x-show="!checked[{{ note.notification_id }}]"{% endif %}></span>
+                                        {% endif %}
+                                        <span class="ml-auto shrink-0 text-[10px] font-semibold text-slate-400">{{ note.created_at.strftime('%d %b · %I:%M %p') }}</span>
                                     </span>
-                                    <span class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-600">{{ note.body }}</span>
-                                    <span class="mt-1 block text-[10px] font-semibold text-slate-400">{{ note.created_at.strftime('%d %b · %I:%M %p') }}</span>
+                                    {% if not note.is_read %}
+                                    <span class="mt-1 block text-xs leading-snug text-slate-600"
+                                          {% if note.notification_id %}x-show="!checked[{{ note.notification_id }}]" x-transition{% endif %}>
+                                        {{ note.body }}
+                                    </span>
+                                    {% endif %}
+                                    <span class="mt-1 hidden text-[10px] font-bold uppercase tracking-wide text-emerald-600"
+                                          {% if note.notification_id %}x-show="checked[{{ note.notification_id }}]"{% endif %}>
+                                        ✓ Checked — opening assignment
+                                    </span>
                                 </span>
                             </a>
                         </li>
@@ -96,22 +153,22 @@
                 {% endif %}
             </div>
             {% else %}
-            <div class="bg-white px-4 py-8 text-center">
+            <div class="bg-white px-5 py-8 text-center">
                 <p class="text-3xl">🔔</p>
                 <p class="mt-2 text-sm font-bold text-slate-800">You're all caught up</p>
-                <p class="mt-1 text-[11px] leading-relaxed text-slate-500">Marks, remarks, reviews, comments, likes &amp; new assignments will show up here.</p>
+                <p class="mt-1 text-xs leading-relaxed text-slate-500">Marks, remarks, reviews, comments, likes &amp; new assignments will show up here.</p>
             </div>
             {% endif %}
         </div>
     </div>
 
     <div class="min-w-0 flex-1 pt-0.5">
-        <p class="text-sm font-black leading-tight text-slate-900">
+        <p class="text-sm font-black leading-tight text-slate-900 sm:text-base">
             How are you, <span class="text-indigo-600">{{ greet_name }}</span>?
         </p>
         <button type="button"
                 @click="open = !open"
-                class="mt-0.5 text-left text-[11px] font-semibold leading-snug text-slate-500 transition hover:text-indigo-600">
+                class="mt-0.5 text-left text-xs font-semibold leading-snug text-slate-500 transition hover:text-indigo-600">
             Check notifications for the latest updates
             {% if lms_notify.unread_count %}
             <span class="text-rose-600">· {{ lms_notify.unread_count }} new</span>

@@ -71,6 +71,9 @@ def notification_read(request, note_id):
     if not note.is_read:
         note.is_read = True
         note.save(update_fields=['is_read'])
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('ajax') == '1':
+        from django.http import HttpResponse
+        return HttpResponse(status=204)
     if note.link:
         return redirect(note.link)
     return redirect('lms:home')
