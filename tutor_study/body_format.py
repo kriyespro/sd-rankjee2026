@@ -2,30 +2,74 @@
 
 from __future__ import annotations
 
+import codecs
+import json
 import re
 
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
+from markupsafe import Markup, escape
 
 try:
     from markdown import markdown as md_markdown
 except ImportError:  # pragma: no cover
     md_markdown = None
 
+_AI_FOOTER_MARKERS = (
+    '\n# EXECUTION COMMAND:',
+    '\n## PHASE 4: FINAL INTEGRATION',
+    '\n"I am ready. Please provide the topic',
+)
+
 
 def normalize_study_body_text(text: str) -> str:
-    """Fix Windows / JSON / API copy-paste line endings stored as literal \\r\\n."""
+    """Fix JSON/API copy-paste where line breaks were stored as literal \\n or \\r\\n."""
     if not text:
         return ''
-    text = text.replace('\\\\r\\\\n', '\n')
-    text = text.replace('\\\\n', '\n')
-    text = text.replace('\\\\r', '\n')
-    text = text.replace('\\r\\n', '\n')
-    text = text.replace('\\n', '\n')
-    text = text.replace('\\r', '\n')
-    text = text.replace('\r\n', '\n')
-    text = text.replace('\r', '\n')
-    return text
+    text = text.strip()
+
+    if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
+        try:
+            text = json.loads(text)
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+
+    text = text.replace('&#92;r&#92;n', '\n').replace('&#92;n', '\n').replace('&#92;r', '\n')
+
+    for _ in range(6):
+        prev = text
+        text = (
+            text.replace('\\\\r\\\\n', '\n')
+            .replace('\\\\n', '\n')
+            .replace('\\\\r', '\n')
+            .replace('\\r\\n', '\n')
+            .replace('\\n', '\n')
+            .replace('\\r', '\n')
+            .replace('\\t', '\t')
+        )
+        if text == prev:
+            break
+
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+
+    if re.search(r'\\u[0-9a-fA-F]{4}', text):
+        try:
+            text = codecs.decode(text, 'unicode_escape')
+        except (UnicodeDecodeError, ValueError):
+            pass
+
+    for marker in _AI_FOOTER_MARKERS:
+        idx = text.find(marker)
+        if idx != -1:
+            text = text[:idx].strip()
+
+    lines = [ln for ln in text.split('\n') if ln.strip() not in {'``', '`', '- ``', '- `', '* ``'}]
+    return '\n'.join(lines).strip()
+
+
+def _cleanup_study_html(html: str) -> str:
+    html = re.sub(r'<li>\s*</li>', '', html)
+    html = re.sub(r'<li>\s*`{1,2}\s*</li>', '', html)
+    html = re.sub(r'<p>\s*</p>', '', html)
+    return html
 
 
 def _fallback_html(safe_source: str) -> str:
@@ -55,7 +99,7 @@ def _fallback_html(safe_source: str) -> str:
 
     for line in lines:
         stripped = line.strip()
-        if not stripped:
+        if not stripped or stripped in {'``', '`'}:
             flush_para()
             if in_ul:
                 parts.append('</ul>')
@@ -74,11 +118,14 @@ def _fallback_html(safe_source: str) -> str:
 
         ul = re.match(r'^[-*]\s+(.+)$', stripped)
         if ul:
+            item = ul.group(1).strip()
+            if item in {'``', '`'}:
+                continue
             flush_para()
             if not in_ul:
                 parts.append('<ul>')
                 in_ul = True
-            parts.append(f'<li>{_inline(ul.group(1))}</li>')
+            parts.append(f'<li>{_inline(item)}</li>')
             continue
 
         if in_ul:
@@ -92,20 +139,20 @@ def _fallback_html(safe_source: str) -> str:
     return ''.join(parts)
 
 
-def format_study_body_html(text: str):
+def format_study_body_html(text: str) -> Markup:
     """Return safe HTML for study material body (markdown + pasted line fixes)."""
     text = normalize_study_body_text(text)
     if not text:
-        return mark_safe('')
+        return Markup('')
     safe_source = escape(text)
     if md_markdown is not None:
         html = md_markdown(
-            safe_source,
+            str(safe_source),
             extensions=[
                 'extra',
                 'nl2br',
                 'sane_lists',
             ],
         )
-        return mark_safe(html)
-    return mark_safe(_fallback_html(safe_source))
+        return Markup(_cleanup_study_html(html))
+    return Markup(_cleanup_study_html(_fallback_html(str(safe_source))))
