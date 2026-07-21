@@ -6,9 +6,10 @@
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div class="min-w-0">
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
-            <div class="mt-0.5 flex flex-wrap items-center gap-2">
+            <div class="mt-0.5 flex flex-wrap items-start gap-x-3 gap-y-2">
                 <h1 class="text-xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
                 {% if not is_staff_lms and lms_notify %}
+                {% set student_name = request.user.first_name or request.user.username %}
                 {% include "lms/partials/_notifications_bell.jinja" %}
                 {% endif %}
                 {% if is_staff_lms and admin_stats %}
