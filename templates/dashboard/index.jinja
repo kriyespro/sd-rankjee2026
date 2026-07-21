@@ -130,9 +130,9 @@
             {% endif %}
             <div class="mt-2 flex flex-wrap gap-1.5">
                 {% if parent_gate_enabled %}
-                <a href="{{ url('dashboard:index') }}?parent_gate=0" class="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100">Parent mode off</a>
+                <a href="{{ url('dashboard:index') }}?parent_gate=0" class="inline-flex rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-800 hover:bg-amber-100" title="Practice how parent sign-off would work">Practice approval off</a>
                 {% else %}
-                <a href="{{ url('dashboard:index') }}?parent_gate=1" class="inline-flex rounded-md border border-slate-200 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Parent mode on</a>
+                <a href="{{ url('dashboard:index') }}?parent_gate=1" class="inline-flex rounded-md border border-slate-200 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50" title="Preview parent sign-off copy on demo buttons">Practice approval on</a>
                 {% endif %}
             </div>
         </div>
@@ -344,8 +344,8 @@
             </div>
         </div>
         {% if parent_gate_enabled %}
-        <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black uppercase tracking-wider text-amber-800">
-            Parent-approval mode is active. {{ student_parent_approval_pending }} action{% if student_parent_approval_pending != 1 %}s{% endif %} may require parent sign-off before payment continuity.
+        <p class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+            <span class="font-black uppercase tracking-wider">Practice mode:</span> demo buttons show parent-approval copy. Real parent accounts approve demos from <a href="{{ url('hometutor:my_demo_requests') }}" class="text-amber-800 underline">My demos</a>.
         </p>
         {% endif %}
 
@@ -491,37 +491,11 @@
                 </a>
             </div>
 
-            {% if user_role == 'TUTOR' %}
-            <div class="rounded-xl border border-sky-100 bg-sky-50/70 p-4">
-                <p class="text-xs font-black uppercase tracking-widest text-sky-700 mb-2">Role action</p>
-                <h3 class="text-lg font-black text-slate-900">Invite students to online practice</h3>
-                <p class="text-sm text-slate-600 mt-1">Share your referral link with students to unlock tests and track progress digitally.</p>
-            </div>
-            {% elif user_role == 'PARENT' %}
-            <div class="rounded-xl border border-amber-100 bg-amber-50/70 p-4">
-                <p class="text-xs font-black uppercase tracking-widest text-amber-700 mb-2">Role action</p>
-                <h3 class="text-lg font-black text-slate-900">Track your child’s prep rhythm</h3>
-                <p class="text-sm text-slate-600 mt-1">Use test results and tutor demos together to choose the best academic path.</p>
-            </div>
-            {% elif user_role == 'CITY_ADMIN' %}
-            <div class="rounded-xl border border-fuchsia-100 bg-fuchsia-50/70 p-4">
-                <p class="text-xs font-black uppercase tracking-widest text-fuchsia-700 mb-2">Role action</p>
-                <h3 class="text-lg font-black text-slate-900">Monitor your city tutor operations</h3>
-                <p class="text-sm text-slate-600 mt-1">Review local tutor quality, disputes, and active demo conversions with staff workflows.</p>
-            </div>
-            {% elif user_role == 'GLOBAL_ADMIN' %}
-            <div class="rounded-xl border border-slate-200 bg-slate-100/70 p-4">
-                <p class="text-xs font-black uppercase tracking-widest text-slate-700 mb-2">Role action</p>
-                <h3 class="text-lg font-black text-slate-900">Run platform-wide growth and quality ops</h3>
-                <p class="text-sm text-slate-600 mt-1">Track network metrics, trust & safety, and monetization health across all regions.</p>
-            </div>
-            {% else %}
             <div class="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
                 <p class="text-[10px] font-black uppercase tracking-wider text-indigo-700">Student path</p>
                 <h3 class="mt-1 text-base font-black text-slate-900 md:text-lg">Tests + tutors</h3>
                 <p class="mt-1 text-xs leading-snug text-slate-600 md:text-sm">Use diagnostics and demos together when you want guided help.</p>
             </div>
-            {% endif %}
         </div>
 
         {# Sidebar: use widths that exist in built app.css (see tailwind build) #}

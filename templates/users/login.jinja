@@ -6,9 +6,18 @@
         <div class="text-center mb-6">
             <div class="text-4xl mb-3 drop-shadow-sm">🔐</div>
             <h2 class="text-3xl font-black text-slate-900 tracking-tight">Welcome Back</h2>
-            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to continue your learning</p>
+            {% if role_hint == 'TUTOR' %}
+            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to manage your tutor listing and demo inbox</p>
+            {% elif role_hint == 'PARENT' %}
+            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to browse tutors and track demo requests for your child</p>
+            {% elif next_url and 'hometutor' in next_url %}
+            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to continue your tutor search or demo requests</p>
+            {% else %}
+            <p class="text-slate-500 mt-2 text-sm font-medium">Log in to continue your dashboard, tutors, and learning flow</p>
+            {% endif %}
         </div>
         {% set google_process = 'login' %}
+        {% set google_next_url = next_url %}
         {% include 'users/partials/_google_signin_button.jinja' %}
         <div class="relative my-6">
             <div class="absolute inset-0 flex items-center">
@@ -20,6 +29,9 @@
         </div>
         <form method="post" action="{{ url('users:login') }}">
             <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            {% if next_url %}
+            <input type="hidden" name="next" value="{{ next_url }}">
+            {% endif %}
             <div class="space-y-4 flex flex-col">
                 {% for field in form %}
                 <div class="flex flex-col">
@@ -50,7 +62,7 @@
         </form>
     </div>
     <p class="mt-8 text-center text-sm font-medium text-slate-500">Don't have an account?
-        <a href="{{ url('users:signup') }}" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">Sign up free</a>
+        <a href="{{ url('users:signup') }}{% if next_url or role_hint %}?{% if role_hint %}role={{ role_hint|urlencode }}{% endif %}{% if next_url %}{% if role_hint %}&{% endif %}next={{ next_url|urlencode }}{% endif %}{% endif %}" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">Sign up free</a>
     </p>
 </div>
 {% endblock %}

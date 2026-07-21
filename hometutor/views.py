@@ -11,6 +11,7 @@ from django.views.decorators.http import require_http_methods
 
 from core.hometutor_data import PILOT_CITY
 from core.ratelimit import ratelimit
+from users.models import CustomUser
 
 from .forms import (
     DemoAcceptForm,
@@ -71,6 +72,40 @@ def _pagination_query(request) -> str:
     q = request.GET.copy()
     q.pop("page", None)
     return q.urlencode()
+
+
+def _is_tutor_user(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and getattr(user, 'role', None) == CustomUser.Role.TUTOR
+    )
+
+
+def _is_demo_requester_user(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and getattr(user, 'role', None) in {
+            CustomUser.Role.STUDENT,
+            CustomUser.Role.PARENT,
+            CustomUser.Role.VIP_USER,
+        }
+    )
+
+
+def _require_tutor_user(request):
+    if _is_tutor_user(request.user):
+        return None
+    messages.error(request, 'Tutor access only. Please sign in with a tutor account.')
+    return redirect('dashboard:index')
+
+
+def _require_demo_requester_user(request):
+    if _is_demo_requester_user(request.user):
+        return None
+    messages.error(request, 'Only student or parent accounts can request tutor demos.')
+    return redirect('dashboard:index')
 
 
 @transaction.non_atomic_requests
@@ -313,6 +348,9 @@ def tutor_detail(request, slug):
 @require_http_methods(['POST'])
 @ratelimit(rate=5, period=300, key_prefix='demo_request_create')
 def demo_request_create(request, slug):
+    gate = _require_demo_requester_user(request)
+    if gate:
+        return gate
     profile = get_object_or_404(
         TutorProfile,
         slug=slug,
@@ -366,6 +404,9 @@ def demo_request_create(request, slug):
 
 @login_required
 def tutor_profile_edit(request):
+    gate = _require_tutor_user(request)
+    if gate:
+        return gate
     profile = get_tutor_profile(request.user)
     initial = {}
     if not profile:
@@ -421,6 +462,9 @@ def tutor_profile_edit(request):
 
 @login_required
 def tutor_incoming_demos(request):
+    gate = _require_tutor_user(request)
+    if gate:
+        return gate
     profile = get_tutor_profile(request.user)
     if not profile:
         messages.info(request, 'Create your tutor listing first.')
@@ -471,6 +515,9 @@ def tutor_incoming_demos(request):
 
 @login_required
 def my_demo_requests(request):
+    gate = _require_demo_requester_user(request)
+    if gate:
+        return gate
     demos = list(
         DemoRequest.objects.filter(requester=request.user)
         .select_related('tutor', 'engagement')
@@ -518,6 +565,9 @@ def my_demo_requests(request):
 @login_required
 @require_http_methods(['POST'])
 def demo_accept(request, pk):
+    gate = _require_tutor_user(request)
+    if gate:
+        return gate
     demo = get_object_or_404(
         DemoRequest.objects.select_related('tutor'),
         pk=pk,
@@ -554,6 +604,9 @@ def demo_accept(request, pk):
 @login_required
 @require_http_methods(['POST'])
 def demo_decline(request, pk):
+    gate = _require_tutor_user(request)
+    if gate:
+        return gate
     demo = get_object_or_404(
         DemoRequest.objects.select_related('tutor'),
         pk=pk,
@@ -591,6 +644,9 @@ def demo_cancel(request, pk):
 @login_required
 @require_http_methods(['POST'])
 def demo_confirm_parent(request, pk):
+    gate = _require_demo_requester_user(request)
+    if gate:
+        return gate
     demo = get_object_or_404(
         DemoRequest.objects.select_related('tutor', 'engagement'),
         pk=pk,
@@ -615,6 +671,9 @@ def demo_confirm_parent(request, pk):
 @login_required
 @require_http_methods(['POST'])
 def demo_confirm_tutor(request, pk):
+    gate = _require_tutor_user(request)
+    if gate:
+        return gate
     demo = get_object_or_404(
         DemoRequest.objects.select_related('tutor', 'tutor__user', 'engagement'),
         pk=pk,

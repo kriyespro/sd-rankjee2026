@@ -476,7 +476,7 @@
           List your profile on RankJee for free. Get demo requests from families near you
           — offline, online, or hybrid. No commission until you confirm.
         </p>
-        <a href="{{ url('hometutor:my_profile') }}" class="ht-btn ht-btn-primary !text-sm">
+        <a href="{{ url('users:signup') }}?role=TUTOR" class="ht-btn ht-btn-primary !text-sm">
           Create your listing →
         </a>
       </div>
@@ -513,7 +513,7 @@
     <div class="flex flex-wrap justify-center gap-3">
       <a href="#find-tutors" class="ht-btn ht-btn-primary">Find my tutor →</a>
       {% if not request.user.is_authenticated %}
-      <a href="{{ url('users:signup') }}" class="ht-btn ht-btn-secondary">Sign up free</a>
+      <a href="{{ url('users:signup') }}?role=PARENT" class="ht-btn ht-btn-secondary">Sign up free</a>
       {% endif %}
     </div>
   </div>

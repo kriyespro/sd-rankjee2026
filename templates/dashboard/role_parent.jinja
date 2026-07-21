@@ -59,6 +59,39 @@
                 </ul>
             </div>
 
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Booking funnel</p>
+                        <h2 class="text-lg font-black tracking-tight text-slate-900">Request to confirmed learning</h2>
+                        <p class="mt-0.5 text-xs text-slate-600">Where your tutor search stands.</p>
+                    </div>
+                    <a href="{{ url('hometutor:my_demo_requests') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100">Open my demos</a>
+                </div>
+                <div class="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-5">
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Requested</p>
+                        <p class="mt-0.5 text-lg font-black tabular-nums text-slate-900">{{ pending_sent }}</p>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Accepted</p>
+                        <p class="mt-0.5 text-lg font-black tabular-nums text-slate-900">{{ accepted_sent }}</p>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Active</p>
+                        <p class="mt-0.5 text-lg font-black tabular-nums text-slate-900">{{ active_learning }}</p>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Paid</p>
+                        <p class="mt-0.5 text-lg font-black tabular-nums text-slate-900">{{ parent_paid_count }}</p>
+                    </div>
+                    <div class="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-slate-500">Declined</p>
+                        <p class="mt-0.5 text-lg font-black tabular-nums text-slate-900">{{ parent_demo_declined }}</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid gap-4 md:grid-cols-2">
                 <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                     <div class="flex items-center justify-between gap-2">

@@ -153,6 +153,8 @@ def login_view(request):
     if request.user.is_authenticated:
         return _auth_redirect(request)
 
+    next_url = request.POST.get('next') or request.GET.get('next') or ''
+    role_hint = (request.GET.get('role') or '').strip().upper()
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -162,7 +164,11 @@ def login_view(request):
             return _auth_redirect(request)
     else:
         form = AuthenticationForm()
-    return render(request, 'users/login.jinja', {'form': form})
+    return render(
+        request,
+        'users/login.jinja',
+        {'form': form, 'next_url': next_url, 'role_hint': role_hint},
+    )
 
 
 def logout_view(request):
@@ -320,6 +326,8 @@ def onboarding_role(request):
 def onboarding_profile(request):
     if request.user.onboarding_completed:
         return redirect('dashboard:index')
+    if user_needs_role_picker(request):
+        return redirect('users:onboarding_role')
 
     role = request.user.role
     if role not in PUBLIC_SELF_ASSIGNABLE_ROLES:

@@ -160,16 +160,7 @@ def _role_dashboard_context(request):
 
     if role == 'TUTOR':
         tutor_profile = TutorProfile.objects.filter(user=user).first()
-        tutor_preview_mode = False
-        if not tutor_profile:
-            tutor_profile = (
-                TutorProfile.objects.filter(
-                    verification_status=TutorProfile.VerificationStatus.APPROVED
-                )
-                .order_by('-reviews_count', '-rating_display')
-                .first()
-            )
-            tutor_preview_mode = bool(tutor_profile)
+        tutor_preview_mode = not tutor_profile
         pending_incoming = (
             DemoRequest.objects.filter(
                 tutor=tutor_profile,
@@ -398,6 +389,16 @@ def _role_dashboard_context(request):
             for d in latest_demo_requests
             if d.status == DemoRequest.Status.PENDING and (now - d.created_at).total_seconds() > (24 * 3600)
         ]
+        parent_demo_sla_risk_count = DemoRequest.objects.filter(
+            requester=user,
+            status=DemoRequest.Status.PENDING,
+            created_at__lt=now - timedelta(hours=24),
+        ).count()
+        parent_demo_declined = DemoRequest.objects.filter(
+            requester=user,
+            status=DemoRequest.Status.DECLINED,
+        ).count()
+        parent_paid_count = parent_paid_orders.count()
         parent_next_actions = []
         if parent_demo_sla_risk_ids:
             parent_next_actions.append('Follow up on pending demo requests older than 24h.')
@@ -425,7 +426,7 @@ def _role_dashboard_context(request):
         activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:8]
         return {
             'kpi_cards': [
-                {'label': 'Pending approvals', 'value': pending_sent},
+                {'label': 'Pending demo requests', 'value': pending_sent},
                 {'label': 'Tutor demos booked', 'value': accepted_sent},
                 {'label': 'Active engagements', 'value': active_learning},
                 {'label': 'Open support cases', 'value': support_cases},
@@ -442,7 +443,9 @@ def _role_dashboard_context(request):
             'parent_attendance_rate': parent_attendance_rate,
             'parent_next_actions': parent_next_actions,
             'parent_demo_sla_risk_ids': parent_demo_sla_risk_ids,
-            'parent_demo_sla_risk_count': len(parent_demo_sla_risk_ids),
+            'parent_demo_sla_risk_count': parent_demo_sla_risk_count,
+            'parent_demo_declined': parent_demo_declined,
+            'parent_paid_count': parent_paid_count,
             'activity_timeline': activity_timeline,
             'template_name': 'dashboard/role_parent.jinja',
         }

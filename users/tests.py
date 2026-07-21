@@ -41,6 +41,16 @@ class OnboardingFlowTests(TestCase):
         res = self.client.get(reverse('dashboard:index'))
         self.assertRedirects(res, reverse('users:onboarding_profile'))
 
+    def test_hometutor_redirects_incomplete_onboarding(self):
+        self.client.force_login(self.user)
+        res = self.client.get(reverse('hometutor:my_demo_requests'))
+        self.assertRedirects(res, reverse('users:onboarding_profile'))
+
+    def test_onboarding_pages_remain_accessible(self):
+        self.client.force_login(self.user)
+        res = self.client.get(reverse('users:onboarding_profile'))
+        self.assertEqual(res.status_code, 200)
+
     def test_student_profile_onboarding_marks_complete(self):
         self.client.force_login(self.user)
         res = self.client.post(

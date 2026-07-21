@@ -77,3 +77,25 @@ class UserPremiumMiddleware:
 
 def invalidate_user_premium_cache(user_id: int) -> None:
     cache.delete(f"user_premium:{user_id}")
+
+
+class OnboardingGateMiddleware:
+    """Redirect authenticated users with incomplete onboarding to the onboarding flow."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from users.onboarding import onboarding_path_is_exempt, onboarding_redirect_url
+
+        user = getattr(request, "user", None)
+        if (
+            user
+            and getattr(user, "is_authenticated", False)
+            and not getattr(user, "onboarding_completed", True)
+            and not onboarding_path_is_exempt(request.path)
+        ):
+            from django.shortcuts import redirect
+
+            return redirect(onboarding_redirect_url(request))
+        return self.get_response(request)

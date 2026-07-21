@@ -15,6 +15,10 @@
             · <a href="{{ url('hometutor:tutor_detail', profile.slug) }}" class="text-indigo-600 hover:underline">Preview public URL</a>
             {% endif %}
         </p>
+        <div class="mt-4 flex flex-wrap gap-3 text-sm font-bold">
+            <a href="{{ url('dashboard:index') }}" class="text-slate-600 hover:text-slate-900">Dashboard</a>
+            <a href="{{ url('hometutor:tutor_demos') }}" class="text-emerald-700 hover:text-emerald-900">Demo inbox</a>
+        </div>
         {% endif %}
     </div>
 </section>

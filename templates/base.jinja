@@ -524,23 +524,23 @@
                 </a>
                 </div>
             {% elif current_role == 'TUTOR' %}
-                <a href="{{ url('hometutor:tutor_demos') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/demos' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📥</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/demos' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Inbox</span>
+                <a href="{{ url('hometutor:tutor_demos') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'my/demos' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📥</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'my/demos' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Inbox</span>
                 </a>
-                <a href="{{ url('hometutor:my_profile') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'my/profile' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🧑</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'my/profile' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Profile</span>
+                <a href="{{ url('hometutor:my_profile') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'my/profile' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🧑</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'my/profile' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Profile</span>
                 </a>
-                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.rstrip('/') == '/admin' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.rstrip('/') == '/admin' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
             {% elif current_role == 'PARENT' %}
                 <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
                 <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
-                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.startswith('/hometutor/') and 'requests' not in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path == '/hometutor/' or request.path.startswith('/hometutor/city/') %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">👨‍🏫</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path == '/hometutor/' or request.path.startswith('/hometutor/city/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
                 </a>
                 <a href="{{ url('hometutor:my_demo_requests') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'my/requests' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📅</div>
@@ -565,8 +565,8 @@
                     <span class="text-xs font-black uppercase tracking-widest {% if request.path.startswith('/hometutor/') %}text-indigo-600{% else %}text-slate-500{% endif %}">Tutors</span>
                 </a>
                 <a href="{{ url('dashboard:index') }}" class="flex flex-col items-center gap-1 p-2 group">
-                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if 'dashboard' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
-                    <span class="text-xs font-black uppercase tracking-widest {% if 'dashboard' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all {% if request.path.rstrip('/') == '/admin' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
+                    <span class="text-xs font-black uppercase tracking-widest {% if request.path.rstrip('/') == '/admin' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
             {% endif %}
         </div>

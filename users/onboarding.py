@@ -1,5 +1,7 @@
 """Central onboarding routing — single source for role/profile gate logic."""
 
+from django.urls import reverse
+
 from .models import CustomUser
 
 SESSION_NEEDS_ROLE_PICKER = "needs_role_picker"
@@ -58,7 +60,7 @@ def incomplete_onboarding_url_name(request):
     return "users:onboarding_role"
 
 
-def post_auth_redirect_target(request, fallback="learning:index", *, from_email_signup=False):
+def post_auth_redirect_target(request, fallback="dashboard:index", *, from_email_signup=False):
     if request.user.is_authenticated and not getattr(request.user, "onboarding_completed", True):
         if from_email_signup:
             return "users:onboarding_profile"
@@ -117,3 +119,24 @@ def complete_role_selection(request, user, role):
     user.role = role
     user.save(update_fields=["role"])
     request.session.pop(SESSION_NEEDS_ROLE_PICKER, None)
+
+
+# Paths reachable before onboarding is complete (prefix match).
+ONBOARDING_EXEMPT_PREFIXES = (
+    "/users/login",
+    "/users/signup",
+    "/users/logout",
+    "/users/onboarding/",
+    "/accounts/",
+    "/static/",
+    "/media/",
+)
+
+
+def onboarding_path_is_exempt(path: str) -> bool:
+    path = path or "/"
+    return any(path.startswith(prefix) for prefix in ONBOARDING_EXEMPT_PREFIXES)
+
+
+def onboarding_redirect_url(request) -> str:
+    return reverse(incomplete_onboarding_url_name(request))

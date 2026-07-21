@@ -1,6 +1,7 @@
 {# Google brand-style sign-in (white + multicolor G). google_process: login | signup #}
 {% set _proc = google_process|default('login') %}
-<a href="/accounts/google/login/?process={{ _proc }}"
+{% set _next = google_next_url|default('') %}
+<a href="/accounts/google/login/?process={{ _proc }}{% if _next %}&next={{ _next|urlencode }}{% endif %}"
    class="group w-full inline-flex items-center justify-center gap-3 rounded-lg border border-[#dadce0] bg-white py-3 px-4 text-sm font-semibold text-[#3c4043] shadow-sm transition-all hover:bg-[#f8f9fa] hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#4285F4]/40 focus:ring-offset-2">
     <svg class="h-5 w-5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
