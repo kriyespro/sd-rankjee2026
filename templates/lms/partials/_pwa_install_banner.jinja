@@ -1,0 +1,73 @@
+{# Student LMS — optional PWA install prompt (Chrome/Edge Android & desktop) #}
+<div id="pwa-install-banner"
+     class="hidden mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50 to-violet-50 px-3 py-2.5 sm:px-4"
+     role="region"
+     aria-label="Install RankJee app">
+    <div class="flex min-w-0 items-center gap-2.5">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#3b4cb8] text-sm font-black text-white shadow-sm">R</span>
+        <div class="min-w-0">
+            <p class="text-xs font-black text-slate-900">Install RankJee on your phone</p>
+            <p class="text-[10px] leading-snug text-slate-600">Get LMS updates faster — add to home screen like an app.</p>
+        </div>
+    </div>
+    <div class="flex shrink-0 items-center gap-2">
+        <button type="button" id="pwa-install-btn"
+                class="rounded-lg bg-[#3b4cb8] px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:opacity-90">
+            Install
+        </button>
+        <button type="button" id="pwa-install-dismiss"
+                class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-500 hover:bg-slate-50"
+                aria-label="Dismiss">
+            ✕
+        </button>
+    </div>
+</div>
+<script>
+(function () {
+    const KEY = 'rankjee_pwa_install_dismissed';
+    const banner = document.getElementById('pwa-install-banner');
+    const btn = document.getElementById('pwa-install-btn');
+    const dismiss = document.getElementById('pwa-install-dismiss');
+    if (!banner || !btn || !dismiss) return;
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+    if (isStandalone || localStorage.getItem(KEY) === '1') return;
+
+    let deferredPrompt = null;
+
+    function showBanner() {
+        banner.classList.remove('hidden');
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        showBanner();
+    });
+
+    btn.addEventListener('click', async function () {
+        if (!deferredPrompt) {
+            alert('On iPhone: tap Share → Add to Home Screen.\nOn Android: use browser menu → Install app.');
+            return;
+        }
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        banner.classList.add('hidden');
+        localStorage.setItem(KEY, '1');
+    });
+
+    dismiss.addEventListener('click', function () {
+        banner.classList.add('hidden');
+        localStorage.setItem(KEY, '1');
+    });
+
+    // iOS Safari has no beforeinstallprompt — hint once on mobile WebKit
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isMobile = window.matchMedia('(max-width: 768px)').matches;
+    if (isIOS && isMobile) {
+        setTimeout(showBanner, 1200);
+    }
+})();
+</script>

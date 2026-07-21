@@ -47,6 +47,10 @@
         </div>
     </div>
 
+    {% if not is_staff_lms %}
+    {% include "lms/partials/_pwa_install_banner.jinja" %}
+    {% endif %}
+
     {# LEFT | CENTER | RIGHT — side-by-side from lg (1024px) #}
     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-3">
 
