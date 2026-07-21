@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     {% set _seo_title = seo_title if seo_title is defined and seo_title else "RankJee — Home tutor jobs & best tutors in your city" %}
     {% set _seo_description = seo_description if seo_description is defined and seo_description else "Get home tutors jobs in your city and find the best home tutor near you — RankJee connects families with verified tutors, courses, and exam practice." %}
     {% set _seo_keywords = seo_keywords if seo_keywords is defined and seo_keywords else "home tutor jobs, best home tutor, private tutor, tuition at home, RankJee" %}
@@ -25,6 +25,10 @@
     <meta name="twitter:description" content="{{ _seo_description }}">
     <link rel="manifest" href="{{ static('manifest.json') }}">
     <meta name="theme-color" content="#3b4cb8">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="RankJee">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="{{ static('img/icons/apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -255,6 +259,18 @@
         .mobile-nav-shadow {
             box-shadow: 0 -4px 20px -5px rgba(0, 0, 0, 0.08);
         }
+        .mobile-nav-bar {
+            padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+        }
+        .pwa-safe-body {
+            padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+        }
+        @media (min-width: 768px) {
+            .pwa-safe-body { padding-bottom: 0; }
+        }
+        .pwa-safe-header {
+            padding-top: env(safe-area-inset-top, 0px);
+        }
         /* Main nav — compact account cluster (replaces removed top utility bar) */
         .nav-main-util {
             display: inline-flex;
@@ -376,10 +392,10 @@
     {% block schema %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pb-20 md:pb-0">
+<body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pwa-safe-body md:pb-0">
     {% set current_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
 
-    <header class="sticky top-0 z-50">
+    <header class="sticky top-0 z-50 pwa-safe-header">
     <nav class="nav-glass border-t-0">
         <div class="max-w-7xl mx-auto px-3 sm:px-4 md:px-8 h-[3.2rem] md:h-16 flex items-center gap-2 md:gap-4">
             {# Logo — ~20% shorter bar: smaller mark + type #}
@@ -470,7 +486,7 @@
     </header>
 
     <!-- Mobile Bottom Tab Bar -->
-    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 md:hidden mobile-nav-shadow px-4 py-2">
+    <div class="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 md:hidden mobile-nav-shadow mobile-nav-bar px-4 pt-2">
         <div class="flex items-center justify-between gap-1 w-full max-w-lg mx-auto">
             <a href="{{ url('core:home') }}" class="flex flex-shrink-0 flex-col items-center gap-1 p-1.5 group">
                 <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path == '/' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🏠</div>
@@ -492,7 +508,7 @@
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/study' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Study</span>
                 </a>
                 {% endif %}
-                {% if request.user.is_authenticated and current_role == 'STUDENT' %}
+                {% if request.user.is_authenticated and current_role in ('STUDENT', 'VIP_USER') %}
                 <a href="{{ url('lms:home') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/lms' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🖼️</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/lms' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">LMS</span>

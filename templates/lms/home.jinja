@@ -6,10 +6,10 @@
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div class="min-w-0">
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Classroom</p>
-            <div class="mt-0.5 flex flex-wrap items-start gap-y-2">
-                <h1 class="text-xl font-black tracking-tight text-slate-900">LMS Portfolio Feed</h1>
+            <div class="mt-0.5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-3">
+                <h1 class="text-lg font-black tracking-tight text-slate-900 sm:text-xl">LMS Portfolio Feed</h1>
                 {% if not is_staff_lms and lms_notify %}
-                <div class="ml-4 border-l border-slate-200 pl-4 sm:ml-6 sm:pl-5">
+                <div class="w-full border-t border-slate-100 pt-2 sm:w-auto sm:border-t-0 sm:border-l sm:border-slate-200 sm:pt-0 sm:pl-5">
                     {% set student_name = request.user.first_name or request.user.username %}
                     {% include "lms/partials/_notifications_bell.jinja" %}
                 </div>
