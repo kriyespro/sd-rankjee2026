@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
+from .body_format import normalize_study_body_text
 from .models import AssignmentSubmission, StudyAssignment, StudyMaterial, StudyTopic
 
 
@@ -19,17 +20,8 @@ class StudyMaterialForm(forms.ModelForm):
             self.fields['study_topic'].empty_label = 'General'
 
     def clean_body(self):
-        """Normalise line endings so Windows copy-paste never stores literal \\r\\n."""
-        text = self.cleaned_data.get('body', '') or ''
-        text = (
-            text
-            .replace('\\r\\n', '\n')
-            .replace('\\r', '')
-            .replace('\\n', '\n')
-            .replace('\r\n', '\n')
-            .replace('\r', '\n')
-        )
-        return text
+        """Normalise line endings so Windows / JSON copy-paste never stores literal \\r\\n."""
+        return normalize_study_body_text(self.cleaned_data.get('body', '') or '')
 
     def clean_study_topic(self):
         topic = self.cleaned_data.get('study_topic')

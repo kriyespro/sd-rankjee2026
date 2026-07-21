@@ -8,11 +8,10 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 
 from users.models import CustomUser
 
+from .body_format import format_study_body_html, normalize_study_body_text
 from .forms import AssignmentSubmissionForm, StudyAssignmentForm, StudyMaterialForm
 from .models import AssignmentSubmission, StudyAssignment, StudyMaterial, StudyTopic
 from .services import (
@@ -45,26 +44,7 @@ STUDY_URLS_DASHBOARD = {
 
 
 def _format_note_body(text: str):
-    if not text:
-        return mark_safe('')
-    # Normalise all line-ending variants to \n:
-    #   1. Literal escaped strings "\\r\\n" stored as 4 chars (copy-paste artifact)
-    #   2. Actual Windows CRLF \r\n
-    #   3. Bare \r (old Mac)
-    text = (
-        text
-        .replace('\\r\\n', '\n')   # literal 4-char sequence
-        .replace('\\r', '')         # stray escaped CR
-        .replace('\\n', '\n')       # literal 2-char \n sequence
-        .replace('\r\n', '\n')      # real Windows CRLF
-        .replace('\r', '\n')        # bare CR
-    )
-    paras = [p.strip() for p in text.split('\n\n') if p.strip()]
-    parts = []
-    for p in paras:
-        inner = escape(p).replace('\n', '<br>')
-        parts.append(f'<p class="study-prose">{inner}</p>')
-    return mark_safe(''.join(parts))
+    return format_study_body_html(text)
 
 
 def _study_seo_ctx(request):
@@ -309,7 +289,7 @@ def student_material_detail(request, pk, study_urls=None):
         **shell,
         'material': material,
         'body_html': _format_note_body(material.body),
-        'material_plain_json': json.dumps(material.body or ''),
+        'material_plain_json': json.dumps(normalize_study_body_text(material.body or '')),
         'seo_title': f'{material.title} — Study room',
     }
     return render(request, 'tutor_study/student_material.jinja', ctx)
