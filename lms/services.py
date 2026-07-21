@@ -223,7 +223,7 @@ def set_reaction(submission: LmsSubmission, user, value: str) -> LmsReaction | N
         reaction.value == LmsReaction.Value.LIKE
         and reaction.user_id != submission.student_id
     ):
-        _notify_like(submission, user)
+        _notify_like(submission, user, reaction)
     return reaction
 
 
@@ -233,7 +233,7 @@ def add_comment(submission: LmsSubmission, user, body: str) -> LmsComment:
         raise ValueError('Comment cannot be empty.')
     comment = LmsComment.objects.create(submission=submission, user=user, body=body[:1000])
     if user.pk != submission.student_id:
-        _notify_comment(submission, user, comment.body)
+        _notify_comment(submission, user, comment)
     return comment
 
 
@@ -241,25 +241,47 @@ def review_submission(
     submission: LmsSubmission,
     *,
     marks=None,
-    remark: str = '',
+    remark: str | None = None,
     status: str | None = None,
     is_pinned: bool | None = None,
 ) -> LmsSubmission:
+    old_marks = submission.marks
+    old_remark = submission.remark
+    old_status = submission.status
+
     update_fields = ['updated_at']
+    marks_changed = False
+    remark_changed = False
+    status_changed = False
+
     if marks is not None and marks != '':
-        submission.marks = int(marks)
+        new_marks = int(marks)
+        marks_changed = new_marks != old_marks
+        submission.marks = new_marks
         update_fields.append('marks')
     if remark is not None:
+        remark_changed = remark != old_remark
         submission.remark = remark
         update_fields.append('remark')
     if status and status in LmsSubmission.Status.values:
+        status_changed = status != old_status
         submission.status = status
         update_fields.append('status')
     if is_pinned is not None:
         submission.is_pinned = bool(is_pinned)
         update_fields.append('is_pinned')
+
     submission.save(update_fields=update_fields)
-    _notify_feedback(submission)
+
+    if marks_changed and remark_changed:
+        _notify_review(submission)
+    elif marks_changed:
+        _notify_marks(submission)
+    elif remark_changed:
+        _notify_remark(submission)
+    elif status_changed:
+        _notify_status(submission, old_status=old_status)
+
     return submission
 
 
@@ -270,7 +292,8 @@ def notify_new_assignment(assignment: LmsAssignment) -> None:
 
     User = get_user_model()
     link = reverse('lms:assignment_detail', kwargs={'pk': assignment.pk})
-    msg = f'New LMS assignment: {assignment.title}'[:300]
+    title = assignment.title
+    msg = _lms_message('assignment', assignment.pk, f'New assignment: {title}')
     if assignment.batch_id:
         user_ids = LmsBatchMembership.objects.filter(batch_id=assignment.batch_id).values_list(
             'user_id', flat=True
@@ -290,64 +313,255 @@ def notify_new_assignment(assignment: LmsAssignment) -> None:
         logger.warning('LMS assignment notify failed: %s', exc)
 
 
-def lms_notifications_for_user(user, limit: int = 15) -> dict:
+def lms_notifications_for_user(user, limit: int = 20) -> dict:
+    """Student LMS feed: own-work activity + new assignments, grouped and typed."""
     from users.models import Notification
 
-    qs = Notification.objects.filter(user=user, link__contains='/lms/')
+    items: list[dict] = []
+    seen_refs: set[str] = set()
+
+    for note in Notification.objects.filter(user=user, link__contains='/lms/').order_by('-created_at')[: limit * 3]:
+        parsed = _parse_lms_message(note.message)
+        ref_key = f"{parsed['kind']}:{parsed.get('ref_id') or note.pk}"
+        seen_refs.add(ref_key)
+        meta = _kind_meta(parsed['kind'])
+        items.append({
+            'kind': parsed['kind'],
+            'icon': meta['icon'],
+            'title': meta['title'],
+            'body': parsed['body'],
+            'link': note.link,
+            'created_at': note.created_at,
+            'is_read': note.is_read,
+            'notification_id': note.pk,
+            'group': meta['group'],
+        })
+
+    if is_lms_student(user) and not is_lms_staff(user):
+        items.extend(_synthetic_own_content_notifications(user, seen_refs))
+
+    items.sort(key=lambda row: row['created_at'], reverse=True)
+    items = items[:limit]
+
+    unread_count = Notification.objects.filter(
+        user=user,
+        link__contains='/lms/',
+        is_read=False,
+    ).count()
+
+    own_work = [row for row in items if row['group'] == 'own_work']
+    classroom = [row for row in items if row['group'] == 'classroom']
+
     return {
-        'notifications': list(qs.order_by('-created_at')[:limit]),
-        'unread_count': qs.filter(is_read=False).count(),
+        'notifications': items,
+        'own_work': own_work,
+        'classroom': classroom,
+        'unread_count': unread_count,
     }
 
 
+def _lms_message(kind: str, ref_id: int | None, body: str) -> str:
+    tag = f'[lms:{kind}:{ref_id}]' if ref_id is not None else f'[lms:{kind}]'
+    return f'{tag} {body}'[:300]
+
+
+def _parse_lms_message(raw: str) -> dict:
+    if raw.startswith('[lms:') and '] ' in raw:
+        header, body = raw.split('] ', 1)
+        header = header[5:]  # strip "[lms:"
+        if ':' in header:
+            kind, ref_s = header.split(':', 1)
+            ref_id = int(ref_s) if ref_s.isdigit() else None
+        else:
+            kind, ref_id = header, None
+        return {'kind': kind, 'ref_id': ref_id, 'body': body}
+
+    kind = _guess_kind_from_message(raw)
+    return {'kind': kind, 'ref_id': None, 'body': _clean_legacy_body(raw, kind)}
+
+
+def _clean_legacy_body(message: str, kind: str) -> str:
+    lower = message.lower()
+    if kind == 'assignment':
+        for prefix in ('new lms assignment:', 'new assignment:'):
+            if lower.startswith(prefix):
+                return message[len(prefix):].strip()
+    return message
+
+
+def _guess_kind_from_message(message: str) -> str:
+    lower = message.lower()
+    if 'new lms assignment' in lower or 'new assignment' in lower:
+        return 'assignment'
+    if 'liked your work' in lower:
+        return 'like'
+    if 'commented on' in lower:
+        return 'comment'
+    if 'faculty reviewed' in lower:
+        return 'review'
+    if 'marks updated' in lower:
+        return 'marks'
+    if 'faculty left a remark' in lower or 'faculty remark' in lower:
+        return 'remark'
+    if 'approved' in lower or 'changes requested' in lower:
+        return 'status'
+    return 'update'
+
+
+def _kind_meta(kind: str) -> dict:
+    table = {
+        'assignment': {'icon': '📋', 'title': 'New assignment', 'group': 'classroom'},
+        'marks': {'icon': '📊', 'title': 'Marks updated', 'group': 'own_work'},
+        'remark': {'icon': '💬', 'title': 'Faculty remark', 'group': 'own_work'},
+        'review': {'icon': '✅', 'title': 'Faculty review', 'group': 'own_work'},
+        'comment': {'icon': '🗨️', 'title': 'Comment on your work', 'group': 'own_work'},
+        'like': {'icon': '👍', 'title': 'Someone liked your work', 'group': 'own_work'},
+        'status': {'icon': '📝', 'title': 'Submission status', 'group': 'own_work'},
+        'update': {'icon': '🔔', 'title': 'LMS update', 'group': 'own_work'},
+    }
+    return table.get(kind, table['update'])
+
+
+def _synthetic_own_content_notifications(user, seen_refs: set[str]) -> list[dict]:
+    """Backfill comments/likes on the student's submissions when no stored notification exists."""
+    from datetime import timedelta
+
+    from users.models import Notification
+
+    cutoff = timezone.now() - timedelta(days=90)
+    items: list[dict] = []
+    sub_ids = list(
+        LmsSubmission.objects.filter(student=user).values_list('pk', flat=True)
+    )
+    if not sub_ids:
+        return items
+
+    for comment in (
+        LmsComment.objects.filter(submission_id__in=sub_ids, created_at__gte=cutoff)
+        .exclude(user=user)
+        .select_related('user', 'submission', 'submission__assignment')
+        .order_by('-created_at')[:20]
+    ):
+        ref_key = f'comment:{comment.pk}'
+        if ref_key in seen_refs:
+            continue
+        if Notification.objects.filter(
+            user=user,
+            message__startswith=f'[lms:comment:{comment.pk}]',
+        ).exists():
+            continue
+        title = comment.submission.assignment.title
+        preview = comment.body[:80] + ('…' if len(comment.body) > 80 else '')
+        items.append({
+            'kind': 'comment',
+            'icon': '🗨️',
+            'title': 'Comment on your work',
+            'body': f'{_display_name(comment.user)} on “{title}”: {preview}',
+            'link': _submission_link(comment.submission),
+            'created_at': comment.created_at,
+            'is_read': True,
+            'notification_id': None,
+            'group': 'own_work',
+        })
+        seen_refs.add(ref_key)
+
+    for reaction in (
+        LmsReaction.objects.filter(
+            submission_id__in=sub_ids,
+            value=LmsReaction.Value.LIKE,
+            created_at__gte=cutoff,
+        )
+        .exclude(user=user)
+        .select_related('user', 'submission', 'submission__assignment')
+        .order_by('-created_at')[:20]
+    ):
+        ref_key = f'like:{reaction.pk}'
+        if ref_key in seen_refs:
+            continue
+        if Notification.objects.filter(
+            user=user,
+            message__startswith=f'[lms:like:{reaction.pk}]',
+        ).exists():
+            continue
+        title = reaction.submission.assignment.title
+        items.append({
+            'kind': 'like',
+            'icon': '👍',
+            'title': 'Someone liked your work',
+            'body': f'{_display_name(reaction.user)} liked your work on “{title}”',
+            'link': _submission_link(reaction.submission),
+            'created_at': reaction.created_at,
+            'is_read': True,
+            'notification_id': None,
+            'group': 'own_work',
+        })
+        seen_refs.add(ref_key)
+
+    return items
+
+
 def _submission_link(submission: LmsSubmission) -> str:
-    return reverse('lms:assignment_detail', kwargs={'pk': submission.assignment_id})
+    base = reverse('lms:assignment_detail', kwargs={'pk': submission.assignment_id})
+    return f'{base}#sub-{submission.pk}'
 
 
 def _display_name(user) -> str:
     return (user.get_full_name() or user.username or 'Someone').strip()
 
 
-def _notify_like(submission: LmsSubmission, reactor) -> None:
+def _lms_send(user, kind: str, body: str, link: str, ref_id: int | None = None) -> None:
     from users.gamification import send_notification
 
-    title = submission.assignment.title
-    msg = f'👍 {_display_name(reactor)} liked your work on “{title}”'
     try:
-        send_notification(submission.student, msg[:300], _submission_link(submission))
+        send_notification(user, _lms_message(kind, ref_id, body), link[:200])
     except Exception as exc:
-        logger.warning('LMS like notify failed: %s', exc)
+        logger.warning('LMS notify %s failed: %s', kind, exc)
 
 
-def _notify_comment(submission: LmsSubmission, commenter, body: str) -> None:
-    from users.gamification import send_notification
-
-    preview = body[:80] + ('…' if len(body) > 80 else '')
+def _notify_like(submission: LmsSubmission, reactor, reaction: LmsReaction) -> None:
     title = submission.assignment.title
-    msg = f'💬 {_display_name(commenter)} commented on “{title}”: {preview}'
-    try:
-        send_notification(submission.student, msg[:300], _submission_link(submission))
-    except Exception as exc:
-        logger.warning('LMS comment notify failed: %s', exc)
+    body = f'{_display_name(reactor)} liked your work on “{title}”'
+    _lms_send(submission.student, 'like', body, _submission_link(submission), ref_id=reaction.pk)
 
 
-def _notify_feedback(submission: LmsSubmission) -> None:
-    from users.gamification import send_notification
-
-    link = _submission_link(submission)
+def _notify_comment(submission: LmsSubmission, commenter, comment: LmsComment) -> None:
+    preview = comment.body[:80] + ('…' if len(comment.body) > 80 else '')
     title = submission.assignment.title
-    if submission.marks is not None and submission.remark:
-        msg = f'📊 Faculty reviewed “{title}”: {submission.marks}/100'
-    elif submission.marks is not None:
-        msg = f'📊 Marks updated on “{title}”: {submission.marks}/100'
-    elif submission.remark:
-        msg = f'💬 Faculty left a remark on “{title}”'
+    body = f'{_display_name(commenter)} on “{title}”: {preview}'
+    _lms_send(submission.student, 'comment', body, _submission_link(submission), ref_id=comment.pk)
+
+
+def _notify_marks(submission: LmsSubmission) -> None:
+    title = submission.assignment.title
+    body = f'You received {submission.marks}/100 on “{title}”'
+    _lms_send(submission.student, 'marks', body, _submission_link(submission), ref_id=submission.pk)
+
+
+def _notify_remark(submission: LmsSubmission) -> None:
+    title = submission.assignment.title
+    preview = submission.remark[:100] + ('…' if len(submission.remark) > 100 else '')
+    body = f'Faculty remark on “{title}”: {preview}'
+    _lms_send(submission.student, 'remark', body, _submission_link(submission), ref_id=submission.pk)
+
+
+def _notify_review(submission: LmsSubmission) -> None:
+    title = submission.assignment.title
+    preview = submission.remark[:80] + ('…' if len(submission.remark) > 80 else '') if submission.remark else ''
+    body = f'Faculty reviewed “{title}”: {submission.marks}/100'
+    if preview:
+        body = f'{body} — {preview}'
+    _lms_send(submission.student, 'review', body, _submission_link(submission), ref_id=submission.pk)
+
+
+def _notify_status(submission: LmsSubmission, *, old_status: str) -> None:
+    title = submission.assignment.title
+    if submission.status == LmsSubmission.Status.APPROVED:
+        body = f'Your work on “{title}” was approved'
+    elif submission.status == LmsSubmission.Status.CHANGES_REQUESTED:
+        body = f'Changes requested on “{title}” — check faculty remark'
     else:
-        msg = f'📝 Update on “{title}”'
-    try:
-        send_notification(submission.student, msg[:300], link)
-    except Exception as exc:
-        logger.warning('LMS feedback notify failed: %s', exc)
+        body = f'Status updated on “{title}”'
+    _lms_send(submission.student, 'status', body, _submission_link(submission), ref_id=submission.pk)
 
 
 def add_batch_member(batch: LmsBatch, user) -> LmsBatchMembership:

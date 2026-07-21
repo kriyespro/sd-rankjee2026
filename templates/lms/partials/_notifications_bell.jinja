@@ -20,31 +20,69 @@
          x-transition:enter-start="opacity-0 scale-95"
          x-transition:enter-end="opacity-100 scale-100"
          @click.outside="open = false"
-         class="absolute left-0 top-full z-50 mt-1.5 w-80 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+         class="absolute left-0 top-full z-50 mt-1.5 w-[22rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
         <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
-            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Notifications</p>
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-500">Your LMS updates</p>
             {% if lms_notify.unread_count %}
             <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-black text-rose-700">{{ lms_notify.unread_count }} new</span>
             {% endif %}
         </div>
 
         {% if lms_notify.notifications %}
-        <ul class="max-h-72 overflow-y-auto divide-y divide-slate-100">
-            {% for note in lms_notify.notifications %}
-            <li>
-                <a href="{{ url('lms:notification_read', note_id=note.pk) }}"
-                   class="block px-3 py-2.5 transition hover:bg-indigo-50 {% if not note.is_read %}bg-indigo-50/60{% endif %}">
-                    <p class="text-xs font-medium leading-snug text-slate-800">{{ note.message }}</p>
-                    <p class="mt-1 text-[10px] text-slate-400">{{ note.created_at.strftime('%d %b, %I:%M %p') }}</p>
-                </a>
-            </li>
-            {% endfor %}
-        </ul>
+        <div class="max-h-80 overflow-y-auto">
+            {% if lms_notify.own_work %}
+            <div class="border-b border-slate-100">
+                <p class="bg-slate-50/80 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">On your work</p>
+                <ul class="divide-y divide-slate-100">
+                    {% for note in lms_notify.own_work %}
+                    <li>
+                        <a href="{% if note.notification_id %}{{ url('lms:notification_read', note_id=note.notification_id) }}{% else %}{{ note.link }}{% endif %}"
+                           class="flex gap-2.5 px-3 py-2.5 transition hover:bg-indigo-50 {% if not note.is_read %}bg-indigo-50/50{% endif %}">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">{{ note.icon }}</span>
+                            <span class="min-w-0 flex-1">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="text-[11px] font-black text-slate-900">{{ note.title }}</span>
+                                    {% if not note.is_read %}<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>{% endif %}
+                                </span>
+                                <span class="mt-0.5 block text-[11px] leading-snug text-slate-600">{{ note.body }}</span>
+                                <span class="mt-1 block text-[10px] text-slate-400">{{ note.created_at.strftime('%d %b, %I:%M %p') }}</span>
+                            </span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if lms_notify.classroom %}
+            <div>
+                <p class="bg-slate-50/80 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400">New assignments</p>
+                <ul class="divide-y divide-slate-100">
+                    {% for note in lms_notify.classroom %}
+                    <li>
+                        <a href="{% if note.notification_id %}{{ url('lms:notification_read', note_id=note.notification_id) }}{% else %}{{ note.link }}{% endif %}"
+                           class="flex gap-2.5 px-3 py-2.5 transition hover:bg-indigo-50 {% if not note.is_read %}bg-indigo-50/50{% endif %}">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-sm shadow-sm ring-1 ring-slate-100">{{ note.icon }}</span>
+                            <span class="min-w-0 flex-1">
+                                <span class="flex items-center gap-1.5">
+                                    <span class="text-[11px] font-black text-slate-900">{{ note.title }}</span>
+                                    {% if not note.is_read %}<span class="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500"></span>{% endif %}
+                                </span>
+                                <span class="mt-0.5 block text-[11px] leading-snug text-slate-600">{{ note.body }}</span>
+                                <span class="mt-1 block text-[10px] text-slate-400">{{ note.created_at.strftime('%d %b, %I:%M %p') }}</span>
+                            </span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
         {% else %}
         <div class="px-4 py-8 text-center">
             <p class="text-2xl">🔔</p>
             <p class="mt-2 text-xs font-semibold text-slate-600">No updates yet</p>
-            <p class="mt-1 text-[10px] text-slate-400">Marks, comments, likes &amp; faculty reviews appear here.</p>
+            <p class="mt-1 text-[10px] leading-relaxed text-slate-400">Marks, remarks, reviews, comments, likes &amp; new assignments appear here.</p>
         </div>
         {% endif %}
     </div>
