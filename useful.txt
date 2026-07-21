@@ -1,0 +1,108 @@
+RankJee — Useful Feature Suggestions
+Generated: 2026-07-21
+Scope: findings from codebase audit (apps: core, blog, tutor_study, lms, users, dashboard,
+assessment, learning, payments, hometutor, hometutor_payments, server_buy).
+Note: this list avoids repeating ideas already in more_features.txt (growth/gamification)
+and dev_plan.txt (roadmap). Focus here is on gaps found by inspecting the actual code.
+
+=== A. Technical / Platform gaps (confirmed missing in code) ===
+
+1. No REST/JSON API layer
+   - `rest_framework` not in INSTALLED_APPS, no serializers anywhere.
+   - Blocks: mobile app, WhatsApp/Telegram bot integration, third-party embeds.
+   - Suggest: add DRF, expose read endpoints first (courses, mock tests, leaderboard).
+
+2. No full-text search
+   - No SearchVector/Postgres FTS, Elasticsearch, or Whoosh found.
+   - Course/tutor/blog search likely falls back to `icontains` (slow, no typo tolerance).
+   - Suggest: Postgres `SearchVector` + trigram index (cheap, no new infra) once on Postgres prod.
+
+3. No PWA support
+   - No manifest.json / service worker found.
+   - Given mobile-first Indian users (per more_features.txt), an installable PWA with
+     offline caching of last-viewed lesson/test would help low-connectivity users directly.
+
+4. No OTP / 2FA login
+   - Only email/password + Google OAuth (allauth) found. No phone-OTP flow.
+   - Indian users trust phone-OTP more than email; also useful as a lighter signup path
+     than email verification for tutors/parents.
+
+5. Notification model exists but appears email/in-app only
+   - `users/models.py:165 Notification` — no push notification (web push / FCM) wiring found.
+   - Daily jackpot quiz / streak reminders (more_features.txt ideas) need a push channel to
+     actually pull users back in; email alone has poor open rates in this segment.
+
+6. No admin/staff bulk-export tooling beyond DB backups
+   - `dashboard/backup_utils.py` + `create_backup` command exist (good), but no CSV/Excel
+     export for leads, tutor requests, or payment reconciliation found.
+   - Suggest: simple "Export to CSV" on staff dashboard list views (tutors, requirements,
+     payments) — common ask for a marketplace admin.
+
+7. Cache configured but likely underused
+   - Redis cache is wired for prod (`rankjee/settings.py`), locmem for dev.
+   - No `cache_page` / low-level cache usage spotted in views checked (course listing,
+     tutor search, leaderboard). These are the highest-read, low-write pages — good
+     first candidates for caching to cut DB load.
+
+8. No rate limiting on public forms
+   - Tutor requirement post / contact / OTP-less login forms have no visible throttling
+     (only `axes` for login lockout). Open to spam/bot submissions.
+   - Suggest: django-ratelimit on public POST endpoints (requirement post, contact form).
+
+=== B. Product features (not already covered elsewhere) ===
+
+1. Tutor–parent in-app chat
+   - Currently discovery + request flow exists (hometutor app) but no messaging model
+     found. A lightweight chat (or "request contact reveal") reduces phone-number spam
+     and keeps the conversation on-platform for trust/dispute resolution.
+
+2. Payment reconciliation dashboard
+   - `payments`, `hometutor_payments` apps exist with Razorpay-style flows; no dedicated
+     staff view found for failed/pending payment retries or refund status at a glance.
+
+3. Tutor availability calendar
+   - `hometutor/models.py` (424 lines) covers profile/verification; no recurring
+     availability/slot model found. Parents currently can't see "free Tue/Thu 5-7pm"
+     before requesting — adds back-and-forth that a simple slot picker would remove.
+
+4. Course/mock-test versioning
+   - No sign of question-bank versioning in `assessment/models.py`. If a live mock test
+     needs a question fixed mid-cycle, there's no audit trail of what changed and when —
+     worth adding for exam-integrity disputes.
+
+=== C. Quick wins (low effort, ship first) ===
+Status as of 2026-07-21: 3 of 4 shipped. Details below note where the actual fix
+diverged from the original one-liner (found on inspection, not guessed upfront).
+
+- [DONE] Cache high-traffic read views with Redis.
+  Course listing + leaderboard were already cached in code (missed on first pass).
+  Real gap: `hometutor_landing_stats()` in hometutor/services.py ran 2 aggregate
+  queries on every tutor-list page AND every SEO city/subject/grade/location
+  landing page (the actual highest-traffic surface). Now cached 10 min via Redis.
+
+- [DONE] Add CSV export to staff dashboard tables.
+  `users_referral_table` already had CSV export. Added it to `students_score_table`
+  (dashboard/views.py) using the same pattern, plus an Export CSV button in the
+  template. Tutor-list and payments tables still have no export — open if needed.
+
+- [DONE] Rate limit public forms.
+  Used a small cache-based decorator (`core/ratelimit.py`) instead of adding the
+  `django-ratelimit` dependency — reuses the Redis cache already wired in
+  settings, no new package. Applied to `demo_request_create` (5 req/5min) and
+  `request_tutor` (3 req/5min), the two public lead-generation POST endpoints.
+  `contact_us` is a static legal page (no form submission), so left as-is.
+  Signup form not yet covered — open if needed.
+
+- [DONE] PWA support — `manifest.json` + basic service worker for
+  "Add to Home Screen".
+  Added static/manifest.json (name/theme color #0D2B5E/icons) + generated
+  brand icons (static/img/icons/: 192, 512, 512-maskable, apple-touch-icon)
+  since no app icon asset existed yet. Wired <link rel="manifest">,
+  theme-color meta, apple-touch-icon, and SW registration into base.jinja.
+  CAUTION: core/views.py `service_worker` (served at /sw.js) was previously
+  an intentional no-op — git history shows an earlier real caching SW caused
+  stale-content bugs and was neutered on purpose. Kept it a pure network
+  passthrough (added only a fetch listener with no caching) so "Add to Home
+  Screen" installability criteria are met without reintroducing that risk.
+  Do not add `caches.open`/offline caching here without checking that history
+  first.

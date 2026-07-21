@@ -5,6 +5,7 @@ from urllib.parse import quote_plus
 from math import atan2, cos, radians, sin, sqrt
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
@@ -89,7 +90,17 @@ def attach_demo_status_to_cards(cards: list[dict], requester) -> list[dict]:
 
 
 def hometutor_landing_stats() -> dict:
-    """Aggregate stats for the public home tutor landing page."""
+    """Aggregate stats for the public home tutor landing page.
+
+    Same numbers for every visitor (not request-scoped), and this runs on
+    every tutor list + every city/subject/grade/location SEO landing page —
+    the highest-traffic surface in the app. Cache it instead of re-running
+    two aggregate queries per pageview.
+    """
+    stats = cache.get("hometutor_landing_stats")
+    if stats is not None:
+        return stats
+
     qs = TutorProfile.objects.filter(
         verification_status=TutorProfile.VerificationStatus.APPROVED,
     )
@@ -102,13 +113,15 @@ def hometutor_landing_stats() -> dict:
     tutor_count = agg["tutors"] or 0
     review_count = int(agg["reviews"] or 0)
     avg_rating = float(agg["avg_rating"] or 4.8)
-    return {
+    stats = {
         "tutor_count": tutor_count,
         "city_count": city_count,
         "review_count": review_count,
         "avg_rating": round(avg_rating, 1),
         "families_label": f"{max(tutor_count * 8, review_count or 120)}+",
     }
+    cache.set("hometutor_landing_stats", stats, timeout=600)
+    return stats
 
 
 def hometutor_landing_page_context() -> dict:

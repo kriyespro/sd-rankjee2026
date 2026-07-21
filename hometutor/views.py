@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from core.hometutor_data import PILOT_CITY
+from core.ratelimit import ratelimit
 
 from .forms import (
     DemoAcceptForm,
@@ -310,6 +311,7 @@ def tutor_detail(request, slug):
 
 @login_required
 @require_http_methods(['POST'])
+@ratelimit(rate=5, period=300, key_prefix='demo_request_create')
 def demo_request_create(request, slug):
     profile = get_object_or_404(
         TutorProfile,

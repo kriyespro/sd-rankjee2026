@@ -23,6 +23,9 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ _seo_title }}">
     <meta name="twitter:description" content="{{ _seo_description }}">
+    <link rel="manifest" href="{{ static('manifest.json') }}">
+    <meta name="theme-color" content="#0D2B5E">
+    <link rel="apple-touch-icon" href="{{ static('img/icons/apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {# Async font CSS: avoids render-blocking chain on fonts.googleapis.com → gstatic woff2 #}
@@ -714,5 +717,12 @@
             <p class="text-center text-xs text-slate-500 font-semibold tracking-wide">&copy; 2026 RankJee · Home tutors, exams &amp; learning</p>
         </div>
     </footer>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
 </body>
 </html>

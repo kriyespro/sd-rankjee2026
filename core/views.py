@@ -13,6 +13,7 @@ from urllib.parse import quote
 import re
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
+from .ratelimit import ratelimit
 from .models import Course, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
 from .course_content import (
     format_bold_markers,
@@ -192,10 +193,15 @@ def contact_us(request):
 
 
 def service_worker(request):
-    # Return an empty service worker to silence stale browser registrations.
+    # Deliberately does no caching (see git history: an earlier SW caused
+    # stale-content issues and was replaced with a no-op). The fetch handler
+    # below is a pure network passthrough — it exists only because some
+    # browsers require a fetch listener before allowing "Add to Home Screen",
+    # not to cache anything.
     return HttpResponse(
         "self.addEventListener('install', () => self.skipWaiting());"
-        "self.addEventListener('activate', () => self.clients.claim());",
+        "self.addEventListener('activate', () => self.clients.claim());"
+        "self.addEventListener('fetch', (event) => { event.respondWith(fetch(event.request)); });",
         content_type='application/javascript',
     )
 
@@ -300,6 +306,7 @@ def home(request):
     })
 
 
+@ratelimit(rate=3, period=300, key_prefix='request_tutor')
 def request_tutor(request):
     next_url = request.build_absolute_uri(reverse("core:request_tutor"))
     google_login_url = f"/accounts/google/login/?process=login&next={next_url}"

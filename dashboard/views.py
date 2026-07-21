@@ -1274,6 +1274,44 @@ def students_score_table(request):
         )
         .order_by("-last_attempt_at", "-attempts_count", "-xp_points", "-date_joined")
     )
+
+    if request.GET.get("export") == "csv":
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = 'attachment; filename="students_score_table.csv"'
+        writer = csv.writer(response)
+        writer.writerow(
+            [
+                "Username",
+                "Email",
+                "Attempts",
+                "Pass Count",
+                "Pass Rate %",
+                "Avg Score",
+                "Best Score",
+                "Last Attempt At",
+                "XP Points",
+            ]
+        )
+        for u in qs:
+            attempts = int(getattr(u, "attempts_count", 0) or 0)
+            pass_count = int(getattr(u, "pass_count", 0) or 0)
+            pass_rate = round((pass_count / attempts) * 100, 1) if attempts else 0
+            last_attempt_at = getattr(u, "last_attempt_at", None)
+            writer.writerow(
+                [
+                    u.username,
+                    u.email,
+                    attempts,
+                    pass_count,
+                    pass_rate,
+                    round(float(getattr(u, "avg_score", 0) or 0), 1),
+                    int(getattr(u, "best_score", 0) or 0),
+                    timezone.localtime(last_attempt_at).strftime("%Y-%m-%d %H:%M:%S") if last_attempt_at else "",
+                    u.xp_points,
+                ]
+            )
+        return response
+
     paginator = Paginator(qs, 30)
     students_page = paginator.get_page(request.GET.get("page", 1))
 
