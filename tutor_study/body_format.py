@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import codecs
+import html as html_module
 import json
 import re
 
@@ -19,12 +20,17 @@ _AI_FOOTER_MARKERS = (
     '\n"I am ready. Please provide the topic',
 )
 
+_GARBAGE_LINE_RE = re.compile(
+    r'^[-*]?\s*`{0,2}\s*$',
+)
+
 
 def normalize_study_body_text(text: str) -> str:
     """Fix JSON/API copy-paste where line breaks were stored as literal \\n or \\r\\n."""
     if not text:
         return ''
     text = text.strip()
+    text = html_module.unescape(text)
 
     if len(text) >= 2 and text[0] == '"' and text[-1] == '"':
         try:
@@ -34,7 +40,7 @@ def normalize_study_body_text(text: str) -> str:
 
     text = text.replace('&#92;r&#92;n', '\n').replace('&#92;n', '\n').replace('&#92;r', '\n')
 
-    for _ in range(6):
+    for _ in range(8):
         prev = text
         text = (
             text.replace('\\\\r\\\\n', '\n')
@@ -48,7 +54,10 @@ def normalize_study_body_text(text: str) -> str:
         if text == prev:
             break
 
+    text = re.sub(r'\\+n', '\n', text)
+    text = re.sub(r'\\+r', '\n', text)
     text = text.replace('\r\n', '\n').replace('\r', '\n')
+    text = re.sub(r'^`+', '', text)
 
     if re.search(r'\\u[0-9a-fA-F]{4}', text):
         try:
@@ -61,7 +70,13 @@ def normalize_study_body_text(text: str) -> str:
         if idx != -1:
             text = text[:idx].strip()
 
-    lines = [ln for ln in text.split('\n') if ln.strip() not in {'``', '`', '- ``', '- `', '* ``'}]
+    lines = []
+    for ln in text.split('\n'):
+        if _GARBAGE_LINE_RE.match(ln.strip()):
+            continue
+        if ln.strip() in {'``', '`', '- ``', '- `', '* ``'}:
+            continue
+        lines.append(ln)
     return '\n'.join(lines).strip()
 
 

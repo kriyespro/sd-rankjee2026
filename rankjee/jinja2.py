@@ -5,6 +5,8 @@ from django.urls import NoReverseMatch
 from django.urls import reverse as django_reverse
 from jinja2 import Environment
 
+from tutor_study.body_format import format_study_body_html
+
 logger = logging.getLogger(__name__)
 
 
@@ -94,4 +96,5 @@ def environment(**options):
         'url': url,
         'range': range,
     })
+    env.filters['study_body'] = format_study_body_html
     return env

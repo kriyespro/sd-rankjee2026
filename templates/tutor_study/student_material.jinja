@@ -117,7 +117,7 @@
 
     <div class="px-4 sm:px-6 py-5 sm:py-8">
         <article class="max-w-prose w-full min-w-0 mx-auto rounded-2xl border border-stone-300/70 bg-[#fffefb] shadow-xl shadow-stone-900/10 px-4 py-5 sm:px-9 sm:py-9">
-            <div class="study-reading-prose max-w-none">{{ body_html|safe }}</div>
+            <div class="study-reading-prose max-w-none">{{ material.body|study_body|safe }}</div>
         </article>
     </div>
 </div>
