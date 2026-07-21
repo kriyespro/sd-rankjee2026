@@ -295,7 +295,7 @@ def lms_notifications_for_user(user, limit: int = 15) -> dict:
 
     qs = Notification.objects.filter(user=user, link__contains='/lms/')
     return {
-        'items': list(qs.order_by('-created_at')[:limit]),
+        'notifications': list(qs.order_by('-created_at')[:limit]),
         'unread_count': qs.filter(is_read=False).count(),
     }
 

@@ -28,9 +28,9 @@
             {% endif %}
         </div>
 
-        {% if lms_notify.items %}
+        {% if lms_notify.notifications %}
         <ul class="max-h-72 overflow-y-auto divide-y divide-slate-100">
-            {% for note in lms_notify.items %}
+            {% for note in lms_notify.notifications %}
             <li>
                 <a href="{{ url('lms:notification_read', note_id=note.pk) }}"
                    class="block px-3 py-2.5 transition hover:bg-indigo-50 {% if not note.is_read %}bg-indigo-50/60{% endif %}">
