@@ -3,18 +3,13 @@
 
 {% block content %}
 <div class="mx-auto w-full max-w-7xl px-4 py-4 sm:px-6">
+    {% if is_staff_lms %}
     <div class="mb-3 flex flex-nowrap items-center gap-x-2 gap-y-1 overflow-x-auto pb-0.5">
         <div class="min-w-0 shrink-0">
             <p class="text-[9px] font-black uppercase tracking-[0.18em] text-indigo-600 leading-none">Classroom</p>
             <h1 class="mt-0.5 whitespace-nowrap text-base font-black tracking-tight text-slate-900 sm:text-lg">LMS Portfolio Feed</h1>
         </div>
-        {% if not is_staff_lms and lms_notify %}
-        <div class="min-w-0 shrink border-l border-slate-200 pl-3">
-            {% set student_name = request.user.first_name or request.user.username %}
-            {% include "lms/partials/_notifications_bell.jinja" %}
-        </div>
-        {% endif %}
-        {% if is_staff_lms and admin_stats %}
+        {% if admin_stats %}
         <div class="flex min-w-0 flex-nowrap items-center gap-1.5">
             <span class="inline-flex shrink-0 items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-emerald-800" title="Students who submitted at least once">
                 {{ admin_stats.students_submitted }} students
@@ -39,17 +34,32 @@
         </div>
         {% endif %}
         <div class="ml-auto flex shrink-0 flex-nowrap items-center gap-1.5">
-            {% if is_staff_lms %}
             <a href="{{ url('lms:assignment_create') }}" class="inline-flex whitespace-nowrap rounded-lg bg-indigo-600 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-white hover:bg-indigo-500">New assignment</a>
             <a href="{{ url('lms:batches') }}" class="inline-flex whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Batches</a>
-            {% endif %}
             <a href="{{ url('dashboard:index') }}" class="inline-flex whitespace-nowrap rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Dashboard</a>
         </div>
     </div>
-
-    {% if not is_staff_lms and ticker_items %}
-    <div class="mb-3">
-        {% include "lms/partials/_assignment_ticker.jinja" %}
+    {% else %}
+    {# Student — one compact row: title · bell · greeting · dashboard · assignment ticker #}
+    <div class="mb-3 flex flex-nowrap items-center gap-2 overflow-hidden rounded-xl border border-slate-200 bg-white px-2 py-1.5 shadow-sm">
+        <div class="hidden shrink-0 sm:block">
+            <p class="text-[8px] font-black uppercase tracking-wider text-indigo-600 leading-none">LMS</p>
+            <p class="whitespace-nowrap text-[11px] font-black text-slate-900">Portfolio</p>
+        </div>
+        {% if lms_notify %}
+        <div class="shrink-0 border-r border-slate-100 pr-2">
+            {% set student_name = request.user.first_name or request.user.username %}
+            {% set compact_inline = true %}
+            {% include "lms/partials/_notifications_bell.jinja" %}
+        </div>
+        {% endif %}
+        <a href="{{ url('dashboard:index') }}" class="inline-flex shrink-0 whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-100">Dashboard</a>
+        {% if ticker_items %}
+        <div class="min-w-0 flex-1 border-l border-slate-100 pl-2">
+            {% set inline = true %}
+            {% include "lms/partials/_assignment_ticker.jinja" %}
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 

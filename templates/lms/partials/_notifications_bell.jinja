@@ -1,7 +1,8 @@
-{# Expects: lms_notify, student_name (optional — falls back to username) #}
+{# Expects: lms_notify, student_name (optional); compact_inline (optional) #}
 {% set greet_name = (student_name or request.user.first_name or request.user.username)|title %}
+{% set _compact = compact_inline|default(false) %}
 
-<div class="flex min-w-0 max-w-full items-start gap-2.5 sm:gap-3"
+<div class="flex min-w-0 {% if _compact %}max-w-none items-center gap-2{% else %}max-w-full items-start gap-2.5 sm:gap-3{% endif %}"
      x-data="{
          open: false,
          checked: {},
@@ -32,11 +33,11 @@
     <div class="relative shrink-0">
         <button type="button"
                 @click="open = !open"
-                class="relative inline-flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-full border transition
+                class="relative inline-flex {% if _compact %}h-8 w-8 min-h-0 min-w-0{% else %}h-11 w-11 min-h-[44px] min-w-[44px]{% endif %} items-center justify-center rounded-full border transition
                        {% if lms_notify.unread_count %}border-indigo-200 bg-indigo-50 text-indigo-600 shadow-sm{% else %}border-slate-200 bg-white text-slate-500 hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600{% endif %}"
                 :aria-expanded="open"
                 aria-label="LMS notifications">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
+            <svg class="{% if _compact %}h-4 w-4{% else %}h-5 w-5{% endif %}" fill="none" viewBox="0 0 24 24" stroke-width="1.75" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
             </svg>
             {% if lms_notify.unread_count %}
@@ -172,6 +173,13 @@
         </div>
     </div>
 
+    {% if _compact %}
+    <button type="button"
+            @click="open = !open"
+            class="min-w-0 max-w-[9rem] shrink-0 truncate whitespace-nowrap text-left text-[10px] font-semibold leading-tight text-slate-600 hover:text-indigo-600 sm:max-w-none">
+        How are you, <span class="font-black text-indigo-600">{{ greet_name }}</span>?{% if lms_notify.unread_count %} · <span class="text-rose-600">{{ lms_notify.unread_count }} new</span>{% endif %}
+    </button>
+    {% else %}
     <div class="min-w-0 flex-1 pt-1 sm:pt-0.5">
         <p class="text-xs font-black leading-tight text-slate-900">
             How are you, <span class="text-indigo-600">{{ greet_name }}</span>?
@@ -185,4 +193,5 @@
             {% endif %}
         </button>
     </div>
+    {% endif %}
 </div>
