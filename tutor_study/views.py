@@ -244,6 +244,28 @@ def _render_student_topic_page(request, topic_pk, urls):
     )
     if crumbs:
         crumbs[-1] = {'label': crumbs[-1]['label'], 'url': None}
+
+    back_to_lms = None
+    raw_from_lms = (request.GET.get('from_lms') or '').strip()
+    if raw_from_lms.isdigit():
+        from lms.models import LmsAssignment
+        from lms.services import can_view_assignment
+
+        assignment = (
+            LmsAssignment.objects.filter(pk=int(raw_from_lms))
+            .select_related('topic')
+            .first()
+        )
+        if (
+            assignment
+            and assignment.study_topic_id == topic_pk
+            and can_view_assignment(request.user, assignment)
+        ):
+            back_to_lms = {
+                'url': reverse('lms:assignment_detail', kwargs={'pk': assignment.pk}),
+                'title': assignment.title,
+            }
+
     shell = _study_lms_shell(
         request,
         merged_urls,
@@ -259,6 +281,7 @@ def _render_student_topic_page(request, topic_pk, urls):
         'lms_topic_title': labels[-1] if labels else 'Topic',
         'lms_topic_trail': labels,
         'crumbs': crumbs,
+        'back_to_lms': back_to_lms,
         'topic_cards': cards,
         'seo_title': f'{labels[-1]} — Study',
         'seo_description': 'Materials, assignments, and practice for this topic.',

@@ -985,7 +985,9 @@ def dashboard_study_topic_general(request):
     if role == User.Role.TUTOR:
         return redirect('study:tutor_dashboard')
     if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
-        return redirect('study:student_topic_general')
+        target = reverse('study:student_topic_general')
+        qs = request.GET.urlencode()
+        return redirect(f'{target}?{qs}' if qs else target)
     return ts_topic_general(request, study_urls=STUDY_URLS_DASHBOARD)
 
 
@@ -997,7 +999,9 @@ def dashboard_study_topic(request, topic_pk):
     if role == User.Role.TUTOR:
         return redirect('study:tutor_dashboard')
     if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
-        return redirect('study:student_topic', topic_pk=topic_pk)
+        target = reverse('study:student_topic', kwargs={'topic_pk': topic_pk})
+        qs = request.GET.urlencode()
+        return redirect(f'{target}?{qs}' if qs else target)
     return ts_topic(request, topic_pk, study_urls=STUDY_URLS_DASHBOARD)
 
 

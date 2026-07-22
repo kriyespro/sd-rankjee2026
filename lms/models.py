@@ -142,12 +142,14 @@ class LmsAssignment(models.Model):
         return f"{reverse('learning:index')}?{urlencode(params)}"
 
     def study_topic_url(self) -> str:
-        """Deep-link to /admin/study/topic/<id>/ for the linked Study hub topic."""
+        """Deep-link to /admin/study/topic/<id>/ with return path to this LMS assignment."""
         from django.urls import reverse
+        from urllib.parse import urlencode
 
         if not self.study_topic_id:
             return reverse('dashboard:study')
-        return reverse('dashboard:study_topic', kwargs={'topic_pk': self.study_topic_id})
+        base = reverse('dashboard:study_topic', kwargs={'topic_pk': self.study_topic_id})
+        return f"{base}?{urlencode({'from_lms': self.pk})}"
 
 
 class LmsSubmission(models.Model):
