@@ -22,6 +22,15 @@ from .models import (
 GENERAL_TOPIC_SLUG = 'general'
 
 
+def crumb(label: str, url: str | None = None) -> dict:
+    return {'label': label, 'url': url}
+
+
+def lms_crumbs(*parts: dict) -> list[dict]:
+    """Breadcrumb list starting with LMS home, then additional segments."""
+    return [crumb('LMS', reverse('lms:home')), *parts]
+
+
 def ensure_general_topic() -> LmsTopic:
     topic, _ = LmsTopic.objects.get_or_create(
         slug=GENERAL_TOPIC_SLUG,

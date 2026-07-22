@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="mx-auto w-full max-w-xl px-4 py-6 sm:px-6">
+    {% include "partials/_breadcrumb.jinja" %}
     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Staff</p>
     <h1 class="text-2xl font-black tracking-tight text-slate-900">{% if is_edit %}Edit topic{% else %}Create topic{% endif %}</h1>
     <p class="mt-1 mb-6 text-sm text-slate-600">Students will see topics first, then open a topic to view multiple assignments.</p>
@@ -23,7 +24,7 @@
             <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">
                 {% if is_edit %}Save changes{% else %}Create topic{% endif %}
             </button>
-            <a href="{{ url('lms:home') }}" class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Back</a>
+            <a href="{% if is_edit and topic %}{{ url('lms:topic_detail', pk=topic.pk) }}{% else %}{{ url('lms:home') }}{% endif %}" class="rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">Back</a>
         </div>
     </form>
 </div>

@@ -1,0 +1,13 @@
+{# crumbs: list of {label, url?} — last item usually has no url (current page) #}
+{% if crumbs %}
+<nav class="mb-4 text-xs font-bold text-slate-500 flex flex-wrap items-center gap-x-1.5 gap-y-0.5" aria-label="Breadcrumb">
+    {% for c in crumbs %}
+    {% if not loop.first %}<span class="text-slate-300 shrink-0" aria-hidden="true">/</span>{% endif %}
+    {% if c.url and not loop.last %}
+    <a href="{{ c.url }}" class="text-indigo-600 hover:underline min-w-0 break-words">{{ c.label }}</a>
+    {% else %}
+    <span class="{% if loop.last %}text-slate-800{% else %}text-slate-500{% endif %} min-w-0 break-words">{{ c.label }}</span>
+    {% endif %}
+    {% endfor %}
+</nav>
+{% endif %}

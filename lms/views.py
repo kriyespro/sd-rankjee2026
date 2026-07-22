@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
@@ -102,10 +103,27 @@ def assignment_create(request):
         if topic_id and LmsTopic.objects.filter(pk=topic_id).exists():
             initial['topic'] = topic_id
         form = LmsAssignmentForm(initial=initial)
+
+    topic = None
+    if getattr(form, 'is_bound', False) and form.is_valid():
+        topic = form.cleaned_data.get('topic')
+    if topic is None:
+        raw_tid = request.POST.get('topic') if request.method == 'POST' else request.GET.get('topic')
+        if raw_tid:
+            topic = LmsTopic.objects.filter(pk=raw_tid).first()
+    crumb_parts = []
+    if topic:
+        crumb_parts.append(services.crumb(topic.title, reverse('lms:topic_detail', kwargs={'pk': topic.pk})))
+    crumb_parts.append(services.crumb('New assignment'))
     return render(
         request,
         'lms/assignment_form.jinja',
-        {'form': form, 'is_staff_lms': True, 'is_edit': False},
+        {
+            'form': form,
+            'is_staff_lms': True,
+            'is_edit': False,
+            'crumbs': services.lms_crumbs(*crumb_parts),
+        },
     )
 
 
@@ -114,7 +132,10 @@ def assignment_create(request):
 def assignment_edit(request, pk):
     if not services.is_lms_staff(request.user):
         return HttpResponseForbidden('Staff only.')
-    assignment = get_object_or_404(LmsAssignment, pk=pk)
+    assignment = get_object_or_404(
+        LmsAssignment.objects.select_related('topic'),
+        pk=pk,
+    )
     if request.method == 'POST':
         form = LmsAssignmentForm(request.POST, instance=assignment)
         if form.is_valid():
@@ -129,6 +150,15 @@ def assignment_edit(request, pk):
             return redirect('lms:assignment_detail', pk=obj.pk)
     else:
         form = LmsAssignmentForm(instance=assignment)
+    crumb_parts = []
+    if assignment.topic_id:
+        crumb_parts.append(
+            services.crumb(assignment.topic.title, reverse('lms:topic_detail', kwargs={'pk': assignment.topic_id}))
+        )
+    crumb_parts.append(
+        services.crumb(assignment.title, reverse('lms:assignment_detail', kwargs={'pk': assignment.pk}))
+    )
+    crumb_parts.append(services.crumb('Edit'))
     return render(
         request,
         'lms/assignment_form.jinja',
@@ -137,6 +167,7 @@ def assignment_edit(request, pk):
             'is_staff_lms': True,
             'is_edit': True,
             'assignment': assignment,
+            'crumbs': services.lms_crumbs(*crumb_parts),
         },
     )
 
@@ -154,7 +185,12 @@ def topic_create(request):
     return render(
         request,
         'lms/topic_form.jinja',
-        {'form': form, 'is_staff_lms': True, 'is_edit': False},
+        {
+            'form': form,
+            'is_staff_lms': True,
+            'is_edit': False,
+            'crumbs': services.lms_crumbs(services.crumb('New topic')),
+        },
     )
 
 
@@ -172,7 +208,16 @@ def topic_edit(request, pk):
     return render(
         request,
         'lms/topic_form.jinja',
-        {'form': form, 'topic': topic, 'is_staff_lms': True, 'is_edit': True},
+        {
+            'form': form,
+            'topic': topic,
+            'is_staff_lms': True,
+            'is_edit': True,
+            'crumbs': services.lms_crumbs(
+                services.crumb(topic.title, reverse('lms:topic_detail', kwargs={'pk': topic.pk})),
+                services.crumb('Edit'),
+            ),
+        },
     )
 
 
@@ -193,6 +238,7 @@ def topic_detail(request, pk):
             'topic': topic,
             'assignments': assignments,
             'is_staff_lms': services.is_lms_staff(request.user),
+            'crumbs': services.lms_crumbs(services.crumb(topic.title)),
         },
     )
 
@@ -301,6 +347,19 @@ def assignment_detail(request, pk):
             'is_staff_lms': is_staff,
             'comment_form': LmsCommentForm(),
             'url_rows_json': json.dumps(submit_form.url_rows if submit_form else []),
+            'crumbs': services.lms_crumbs(
+                *(
+                    [
+                        services.crumb(
+                            assignment.topic.title,
+                            reverse('lms:topic_detail', kwargs={'pk': assignment.topic_id}),
+                        )
+                    ]
+                    if assignment.topic_id
+                    else []
+                ),
+                services.crumb(assignment.title),
+            ),
         },
     )
 
@@ -416,5 +475,6 @@ def batches(request):
             'batch_form': batch_form,
             'member_form': member_form,
             'is_staff_lms': True,
+            'crumbs': services.lms_crumbs(services.crumb('Batches')),
         },
     )

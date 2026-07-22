@@ -497,3 +497,53 @@ def topic_breadcrumb_labels(topic):
         chain.append(cur.title)
         cur = cur.parent
     return list(reversed(chain))
+
+
+def topic_breadcrumb_crumbs(topic, *, topic_url_name, topic_general_url_name, hub_url_name=None):
+    """Clickable Study topic trail segments (parents linked; current topic has url too for nesting).
+
+    Returns list of ``{label, url}``. Caller appends the leaf page (material/assignment)
+    and typically drops url from the final crumb in the template (last = current).
+    """
+    from django.urls import reverse
+
+    crumbs = []
+    if hub_url_name:
+        crumbs.append({'label': 'Study', 'url': reverse(hub_url_name)})
+
+    if topic is None:
+        crumbs.append({'label': 'General', 'url': reverse(topic_general_url_name)})
+        return crumbs
+
+    chain = []
+    cur = topic
+    while cur is not None:
+        chain.append(cur)
+        cur = cur.parent
+    for t in reversed(chain):
+        crumbs.append(
+            {
+                'label': t.title,
+                'url': reverse(topic_url_name, kwargs={'topic_pk': t.pk}),
+            }
+        )
+    return crumbs
+
+
+def study_item_crumbs(
+    *,
+    study_topic,
+    item_label,
+    topic_url_name,
+    topic_general_url_name,
+    hub_url_name,
+):
+    """Full trail: Study / …topics… / current item (item has no url)."""
+    crumbs = topic_breadcrumb_crumbs(
+        study_topic,
+        topic_url_name=topic_url_name,
+        topic_general_url_name=topic_general_url_name,
+        hub_url_name=hub_url_name,
+    )
+    crumbs.append({'label': item_label, 'url': None})
+    return crumbs

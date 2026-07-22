@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="mx-auto w-full max-w-xl px-4 py-6 sm:px-6">
+    {% include "partials/_breadcrumb.jinja" %}
     <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Staff</p>
     <h1 class="text-2xl font-black tracking-tight text-slate-900">{% if is_edit %}Edit assignment{% else %}Create assignment{% endif %}</h1>
     <p class="mt-1 text-sm text-slate-600 mb-6">

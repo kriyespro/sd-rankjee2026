@@ -3,11 +3,8 @@
 {% block study_content %}
 <header class="bg-white border-b border-[#dadce0]">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 py-4">
-        <a href="{{ url(study_route_hub) }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-[#1a73e8] hover:text-[#1557b0]">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-            Back to Study
-        </a>
-        <div class="mt-4 flex flex-wrap items-start justify-between gap-3">
+        {% include "partials/_breadcrumb.jinja" %}
+        <div class="mt-2 flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
                 <h1 class="text-xl sm:text-2xl text-[#202124] leading-snug">{{ assignment.title }}</h1>
                 {% if assignment.due_at %}

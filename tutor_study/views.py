@@ -24,6 +24,8 @@ from .services import (
     student_can_access_study_assignment,
     student_can_access_study_material,
     student_can_access_tutor,
+    study_item_crumbs,
+    topic_breadcrumb_crumbs,
     topic_breadcrumb_labels,
 )
 
@@ -234,6 +236,14 @@ def _render_student_topic_page(request, topic_pk, urls):
         assignment_url_name=merged_urls['assignment'],
     )
     labels = topic_breadcrumb_labels(topic_obj)
+    crumbs = topic_breadcrumb_crumbs(
+        topic_obj,
+        topic_url_name=merged_urls['topic'],
+        topic_general_url_name=merged_urls['topic_general'],
+        hub_url_name=merged_urls['hub'],
+    )
+    if crumbs:
+        crumbs[-1] = {'label': crumbs[-1]['label'], 'url': None}
     shell = _study_lms_shell(
         request,
         merged_urls,
@@ -248,6 +258,7 @@ def _render_student_topic_page(request, topic_pk, urls):
         'lms_topic_pk': topic_pk,
         'lms_topic_title': labels[-1] if labels else 'Topic',
         'lms_topic_trail': labels,
+        'crumbs': crumbs,
         'topic_cards': cards,
         'seo_title': f'{labels[-1]} — Study',
         'seo_description': 'Materials, assignments, and practice for this topic.',
@@ -284,10 +295,18 @@ def student_material_detail(request, pk, study_urls=None):
         highlight_topic_pk=material.study_topic_id,
         study_data=bundle,
     )
+    crumbs = study_item_crumbs(
+        study_topic=material.study_topic,
+        item_label=material.title,
+        topic_url_name=urls['topic'],
+        topic_general_url_name=urls['topic_general'],
+        hub_url_name=urls['hub'],
+    )
     ctx = {
         **_study_seo_ctx(request),
         **shell,
         'material': material,
+        'crumbs': crumbs,
         'body_html': _format_note_body(material.body),
         'material_plain_json': json.dumps(normalize_study_body_text(material.body or '')),
         'seo_title': f'{material.title} — Study room',
@@ -339,10 +358,18 @@ def student_assignment_detail(request, pk, study_urls=None):
     cid = getattr(settings, 'GOOGLE_OAUTH_CLIENT_ID', '').strip()
     pkey = getattr(settings, 'GOOGLE_PICKER_API_KEY', '').strip()
     picker_on = bool(cid and pkey) and not study_vip_preview
+    crumbs = study_item_crumbs(
+        study_topic=assignment.study_topic,
+        item_label=assignment.title,
+        topic_url_name=urls['topic'],
+        topic_general_url_name=urls['topic_general'],
+        hub_url_name=urls['hub'],
+    )
     ctx = {
         **_study_seo_ctx(request),
         **shell,
         'assignment': assignment,
+        'crumbs': crumbs,
         'form': form,
         'submission': existing,
         'seo_title': f'{assignment.title} — Study room',
