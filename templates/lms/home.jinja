@@ -54,8 +54,8 @@
     {# LEFT | CENTER | RIGHT — side-by-side from lg (1024px) #}
     <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-3">
 
-        {# LEFT — Topics #}
-        <aside class="w-full shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm lg:w-52">
+        {# LEFT — Topics (full list, no nested scrollbar; full titles) #}
+        <aside class="w-full shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm lg:w-60">
             <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Topics</h2>
                 {% if is_staff_lms %}
@@ -63,22 +63,22 @@
                 {% endif %}
             </div>
             {% if topics %}
-            <nav class="max-h-48 overflow-y-auto p-1.5 lg:max-h-[28rem]">
+            <nav class="p-1.5">
                 <ul class="space-y-0.5">
                     {% for item in topics %}
                     <li>
-                        <div class="flex items-center rounded-lg hover:bg-indigo-50">
-                            <a href="{{ url('lms:topic_detail', pk=item.topic.pk) }}" class="flex min-w-0 flex-1 items-center gap-2 px-2 py-2">
-                                <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-black text-indigo-700">
+                        <div class="flex items-start rounded-lg hover:bg-indigo-50">
+                            <a href="{{ url('lms:topic_detail', pk=item.topic.pk) }}" class="flex min-w-0 flex-1 items-start gap-2 px-2 py-2">
+                                <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[10px] font-black text-indigo-700">
                                     {{ item.title[0]|upper }}
                                 </span>
                                 <span class="min-w-0">
-                                    <span class="block truncate text-xs font-bold text-slate-900">{{ item.title }}</span>
-                                    <span class="block text-[10px] text-slate-500">{{ item.assignments|length }} asgn</span>
+                                    <span class="block text-xs font-bold leading-snug text-slate-900 break-words">{{ item.title }}</span>
+                                    <span class="mt-0.5 block text-[10px] text-slate-500">{{ item.assignments|length }} asgn</span>
                                 </span>
                             </a>
                             {% if is_staff_lms and item.topic %}
-                            <a href="{{ url('lms:topic_edit', pk=item.topic.pk) }}" class="mr-1.5 shrink-0 px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-400 hover:text-indigo-600">Edit</a>
+                            <a href="{{ url('lms:topic_edit', pk=item.topic.pk) }}" class="mr-1.5 mt-2 shrink-0 px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-400 hover:text-indigo-600">Edit</a>
                             {% endif %}
                         </div>
                     </li>
