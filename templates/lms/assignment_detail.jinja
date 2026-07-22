@@ -33,6 +33,13 @@
             <span class="font-semibold normal-case tracking-normal opacity-90">· {{ assignment.concept_video.title }}</span>
         </a>
         {% endif %}
+        {% if assignment.study_topic_id %}
+        <a href="{{ assignment.study_topic_url() }}"
+           class="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-emerald-500">
+            📚 Open study topic
+            <span class="font-semibold normal-case tracking-normal opacity-90">· {{ assignment.study_topic }}</span>
+        </a>
+        {% endif %}
         <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
             {% if assignment.topic %}
             <span class="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">{{ assignment.topic.title }}</span>

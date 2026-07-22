@@ -108,6 +108,14 @@ class LmsAssignment(models.Model):
         related_name='lms_assignments',
         help_text='Optional lecture recording from /learning/ linked to this assignment.',
     )
+    study_topic = models.ForeignKey(
+        'tutor_study.StudyTopic',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_assignments',
+        help_text='Optional Study hub topic from /admin/study/ linked to this assignment.',
+    )
     is_published = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -132,6 +140,14 @@ class LmsAssignment(models.Model):
         if video.concept_tag:
             params['concept'] = video.concept_tag
         return f"{reverse('learning:index')}?{urlencode(params)}"
+
+    def study_topic_url(self) -> str:
+        """Deep-link to /admin/study/topic/<id>/ for the linked Study hub topic."""
+        from django.urls import reverse
+
+        if not self.study_topic_id:
+            return reverse('dashboard:study')
+        return reverse('dashboard:study_topic', kwargs={'topic_pk': self.study_topic_id})
 
 
 class LmsSubmission(models.Model):

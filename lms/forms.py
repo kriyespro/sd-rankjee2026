@@ -56,6 +56,7 @@ class LmsAssignmentForm(forms.ModelForm):
             'title',
             'instructions',
             'concept_video',
+            'study_topic',
             'batch',
             'due_at',
             'is_published',
@@ -67,6 +68,7 @@ class LmsAssignmentForm(forms.ModelForm):
                 attrs={'class': _TEXTAREA, 'rows': 4, 'placeholder': 'What students should submit…'}
             ),
             'concept_video': forms.Select(attrs={'class': _INPUT}),
+            'study_topic': forms.Select(attrs={'class': _INPUT}),
             'batch': forms.Select(attrs={'class': _INPUT}),
             'due_at': forms.DateTimeInput(
                 attrs={'class': _INPUT, 'type': 'datetime-local'},
@@ -79,14 +81,17 @@ class LmsAssignmentForm(forms.ModelForm):
         input_formats = {'due_at': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']}
         labels = {
             'concept_video': 'Lecture recording',
+            'study_topic': 'Study topic',
         }
         help_texts = {
             'concept_video': 'Opens the matching video on /learning/ for students.',
+            'study_topic': 'Opens the matching chapter on /admin/study/ for students.',
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from learning.models import ConceptVideo
+        from tutor_study.models import StudyTopic
 
         self.fields['topic'].queryset = LmsTopic.objects.order_by('title')
         self.fields['topic'].required = False
@@ -102,6 +107,14 @@ class LmsAssignmentForm(forms.ModelForm):
                 + (f' · {obj.skill.name}' if obj.skill_id else '')
             )
         )
+        self.fields['study_topic'].queryset = StudyTopic.objects.select_related('parent').order_by(
+            'parent__sort_order',
+            'parent__title',
+            'sort_order',
+            'title',
+        )
+        self.fields['study_topic'].required = False
+        self.fields['study_topic'].empty_label = 'No study topic linked…'
         self.fields['batch'].queryset = LmsBatch.objects.filter(is_active=True)
         self.fields['batch'].required = False
         self.fields['batch'].empty_label = 'All students (no batch)'
