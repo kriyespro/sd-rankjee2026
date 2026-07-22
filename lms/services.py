@@ -130,6 +130,57 @@ def topics_for_user(user) -> list[dict]:
     return sorted(grouped.values(), key=lambda item: item['title'].lower())
 
 
+def student_assignment_ticker(user, limit: int = 10) -> list[dict]:
+    """Compact news-ticker rows: pending own work + latest classroom assignments."""
+    from django.urls import reverse
+
+    assignments = list(
+        assignments_for_user(user).select_related('topic').order_by('-created_at')[:40]
+    )
+    if not assignments:
+        return []
+
+    my_subs = {
+        s.assignment_id: s
+        for s in LmsSubmission.objects.filter(
+            student=user,
+            assignment_id__in=[a.pk for a in assignments],
+        ).only('assignment_id', 'status')
+    }
+
+    items: list[dict] = []
+    seen: set[int] = set()
+
+    def add(kind: str, badge: str, assignment: LmsAssignment, prefix: str):
+        if assignment.pk in seen or len(items) >= limit:
+            return
+        seen.add(assignment.pk)
+        items.append(
+            {
+                'kind': kind,
+                'badge': badge,
+                'label': f'{prefix}{assignment.title}',
+                'url': reverse('lms:assignment_detail', kwargs={'pk': assignment.pk}),
+            }
+        )
+
+    # 1) Not submitted yet → pending for the student
+    for a in assignments:
+        if a.pk not in my_subs:
+            add('pending', 'Pending', a, 'Submit: ')
+
+    # 2) Submitted, awaiting faculty review
+    for a in assignments:
+        sub = my_subs.get(a.pk)
+        if sub and sub.status == LmsSubmission.Status.SUBMITTED:
+            add('review', 'Review', a, 'Awaiting review: ')
+
+    # 3) Latest published assignments (news)
+    for a in assignments[:8]:
+        add('latest', 'New', a, 'Latest: ')
+
+    return items
+
 def submissions_feed(assignment: LmsAssignment) -> QuerySet[LmsSubmission]:
     return (
         LmsSubmission.objects.filter(assignment=assignment)

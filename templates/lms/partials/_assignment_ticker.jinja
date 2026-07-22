@@ -1,0 +1,46 @@
+{# Expects: ticker_items — list of {kind, badge, label, url} #}
+{% if ticker_items %}
+<style>
+@keyframes lms-ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.lms-ticker-track {
+    display: inline-flex;
+    width: max-content;
+    animation: lms-ticker-scroll 28s linear infinite;
+}
+.lms-ticker-track:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+    .lms-ticker-track { animation: none; }
+}
+</style>
+<div class="flex min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-violet-50 px-2 py-1"
+     role="region"
+     aria-label="Assignment updates">
+    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white shadow-sm" aria-hidden="true">
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+        </svg>
+    </span>
+    <span class="shrink-0 rounded bg-indigo-600 px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider text-white">Live</span>
+    <div class="min-w-0 flex-1 overflow-hidden">
+        <div class="lms-ticker-track gap-6 pr-6">
+            {% for pass in [1, 2] %}
+            <div class="inline-flex items-center gap-6">
+                {% for item in ticker_items %}
+                <a href="{{ item.url }}"
+                   class="inline-flex max-w-[18rem] items-center gap-1.5 whitespace-nowrap text-[11px] font-semibold text-slate-700 hover:text-indigo-700">
+                    <span class="rounded px-1 py-px text-[8px] font-black uppercase tracking-wide
+                        {% if item.kind == 'pending' %}bg-amber-100 text-amber-800
+                        {% elif item.kind == 'review' %}bg-rose-100 text-rose-800
+                        {% else %}bg-emerald-100 text-emerald-800{% endif %}">{{ item.badge }}</span>
+                    <span class="truncate">{{ item.label }}</span>
+                </a>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}

@@ -46,6 +46,9 @@ def home(request):
     is_staff = services.is_lms_staff(request.user)
     admin_stats = services.admin_home_stats() if is_staff else None
     lms_notify = services.lms_notifications_for_user(request.user) if not is_staff else None
+    ticker_items = (
+        services.student_assignment_ticker(request.user) if not is_staff else []
+    )
     return render(
         request,
         'lms/home.jinja',
@@ -58,6 +61,7 @@ def home(request):
             'is_staff_lms': is_staff,
             'admin_stats': admin_stats,
             'lms_notify': lms_notify,
+            'ticker_items': ticker_items,
         },
     )
 
