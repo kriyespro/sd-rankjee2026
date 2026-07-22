@@ -184,10 +184,5 @@
             <span class="text-rose-600">· {{ lms_notify.unread_count }} new</span>
             {% endif %}
         </button>
-        {% if ticker_items is defined and ticker_items %}
-        <div class="mt-2 w-full min-w-0 sm:max-w-xl">
-            {% include "lms/partials/_assignment_ticker.jinja" %}
-        </div>
-        {% endif %}
     </div>
 </div>

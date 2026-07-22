@@ -151,7 +151,7 @@ def student_assignment_ticker(user, limit: int = 10) -> list[dict]:
     items: list[dict] = []
     seen: set[int] = set()
 
-    def add(kind: str, badge: str, assignment: LmsAssignment, prefix: str):
+    def add(kind: str, badge: str, assignment: LmsAssignment):
         if assignment.pk in seen or len(items) >= limit:
             return
         seen.add(assignment.pk)
@@ -159,7 +159,7 @@ def student_assignment_ticker(user, limit: int = 10) -> list[dict]:
             {
                 'kind': kind,
                 'badge': badge,
-                'label': f'{prefix}{assignment.title}',
+                'label': assignment.title,
                 'url': reverse('lms:assignment_detail', kwargs={'pk': assignment.pk}),
             }
         )
@@ -167,17 +167,17 @@ def student_assignment_ticker(user, limit: int = 10) -> list[dict]:
     # 1) Not submitted yet → pending for the student
     for a in assignments:
         if a.pk not in my_subs:
-            add('pending', 'Pending', a, 'Submit: ')
+            add('pending', 'Pending', a)
 
     # 2) Submitted, awaiting faculty review
     for a in assignments:
         sub = my_subs.get(a.pk)
         if sub and sub.status == LmsSubmission.Status.SUBMITTED:
-            add('review', 'Review', a, 'Awaiting review: ')
+            add('review', 'In review', a)
 
     # 3) Latest published assignments (news)
     for a in assignments[:8]:
-        add('latest', 'New', a, 'Latest: ')
+        add('latest', 'New', a)
 
     return items
 

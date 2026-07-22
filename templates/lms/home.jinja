@@ -47,6 +47,12 @@
         </div>
     </div>
 
+    {% if not is_staff_lms and ticker_items %}
+    <div class="mb-3">
+        {% include "lms/partials/_assignment_ticker.jinja" %}
+    </div>
+    {% endif %}
+
     {% if not is_staff_lms %}
     {% include "lms/partials/_pwa_install_banner.jinja" %}
     {% endif %}
