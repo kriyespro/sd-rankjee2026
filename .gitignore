@@ -60,3 +60,6 @@ googleid.txt
 
 # Frontend tooling (if used later)
 node_modules/
+
+# Local agent tooling (Cursor/Windsurf/etc skill installs)
+.agents/

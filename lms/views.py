@@ -42,6 +42,11 @@ def home(request):
         .select_related('student', 'assignment')
         .order_by('-is_pinned', '-updated_at')[:12]
     )
+    recent_assignments = sorted(
+        assignments,
+        key=lambda a: a.created_at,
+        reverse=True,
+    )[:12]
     sidebar = services.home_sidebar_data(request.user)
     is_staff = services.is_lms_staff(request.user)
     admin_stats = services.admin_home_stats() if is_staff else None
@@ -55,6 +60,7 @@ def home(request):
         {
             'topics': topics,
             'recent_submissions': recent,
+            'recent_assignments': recent_assignments,
             'top_scores': sidebar['top_scores'],
             'best_likes': sidebar['best_likes'],
             'latest_comments': sidebar['latest_comments'],

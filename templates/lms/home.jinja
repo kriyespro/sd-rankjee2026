@@ -67,11 +67,11 @@
     {% include "lms/partials/_pwa_install_banner.jinja" %}
     {% endif %}
 
-    {# LEFT | CENTER | RIGHT — side-by-side from lg (1024px) #}
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-3">
+    {# 4 columns: Topics | Recent submissions | Recent Assignment | Top score #}
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 lg:items-start">
 
-        {# LEFT — Topics (full list, no nested scrollbar; full titles) #}
-        <aside class="w-full shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm lg:w-60">
+        {# 1 — Topics #}
+        <aside class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Topics</h2>
                 {% if is_staff_lms %}
@@ -106,125 +106,158 @@
             {% endif %}
         </aside>
 
-        {# CENTER — Feed #}
-        <main class="min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-100 px-4 py-2.5">
+        {# 2 — Recent submissions #}
+        <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-slate-100 px-3 py-2.5">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Recent submissions</h2>
             </div>
             {% if recent_submissions %}
             <ul class="divide-y divide-slate-100">
                 {% for s in recent_submissions %}
-                <li class="flex items-start gap-3 px-4 py-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-black text-white">
+                <li class="flex items-start gap-2.5 px-3 py-2.5">
+                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-[11px] font-black text-white">
                         {{ s.student.get_username()[0]|upper }}
                     </div>
                     <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                            <p class="text-sm font-black text-slate-900">{{ s.student.get_username() }}</p>
+                        <div class="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                            <p class="truncate text-xs font-black text-slate-900">{{ s.student.get_username() }}</p>
                             {% if s.is_pinned %}
-                            <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[9px] font-black uppercase text-amber-800">Pinned</span>
+                            <span class="rounded bg-amber-100 px-1 py-0.5 text-[8px] font-black uppercase text-amber-800">Pinned</span>
                             {% endif %}
-                            <span class="text-[11px] font-semibold text-slate-400">{{ s.updated_at.strftime('%d %b · %H:%M') }}</span>
+                            <span class="text-[10px] font-semibold text-slate-400">{{ s.updated_at.strftime('%d %b') }}</span>
                         </div>
-                        <p class="mt-0.5 text-xs text-slate-600">
-                            submitted on
+                        <p class="mt-0.5 truncate text-[11px] text-slate-600">
                             <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="font-bold text-indigo-600 hover:underline">{{ s.assignment.title }}</a>
                         </p>
                         {% if s.caption %}
-                        <p class="mt-1 line-clamp-1 text-[11px] text-slate-500">{{ s.caption }}</p>
+                        <p class="mt-0.5 line-clamp-1 text-[10px] text-slate-500">{{ s.caption }}</p>
                         {% endif %}
                     </div>
                     <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}"
-                       class="mt-0.5 inline-flex shrink-0 rounded-md border border-slate-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">
+                       class="mt-0.5 inline-flex shrink-0 rounded-md border border-slate-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50">
                         View
                     </a>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="px-4 py-12 text-center text-sm text-slate-500">No submissions yet.</p>
+            <p class="px-3 py-10 text-center text-xs text-slate-500">No submissions yet.</p>
             {% endif %}
-        </main>
+        </section>
 
-        {# RIGHT — Insights (3 widgets stack on lg; grid on md when stacked below) #}
-        <aside class="grid w-full shrink-0 grid-cols-1 gap-3 sm:grid-cols-3 lg:flex lg:w-60 lg:flex-col">
+        {# 3 — Recent Assignment #}
+        <section class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-emerald-100 bg-emerald-50 px-3 py-2.5">
+                <h2 class="text-[10px] font-black uppercase tracking-widest text-emerald-800">Recent Assignment</h2>
+            </div>
+            {% if recent_assignments %}
+            <ul class="divide-y divide-slate-100">
+                {% for a in recent_assignments %}
+                <li>
+                    <a href="{{ url('lms:assignment_detail', pk=a.pk) }}" class="flex items-start gap-2.5 px-3 py-2.5 hover:bg-emerald-50">
+                        <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-[10px] font-black text-emerald-700">
+                            {{ a.title[0]|upper }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold leading-snug text-slate-900 line-clamp-2">{{ a.title }}</span>
+                            <span class="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[10px] text-slate-500">
+                                {% if a.topic %}
+                                <span class="truncate font-semibold text-emerald-700">{{ a.topic.title }}</span>
+                                {% endif %}
+                                <span>{{ a.created_at.strftime('%d %b') }}</span>
+                                {% if a.due_at %}
+                                <span class="text-amber-700">Due {{ a.due_at.strftime('%d %b') }}</span>
+                                {% endif %}
+                            </span>
+                        </span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="px-3 py-10 text-center text-xs text-slate-500">No assignments yet.</p>
+            {% endif %}
+        </section>
 
-            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-amber-100 bg-amber-50 px-3 py-2">
-                    <h2 class="text-[10px] font-black uppercase tracking-widest text-amber-800">Top score</h2>
-                </div>
-                {% if top_scores %}
-                <ul class="divide-y divide-slate-50">
-                    {% for s in top_scores %}
-                    <li>
-                        <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="flex items-center gap-2 px-2.5 py-2 hover:bg-amber-50">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-black text-amber-800">
-                                {{ s.student.get_username()[0]|upper }}
-                            </span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block truncate text-xs font-bold text-slate-900">{{ s.student.get_username() }}</span>
-                                <span class="block truncate text-[10px] text-slate-500">{{ s.assignment.title }}</span>
-                            </span>
-                            <span class="shrink-0 text-sm font-black text-amber-700">{{ s.marks }}</span>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="px-3 py-5 text-center text-[11px] text-slate-400">No marks yet.</p>
-                {% endif %}
-            </section>
-
-            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-rose-100 bg-rose-50 px-3 py-2">
-                    <h2 class="text-[10px] font-black uppercase tracking-widest text-rose-800">Best likes</h2>
-                </div>
-                {% if best_likes %}
-                <ul class="divide-y divide-slate-50">
-                    {% for s in best_likes %}
-                    <li>
-                        <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="flex items-center gap-2 px-2.5 py-2 hover:bg-rose-50">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-[10px] font-black text-rose-700">
-                                {{ s.student.get_username()[0]|upper }}
-                            </span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block truncate text-xs font-bold text-slate-900">{{ s.student.get_username() }}</span>
-                                <span class="block truncate text-[10px] text-slate-500">{{ s.assignment.title }}</span>
-                            </span>
-                            <span class="shrink-0 text-xs font-black text-rose-600">❤️ {{ s.like_count }}</span>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="px-3 py-5 text-center text-[11px] text-slate-400">No likes yet.</p>
-                {% endif %}
-            </section>
-
-            <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-indigo-100 bg-indigo-50 px-3 py-2">
-                    <h2 class="text-[10px] font-black uppercase tracking-widest text-indigo-800">Latest comments</h2>
-                </div>
-                {% if latest_comments %}
-                <ul class="divide-y divide-slate-50">
-                    {% for c in latest_comments %}
-                    <li>
-                        <a href="{{ url('lms:assignment_detail', pk=c.submission.assignment_id) }}" class="block px-2.5 py-2 hover:bg-indigo-50">
-                            <div class="flex items-center gap-1.5">
-                                <span class="text-xs font-black text-slate-900">{{ c.user.get_username() }}</span>
-                                <span class="text-[10px] text-slate-400">{{ c.created_at.strftime('%d %b') }}</span>
-                            </div>
-                            <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-600">{{ c.body }}</p>
-                            <p class="mt-0.5 truncate text-[10px] font-semibold text-indigo-600">{{ c.submission.assignment.title }}</p>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p class="px-3 py-5 text-center text-[11px] text-slate-400">No comments yet.</p>
-                {% endif %}
-            </section>
+        {# 4 — Top score #}
+        <aside class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-amber-100 bg-amber-50 px-3 py-2.5">
+                <h2 class="text-[10px] font-black uppercase tracking-widest text-amber-800">Top score</h2>
+            </div>
+            {% if top_scores %}
+            <ul class="divide-y divide-slate-50">
+                {% for s in top_scores %}
+                <li>
+                    <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="flex items-center gap-2 px-2.5 py-2.5 hover:bg-amber-50">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-black text-amber-800">
+                            {{ s.student.get_username()[0]|upper }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-xs font-bold text-slate-900">{{ s.student.get_username() }}</span>
+                            <span class="block truncate text-[10px] text-slate-500">{{ s.assignment.title }}</span>
+                        </span>
+                        <span class="shrink-0 text-sm font-black text-amber-700">{{ s.marks }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="px-3 py-10 text-center text-xs text-slate-400">No marks yet.</p>
+            {% endif %}
         </aside>
+    </div>
+
+    {# Secondary insights row #}
+    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-rose-100 bg-rose-50 px-3 py-2">
+                <h2 class="text-[10px] font-black uppercase tracking-widest text-rose-800">Best likes</h2>
+            </div>
+            {% if best_likes %}
+            <ul class="divide-y divide-slate-50">
+                {% for s in best_likes %}
+                <li>
+                    <a href="{{ url('lms:assignment_detail', pk=s.assignment_id) }}" class="flex items-center gap-2 px-2.5 py-2 hover:bg-rose-50">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-[10px] font-black text-rose-700">
+                            {{ s.student.get_username()[0]|upper }}
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate text-xs font-bold text-slate-900">{{ s.student.get_username() }}</span>
+                            <span class="block truncate text-[10px] text-slate-500">{{ s.assignment.title }}</span>
+                        </span>
+                        <span class="shrink-0 text-xs font-black text-rose-600">❤️ {{ s.like_count }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="px-3 py-5 text-center text-[11px] text-slate-400">No likes yet.</p>
+            {% endif %}
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <div class="border-b border-indigo-100 bg-indigo-50 px-3 py-2">
+                <h2 class="text-[10px] font-black uppercase tracking-widest text-indigo-800">Latest comments</h2>
+            </div>
+            {% if latest_comments %}
+            <ul class="divide-y divide-slate-50">
+                {% for c in latest_comments %}
+                <li>
+                    <a href="{{ url('lms:assignment_detail', pk=c.submission.assignment_id) }}" class="block px-2.5 py-2 hover:bg-indigo-50">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-black text-slate-900">{{ c.user.get_username() }}</span>
+                            <span class="text-[10px] text-slate-400">{{ c.created_at.strftime('%d %b') }}</span>
+                        </div>
+                        <p class="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-600">{{ c.body }}</p>
+                        <p class="mt-0.5 truncate text-[10px] font-semibold text-indigo-600">{{ c.submission.assignment.title }}</p>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="px-3 py-5 text-center text-[11px] text-slate-400">No comments yet.</p>
+            {% endif %}
+        </section>
     </div>
 </div>
 {% endblock %}
