@@ -9,6 +9,32 @@
 - None
 
 ### Completed recently
+- [CHECKED + FIXED] Tutor/Faculty signup flow audit (user reported `https://rankjee.com/hometutor/my/profile/`
+  showing the login page). Traced it: that page is `@login_required`, so an anonymous visit
+  correctly bounces to `/users/login/?next=/hometutor/my/profile/` — `login.jinja` even shows the
+  right copy for it ("Log in to continue your tutor search or demo requests", the `'hometutor' in
+  next_url` branch) — not a bug, working as designed. Ran the full email-signup → role picker →
+  tutor-onboarding-form → `TutorProfile` created → lands on `hometutor:my_profile` flow through the
+  Django test client end to end — no errors, no stray messages, nav shows "Demo Inbox" right after.
+  While auditing, found and fixed a real latent bug in the *general* onboarding gate
+  (`users/views.py::onboarding_profile`, `core/middleware.py::OnboardingGateMiddleware`,
+  `users/onboarding.py::incomplete_onboarding_url_name`): if any admin/office-provisioned account
+  (FACULTY, CITY_ADMIN, GLOBAL_ADMIN, VIP_USER — anything outside
+  `PUBLIC_SELF_ASSIGNABLE_ROLES = {STUDENT, PARENT, TUTOR}`) ever ended up with
+  `onboarding_completed=False`, every page load would middleware-redirect them into
+  `/users/onboarding/role/` <-> `/users/onboarding/profile/` forever — `onboarding_role` always
+  forwards to `onboarding_profile` when no role-picker session flag is set, and the old
+  `onboarding_profile` code bounced non-self-assignable roles straight back to `onboarding_role`
+  with an error message, with nothing ever setting `onboarding_completed=True` to break out.
+  `CustomUser.onboarding_completed` defaults to `True` so this couldn't fire for garden-variety
+  admin-created accounts, but it's a live footgun (e.g. an admin unchecking "onboarding completed"
+  on a Faculty account's `/sd/` record to "reset their intro" would lock them out of every page).
+  Fix: `onboarding_profile` now marks onboarding complete and sends these roles straight to the
+  dashboard instead of bouncing back to the picker, since there's nothing for them to self-configure
+  in that wizard anyway (`RoleSelectionForm` only ever offers Student/Parent/Tutor). Verified with a
+  FACULTY test account forced into the risky `onboarding_completed=False` state — before the fix
+  this would loop; after the fix it resolves in 3 hops and lands on `/admin/` with `onboarding_
+  completed` flipped back to `True`. Full suite still green (48 tests).
 - [FIXED] "Tutor and Faculty conflict" — a FACULTY-role user clicking Inbox/Listing/Marketplace
   from their own `/admin/` dashboard (or the top-nav links, or `/study/`) was bounced back with a
   stray "Tutor access only. Please sign in with a tutor account." error banner, and the site nav

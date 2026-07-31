@@ -388,8 +388,14 @@ def onboarding_profile(request):
 
     role = request.user.role
     if role not in PUBLIC_SELF_ASSIGNABLE_ROLES:
-        messages.error(request, 'Please select a valid role first.')
-        return redirect('users:onboarding_role')
+        # Roles like FACULTY/CITY_ADMIN/GLOBAL_ADMIN/VIP_USER are admin/office-provisioned, never
+        # chosen via this wizard (RoleSelectionForm only offers Student/Parent/Tutor), so bouncing
+        # back to onboarding_role would just bounce right back here forever — onboarding_role only
+        # renders the picker when `user_needs_role_picker` is set, which it isn't in this branch.
+        # Fix: nothing for this account to configure here, so mark onboarding done and move on.
+        request.user.onboarding_completed = True
+        request.user.save(update_fields=['onboarding_completed'])
+        return redirect('dashboard:index')
 
     if role == CustomUser.Role.TUTOR:
         profile = TutorProfile.objects.filter(user=request.user).first()
