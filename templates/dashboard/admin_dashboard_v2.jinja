@@ -6,172 +6,378 @@
 
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-0.5">RankJee · Command Center</p>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Superadmin Overview</h1>
-            <p class="text-sm font-medium text-slate-600">Only what needs your attention — pending queues, real revenue, real growth.</p>
+            <p class="text-sm font-medium text-slate-500 mt-0.5">Pending queues · real revenue · real growth.</p>
         </div>
         <form action="/sd/users/customuser/" method="GET" class="relative w-full sm:w-64">
             <span class="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 text-sm">🔍</span>
-            <input type="text" name="q" placeholder="Jump to a user…"
-                   class="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
+            <input type="text" name="q" placeholder="Find a user…"
+                   class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
         </form>
     </div>
 
     {# ============ QUICK ACTIONS ============ #}
     <div class="mb-8 flex flex-wrap gap-2">
-        <a href="/sd/assessment/question/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">➕ Add question</a>
-        <a href="/sd/learning/conceptvideo/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🎬 New video</a>
-        <a href="/sd/core/earningtask/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">💵 Post task</a>
-        <a href="{{ url('dashboard:cms_home') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧩 Content CMS</a>
-        <a href="{{ url('dashboard:backup_center') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🗃️ Backups</a>
-        <a href="{{ url('dashboard:seo_smart_view') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧠 SEO</a>
-        <a href="{{ url('lms:home') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">📚 LMS</a>
-        <a href="/sd/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">⚙️ Advanced /sd/</a>
+        <a href="{{ url('lms:courses') }}" class="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3 py-1.5 text-xs font-black text-white hover:bg-indigo-500 shadow-sm">📚 LMS Setup</a>
+        <a href="{{ url('dashboard:cms_home') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧩 Content CMS</a>
+        <a href="/sd/assessment/question/add/" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">➕ Add question</a>
+        <a href="/sd/learning/conceptvideo/add/" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🎬 New video</a>
+        <a href="/sd/core/earningtask/add/" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">💵 Post task</a>
+        <a href="{{ url('dashboard:seo_smart_view') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧠 SEO</a>
+        <a href="{{ url('dashboard:backup_center') }}" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🗃️ Backup</a>
+        <a href="/sd/" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:bg-slate-50 shadow-sm">⚙️ /sd/</a>
     </div>
 
     {# ============ ACTION CENTER ============ #}
-    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 bg-rose-50/40">
-            <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Needs your attention</h2>
+    {# hot_items / clear_items pre-split in views.py (action_hot / action_clear) #}
+    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" x-data="{ showClear: false }">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-3"
+             style="background: linear-gradient(135deg, #fff7f7 0%, #fff 100%);">
+            <div class="flex items-center gap-3">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Needs your attention</h2>
+                {% if action_hot %}
+                <span class="inline-flex items-center justify-center h-5 min-w-[1.25rem] px-1.5 rounded-full bg-rose-600 text-white text-[10px] font-black">{{ action_hot | length }}</span>
+                {% else %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">✓ All clear</span>
+                {% endif %}
+            </div>
+            {% if action_clear %}
+            <button @click="showClear = !showClear"
+                    class="text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-slate-600 transition-colors">
+                <span x-text="showClear ? 'Hide cleared' : '{{ action_clear | length }} cleared ↓'"></span>
+            </button>
+            {% endif %}
         </div>
+
+        {% if action_hot %}
         <div class="divide-y divide-slate-100">
-            {% for item in action_items %}
-            <div class="flex items-center justify-between gap-4 px-5 py-3 {{ 'bg-amber-50/40' if item.count > 0 else '' }}">
+            {% for item in action_hot %}
+            {% set is_critical = item.priority == 'critical' %}
+            {% set is_warning = item.priority == 'warning' %}
+            <div class="flex items-center justify-between gap-4 px-5 py-3.5
+                        {{ 'border-l-4 border-rose-500 bg-rose-50/30' if is_critical else 'border-l-4 border-amber-400 bg-amber-50/20' if is_warning else 'border-l-4 border-indigo-300 bg-indigo-50/10' }}">
                 <div class="flex items-center gap-3 min-w-0">
-                    <span class="flex-shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black
-                        {{ 'bg-rose-100 text-rose-700' if item.count > 0 else 'bg-slate-100 text-slate-400' }}">{{ item.count }}</span>
-                    <p class="text-sm font-bold text-slate-800 truncate">{{ item.label }}</p>
+                    <span class="text-base leading-none flex-shrink-0">{{ item.icon }}</span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-800 leading-snug">{{ item.label }}</p>
+                        {% if item.amount is not none and item.amount > 0 %}
+                        <p class="text-[11px] font-black text-emerald-700 mt-0.5">₹{{ "{:,.0f}".format(item.amount) }}</p>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="flex items-center gap-3 flex-shrink-0">
-                    {% if item.amount is not none %}
-                    <span class="text-xs font-black text-emerald-700">₹{{ "{:,.0f}".format(item.amount) }}</span>
-                    {% endif %}
-                    {% if item.count > 0 %}
-                        {% if item.url %}
-                        <a href="{{ item.url }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline whitespace-nowrap">Open →</a>
-                        {% elif item.anchor %}
-                        <a href="{{ item.anchor }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline whitespace-nowrap">Review below →</a>
-                        {% endif %}
-                    {% else %}
-                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-300">All clear</span>
+                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                                 {{ 'bg-rose-600 text-white' if is_critical else 'bg-amber-500 text-white' if is_warning else 'bg-indigo-600 text-white' }}
+                                 text-xs font-black flex-shrink-0">{{ item.count }}</span>
+                    {% if item.url %}
+                    <a href="{{ item.url }}"
+                       class="whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors
+                              {{ 'bg-rose-600 text-white hover:bg-rose-700' if is_critical else 'bg-amber-500 text-white hover:bg-amber-600' if is_warning else 'bg-indigo-600 text-white hover:bg-indigo-700' }}">
+                        Open →
+                    </a>
+                    {% elif item.anchor %}
+                    <a href="{{ item.anchor }}"
+                       class="whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors
+                              {{ 'bg-rose-600 text-white hover:bg-rose-700' if is_critical else 'bg-amber-500 text-white hover:bg-amber-600' if is_warning else 'bg-indigo-600 text-white hover:bg-indigo-700' }}">
+                        Review ↓
+                    </a>
                     {% endif %}
                 </div>
             </div>
             {% endfor %}
         </div>
+        {% else %}
+        <div class="px-5 py-6 text-center">
+            <p class="text-2xl mb-1">🎉</p>
+            <p class="text-sm font-bold text-emerald-700">Everything's under control — no open queues right now.</p>
+        </div>
+        {% endif %}
+
+        {# Collapsed "all clear" items #}
+        {% if action_clear %}
+        <div x-show="showClear" class="border-t border-slate-100">
+            <div class="divide-y divide-slate-100/70">
+                {% for item in action_clear %}
+                <div class="flex items-center justify-between gap-4 px-5 py-2.5 opacity-60">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <span class="text-sm leading-none flex-shrink-0">{{ item.icon }}</span>
+                        <p class="text-xs font-bold text-slate-500 truncate">{{ item.label }}</p>
+                    </div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex-shrink-0">✓ Clear</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
     </section>
 
     {# ============ FACULTY & COURSE QUICK SETUP ============ #}
-    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 bg-indigo-50/40 flex flex-wrap items-center justify-between gap-2">
-            <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Faculty &amp; course quick setup</h2>
-            <a href="{{ url('lms:courses') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Manage all courses →</a>
+    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+             x-data="{ tab: 'create' }">
+
+        {# Header #}
+        <div class="p-4 border-b border-slate-100 bg-indigo-50/30 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Faculty &amp; Course Quick Setup</h2>
+                {% if lms_stats.needs_attention > 0 %}
+                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">⚠ {{ lms_stats.needs_attention }} need setup</span>
+                {% endif %}
+            </div>
+            <a href="{{ url('lms:courses') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Full LMS manager →</a>
         </div>
-        <div class="p-5 grid gap-5 md:grid-cols-2">
-            <div>
-                <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">1. Create a course &amp; assign faculty</h3>
-                <form method="post" action="{{ url('lms:courses') }}" class="space-y-2">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <input type="hidden" name="action" value="create_course">
-                    <div>
-                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course name</label>
-                        {{ lms_course_form.name }}
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Faculty</label>
-                        {{ lms_course_form.owner }}
-                    </div>
-                    {% if lms_course_form.catalog_course %}
-                    <div>
-                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Paid course (/courses/)</label>
-                        {{ lms_course_form.catalog_course }}
-                    </div>
+
+        {# LMS Pulse Bar #}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/50">
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black text-slate-900">{{ lms_stats.total_courses }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">Active courses</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black {{ 'text-amber-600' if lms_stats.courses_no_faculty > 0 else 'text-slate-400' }}">{{ lms_stats.courses_no_faculty }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">No faculty</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black {{ 'text-amber-600' if lms_stats.courses_no_students > 0 else 'text-slate-400' }}">{{ lms_stats.courses_no_students }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">No students</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black {{ 'text-amber-600' if lms_stats.courses_no_assignments > 0 else 'text-slate-400' }}">{{ lms_stats.courses_no_assignments }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">No assignments</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black text-indigo-700">{{ lms_stats.total_students }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">Total students</p>
+            </div>
+            <div class="px-4 py-3 text-center">
+                <p class="text-xl font-black {{ 'text-rose-600' if lms_stats.pending_grading > 0 else 'text-slate-400' }}">{{ lms_stats.pending_grading }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">Pending grades</p>
+            </div>
+        </div>
+
+        {# Tabs #}
+        <div class="flex border-b border-slate-100 overflow-x-auto">
+            <button @click="tab='create'"
+                    :class="tab==='create' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                ➕ Create course
+            </button>
+            <button @click="tab='student'"
+                    :class="tab==='student' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                👤 Add student
+            </button>
+            <button @click="tab='topic'"
+                    :class="tab==='topic' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                📝 Add topic
+            </button>
+            <button @click="tab='faculty'"
+                    :class="tab==='faculty' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                🔄 Reassign faculty
+            </button>
+            <button @click="tab='courses'"
+                    :class="tab==='courses' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                📊 Course health
+            </button>
+        </div>
+
+        {# ── Tab: Create course ── #}
+        <div x-show="tab==='create'" x-cloak class="p-5">
+            <datalist id="lms-dash-student-options">
+                {% for s in lms_student_options %}
+                <option value="{{ s.username }}{% if s.email %} · {{ s.email }}{% endif %}">
+                {% endfor %}
+            </datalist>
+            <p class="mb-3 text-xs font-bold text-slate-500">Create a new course and assign the faculty who will teach it. The course appears in that faculty's LMS dashboard immediately.</p>
+            <form method="post" action="{{ url('lms:courses') }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="create_course">
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course name <span class="text-rose-500">*</span></label>
+                    {{ lms_course_form.name }}
+                </div>
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Faculty / tutor</label>
+                    {{ lms_course_form.owner }}
+                </div>
+                {% if lms_course_form.catalog_course %}
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Link to paid course</label>
+                    {{ lms_course_form.catalog_course }}
+                </div>
+                {% endif %}
+                <div class="sm:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-4">
+                    {% if lms_course_form.is_default_for_catalog %}
                     <label class="flex items-center gap-2 text-xs font-bold text-slate-700">
-                        {{ lms_course_form.is_default_for_catalog }} Auto-enroll buyers of that paid course here
+                        {{ lms_course_form.is_default_for_catalog }} Auto-enroll paid course buyers
                     </label>
                     {% endif %}
                     <label class="flex items-center gap-2 text-xs font-bold text-slate-700">
-                        {{ lms_course_form.is_active }} Active
+                        {{ lms_course_form.is_active }} Active (visible to faculty &amp; students)
                     </label>
-                    <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Create course</button>
-                </form>
-            </div>
-            <div>
-                <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">2. Assign a student to an existing course</h3>
-                <form method="post" action="{{ url('lms:courses') }}" class="space-y-2">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <input type="hidden" name="action" value="add_member">
-                    <div>
-                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course</label>
-                        <select name="course_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                            <option value="">Pick a course…</option>
-                            {% for c in lms_quick_courses %}
-                            <option value="{{ c.pk }}">{{ c.name }}{% if c.catalog_course %} · {{ c.catalog_course.title }}{% endif %}{% if c.owner %} — {{ c.owner.get_username() }}{% else %} — platform-wide{% endif %}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Student</label>
-                        <input type="text" name="username" list="lms-dash-student-options" placeholder="Student username or email"
-                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                    </div>
-                    <datalist id="lms-dash-student-options">
-                        {% for s in lms_student_options %}
-                        <option value="{{ s.username }}{% if s.email %} · {{ s.email }}{% endif %}">
-                        {% endfor %}
-                    </datalist>
-                    <button type="submit" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Assign student</button>
-                </form>
-            </div>
-        </div>
-        <div class="border-t border-slate-100 px-5 py-4">
-            <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">3. Add a topic to a course</h3>
-            <form method="post" action="{{ url('lms:topic_create') }}" class="grid gap-2 sm:grid-cols-[2fr_2fr_auto] sm:items-end">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <div>
-                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Topic title</label>
-                    <input type="text" name="title" required placeholder="e.g. Week 1 — Fundamentals" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    <button type="submit" class="ml-auto rounded-xl bg-indigo-600 px-5 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Create course →</button>
                 </div>
+            </form>
+        </div>
+
+        {# ── Tab: Add student ── #}
+        <div x-show="tab==='student'" x-cloak class="p-5">
+            <p class="mb-3 text-xs font-bold text-slate-500">Enroll a student into an existing course. Only <strong>STUDENT-role</strong> accounts are accepted.</p>
+            <form method="post" action="{{ url('lms:courses') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="add_member">
                 <div>
-                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course</label>
-                    <select name="course" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                        <option value="">Platform-wide (no single course)</option>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course <span class="text-rose-500">*</span></label>
+                    <select name="course_id" required class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+                        <option value="">Pick a course…</option>
                         {% for c in lms_quick_courses %}
-                        <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} — {{ c.owner.get_username() }}{% endif %}</option>
+                        <option value="{{ c.pk }}">
+                            {{ c.name }}{% if c.owner %} · {{ c.owner.get_username() }}{% endif %}
+                            {% set sc = c.enrollments.all()|length %} ({{ sc }} student{{ 's' if sc != 1 else '' }})
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Add topic</button>
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Student username or email <span class="text-rose-500">*</span></label>
+                    <input type="text" name="username" required list="lms-dash-student-options"
+                           placeholder="Type to search students…"
+                           class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+                </div>
+                <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Enroll →</button>
             </form>
-            <p class="mt-1 text-[10px] text-slate-400">Shows in that course's LMS sidebar immediately — no assignment needed yet.</p>
+            {% if lms_quick_courses %}
+            <p class="mt-2 text-[10px] text-slate-400">{{ lms_student_options | length }} student accounts in the typeahead. To remove a student, go to the <a href="{{ url('lms:courses') }}" class="underline text-indigo-600">full LMS courses page</a>.</p>
+            {% endif %}
         </div>
-        {% if lms_quick_courses %}
-        <div class="border-t border-slate-100 px-5 py-4">
-            <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">Reassign an existing course's faculty</h3>
-            <div class="grid gap-2">
+
+        {# ── Tab: Add topic ── #}
+        <div x-show="tab==='topic'" x-cloak class="p-5">
+            <p class="mb-3 text-xs font-bold text-slate-500">Create a curriculum topic scoped to a specific course. It shows in that course's LMS sidebar immediately — no assignment needed first.</p>
+            <form method="post" action="{{ url('lms:topic_create') }}" class="grid gap-3 sm:grid-cols-[2fr_2fr_auto] sm:items-end">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Topic title <span class="text-rose-500">*</span></label>
+                    <input type="text" name="title" required placeholder="e.g. Week 1 — Fundamentals"
+                           class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+                </div>
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course</label>
+                    <select name="course" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+                        <option value="">Platform-wide (all courses)</option>
+                        {% for c in lms_quick_courses %}
+                        <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} · {{ c.owner.get_username() }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Add topic →</button>
+            </form>
+        </div>
+
+        {# ── Tab: Reassign faculty ── #}
+        <div x-show="tab==='faculty'" x-cloak class="p-5">
+            <p class="mb-3 text-xs font-bold text-slate-500">Change which faculty/tutor teaches an existing course. Saves immediately. Warning: removing the owner means only a superuser can manage or grade it.</p>
+            {% if lms_quick_courses %}
+            <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
                 {% for c in lms_quick_courses %}
-                <form method="post" action="{{ url('lms:courses') }}" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                <form method="post" action="{{ url('lms:courses') }}"
+                      class="flex flex-wrap items-center gap-2 rounded-xl border
+                             {{ 'border-amber-200 bg-amber-50/40' if not c.owner else 'border-slate-100 bg-slate-50/50' }}
+                             px-3 py-2.5">
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                     <input type="hidden" name="action" value="reassign_owner">
                     <input type="hidden" name="course_id" value="{{ c.pk }}">
-                    <span class="text-xs font-bold text-slate-800 min-w-[8rem]">
-                        {{ c.name }}
-                        {% if c.catalog_course %}<br><span class="text-[10px] font-normal text-indigo-600">→ {{ c.catalog_course.title }}</span>{% endif %}
-                    </span>
-                    <select name="owner_id" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">
-                        <option value="">Platform-wide (no owner)</option>
+                    <div class="flex-1 min-w-[8rem]">
+                        <p class="text-xs font-black text-slate-800 leading-snug">{{ c.name }}</p>
+                        {% if c.catalog_course %}<p class="text-[10px] text-indigo-600">→ {{ c.catalog_course.title }}</p>{% endif %}
+                        <p class="text-[10px] text-slate-400 mt-0.5">{{ c.enrollments.all()|length }} students · {{ c.assignment_count }} assignments</p>
+                    </div>
+                    <select name="owner_id" class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-700 min-w-[8rem]">
+                        <option value="">No owner (platform-wide)</option>
                         {% for o in lms_owner_options %}
                         <option value="{{ o.pk }}" {% if c.owner_id == o.pk %}selected{% endif %}>{{ o.get_username() }}</option>
                         {% endfor %}
                     </select>
-                    <span class="text-[11px] text-slate-400">{{ c.enrollments.all()|length }} students</span>
-                    <button type="submit" class="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Save</button>
+                    <button type="submit" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Save</button>
                 </form>
                 {% endfor %}
             </div>
+            {% else %}
+            <p class="text-xs text-slate-400 text-center py-6">No courses yet — create the first one using the "Create course" tab.</p>
+            {% endif %}
         </div>
-        {% else %}
-        <p class="px-5 pb-4 text-xs text-slate-500">No courses yet — create the first one above.</p>
-        {% endif %}
+
+        {# ── Tab: Course health grid ── #}
+        <div x-show="tab==='courses'" x-cloak>
+            {% if lms_quick_courses %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left min-w-[640px]">
+                    <thead class="bg-slate-50 border-b border-slate-100">
+                        <tr class="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <th class="px-5 py-3">Course</th>
+                            <th class="px-5 py-3">Faculty</th>
+                            <th class="px-5 py-3 text-center">Students</th>
+                            <th class="px-5 py-3 text-center">Topics</th>
+                            <th class="px-5 py-3 text-center">Assignments</th>
+                            <th class="px-5 py-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for c in lms_quick_courses %}
+                        {% set sc = c.enrollments.all()|length %}
+                        {% set tc = c.topic_count %}
+                        {% set ac = c.assignment_count %}
+                        {% set healthy = c.owner and sc > 0 and ac > 0 %}
+                        <tr class="hover:bg-slate-50/60 transition-colors">
+                            <td class="px-5 py-3">
+                                <p class="text-xs font-black text-slate-900 leading-snug">{{ c.name }}</p>
+                                {% if c.catalog_course %}
+                                <p class="text-[10px] text-indigo-600">→ {{ c.catalog_course.title }}</p>
+                                {% endif %}
+                                {% if not c.is_active %}
+                                <span class="text-[9px] font-black uppercase text-rose-500">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-3">
+                                {% if c.owner %}
+                                <span class="text-xs font-bold text-slate-700">{{ c.owner.get_username() }}</span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">⚠ None</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="text-sm font-black {{ 'text-amber-600' if sc == 0 else 'text-slate-800' }}">{{ sc }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="text-sm font-black {{ 'text-amber-600' if tc == 0 else 'text-slate-800' }}">{{ tc }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="text-sm font-black {{ 'text-amber-600' if ac == 0 else 'text-slate-800' }}">{{ ac }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-center">
+                                {% if healthy %}
+                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" title="Ready"></span>
+                                {% elif not c.owner %}
+                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" title="No faculty assigned"></span>
+                                {% else %}
+                                <span class="inline-flex h-2.5 w-2.5 rounded-full bg-amber-400" title="Needs setup"></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if lms_quick_courses | length == 20 %}
+            <p class="px-5 py-2 text-[10px] text-slate-400 border-t border-slate-100">Showing latest 20 courses. <a href="{{ url('lms:courses') }}" class="underline text-indigo-600">See all →</a></p>
+            {% endif %}
+            {% else %}
+            <p class="px-5 py-8 text-xs text-slate-400 text-center">No courses yet — use the "Create course" tab to add the first one.</p>
+            {% endif %}
+        </div>
     </section>
 
     {# ============ REVENUE ============ #}

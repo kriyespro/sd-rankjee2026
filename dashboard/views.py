@@ -1830,7 +1830,7 @@ def index(request):
         # Command Center, so a superuser never has to hunt for /admin/lms/courses/ to do the
         # three most common LMS setup actions. Forms POST straight to lms:courses (same
         # validated actions used on that page) and land back there with a success message.
-        lms_quick_courses = list(lms_services.courses_for_user(request.user).order_by('-created_at')[:8])
+        lms_quick_courses = list(lms_services.courses_for_user(request.user).order_by('-created_at')[:20])
 
         pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').select_related(
             'user', 'task'
@@ -1845,6 +1845,7 @@ def index(request):
             .order_by('-created_at')[:8]
         )
 
+        _all_action_items = dash_services.action_center()
         revenue_trend = dash_services.revenue_trend()
         signup_trend = dash_services.signup_trend()
         max_revenue_day = max((row['amount'] for row in revenue_trend), default=dash_services.ZERO) or dash_services.ZERO
@@ -1858,7 +1859,9 @@ def index(request):
             request,
             'dashboard/admin_dashboard_v2.jinja',
             {
-                'action_items': dash_services.action_center(),
+                'action_items': _all_action_items,
+                'action_hot': [i for i in _all_action_items if i['count'] > 0],
+                'action_clear': [i for i in _all_action_items if i['count'] == 0],
                 'revenue': dash_services.revenue_summary(),
                 'growth': dash_services.growth_summary(),
                 'wow': dash_services.week_over_week(),
@@ -1875,6 +1878,7 @@ def index(request):
                 'lms_quick_courses': lms_quick_courses,
                 'lms_owner_options': list(lms_services.lms_owner_queryset()),
                 'lms_student_options': lms_services.student_directory_options(include_email=True),
+                'lms_stats': dash_services.lms_health_summary(),
             },
         )
 

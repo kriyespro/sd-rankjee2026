@@ -250,8 +250,12 @@ def action_center() -> list[dict]:
     withdrawals = WithdrawalRequest.objects.filter(status='PENDING')
     payouts = TutorPayoutRequest.objects.filter(status='PENDING')
 
+    from lms.models import LmsSubmission
+
+    lms_pending_grading = LmsSubmission.objects.filter(status='SUBMITTED').count()
+
     return [
-        # Trust & safety first — these are the only items where someone is actively upset.
+        # ── CRITICAL (disputes, flagged chats) ─────────────────────────────
         {
             'label': 'Open hometutor disputes',
             'count': EngagementDispute.objects.filter(
@@ -259,71 +263,127 @@ def action_center() -> list[dict]:
             ).count(),
             'amount': None,
             'url': '/sd/hometutor/engagementdispute/?status__exact=OPEN',
+            'icon': '⚡',
+            'priority': 'critical',
         },
         {
             'label': 'Chat messages flagged for support',
             'count': EngagementChatMessage.objects.filter(support_flag=True).count(),
             'amount': None,
             'url': '/sd/hometutor/engagementchatmessage/?support_flag__exact=1',
+            'icon': '💬',
+            'priority': 'critical',
         },
-        {
-            'label': 'Freelance task submissions to review',
-            'count': UserTaskSubmission.objects.filter(status='PENDING').count(),
-            'amount': None,
-            'anchor': '#task-review',
-        },
+        # ── MONEY (real ₹ moving) ────────────────────────────────────────────
         {
             'label': 'UPI withdrawal requests pending',
             'count': withdrawals.count(),
             'amount': withdrawals.aggregate(total=Sum('amount'))['total'] or ZERO,
             'url': '/sd/users/withdrawalrequest/?status__exact=PENDING',
+            'icon': '💸',
+            'priority': 'warning',
         },
         {
             'label': 'Tutor payout requests pending',
             'count': payouts.count(),
             'amount': payouts.aggregate(total=Sum('amount'))['total'] or ZERO,
             'url': '/sd/hometutor_payments/tutorpayoutrequest/?status__exact=PENDING',
-        },
-        {
-            'label': 'New tutor listings awaiting verification',
-            'count': TutorProfile.objects.filter(verification_status='PENDING').count(),
-            'amount': None,
-            'url': '/sd/hometutor/tutorprofile/?verification_status__exact=PENDING',
-        },
-        {
-            'label': 'Tutor KYC documents awaiting review',
-            'count': TutorDocument.objects.filter(status=TutorDocument.DocStatus.PENDING).count(),
-            'amount': None,
-            'url': '/sd/hometutor/tutordocument/?status__exact=PENDING',
+            'icon': '💸',
+            'priority': 'warning',
         },
         {
             'label': 'Course referral commissions awaiting review',
             'count': CourseReferral.objects.filter(status=CourseReferral.Status.PENDING).count(),
             'amount': CourseReferral.objects.filter(status=CourseReferral.Status.PENDING).aggregate(
                 total=Sum('commission_amount')
-            )['total']
-            or ZERO,
+            )['total'] or ZERO,
             'url': '/sd/core/coursereferral/?status__exact=PENDING',
+            'icon': '💰',
+            'priority': 'warning',
+        },
+        # ── VERIFICATION (new tutor onboarding) ──────────────────────────────
+        {
+            'label': 'New tutor listings awaiting verification',
+            'count': TutorProfile.objects.filter(verification_status='PENDING').count(),
+            'amount': None,
+            'url': '/sd/hometutor/tutorprofile/?verification_status__exact=PENDING',
+            'icon': '🪪',
+            'priority': 'warning',
+        },
+        {
+            'label': 'Tutor KYC documents awaiting review',
+            'count': TutorDocument.objects.filter(status=TutorDocument.DocStatus.PENDING).count(),
+            'amount': None,
+            'url': '/sd/hometutor/tutordocument/?status__exact=PENDING',
+            'icon': '📄',
+            'priority': 'warning',
+        },
+        # ── REVIEW QUEUES ────────────────────────────────────────────────────
+        {
+            'label': 'Freelance task submissions to review',
+            'count': UserTaskSubmission.objects.filter(status='PENDING').count(),
+            'amount': None,
+            'anchor': '#task-review',
+            'icon': '📋',
+            'priority': 'info',
         },
         {
             'label': 'Demo requests pending',
             'count': DemoRequest.objects.filter(status=DemoRequest.Status.PENDING).count(),
             'amount': None,
             'anchor': '#demo-requests',
+            'icon': '📅',
+            'priority': 'info',
         },
         {
             'label': 'New tutor requirement leads',
             'count': TutorLeadRequest.objects.filter(status=TutorLeadRequest.Status.NEW).count(),
             'amount': None,
             'anchor': '#tutor-leads',
+            'icon': '🎯',
+            'priority': 'info',
+        },
+        # ── LMS ──────────────────────────────────────────────────────────────
+        {
+            'label': 'LMS submissions awaiting faculty grading',
+            'count': lms_pending_grading,
+            'amount': None,
+            'url': '/admin/lms/',
+            'icon': '📚',
+            'priority': 'info',
         },
         {
             'label': 'Course purchases without an LMS batch assigned',
             'count': len(lms_services.purchases_missing_lms_enrollment()),
             'amount': None,
             'url': '/admin/lms/courses/',
+            'icon': '🎓',
+            'priority': 'warning',
         },
     ]
+
+
+def lms_health_summary() -> dict:
+    """Quick stats for the Faculty & Course quick-setup panel header."""
+    from django.db.models import Count as _Count
+    from lms.models import LmsCourse, LmsCourseEnrollment, LmsSubmission
+
+    active = LmsCourse.objects.filter(is_active=True)
+    total_courses = active.count()
+    courses_no_faculty = active.filter(owner__isnull=True).count()
+    courses_no_students = active.annotate(_ec=_Count('enrollments')).filter(_ec=0).count()
+    courses_no_assignments = active.annotate(_ac=_Count('assignments')).filter(_ac=0).count()
+    total_students = LmsCourseEnrollment.objects.values('user').distinct().count()
+    pending_grading = LmsSubmission.objects.filter(status='SUBMITTED').count()
+    return {
+        'total_courses': total_courses,
+        'courses_no_faculty': courses_no_faculty,
+        'courses_no_students': courses_no_students,
+        'courses_no_assignments': courses_no_assignments,
+        'total_students': total_students,
+        'pending_grading': pending_grading,
+        'needs_attention': courses_no_faculty + courses_no_students + courses_no_assignments,
+    }
 
 
 def backup_health() -> dict:
