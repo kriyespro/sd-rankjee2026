@@ -157,6 +157,34 @@ def can_manage_course(user, course: LmsCourse) -> bool:
     return False
 
 
+def own_student_ids(user) -> set[int]:
+    """Every student enrolled in ANY course this faculty owns — their actual roster."""
+    if not user or not user.is_authenticated:
+        return set()
+    return set(
+        LmsCourseEnrollment.objects.filter(course__owner_id=user.id).values_list('user_id', flat=True)
+    )
+
+
+def faculty_student_scope(user) -> Q | None:
+    """Q() that scopes an `LmsSubmission` queryset to a faculty's own students.
+
+    Fix: `assignments_for_user` correctly includes platform-wide (unbatched) assignments for
+    every faculty (they're shared curriculum), but that meant the LMS home page's per-student
+    aggregates (top scores, best likes, latest comments, recent activity, pending-review counts)
+    showed submissions from ANY student who submitted to a platform-wide assignment — including
+    other faculty's own students, not just this faculty's. Submissions on a faculty's *own*
+    course-scoped assignments were already naturally student-scoped (only enrolled students can
+    submit), so the OR below is a no-op for those and only narrows the platform-wide case.
+    Returns None for admin/office — full platform visibility is correct for them by design.
+    """
+    if is_lms_admin(user) or is_lms_office(user):
+        return None
+    if is_lms_faculty(user):
+        return Q(student_id__in=own_student_ids(user)) | Q(assignment__course__owner_id=user.id)
+    return None
+
+
 def can_edit_submission(user, submission: LmsSubmission) -> bool:
     if not user or not user.is_authenticated:
         return False
@@ -274,6 +302,9 @@ def home_sidebar_data(user, limit: int = 5) -> dict:
     """Top scores, most-liked submissions, and latest comments for LMS home."""
     assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True)[:80]) or [0]
     base = LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
+    scope = faculty_student_scope(user)
+    if scope is not None:
+        base = base.filter(scope)
 
     top_scores = list(
         base.filter(marks__isnull=False)
@@ -289,7 +320,7 @@ def home_sidebar_data(user, limit: int = 5) -> dict:
         .order_by('-like_count', '-updated_at')[:limit]
     )
     latest_comments = list(
-        LmsComment.objects.filter(submission__assignment_id__in=assignment_ids)
+        LmsComment.objects.filter(submission_id__in=base.values('pk'))
         .select_related('user', 'submission', 'submission__assignment', 'submission__student')
         .order_by('-created_at')[:limit]
     )
@@ -311,31 +342,27 @@ def admin_home_stats(user) -> dict:
 
     total_assignments = assignment_qs.count()
     topics_covered = LmsTopic.objects.filter(assignments__in=assignment_ids).distinct().count()
-    students_submitted = (
-        LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
-        .values('student_id')
-        .distinct()
-        .count()
-    )
-    pending = LmsSubmission.objects.filter(
-        assignment_id__in=assignment_ids,
-        status=LmsSubmission.Status.SUBMITTED,
-    ).count()
+
+    # Student-level data (who submitted, pending review) must stay scoped to this faculty's own
+    # students even on platform-wide assignments — see faculty_student_scope(). Assignment/topic
+    # counts above are unaffected: shared curriculum visibility is fine for every faculty.
+    submissions_qs = LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
+    scope = faculty_student_scope(user)
+    if scope is not None:
+        submissions_qs = submissions_qs.filter(scope)
+
+    students_submitted = submissions_qs.values('student_id').distinct().count()
+    pending_qs = submissions_qs.filter(status=LmsSubmission.Status.SUBMITTED)
+    pending = pending_qs.count()
+    pending_assignment_ids = list(pending_qs.values_list('assignment_id', flat=True).distinct())
     pending_topic_titles = list(
-        LmsTopic.objects.filter(
-            assignments__in=assignment_ids,
-            assignments__submissions__status=LmsSubmission.Status.SUBMITTED,
-        )
+        LmsTopic.objects.filter(assignments__id__in=pending_assignment_ids)
         .distinct()
         .order_by('title')
         .values_list('title', flat=True)[:8]
     )
     # Also count pending on assignments with no topic (shouldn't happen after General migrate)
-    orphan_pending = LmsSubmission.objects.filter(
-        status=LmsSubmission.Status.SUBMITTED,
-        assignment__topic__isnull=True,
-        assignment_id__in=assignment_ids,
-    ).exists()
+    orphan_pending = pending_qs.filter(assignment__topic__isnull=True).exists()
     if orphan_pending and 'General' not in pending_topic_titles:
         pending_topic_titles = ['General', *pending_topic_titles][:8]
 

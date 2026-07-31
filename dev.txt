@@ -9,6 +9,37 @@
 - None
 
 ### Completed recently
+- [FIXED] Two more Tutor/Faculty gaps reported after the nav-unification pass:
+  1. **Top nav missing LMS link for TUTOR/FACULTY** — `templates/base.jinja`'s desktop nav
+     `current_role == 'TUTOR'` branch only had Demo Inbox/My Listing/Marketplace (marketplace-only);
+     it never had an LMS link at all (unlike PARENT/VIP_USER/admin/default branches, which all did).
+     Same gap in the mobile bottom-tab-bar TUTOR branch. Added an "LMS" link/tab to both (desktop:
+     new first link; mobile: wrapped the 3 existing tabs + new LMS tab in the same
+     `flex-1 justify-evenly` pattern PARENT already used, so 4 tabs distribute evenly). Verified via
+     Client smoke test: both a TUTOR and a FACULTY account now render `<a href="/admin/lms/">LMS</a>`
+     in the desktop nav.
+  2. **Faculty saw OTHER faculty's students on their own `/admin/lms/` home page** — real data leak,
+     not a permissions bug. `assignments_for_user` correctly includes platform-wide (unbatched,
+     `course=None`) assignments for every faculty since that's shared curriculum content anyone can
+     assign — but `home_sidebar_data` (top scores/best likes/latest comments) and `admin_home_stats`
+     (pending count, students-submitted count, pending-topics list) and `home()`'s "recent
+     submissions" feed all derived their per-student rows straight from that same assignment-id set,
+     with no student-level scoping. Result: if student X (enrolled only with Faculty B) submitted to
+     a platform-wide assignment, Faculty A saw X's name/submission/marks on their own dashboard too.
+     Fix: added `lms/services.py::own_student_ids(user)` (every student enrolled in ANY course this
+     faculty owns) and `faculty_student_scope(user)` (a `Q()` — `student_id__in=own_student_ids` OR
+     `assignment__course__owner_id=user` — the second arm is belt-and-suspenders for own-course
+     submissions even if enrollment was later removed; returns `None`/no-op for admin+office, who
+     correctly keep full platform visibility). Applied it to `home_sidebar_data`'s `base` queryset,
+     `admin_home_stats`'s `submissions_qs`, and `home()`'s `recent_qs`. Assignment/topic *visibility*
+     counts (total_assignments, topics_covered) are untouched — shared curriculum listing is still
+     fine for every faculty; only per-student submission rows are now scoped. Added
+     `lms/tests.py::FacultyOwnStudentScopeTests` (5 tests) proving: scope is `None` for admin/office,
+     `own_student_ids` is correctly per-faculty, the home page hides another faculty's student on a
+     platform-wide submission, `admin_home_stats` pending/students-submitted counts are scoped, and a
+     faculty's own course submission is never accidentally filtered out. Full suite (53 tests) green.
+  No CSS rebuild needed — both fixes reused existing `nav-link`/mobile-tab utility classes, no new
+  Tailwind classes introduced.
 - [CHECKED + FIXED] Tutor/Faculty signup flow audit (user reported `https://rankjee.com/hometutor/my/profile/`
   showing the login page). Traced it: that page is `@login_required`, so an anonymous visit
   correctly bounces to `/users/login/?next=/hometutor/my/profile/` — `login.jinja` even shows the

@@ -37,11 +37,11 @@ def home(request):
 
     assignments = list(services.assignments_for_user(request.user)[:50])
     topics = services.topics_for_user(request.user)
-    recent = (
-        LmsSubmission.objects.filter(assignment__in=[a.pk for a in assignments] or [0])
-        .select_related('student', 'assignment')
-        .order_by('-is_pinned', '-updated_at')[:12]
-    )
+    recent_qs = LmsSubmission.objects.filter(assignment__in=[a.pk for a in assignments] or [0])
+    _scope = services.faculty_student_scope(request.user)
+    if _scope is not None:
+        recent_qs = recent_qs.filter(_scope)
+    recent = recent_qs.select_related('student', 'assignment').order_by('-is_pinned', '-updated_at')[:12]
     recent_assignments = sorted(
         assignments,
         key=lambda a: a.created_at,

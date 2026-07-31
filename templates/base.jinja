@@ -420,6 +420,7 @@
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
                 {% elif current_role == 'TUTOR' %}
+                    <a href="{{ url('lms:home') }}" class="nav-link">LMS</a>
                     <a href="{{ url('hometutor:tutor_demos') }}" class="nav-link">Demo Inbox</a>
                     <a href="{{ url('hometutor:my_profile') }}" class="nav-link">My Listing</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
@@ -529,6 +530,11 @@
                 </a>
                 </div>
             {% elif current_role == 'TUTOR' %}
+                <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
+                <a href="{{ url('lms:home') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/lms' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🖼️</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/lms' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">LMS</span>
+                </a>
                 <a href="{{ url('hometutor:tutor_demos') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'my/demos' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📥</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'my/demos' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Inbox</span>
@@ -541,6 +547,7 @@
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if request.path.rstrip('/') == '/admin' %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📊</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if request.path.rstrip('/') == '/admin' %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.dashboard }}</span>
                 </a>
+                </div>
             {% elif current_role == 'PARENT' %}
                 <div class="flex flex-1 justify-evenly items-center min-w-0 gap-0.5">
                 <a href="{{ url('hometutor:tutor_list') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">

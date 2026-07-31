@@ -250,3 +250,95 @@ class OfficeOversightTests(TestCase):
         res = self.client.get(reverse('lms:assignment_detail', kwargs={'pk': self.assignment.pk}))
         self.assertEqual(res.status_code, 200)
         self.assertNotContains(res, 'Edit assignment')
+
+
+class FacultyOwnStudentScopeTests(TestCase):
+    """Fix: a platform-wide (unbatched) assignment is visible to every faculty (shared
+    curriculum), but that used to leak every OTHER faculty's students' submissions into a
+    faculty's own LMS home page (top scores, best likes, latest comments, recent activity,
+    pending-review counts) — `faculty_student_scope` narrows all of that to a faculty's own
+    roster, while an admin/office account still sees everything."""
+
+    def setUp(self):
+        self.faculty_a = User.objects.create_user(
+            username='scope_faculty_a', email='scope_faculty_a@example.com', password='StrongPass!123',
+        )
+        self.faculty_b = User.objects.create_user(
+            username='scope_faculty_b', email='scope_faculty_b@example.com', password='StrongPass!123',
+        )
+        self.course_a = LmsCourse.objects.create(name='Faculty A batch', owner=self.faculty_a)
+        self.course_b = LmsCourse.objects.create(name='Faculty B batch', owner=self.faculty_b)
+        # LmsCourse.save() auto-flags the owner is_lms_faculty=True — refresh the in-memory
+        # objects so direct service-function calls below see it (force_login already re-fetches
+        # from DB, so this only matters for tests calling services.* directly with these objects).
+        self.faculty_a.refresh_from_db()
+        self.faculty_b.refresh_from_db()
+
+        self.student_a = User.objects.create_user(
+            username='scope_student_a', email='scope_student_a@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        self.student_b = User.objects.create_user(
+            username='scope_student_b', email='scope_student_b@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course_a, user=self.student_a)
+        LmsCourseEnrollment.objects.create(course=self.course_b, user=self.student_b)
+
+        # A platform-wide assignment (no course) — shared curriculum, both students can submit.
+        self.platform_assignment = LmsAssignment.objects.create(
+            title='Shared platform-wide quiz', created_by=self.faculty_a,
+        )
+
+    def _submit(self, student, assignment):
+        from .models import LmsSubmission
+
+        return LmsSubmission.objects.create(
+            assignment=assignment, student=student, caption='work',
+            status=LmsSubmission.Status.SUBMITTED, marks=90,
+        )
+
+    def test_faculty_student_scope_none_for_admin_and_office(self):
+        admin = User.objects.create_superuser(
+            username='scope_admin', email='scope_admin@example.com', password='StrongPass!123',
+        )
+        office = User.objects.create_user(
+            username='scope_office', email='scope_office@example.com',
+            password='StrongPass!123', role='CITY_ADMIN',
+        )
+        self.assertIsNone(services.faculty_student_scope(admin))
+        self.assertIsNone(services.faculty_student_scope(office))
+
+    def test_own_student_ids_scoped_per_faculty(self):
+        self.assertEqual(services.own_student_ids(self.faculty_a), {self.student_a.id})
+        self.assertEqual(services.own_student_ids(self.faculty_b), {self.student_b.id})
+
+    def test_home_page_hides_other_faculty_students_platform_wide_submission(self):
+        self._submit(self.student_a, self.platform_assignment)
+        self._submit(self.student_b, self.platform_assignment)
+
+        self.client.force_login(self.faculty_a)
+        res = self.client.get(reverse('lms:home'))
+        body = res.content.decode()
+        self.assertIn('scope_student_a', body)
+        self.assertNotIn('scope_student_b', body)
+
+    def test_admin_home_stats_pending_count_scoped_to_own_students(self):
+        self._submit(self.student_a, self.platform_assignment)
+        self._submit(self.student_b, self.platform_assignment)
+
+        stats_a = services.admin_home_stats(self.faculty_a)
+        self.assertEqual(stats_a['pending'], 1)
+        self.assertEqual(stats_a['students_submitted'], 1)
+
+    def test_own_course_submission_never_filtered_out(self):
+        """Belt-and-suspenders: even if enrollment were ever removed after submission, a
+        submission on a faculty's OWN course-owned assignment must still show for that faculty."""
+        course_assignment = LmsAssignment.objects.create(
+            course=self.course_a, title='Course-scoped hw', created_by=self.faculty_a,
+        )
+        self._submit(self.student_a, course_assignment)
+        LmsCourseEnrollment.objects.filter(course=self.course_a, user=self.student_a).delete()
+
+        stats_a = services.admin_home_stats(self.faculty_a)
+        self.assertEqual(stats_a['students_submitted'], 1)
