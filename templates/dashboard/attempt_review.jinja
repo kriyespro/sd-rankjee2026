@@ -2,6 +2,8 @@
 {% block title %}Attempt Review - RankJee{% endblock %}
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-8">
+    {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}] + ([{'label': 'Students score table', 'url': url('dashboard:students_score_table')}] if is_staff_review else []) + [{'label': 'Wrong questions review'}] %}
+    {% include "partials/_breadcrumb.jinja" %}
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-2xl font-black text-slate-900">Wrong Questions Review</h1>
@@ -14,9 +16,6 @@
             </p>
             {% endif %}
         </div>
-        <a href="{{ url('dashboard:students_score_table') if is_staff_review else url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">
-            Back to {{ 'students score table' if is_staff_review else 'dashboard' }}
-        </a>
     </div>
 
     {% if attempt.attempted_video %}

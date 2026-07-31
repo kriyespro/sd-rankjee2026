@@ -5,7 +5,8 @@
 <div class="mx-auto max-w-3xl px-4 py-10 sm:px-6">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Dashboard</a>
+            {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': page_title or 'Publish blog post'}] %}
+            {% include "partials/_breadcrumb.jinja" %}
             <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">{{ page_title or 'Publish blog post' }}</h1>
             <p class="mt-1 text-sm text-slate-600">{{ page_hint or 'Goes live immediately with your account as author. Leave slug blank to auto-generate from the title.' }}</p>
             <p class="mt-1 text-xs font-bold text-slate-500">Paste mode: You can paste full SEO format (SEO Metadata + article). The system auto-fills title/slug/meta and removes research blocks.</p>

@@ -31,9 +31,11 @@ from .services import (
     ensure_engagements_bulk,
     attach_demo_status_to_cards,
     apply_engagement_confirm,
+    crumb,
     ensure_engagement,
     get_tutor_profile,
     hometutor_landing_page_context,
+    landing_crumbs,
     notify_demo_request_created,
     notify_demo_resolved_for_requester,
     notify_engagement_confirm,
@@ -42,6 +44,7 @@ from .services import (
     paginated_tutor_page,
     public_tutor_queryset,
     top_featured_tutor_cards,
+    tutor_detail_crumbs,
     tutor_to_card_dict,
 )
 
@@ -227,6 +230,7 @@ def tutor_city_landing(request, city_slug, subject_slug=None, grade=None, locati
             "canonical_url": request.build_absolute_uri(canonical_path),
             "faq_items": faq_items,
             "featured_tutor_cards": top_featured_tutor_cards(filters, user=request.user),
+            "crumbs": landing_crumbs(city=city, subject=subject, grade=grade, location=location),
             **_tutor_filter_context(request),
             **hometutor_landing_page_context(),
         },
@@ -281,6 +285,7 @@ def compare_tutors(request):
             'tutor_cards': tutor_cards,
             'selected_count': len(tutor_cards),
             'hometutor_pilot_city': PILOT_CITY,
+            'crumbs': [*landing_crumbs(), {'label': 'Compare tutors', 'url': None}],
         },
     )
 
@@ -340,6 +345,7 @@ def tutor_detail(request, slug):
             'seo_title': _seo_title,
             'seo_description': _seo_description,
             'canonical_url': _canonical_url,
+            'crumbs': tutor_detail_crumbs(profile),
         },
     )
 
@@ -456,6 +462,7 @@ def tutor_profile_edit(request):
             'doc_form': doc_form,
             'profile': profile,
             'hometutor_pilot_city': PILOT_CITY,
+            'crumbs': [crumb('Dashboard', reverse('dashboard:index')), crumb('My tutor listing')],
         },
     )
 
@@ -509,6 +516,7 @@ def tutor_incoming_demos(request):
             'pending_rows': pending_rows,
             'recent': other,
             'hometutor_pilot_city': PILOT_CITY,
+            'crumbs': [crumb('Dashboard', reverse('dashboard:index')), crumb('Demo inbox')],
         },
     )
 
@@ -558,6 +566,7 @@ def my_demo_requests(request):
         {
             'demos': demos,
             'hometutor_pilot_city': PILOT_CITY,
+            'crumbs': [crumb('Dashboard', reverse('dashboard:index')), crumb('My demo requests')],
         },
     )
 
@@ -789,5 +798,11 @@ def engagement_room(request, pk):
             'chat_messages': chat_messages,
             'disputes': disputes,
             'review': review,
+            'crumbs': [
+                crumb('Dashboard', reverse('dashboard:index')),
+                crumb('My demo requests' if is_requester else 'Demo inbox',
+                      reverse('hometutor:my_demo_requests') if is_requester else reverse('hometutor:tutor_demos')),
+                crumb('Engagement room'),
+            ],
         },
     )

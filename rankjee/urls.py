@@ -27,6 +27,7 @@ from assessment.sitemaps import MockTestLandingSitemap, MockTestCityLandingSitem
 from blog.sitemaps import BlogPostSitemap
 from core import course_checkout
 from payments import views as payments_views
+from dashboard import views as dashboard_views
 
 admin.site.site_header = "RankJee Admin Control"
 admin.site.site_title = "RankJee Admin"
@@ -40,6 +41,7 @@ urlpatterns = [
     path('api/courses/checkout/verify/', course_checkout.course_checkout_verify, name='api_courses_checkout_verify'),
     path('sd/', admin.site.urls), # standard django admin
     path('admin/lms/', include('lms.urls')),  # classroom LMS portfolio feed
+    path('admin_2/', dashboard_views.index_v2, name='dashboard_v2'),  # superadmin dashboard rewrite preview — see fix-rankjee.md-style plan in dev.txt; not yet linked in prod nav
     path('admin/', include('dashboard.urls')), # custom dashboard
     path('robots.txt', core_views.robots_txt, name='robots_txt'),
     path(

@@ -8,7 +8,7 @@
     <h1 class="text-2xl font-black tracking-tight text-slate-900">{% if is_edit %}Edit assignment{% else %}Create assignment{% endif %}</h1>
     <p class="mt-1 text-sm text-slate-600 mb-6">
         {% if is_edit %}
-        Update topic, title, instructions, batch, or deadline for “{{ assignment.title }}”.
+        Update topic, title, instructions, course, or deadline for “{{ assignment.title }}”.
         {% else %}
         Select an existing topic or create a new one, then add the assignment inside it.
         {% endif %}
@@ -83,9 +83,18 @@
             {% if form.study_topic.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.study_topic.errors %}{{ e }}{% endfor %}</p>{% endif %}
         </div>
         <div>
-            <label for="{{ form.batch.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.batch.label }}</label>
-            {{ form.batch }}
-            {% if form.batch.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.batch.errors %}{{ e }}{% endfor %}</p>{% endif %}
+            <label for="{{ form.skill.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">
+                {{ form.skill.label }} <span class="font-semibold normal-case text-slate-400">(optional)</span>
+            </label>
+            {{ form.skill }}
+            <p class="mt-1 text-[11px] text-slate-500">Students get a “Take the test” button that opens this test on <span class="font-semibold">/assessment/</span>; their result shows on this assignment page.</p>
+            {% if form.skill.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.skill.errors %}{{ e }}{% endfor %}</p>{% endif %}
+        </div>
+        <div>
+            <label for="{{ form.course.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.course.label }}</label>
+            {{ form.course }}
+            <p class="mt-1 text-[11px] text-slate-500">Only students enrolled in this course will see the assignment.</p>
+            {% if form.course.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.course.errors %}{{ e }}{% endfor %}</p>{% endif %}
         </div>
         <div>
             <label for="{{ form.due_at.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.due_at.label }}</label>

@@ -26,6 +26,11 @@
                 <a href="{{ url('dashboard:index') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800 text-white font-bold transition-all border border-slate-700">
                     <span class="text-sm opacity-70">📊</span> Dashboard
                 </a>
+                {% if request.user.is_superuser %}
+                <a href="/admin_2/" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
+                    <span class="text-sm opacity-70">🧪</span> New dashboard (preview)
+                </a>
+                {% endif %}
                 <a href="{{ url('dashboard:cms_home') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 hover:text-white transition-all">
                     <span class="text-sm opacity-70">🧩</span> Content CMS
                 </a>

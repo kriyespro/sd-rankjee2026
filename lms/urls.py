@@ -14,6 +14,6 @@ urlpatterns = [
     path('a/<int:pk>/', views.assignment_detail, name='assignment_detail'),
     path('submissions/<int:pk>/react/', views.react, name='react'),
     path('submissions/<int:pk>/comment/', views.comment, name='comment'),
-    path('batches/', views.batches, name='batches'),
+    path('courses/', views.courses, name='courses'),
     path('notifications/<int:note_id>/read/', views.notification_read, name='notification_read'),
 ]

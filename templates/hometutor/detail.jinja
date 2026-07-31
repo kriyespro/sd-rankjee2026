@@ -4,13 +4,7 @@
 {% block content %}
 <section class="bg-gradient-to-b from-indigo-50 to-slate-50 border-b border-indigo-100/80 pt-10 pb-8 px-4">
     <div class="max-w-5xl mx-auto">
-        <nav class="text-xs font-bold text-slate-500 mb-4">
-            <a href="{{ url('core:home') }}" class="hover:text-indigo-600">Home</a>
-            <span class="mx-2">/</span>
-            <a href="{{ url('hometutor:tutor_list') }}" class="hover:text-indigo-600">Tutors</a>
-            <span class="mx-2">/</span>
-            <span class="text-slate-800">{{ t.display_name }}</span>
-        </nav>
+        {% include "partials/_breadcrumb.jinja" %}
         <div class="bg-white/80 backdrop-blur rounded-3xl border border-indigo-100 shadow-sm p-6 md:p-8 flex flex-col md:flex-row md:items-start gap-5">
             {% if t.profile_image %}
             <img src="{{ t.profile_image.url }}" alt="{{ t.display_name }}" class="w-24 h-24 rounded-3xl object-cover border border-indigo-100 shadow-sm shrink-0">

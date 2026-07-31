@@ -1,0 +1,126 @@
+{% extends "base.jinja" %}
+{% block title %}LMS Courses · RankJee{% endblock %}
+
+{% block content %}
+<div class="mx-auto w-full max-w-3xl px-4 py-6 sm:px-6">
+    {% include "partials/_breadcrumb.jinja" %}
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">{% if is_office_lms %}Office · enrollment only{% else %}Staff{% endif %}</p>
+            <h1 class="text-2xl font-black tracking-tight text-slate-900">{% if is_admin_lms or is_office_lms %}All courses{% else %}My courses{% endif %}</h1>
+            {% if is_office_lms %}
+            <p class="mt-1 text-xs text-slate-500">You can view every faculty's courses and assign or remove students below. You can't create courses/assignments or edit anything else here.</p>
+            {% elif not is_admin_lms %}
+            <p class="mt-1 text-xs text-slate-500">Only you can see and manage the students and assignments in your own courses.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if can_manage_enrollment and student_options %}
+    <datalist id="lms-student-options">
+        {% for s in student_options %}
+        <option value="{{ s.username }}{% if s.email %} · {{ s.email }}{% endif %}">
+        {% endfor %}
+    </datalist>
+    {% endif %}
+
+    {% if (is_admin_lms or is_office_lms) and unassigned_purchases %}
+    <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+        <p class="mb-2 font-black uppercase tracking-wider text-amber-700">⚠ {{ unassigned_purchases|length }} course purchase(s) have no delivery batch yet</p>
+        <ul class="space-y-1">
+            {% for p in unassigned_purchases %}
+            <li>{{ p.user.get_username() }} bought <strong>{{ p.course.title }}</strong> — assign a tutor below (create a course with that paid course selected).</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if is_staff_lms %}
+    <form method="post" class="mb-8 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="create_course">
+        <div class="min-w-[12rem] flex-1">
+            <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">New course name</label>
+            {{ course_form.name }}
+        </div>
+        {% if is_admin_lms and course_form.owner %}
+        <div class="min-w-[12rem] flex-1">
+            <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Owner (faculty/tutor)</label>
+            {{ course_form.owner }}
+        </div>
+        {% endif %}
+        {% if is_admin_lms and course_form.catalog_course %}
+        <div class="min-w-[12rem] flex-1">
+            <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Paid course (/courses/)</label>
+            {{ course_form.catalog_course }}
+        </div>
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 pb-2">
+            {{ course_form.is_default_for_catalog }} Auto-enroll buyers
+        </label>
+        {% endif %}
+        <label class="flex items-center gap-2 text-xs font-bold text-slate-700 pb-2">
+            {{ course_form.is_active }} Active
+        </label>
+        <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Add course</button>
+    </form>
+    {% endif %}
+
+    <div class="space-y-4">
+        {% for c in courses %}
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <h2 class="text-sm font-black text-slate-900">{{ c.name }}
+                    {% if not c.is_active %}<span class="ml-2 text-[10px] font-black uppercase text-rose-600">Inactive</span>{% endif %}
+                    {% if is_admin_lms or is_office_lms %}
+                    <span class="ml-2 text-[10px] font-bold uppercase text-slate-400">
+                        {% if c.owner %}Owner: {{ c.owner.get_username() }}{% else %}Platform-wide{% endif %}
+                    </span>
+                    {% endif %}
+                    {% if c.catalog_course %}
+                    <span class="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black uppercase text-indigo-700">
+                        Delivers: {{ c.catalog_course.title }}{% if c.is_default_for_catalog %} · default{% endif %}
+                    </span>
+                    {% endif %}
+                </h2>
+                <span class="text-[11px] font-bold text-slate-500">{{ c.enrollments.all()|length }} students</span>
+            </div>
+            <ul class="mb-3 space-y-1">
+                {% for m in c.enrollments.all() %}
+                <li class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
+                    <span class="font-bold text-slate-800">{{ m.user.get_username() }}</span>
+                    {% if can_manage_enrollment %}
+                    <form method="post" class="inline">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="remove_member">
+                        <input type="hidden" name="course_id" value="{{ c.pk }}">
+                        <input type="hidden" name="membership_id" value="{{ m.pk }}">
+                        <button type="submit" class="font-black uppercase tracking-wider text-rose-600 hover:underline">Remove</button>
+                    </form>
+                    {% endif %}
+                </li>
+                {% else %}
+                <li class="text-xs text-slate-400">No students enrolled yet.</li>
+                {% endfor %}
+            </ul>
+            {% if can_manage_enrollment %}
+            <form method="post" class="flex flex-wrap items-start gap-2">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="add_member">
+                <input type="hidden" name="course_id" value="{{ c.pk }}">
+                <div>
+                    {{ member_form.username }}
+                    {% if member_form.username.errors and request.POST.get('course_id') == c.pk|string %}
+                    <p class="mt-1 text-[11px] font-bold text-rose-600">{{ member_form.username.errors|join(' ') }}</p>
+                    {% endif %}
+                </div>
+                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Assign student</button>
+            </form>
+            <p class="mt-1 text-[10px] text-slate-400">Start typing a username or email — matching students appear as suggestions.</p>
+            {% endif %}
+        </section>
+        {% else %}
+        <p class="text-sm text-slate-500">No courses yet — create one above, then add your students and assignments to it.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

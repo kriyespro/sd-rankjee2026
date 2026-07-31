@@ -3,6 +3,8 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 py-8">
+    {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'Students score table'}] %}
+    {% include "partials/_breadcrumb.jinja" %}
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Students score table</h1>
@@ -10,7 +12,6 @@
         </div>
         <div class="flex items-center gap-3">
             <a href="?export=csv{% if search_query %}&q={{ search_query }}{% endif %}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg uppercase tracking-widest">Export CSV</a>
-            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">Back to dashboard</a>
         </div>
     </div>
 

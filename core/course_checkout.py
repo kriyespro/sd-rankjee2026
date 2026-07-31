@@ -48,6 +48,10 @@ def course_cart(request):
             "seo_title": "Course cart | RankJee",
             "seo_description": "Review courses and pay securely with Razorpay.",
             "canonical_url": request.build_absolute_uri(request.path),
+            "crumbs": [
+                {"label": "Courses", "url": reverse("core:courses")},
+                {"label": "Cart"},
+            ],
             "seo_noindex": True,
         },
     )

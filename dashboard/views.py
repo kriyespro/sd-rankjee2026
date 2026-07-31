@@ -158,7 +158,7 @@ def _role_dashboard_context(request):
     user = request.user
     now = timezone.now()
 
-    if role == 'TUTOR':
+    if role in ('TUTOR', 'FACULTY'):
         tutor_profile = TutorProfile.objects.filter(user=user).first()
         tutor_preview_mode = not tutor_profile
         pending_incoming = (
@@ -284,6 +284,35 @@ def _role_dashboard_context(request):
             if tutor_profile
             else 0
         )
+        # LMS teaching load (fix: this dashboard used to be 100% hometutor-marketplace metrics
+        # with zero visibility into a faculty/tutor's actual classroom work — courses, students,
+        # and — most actionable — submissions sitting ungraded).
+        from lms.models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsSubmission
+
+        lms_course_qs = LmsCourse.objects.filter(owner=user)
+        lms_course_count = lms_course_qs.count()
+        lms_student_count = (
+            LmsCourseEnrollment.objects.filter(course__owner=user).values('user_id').distinct().count()
+        )
+        lms_assignment_qs = LmsAssignment.objects.filter(course__owner=user)
+        lms_assignment_count = lms_assignment_qs.count()
+        lms_pending_submissions_qs = (
+            LmsSubmission.objects.filter(
+                assignment__course__owner=user,
+                status=LmsSubmission.Status.SUBMITTED,
+            )
+            .select_related('assignment', 'assignment__course', 'student')
+            .order_by('-created_at')
+        )
+        lms_pending_review_count = lms_pending_submissions_qs.count()
+        lms_recent_pending_submissions = list(lms_pending_submissions_qs[:5])
+        lms_courses_overview = list(
+            lms_course_qs.annotate(student_count=Count('enrollments', distinct=True)).order_by('-created_at')[:6]
+        )
+        lms_recent_assignments = list(
+            lms_assignment_qs.select_related('course').order_by('-created_at')[:5]
+        )
+
         activity_timeline = []
         for d in latest_pending_demos[:4]:
             activity_timeline.append(
@@ -299,6 +328,13 @@ def _role_dashboard_context(request):
                     'meta': e.updated_at,
                 }
             )
+        for s in lms_recent_pending_submissions[:4]:
+            activity_timeline.append(
+                {
+                    'title': f'{s.student.get_username()} submitted "{s.assignment.title}" for review',
+                    'meta': s.created_at,
+                }
+            )
         activity_timeline = sorted(activity_timeline, key=lambda x: x['meta'], reverse=True)[:8]
         return {
             'kpi_cards': [
@@ -307,6 +343,13 @@ def _role_dashboard_context(request):
                 {'label': 'Active students', 'value': active_engagements},
                 {'label': 'Open disputes', 'value': open_disputes},
             ],
+            'lms_course_count': lms_course_count,
+            'lms_student_count': lms_student_count,
+            'lms_assignment_count': lms_assignment_count,
+            'lms_pending_review_count': lms_pending_review_count,
+            'lms_recent_pending_submissions': lms_recent_pending_submissions,
+            'lms_courses_overview': lms_courses_overview,
+            'lms_recent_assignments': lms_recent_assignments,
             'tutor_profile': tutor_profile,
             'tutor_preview_mode': tutor_preview_mode,
             'pending_incoming': pending_incoming,
@@ -682,7 +725,26 @@ def _role_dashboard_context(request):
 
 
 def _staff_only(request):
-    return request.user.is_staff or request.user.is_superuser
+    """Real admin/ops staff — gates the full Command Center, CMS, backups, and withdrawal
+    queues below.
+
+    Deliberately excludes TUTOR/FACULTY (same role, see lms.services.is_lms_faculty): those
+    accounts get `is_staff=True` only to unlock their own scoped `/sd/` Django admin view
+    (lms/admin.py `get_queryset` filters by `owner_id`) or the legacy is_lms_faculty check —
+    never the platform-wide superadmin surfaces gated by this check. (fix: this used to be a
+    real privilege escalation — any tutor/faculty account with is_staff=True could see every
+    user's UPI withdrawal amounts, edit any CMS question/video, and open the backup center.)
+    """
+    user = request.user
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    if not user.is_staff:
+        return False
+    from users.models import CustomUser
+
+    return getattr(user, 'role', None) not in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY)
 
 
 def _blog_topic_gate_applies(request):
@@ -1622,6 +1684,63 @@ def admin_student_daily_logs(request):
 
 
 @login_required
+def index_v2(request):
+    """Superadmin dashboard rewrite preview — /admin_2/ (fix: full rewrite, only signal a
+    superadmin actually needs to act on: pending queues, real revenue, real growth). Additive:
+    does not touch `index`/`admin_dashboard.jinja` below. Superuser-only for now; everyone else
+    is bounced to the classic dashboard."""
+    if not request.user.is_superuser:
+        messages.info(request, "The new dashboard preview is superadmin-only for now.")
+        return redirect('dashboard:index')
+
+    from . import services as dash_services
+    from core.models import UserTaskSubmission
+    from hometutor.models import DemoRequest
+
+    pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').select_related(
+        'user', 'task'
+    ).order_by('-submitted_at')[:8]
+    latest_demo_requests = (
+        DemoRequest.objects.filter(status=DemoRequest.Status.PENDING)
+        .select_related('tutor', 'requester')
+        .order_by('-created_at')[:8]
+    )
+    latest_tutor_requests = (
+        TutorLeadRequest.objects.filter(status=TutorLeadRequest.Status.NEW)
+        .order_by('-created_at')[:8]
+    )
+
+    revenue_trend = dash_services.revenue_trend()
+    signup_trend = dash_services.signup_trend()
+    max_revenue_day = max((row['amount'] for row in revenue_trend), default=dash_services.ZERO) or dash_services.ZERO
+    max_signup_day = max((row['count'] for row in signup_trend), default=0) or 1
+    for row in revenue_trend:
+        row['pct'] = int((row['amount'] / max_revenue_day) * 100) if max_revenue_day else 0
+    for row in signup_trend:
+        row['pct'] = int((row['count'] / max_signup_day) * 100) if max_signup_day else 0
+
+    return render(
+        request,
+        'dashboard/admin_dashboard_v2.jinja',
+        {
+            'action_items': dash_services.action_center(),
+            'revenue': dash_services.revenue_summary(),
+            'growth': dash_services.growth_summary(),
+            'wow': dash_services.week_over_week(),
+            'balance_sheet': dash_services.balance_sheet_summary(),
+            'hurdle_skills': dash_services.hurdle_skills(),
+            'backup': dash_services.backup_health(),
+            'content': dash_services.content_inventory(),
+            'revenue_trend': revenue_trend,
+            'signup_trend': signup_trend,
+            'pending_submissions': pending_submissions,
+            'latest_demo_requests': latest_demo_requests,
+            'latest_tutor_requests': latest_tutor_requests,
+        },
+    )
+
+
+@login_required
 def index(request):
     if not getattr(request.user, 'onboarding_completed', True):
         return redirect(incomplete_onboarding_url_name(request))
@@ -1644,7 +1763,7 @@ def index(request):
         'GLOBAL_ADMIN': "Monitor total supply-demand health and marketplace quality across all regions.",
     }
 
-    if request.user.is_superuser or request.user.is_staff:
+    if _staff_only(request):
         is_city_admin = role == 'CITY_ADMIN'
         admin_scope_label = 'Global'
         scoped_users = User.objects.all()
@@ -1761,7 +1880,7 @@ def index(request):
         })
 
     # Role-dedicated dashboards for non-staff roles.
-    if role in ['TUTOR', 'PARENT', 'CITY_ADMIN', 'GLOBAL_ADMIN']:
+    if role in ['TUTOR', 'FACULTY', 'PARENT', 'CITY_ADMIN', 'GLOBAL_ADMIN']:
         try:
             role_ctx = _role_dashboard_context(request)
             return render(

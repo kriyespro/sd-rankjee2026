@@ -7,6 +7,7 @@ from .models import (
     CompanyInquiry,
     CustomUser,
     Notification,
+    ParentStudentLink,
     PublicProfile,
     UserBadge,
     WalletTransaction,
@@ -198,6 +199,14 @@ class PublicProfileAdmin(admin.ModelAdmin):
     list_display = ('slug', 'user', 'is_public', 'updated_at')
     list_filter = ('is_public',)
     search_fields = ('slug', 'user__username')
+
+
+@admin.register(ParentStudentLink)
+class ParentStudentLinkAdmin(admin.ModelAdmin):
+    list_display = ('parent', 'student', 'relationship_label', 'is_verified', 'requested_at', 'verified_at')
+    list_filter = ('is_verified',)
+    search_fields = ('parent__username', 'parent__email', 'student__username', 'student__email')
+    raw_id_fields = ('parent', 'student')
 
 
 @admin.register(CompanyInquiry)

@@ -2,6 +2,8 @@
 {% block title %}{{ title }} - CMS{% endblock %}
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-10">
+  {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'CMS', 'url': url('dashboard:cms_home')}, {'label': title}] %}
+  {% include "partials/_breadcrumb.jinja" %}
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-3xl font-black text-slate-900">{{ title }}</h1>
     <a href="{{ url('dashboard:cms_home') }}" class="text-sm font-bold text-indigo-600 hover:underline">← CMS</a>

@@ -5,6 +5,7 @@
 <section class="bg-slate-100 border-b border-slate-200/80 pt-8 pb-10 px-4">
     <div class="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
+            {% include "partials/_breadcrumb.jinja" %}
             <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-600 mb-2">Tutor workspace · Demo inbox</p>
             <h1 class="text-3xl font-black text-slate-900 tracking-tight">Demo inbox{% if pending_rows %} <span class="text-lg font-black text-emerald-700">({{ pending_rows|length }})</span>{% endif %}</h1>
             <p class="text-slate-600 text-sm mt-1">{{ profile.display_name }} · {{ profile.city or hometutor_pilot_city }}</p>

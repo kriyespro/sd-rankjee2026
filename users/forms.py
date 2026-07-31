@@ -7,6 +7,17 @@ from hometutor.models import TutorProfile
 from .models import CustomUser, INDIAN_STATES
 
 
+class ParentLinkRequestForm(forms.Form):
+    identifier = forms.CharField(
+        max_length=150,
+        label="Student's username or email",
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
+            'placeholder': 'e.g. ravi_kumar or ravi@example.com',
+        }),
+    )
+
+
 class CustomUserCreationForm(UserCreationForm):
     PUBLIC_ROLE_CHOICES = (
         (CustomUser.Role.STUDENT, 'Student — learn & practice'),

@@ -30,6 +30,9 @@ class CustomUser(AbstractUser):
         VIP_USER = 'VIP_USER', 'VIP user'
         CITY_ADMIN = 'CITY_ADMIN', 'City admin'
         GLOBAL_ADMIN = 'GLOBAL_ADMIN', 'Global admin'
+        # Reporting/label only — NOT the LMS permission gate (that's is_staff/is_superuser).
+        # Never added to the public signup role picker.
+        FACULTY = 'FACULTY', 'Faculty'
 
     role = models.CharField(
         max_length=20,
@@ -75,6 +78,15 @@ class CustomUser(AbstractUser):
         default=True,
         db_index=True,
         help_text="Role/profile onboarding completion gate for login redirects.",
+    )
+    is_lms_faculty = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text=(
+            "Grants LMS batch-teaching access (own courses/students only), independent of "
+            "is_staff (which only controls /sd/ Django admin access). Auto-set True the first "
+            "time this user is assigned ownership of an LmsCourse."
+        ),
     )
 
     def add_xp(self, points):
@@ -130,6 +142,48 @@ class CustomUser(AbstractUser):
         except ObjectDoesNotExist:
             return False
         return sub.is_active and not sub.is_expired
+
+
+class ParentStudentLink(models.Model):
+    """Read-only visibility link: once a Student approves, the linked Parent can see that
+    student's progress (exam results, LMS courses) — see fix-rankjee.md Phase 2.
+
+    Pending until the student approves, so a Parent account can't snoop on an arbitrary
+    student just by knowing their username/email.
+    """
+
+    parent = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='parent_links',
+        help_text='The Parent account requesting visibility.',
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='student_links',
+        help_text='The Student account being viewed.',
+    )
+    relationship_label = models.CharField(
+        max_length=40, blank=True, help_text='e.g. Mother, Father, Guardian'
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='Student must approve before the parent gets any read-only access.',
+    )
+    requested_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-requested_at']
+        constraints = [
+            models.UniqueConstraint(fields=['parent', 'student'], name='unique_parent_student_link'),
+        ]
+
+    def __str__(self):
+        status = 'verified' if self.is_verified else 'pending'
+        return f'{self.parent_id} -> {self.student_id} ({status})'
 
 
 class Badge(models.Model):

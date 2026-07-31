@@ -46,6 +46,10 @@
 
 <div class="ht-land w-full max-w-none">
 
+{% if crumbs %}
+<div class="ht-wrap pt-4">{% include "partials/_breadcrumb.jinja" %}</div>
+{% endif %}
+
 {# ═══════════════════════════════════════════════════════════
    HERO
 ══════════════════════════════════════════════════════════════ #}

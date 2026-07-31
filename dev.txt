@@ -8,6 +8,314 @@
 ### In Progress
 - None
 
+### Completed recently
+- [DONE] Faculty/Tutor dashboard (`/admin/` → `role_tutor.jinja`) used to show ONLY hometutor
+  marketplace metrics (demos, engagements, payouts) — zero visibility into actual LMS teaching
+  work, even though that's now the primary self-serve flow. Added a new "LMS teaching" section
+  (`dashboard.views._role_dashboard_context`, TUTOR/FACULTY branch) surfacing: course count,
+  distinct student count, assignment count, and — the most actionable number — submissions
+  awaiting grading (`LmsSubmission.status=SUBMITTED`, scoped to `course__owner=user`), each
+  linking straight to `lms:assignment_detail` to review/grade. Also lists "Your courses" (with
+  per-course student counts) and "Recent assignments", plus a "Create your first course" CTA
+  when `lms_course_count == 0` (mirrors the existing hometutor-listing CTA pattern), and
+  "Manage courses"/"+ New assignment" quick-action buttons. Ungraded submissions also feed into
+  the existing `activity_timeline` alongside demo/engagement events. Rebuilt Tailwind CSS
+  (`npm run build:css`) since the new section uses `bg-indigo-50/40`/`hover:bg-indigo-50` classes
+  not previously compiled. Verified via manual render smoke test as `faculty_priya`, `demotutor`,
+  `tutor_demo` (all render the new section); 48/48 tests still green.
+- [DONE] Simplified "assign a student to a faculty/tutor" on `/admin/lms/courses/`. Two changes:
+  (1) Office (CITY_ADMIN/GLOBAL_ADMIN) was previously 100% read-only in LMS — per explicit
+  request they can now add/remove course members (enroll/unenroll students into ANY faculty's
+  course) while course/assignment creation stays admin+faculty-only. New
+  `can_manage_enrollment = is_lms_staff(user) or is_lms_office(user)` gate in `lms/views.py:courses`
+  controls the "Assign student"/"Remove" UI and POST handling for `add_member`/`remove_member`
+  only; `create_course` still explicitly checks `is_manager` and 403s for Office.
+  (2) UX: "Add student" used to be a bare text box requiring the *exact* username. Now it's an
+  autocomplete (`<datalist>`, native HTML, no JS) fed by `lms.services.student_directory_options()`
+  (STUDENT-role users, capped at 300 — swap for an HTMX search endpoint like
+  `hometutor.quick_tutor_search` if the platform outgrows that), and `LmsCourseMemberForm` also
+  accepts an email as a fallback lookup, not just username. Bad input now shows
+  "No student found matching ..." inline under the box instead of silently doing nothing.
+  Tests: `lms.tests.OfficeOversightTests` updated/added (`test_office_can_add_and_remove_course_members`,
+  `test_office_cannot_manage_enrollment_via_email_lookup_of_unrelated_user`,
+  `test_office_can_view_courses_page_and_assign_students` replacing the old read-only assertion).
+  48/48 tests green (dashboard, lms, users, hometutor, assessment, core) + manual smoke test of
+  the assign→remove flow as `office_demo`.
+- [DONE] SECURITY FIX: any TUTOR/FACULTY account with `is_staff=True` (the normal way faculty
+  get scoped `/sd/` Django admin access, per `lms/admin.py`) was getting the FULL superadmin
+  Command Center on `/admin/` — Content CMS (edit any question/video/skill), Backup Center
+  (download/delete DB backups), every user's UPI withdrawal amounts, global tutor demo leads,
+  and a global user search. Root cause: `dashboard.views._staff_only()` was just
+  `is_staff or is_superuser`, with no role check, and `index()` had a second, separately
+  duplicated copy of the same broken condition. Found live via a logged-in `demotutor`
+  (role=FACULTY) account showing "FACULTY · Scope: Global" with full admin powers.
+  Fix: `_staff_only()` now excludes TUTOR/FACULTY explicitly (`role not in (TUTOR, FACULTY)`)
+  before falling through to `is_staff` — this single helper gates every CMS/backups/blog-gate
+  call site in the file, so the fix applies everywhere at once, not just the dashboard landing
+  page. Verified: `faculty_priya`/`faculty_arjun`/`demotutor` (all is_staff=True) now correctly
+  get `_staff_only=False`; `admin` (superuser) and `office_demo` (GLOBAL_ADMIN, already scoped
+  via its own role dashboard) unaffected. Direct URL attempts to `/admin/cms/` and
+  `/admin/backups/` now redirect away instead of rendering.
+- [DONE] Tutor and Faculty made the SAME role for LMS purposes (was two separate, confusing
+  permission paths). `lms.services.is_lms_faculty()` now also grants access to any user with
+  `role` TUTOR or FACULTY directly — no admin has to pre-create a course and hand them
+  ownership first. Concretely: a plain marketplace Tutor (is_staff=False, is_lms_faculty=False)
+  can now open `/admin/lms/courses/` and self-serve create their own first course (the "Add
+  course" form was already faculty-safe — only asks for name/active, no owner/catalog fields);
+  `is_lms_faculty` flag auto-flips True the moment they own any course either way. Also added
+  FACULTY to `dashboard.views.index`'s role-dedicated-dashboard list and
+  `_role_dashboard_context`, so a FACULTY-role user gets the exact same `role_tutor.jinja`
+  workspace dashboard as a TUTOR (previously FACULTY fell through to the generic student
+  dashboard, which made no sense for a teaching account) — plus a new "LMS courses" quick link
+  on that dashboard pointing straight at `/admin/lms/courses/`. `LmsCourseForm`'s admin-only
+  owner picker also now includes `role=FACULTY` (previously only TUTOR/is_staff/is_lms_faculty).
+- [DONE] Whole-app breadcrumb navigation pass. Reused the existing `templates/partials/_breadcrumb.jinja`
+  component (previously only wired up in `lms`/`tutor_study`) and rolled it out to the apps that actually
+  needed it — prioritized by depth × zero-coverage, found via a full URL-hierarchy + breadcrumb-usage
+  audit. Skipped genuinely flat apps (`users`, `blog`, `learning`, `server_buy` — 1-3 levels, already
+  served fine by the top nav) to avoid breadcrumb noise on pages that don't need it.
+  - `hometutor` (was the deepest gap: SEO landing pages go city → subject → class → location, up to 5
+    levels, had ZERO breadcrumbs before). New `hometutor/services.py: crumb()`, `landing_crumbs()`,
+    `tutor_detail_crumbs()` mirror the same escalation logic `tutor_city_landing` already uses to build
+    `canonical_name`/`canonical_kwargs`, so the crumb trail and the canonical URL can never drift apart.
+    Wired into `list.jinja` (marketplace + all SEO landing depths), `detail.jinja` (replaced its old
+    hand-rolled 3-level "Home / Tutors / name" nav with a real city-aware trail), `compare.jinja`,
+    `tutor_profile.jinja`, `tutor_demos.jinja`, `my_demo_requests.jinja`, `engagement_room.jinja`.
+  - `dashboard` CMS section: one edit to the shared `cms_list_base.jinja` gives all 5 CMS list pages
+    (paths/skills/questions/videos/tasks) a `Dashboard > CMS > <entity>` trail; `cms_form.jinja` /
+    `cms_video_form.jinja` (the `/new/`, `/<pk>/` edit pages, previously only a bare "← CMS" link) got the
+    same. Also upgraded `backups.jinja`, `students_score_table.jinja`, `attempt_review.jinja` (dynamic:
+    includes "Students score table" only when staff reviewing someone else's attempt),
+    `daily_class_log.jinja`, `admin_student_daily_logs.jinja`, `vip_blog_post.jinja` (blog create/edit),
+    `vip_create_user.jinja` — all previously single "← Dashboard"-style links, now full trails.
+  - `assessment`: `mock_test_landing` (exam → city SEO pages) and `certificate_view.jinja` — both had zero
+    breadcrumbs before.
+  - `core`: `course_cart.jinja` (`Courses > Cart`), replacing its old "← Back to courses" link.
+  - Verified via the existing 46-test suite (all green) plus a manual smoke pass (as a superuser) over
+    every touched URL confirming `aria-label="Breadcrumb"` renders with no template errors.
+  - Deliberately NOT touched: `core/course_detail.jinja`'s existing custom hero-styled breadcrumb (works
+    fine, different visual treatment for its hero section); `assessment/take_test.jinja` (mid-test page —
+    adding a nav-away temptation during a timed exam is bad UX, not a navigation gap).
+- [DONE] Superadmin dashboard rewrite — PREVIEW at `/admin_2/` (superuser-only), classic `/admin/`
+  (dashboard.views.index / admin_dashboard.jinja) left completely untouched so nothing in prod can break.
+  New `dashboard/services.py` (business logic layer, per CLAUDE.md) computes only real, directly-queried
+  numbers — no fake trend arrows/percentages like the old page had:
+  - `action_center()` — one row per queue a superadmin actually needs to act on: task submissions
+    pending, UPI withdrawals pending (+ ₹ amount), tutor payout requests pending (+ ₹ amount, NEW —
+    wasn't surfaced anywhere before), new tutor listings awaiting verification (NEW — TutorProfile.
+    verification_status=PENDING wasn't surfaced anywhere before), demo requests pending, new tutor
+    leads, course purchases missing an LMS batch (reuses lms.services.purchases_missing_lms_enrollment).
+  - `revenue_summary()` — real SUCCESS-only money collected today/7d/30d, broken down by all 4 payment
+    surfaces: core.CourseOrder, payments.PaymentOrder (Exam Pro), hometutor_payments.MarketplaceOrder,
+    server_buy.StudentServerOrder.
+  - `growth_summary()` — total users, new signups today/7d/30d, active-in-last-7-days (real DAU/WAU
+    signal instead of the old page's decorative "engagement trend" avatar row).
+  - `backup_health()` — flags if the latest BackupArtifact is >7 days old or missing.
+  View: `dashboard.views.index_v2` (redirects non-superusers back to classic `/admin/`). URL wired at
+  the top level in `rankjee/urls.py` (`admin_2/`, not nested under `dashboard.urls`, so it sits next to
+  `/admin/` without touching that app's URLconf). Template: `templates/dashboard/admin_dashboard_v2.jinja`
+  — single Action Center table + revenue/growth stat rows + the 3 highest-touch inline review tables
+  (task submissions, demo requests, tutor leads) reusing the exact same POST endpoints as the classic
+  page. Added a "🧪 New dashboard (preview)" link in the classic dashboard's sidebar (superuser-only) to
+  reach it. Verified: `manage.py check` clean, full test suite green (46 tests), smoke-tested via test
+  client as both a superuser (200, all sections render) and non-superuser staff (redirected to `/admin/`).
+  Next step once approved: swap `/admin/` to render this view (or keep both — TBD after review).
+  Follow-up after a deep model survey turned up trust & safety queues that were invisible on both
+  the old and new dashboard: added "Open hometutor disputes" (EngagementDispute OPEN/IN_REVIEW),
+  "Chat messages flagged for support" (EngagementChatMessage.support_flag), "Tutor KYC documents
+  awaiting review" (TutorDocument.status=PENDING), and "Course referral commissions awaiting
+  review" (CourseReferral.status=PENDING, + ₹ commission owed) to the Action Center — all link
+  straight to the pre-filtered /sd/ admin list. Also split the hometutor revenue row to show the
+  platform's actual net take (Sum(platform_fee_amount)) as a sub-row under the gross figure, since
+  amount_gross includes the tutor's own share (matches the convention already used in the
+  CITY_ADMIN/GLOBAL_ADMIN role dashboards).   Re-verified: full test suite green (46 tests), smoke
+  test confirms all 4 new rows + the net-fee sub-row render.
+  Second upgrade pass — added real signal that was still missing:
+  - `week_over_week()` — genuine this-week-vs-prior-week % change for revenue and signups
+    (returns None, never a fake number, when the prior window has zero history to compare against).
+    Shown as ▲/▼ badges next to the "Last 7 days" revenue card and "Signups (7d)" growth card —
+    this directly replaces the old dashboard's fabricated "↑ 12% vs last month".
+  - `revenue_trend()` / `signup_trend()` — real 14-day daily bar charts (pure CSS height %, no JS
+    charting lib), hover shows exact date + value. Percentages precomputed in the view (Decimal-safe)
+    rather than done in Jinja.
+  - `balance_sheet_summary()` — "Money the platform currently owes": unwithdrawn student wallet
+    balances + pending UPI withdrawals + pending tutor payouts = Total owed, plus active Exam Pro
+    subscription count. Founder-level snapshot, not a queue.
+  - `hurdle_skills()` — restored the old dashboard's real "weakest tests by avg score" signal
+    (content-quality, not decorative) since it was genuinely useful and got cut in the first pass.
+  - Quick-actions bar (Add question/video/task, CMS, Backups, SEO, LMS, /sd/) + a "Jump to a user"
+    search box (submits straight to `/sd/users/customuser/?q=`) — v1 had zero navigation, forcing a
+    bounce back to classic `/admin/` for routine ops; this closes that gap without re-adding the old
+    16-link sidebar.
+  Fixed one bug during this pass: `UserSubscription` actually lives in `payments.models`, not
+  `core.models` — caught immediately by the smoke test (ImportError), not by guessing. Re-verified:
+  full test suite green (46 tests), `manage.py check` clean, service-level shell sanity checks on
+  `_pct_change` edge cases (zero baseline → None, not a fake %), Tailwind rebuilt.
+- [DONE] Parent family hub now surfaces attendance: `student_progress_summary` (users/services.py) pulls
+  the student's last 14 `dashboard.StudentDailyClassLog` entries (self-reported Present/Absent, pre-existing
+  model — was only visible to the student themselves and staff/admin before). `/users/family/` renders them
+  as green/red chips under "Attendance (self-reported)" for any approved parent link. No migration needed
+  (model already existed). Rebuilt Tailwind CSS (new chip classes). Verified via `manage.py test users lms`
+  (46 tests, all pass) + seeded demo_student with 3 sample logs — see test_user.txt.
+- [DONE] LMS multi-faculty isolation: renamed LmsBatch/LmsBatchMembership -> LmsCourse/LmsCourseEnrollment,
+  added LmsCourse.owner (faculty). Permission gate = is_staff (faculty, own courses only) vs is_superuser
+  (admin, sees everything). Added CustomUser.Role.FACULTY as a reporting label only (not the security gate;
+  public signup unaffected). Scoped: assignments_for_user, can_view_assignment, can_manage_assignment (new),
+  can_manage_course (new), admin_home_stats(user), home sidebar stats, /sd/ Django admin querysets.
+  Faculty "Courses" page (was "Batches") now shows only their own courses; admin sees all + can assign owners.
+  Assignment create/edit form requires faculty to pick one of their own courses (blocks accidental
+  platform-wide leaks); admin may still leave it blank for platform-wide content.
+  Migrations: users/0016_customuser_role_faculty.py, lms/0008_faculty_courses.py (applied locally, verified
+  via makemigrations --check + manual isolation smoke test — see test_user.txt for faculty_priya/faculty_arjun
+  demo accounts). NOT YET migrated on production (rankjee.com) — run `migrate` there, then assign real
+  faculty as owners of existing courses via /sd/ or the Courses page.
+- LMS home: 4-column layout — Topics | Recent submissions | Recent Assignment | Top score
+- [DONE] fix-rankjee.md — wrote deep architecture review of the whole platform (lms vs tutor_study vs
+  hometutor vs core.Course catalog vs assessment vs learning). Confirmed with user: Faculty == marketplace
+  Tutor (one account/role), tutor_study stays permanent/separate (no merge planned), catalog→batch routing
+  = single default/open batch. Implemented **Phase 3 (course→tutor assignment)** plus the minimal slice of
+  **Phase 1** it depends on:
+  - users.CustomUser.is_lms_faculty (new bool, decoupled from is_staff) — auto-set True the moment a user is
+    assigned ownership of an LmsCourse. lms.services.is_lms_faculty() now checks this flag OR legacy
+    is_staff-non-superuser, so a plain marketplace Tutor (role=TUTOR, is_staff=False) can become LMS faculty
+    without touching /sd/ Django admin access.
+  - lms.LmsCourse gained `catalog_course` (FK → core.Course, nullable) and `is_default_for_catalog` (bool).
+    Owner field's limit_choices_to={'is_staff': True} removed (Tutors aren't Django staff).
+  - lms.services: default_lms_course_for_catalog(), enroll_from_catalog_purchase(),
+    purchases_missing_lms_enrollment() (admin-facing audit of paid-course purchases with no batch/tutor
+    assigned yet).
+  - core/services_course_checkout.py: complete_course_order_after_payment() now calls
+    enroll_from_catalog_purchase() for each purchased course right after the CoursePurchase row commits —
+    buyer is auto-enrolled into the catalog course's default LmsCourse batch (if a tutor has been assigned).
+  - lms/forms.py LmsCourseForm: admin-only catalog_course + is_default_for_catalog fields; owner queryset
+    now includes is_staff OR is_lms_faculty OR role=TUTOR accounts (not just is_staff).
+  - templates/lms/courses.jinja: shows "Delivers: <catalog course title>" badge per batch, admin-only
+    "N course purchases have no delivery batch yet" warning banner.
+  - lms/admin.py: LmsCourseAdmin list_display/search/raw_id_fields updated for catalog_course.
+  - Migrations: users/0017_customuser_is_lms_faculty.py, lms/0009_lmscourse_catalog_course_and_more.py
+    (applied locally after confirmation, sqlmigrate dry-run reviewed first per workflow rules). NOT YET
+    migrated on production — run `migrate` there before assigning any tutor to a paid course.
+  - Verified end-to-end via Django shell: creating an LmsCourse with an owner auto-flips
+    owner.is_lms_faculty True; enroll_from_catalog_purchase() creates exactly one LmsCourseEnrollment per
+    buyer (idempotent on repeat calls); purchases_missing_lms_enrollment() correctly reports none once
+    enrolled. Also verified /admin/lms/courses/ renders the new fields for admin and hides them for faculty.
+    Full existing test suite (lms/users/core, 14 tests) still passes.
+  - Remaining phases from fix-rankjee.md NOT yet built: Phase 2 (real ParentStudentLink model),
+    Phase 4 (assessment.Skill link on LmsAssignment + course-scoped exam results rollup). Phase 5
+    (retiring tutor_study) explicitly declined by user — tutor_study stays as the permanent 1:1 tool.
+    [Both Phase 2 and Phase 4 completed later this session — see entries below.]
+- [DONE] fix-rankjee.md Phase 2 — real Parent<->Student link (was previously just a role label with no
+  data relationship). Built additively/isolated to minimize production risk (new table, new URL, new
+  views/services/template — zero changes to any existing view's logic):
+  - users.ParentStudentLink (new model): parent FK, student FK, relationship_label, is_verified,
+    requested_at, verified_at. Unique constraint on (parent, student). Registered in /sd/ admin.
+  - users/services.py (new file, business logic per CLAUDE.md rules): request_parent_link (Parent enters
+    student username/email, creates a PENDING link + Notification to the student — validates roles,
+    blocks self-linking, idempotent on repeat requests), approve_parent_link (student-only, flips
+    is_verified + notifies parent), remove_parent_link (either side can reject/revoke, blocks strangers),
+    linked_students_for_parent, links_for_student, can_parent_view_student, student_progress_summary
+    (read-only snapshot: exam attempts, LMS enrollments, XP/streak/wallet — mirrors what the student
+    already sees about themselves, nothing extra).
+  - New page /users/family/ (users.views.family_hub, users/urls.py, templates/users/family.jinja):
+    Parent side = request-link form + list of own links with read-only progress once approved.
+    Student side = pending parent requests to approve/reject + ability to revoke later.
+  - Small, additive-only link card added to templates/users/profile.jinja (visible only for
+    role in PARENT/STUDENT) pointing to /users/family/ — no existing profile page content changed.
+  - Migration: users/0018_parentstudentlink_and_more.py — brand-new table only, zero risk to existing
+    data (verified via sqlmigrate dry-run before applying, applied locally after explicit confirmation).
+  - Added users/tests.py::ParentStudentLinkTests — 13 new automated tests covering: pending-until-
+    approved visibility gating, idempotent requests, role validation (non-parent/non-student rejected),
+    unauthorized approve/remove attempts blocked, full view-level POST flows for both roles. Full suite
+    now 27/27 passing (was 14/14 before this session's changes) — verified after every step.
+  - NOT YET migrated on production — run `migrate` there before this feature is usable live.
+- [DONE] fix-rankjee.md Phase 4 — link `/assessment/` graded tests into LMS assignments, with
+  course-scoped results rollup. Purely additive, one new nullable FK, zero changes to existing
+  assessment/exam logic:
+  - lms.LmsAssignment.skill (new FK -> assessment.Skill, null/blank, on_delete=SET_NULL). Migration
+    lms/0010_lmsassignment_skill.py — single ALTER TABLE ADD COLUMN, verified via sqlmigrate dry-run
+    before applying (no data touched, no other table affected).
+  - LmsAssignment.take_test_url() — deep-links to /assessment/<skill_id>/take/ for the linked test
+    (mirrors the existing learning_lecture_url()/study_topic_url() pattern).
+  - lms/services.py: student_skill_attempt_for_assignment(user, assignment) — that student's latest
+    UserAttempt for the linked skill, or None. assignment_skill_roster(assignment) — for
+    faculty/admin only: every enrolled student's latest attempt (or "not attempted"); returns []
+    for platform-wide assignments (no course = no fixed roster) or assignments with no skill linked.
+  - lms/forms.py LmsAssignmentForm: new optional "Graded test" field (Skill dropdown, active skills
+    only, labelled with skill path for clarity).
+  - lms/views.py assignment_detail: passes my_skill_attempt (student's own result) and skill_roster
+    (faculty/admin only, gated by existing can_manage_assignment) into the template context — no
+    change to any existing permission check, just additive context.
+  - Templates: assignment_detail.jinja shows a "Take the test"/"Retake test" CTA + pass/fail badge
+    for students, and a "Test results" roster panel for faculty/admin managing that assignment.
+    assignment_form.jinja exposes the new field with help text.
+  - lms/admin.py: LmsAssignmentAdmin list_display + raw_id_fields include the new skill field
+    (existing get_queryset/save_model isolation logic untouched).
+  - Added lms/tests.py (was an empty stub) — 10 new tests: auto is_lms_faculty flag on course
+    ownership (regression guard), student attempt lookup (none/latest), roster correctness
+    (enrolled-with-attempt, enrolled-without-attempt, empty for platform-wide, empty when no skill),
+    and full view-level checks (student sees CTA + score, faculty sees roster with per-student rows,
+    a different faculty is correctly denied — existing can_view_assignment 404→redirect behavior).
+    Full suite now 37/37 passing (was 27/27 before this session's Phase 4 work).
+  - `makemigrations --check` clean; migration applied locally after sqlmigrate dry-run review.
+  - Local demo wired: "Priya assignment 1" now links the "Digital Marketing" skill test — see
+    test_user.txt for the click-through demo flow.
+  - NOT YET migrated on production — run `migrate` there before this feature is usable live.
+  - fix-rankjee.md is now fully implemented (Phases 0–4); Phase 5 (retiring tutor_study) remains
+    explicitly declined by the user.
+- [DONE] fix-rankjee.md Phase 1 (remaining slice) — read-only Office (CITY_ADMIN/GLOBAL_ADMIN)
+  oversight into LMS courses/assignments and exam-results rollup, per §4.2. Purely additive
+  read paths — zero changes to admin/faculty management logic or permissions:
+  - lms.services.is_lms_office(user) — True only for role in {CITY_ADMIN, GLOBAL_ADMIN}. Never
+    combined into is_lms_staff (which stays the "can manage" gate for admin/faculty only) — kept
+    as a fully separate check everywhere so Office can never accidentally get create/edit/review
+    rights just by broadening an existing condition.
+  - assignments_for_user / can_view_assignment / courses_for_user: Office now sees everything
+    (like admin) for VIEWING only. can_manage_assignment / can_manage_course intentionally
+    untouched (still only true for is_lms_admin/is_lms_faculty) — this is the enforcement point
+    that keeps Office read-only everywhere (edit links, review forms, add/remove-member forms,
+    create-course form all stay gated on the unchanged can_manage_*/is_lms_staff checks).
+  - lms/views.py: home, topic_detail, courses, assignment_detail all updated to admit
+    is_lms_office(user) into the *view* gate (previously only students/staff could even load
+    these pages) while leaving every mutation path (POST handlers, assignment_create/edit)
+    gated on is_lms_staff only — office POSTs to /admin/lms/courses/ now explicitly 403.
+  - Templates: home.jinja/courses.jinja/assignment_detail.jinja show a "Office · read-only"
+    label and hide all create/edit/add/remove controls when is_office_lms; the exam-results
+    roster on assignment_detail is visible to Office too (marked "(read-only)") since exam
+    results were explicitly called out in §4.2.
+  - Added lms/tests.py::OfficeOversightTests — 9 new tests: role gating (is_lms_office true only
+    for CITY_ADMIN/GLOBAL_ADMIN), the critical isolation guarantee that Office is NEVER counted
+    as is_lms_staff/can_manage_*, cross-faculty course visibility, home/courses/assignment_detail
+    render for Office with controls hidden, and 403 on any POST/create/edit attempt.
+  - **Found and fixed an unrelated pre-existing bug** while adding these tests: `core/migrations/
+    0010_course_page_content_json.py`'s SQLite idempotency loop reused one stale `apps.get_model()`
+    reference across 4 `schema_editor.add_field()` calls; since JSONField requires a table
+    rebuild on SQLite (not on Postgres), each rebuild used the pre-loop field list, silently
+    dropping earlier-added columns (non-deterministic — sometimes raised a CHECK-constraint
+    IntegrityError, sometimes just silently ended up missing course_includes/gain_outcomes/
+    gain_perks/hero_usps). Never affected production (Postgres ADD COLUMN doesn't rebuild the
+    table) — only bit a *fresh* SQLite database (new dev clone, or the test runner's in-memory
+    DB), which is exactly what surfaced it once a test finally exercised `courses_for_user()`'s
+    `select_related('catalog_course')`. Did NOT edit the existing 0010 migration (already applied
+    everywhere) — added a new, purely-additive `core/migrations/
+    0012_fix_course_json_fields_sqlite.py` that only runs on the sqlite vendor and only adds
+    whichever of those 4 columns are still missing via plain `ALTER TABLE ADD COLUMN` (no CHECK
+    constraint, so no table rebuild, so no data loss); a complete no-op on Postgres and on any
+    SQLite db that already has the columns (verified against the real local db.sqlite3 — 0 rows
+    changed). Verified the bug and the fix by migrating a brand-new empty SQLite file from zero.
+  - Full suite now 46/46 passing (was 37/37 before this slice). `makemigrations --check` clean.
+    Rebuilt `static/css/app.css` (`npm run build:css`) for the new template classes.
+  - Local demo: `office_demo` (GLOBAL_ADMIN, password test1234) — see test_user.txt.
+  - NOT YET migrated on production — run `migrate` there (the new 0012 migration is a safety
+    no-op on Postgres, included only so SQLite environments — CI, fresh clones — stay correct).
+- [FIXED] Styling broken on newer LMS/family pages — `static/css/app.css` is a checked-in, pre-built
+  Tailwind file (`npm run build:css`), not compiled on the fly. It was last built 26 Jul, before this
+  session added new templates/classes (courses.jinja, family.jinja, assignment_detail.jinja roster +
+  CTA sections, assignment_form.jinja). Ran `npm install` (node_modules wasn't present) then
+  `npm run build:css` to regenerate `app.css` with all current template classes — verified new file
+  size increased and is served correctly by the dev server. Remember: any time new Tailwind utility
+  classes are added to a `.jinja` template, re-run `npm run build:css` before it'll show up — the dev
+  server does NOT compile Tailwind live.
+
 ### Completed - Phase 2 (Growth) Web Features ✅
 - Leaderboard & XP points display
 - Gamification badges (first test, first earn, referral, streaks)

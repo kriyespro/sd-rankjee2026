@@ -2,6 +2,8 @@
 {% block title %}{{ title }} - CMS{% endblock %}
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-10">
+  {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'CMS', 'url': url('dashboard:cms_home')}, {'label': title}] %}
+  {% include "partials/_breadcrumb.jinja" %}
   <div class="flex items-center justify-between mb-6 gap-4">
     <div>
       <h1 class="text-3xl font-black text-slate-900">{{ title }}</h1>

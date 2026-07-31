@@ -1,0 +1,389 @@
+{% extends "base.jinja" %}
+{% block title %}Superadmin Overview (Preview) — RankJee{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+    {# Preview banner #}
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 px-5 py-3">
+        <p class="text-xs font-black uppercase tracking-wider text-indigo-800">
+            🧪 Dashboard rewrite preview — nothing here writes data except the review actions below (same as classic dashboard).
+        </p>
+        <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:underline">← Back to classic /admin/</a>
+    </div>
+
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Superadmin Overview</h1>
+            <p class="text-sm font-medium text-slate-600">Only what needs your attention — pending queues, real revenue, real growth.</p>
+        </div>
+        <form action="/sd/users/customuser/" method="GET" class="relative w-full sm:w-64">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 text-sm">🔍</span>
+            <input type="text" name="q" placeholder="Jump to a user…"
+                   class="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
+        </form>
+    </div>
+
+    {# ============ QUICK ACTIONS ============ #}
+    <div class="mb-8 flex flex-wrap gap-2">
+        <a href="/sd/assessment/question/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">➕ Add question</a>
+        <a href="/sd/learning/conceptvideo/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🎬 New video</a>
+        <a href="/sd/core/earningtask/add/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">💵 Post task</a>
+        <a href="{{ url('dashboard:cms_home') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧩 Content CMS</a>
+        <a href="{{ url('dashboard:backup_center') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🗃️ Backups</a>
+        <a href="{{ url('dashboard:seo_smart_view') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">🧠 SEO</a>
+        <a href="{{ url('lms:home') }}" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">📚 LMS</a>
+        <a href="/sd/" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">⚙️ Advanced /sd/</a>
+    </div>
+
+    {# ============ ACTION CENTER ============ #}
+    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-rose-50/40">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Needs your attention</h2>
+        </div>
+        <div class="divide-y divide-slate-100">
+            {% for item in action_items %}
+            <div class="flex items-center justify-between gap-4 px-5 py-3 {{ 'bg-amber-50/40' if item.count > 0 else '' }}">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="flex-shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black
+                        {{ 'bg-rose-100 text-rose-700' if item.count > 0 else 'bg-slate-100 text-slate-400' }}">{{ item.count }}</span>
+                    <p class="text-sm font-bold text-slate-800 truncate">{{ item.label }}</p>
+                </div>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    {% if item.amount is not none %}
+                    <span class="text-xs font-black text-emerald-700">₹{{ "{:,.0f}".format(item.amount) }}</span>
+                    {% endif %}
+                    {% if item.count > 0 %}
+                        {% if item.url %}
+                        <a href="{{ item.url }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline whitespace-nowrap">Open →</a>
+                        {% elif item.anchor %}
+                        <a href="{{ item.anchor }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline whitespace-nowrap">Review below →</a>
+                        {% endif %}
+                    {% else %}
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-300">All clear</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ============ REVENUE ============ #}
+    <section class="mb-8">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Revenue collected (real payments, SUCCESS only)</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1">Today</p>
+                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.today) }}</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1 flex items-center justify-between">
+                    Last 7 days
+                    {% if wow.revenue_pct_change is not none %}
+                    <span class="{{ 'text-emerald-600' if wow.revenue_pct_change >= 0 else 'text-rose-600' }} text-[11px] font-black normal-case">
+                        {{ '▲' if wow.revenue_pct_change >= 0 else '▼' }} {{ wow.revenue_pct_change|abs }}% vs prior 7d
+                    </span>
+                    {% endif %}
+                </p>
+                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.week) }}</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1">Last 30 days</p>
+                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.month) }}</p>
+            </div>
+        </div>
+        {# Real 14-day trend bars — no smoothing, no fake curves #}
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Daily revenue — last 14 days</p>
+            <div class="flex items-end gap-1.5 h-24">
+                {% for row in revenue_trend %}
+                <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    <div class="w-full rounded-t bg-indigo-500 group-hover:bg-indigo-600 transition-colors" style="height: {{ row.pct }}%; min-height: {{ '2px' if row.amount == 0 else '4px' }};"></div>
+                    <span class="absolute -top-6 hidden group-hover:block text-[10px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded whitespace-nowrap z-10">{{ row.date.strftime('%d %b') }}: ₹{{ "{:,.0f}".format(row.amount) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                    <tr>
+                        <th class="px-5 py-3">Source</th>
+                        <th class="px-5 py-3 text-right">Today</th>
+                        <th class="px-5 py-3 text-right">7 days</th>
+                        <th class="px-5 py-3 text-right">30 days</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in revenue.by_source %}
+                    <tr>
+                        <td class="px-5 py-3 text-xs font-bold text-slate-800">
+                            {{ row.label }}
+                            {% if row.key == 'hometutor' %}
+                            <span class="block text-[10px] font-bold text-slate-400 normal-case">Gross (parent payment) — tutor's share is paid out separately via payouts</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.today) }}</td>
+                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.week) }}</td>
+                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.month) }}</td>
+                    </tr>
+                    {% if row.key == 'hometutor' %}
+                    <tr class="bg-emerald-50/40">
+                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 pl-8">↳ of which platform keeps (net fee)</td>
+                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.today) }}</td>
+                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.week) }}</td>
+                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.month) }}</td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ============ GROWTH ============ #}
+    <section class="mb-8">
+        <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Growth</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                <p class="text-xl font-black text-slate-900">{{ growth.total_users }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Total users</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                <p class="text-xl font-black text-emerald-600">+{{ growth.new_today }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups today</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                <p class="text-xl font-black text-emerald-600">+{{ growth.new_week }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups (7d)</p>
+                {% if wow.signups_pct_change is not none %}
+                <p class="text-[10px] font-black mt-0.5 {{ 'text-emerald-600' if wow.signups_pct_change >= 0 else 'text-rose-600' }}">{{ '▲' if wow.signups_pct_change >= 0 else '▼' }} {{ wow.signups_pct_change|abs }}% vs prior 7d</p>
+                {% endif %}
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                <p class="text-xl font-black text-emerald-600">+{{ growth.new_month }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups (30d)</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                <p class="text-xl font-black text-indigo-600">{{ growth.active_week }}</p>
+                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Active (7d)</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Daily signups — last 14 days</p>
+            <div class="flex items-end gap-1.5 h-20">
+                {% for row in signup_trend %}
+                <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
+                    <div class="w-full rounded-t bg-emerald-500 group-hover:bg-emerald-600 transition-colors" style="height: {{ row.pct }}%; min-height: {{ '2px' if row.count == 0 else '4px' }};"></div>
+                    <span class="absolute -top-6 hidden group-hover:block text-[10px] font-black bg-slate-900 text-white px-1.5 py-0.5 rounded whitespace-nowrap z-10">{{ row.date.strftime('%d %b') }}: {{ row.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ============ BALANCE SHEET + CONTENT HEALTH ============ #}
+    <section class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Money the platform currently owes</h2>
+            <div class="space-y-2.5">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold text-slate-600">Student wallet balances (unwithdrawn)</span>
+                    <span class="font-black text-slate-900">₹{{ "{:,.0f}".format(balance_sheet.wallet_liability) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold text-slate-600">Pending UPI withdrawals</span>
+                    <span class="font-black text-slate-900">₹{{ "{:,.0f}".format(balance_sheet.pending_withdrawals) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold text-slate-600">Pending tutor payouts</span>
+                    <span class="font-black text-slate-900">₹{{ "{:,.0f}".format(balance_sheet.pending_payouts) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm pt-2.5 border-t border-slate-100">
+                    <span class="font-black text-slate-800 uppercase text-xs tracking-wider">Total owed</span>
+                    <span class="font-black text-rose-600 text-lg">₹{{ "{:,.0f}".format(balance_sheet.total_owed) }}</span>
+                </div>
+                <div class="flex justify-between items-center text-sm pt-1">
+                    <span class="font-bold text-slate-600">Active Exam Pro subscriptions</span>
+                    <span class="font-black text-indigo-700">{{ balance_sheet.active_subscriptions }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center justify-between">
+                Hurdle topics <span class="text-rose-500 bg-rose-50 px-2 py-0.5 rounded border border-rose-100 normal-case text-[10px]">Content quality signal</span>
+            </h2>
+            <div class="space-y-2.5">
+                {% for s in hurdle_skills %}
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-xs font-black text-slate-800 truncate">{{ s.name }}</span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div class="bg-rose-500 h-full" style="width: {{ s.avg_score }}%"></div>
+                        </div>
+                        <span class="text-xs font-black text-rose-600 w-12 text-right">{{ "{:,.0f}%".format(s.avg_score) }}</span>
+                        <span class="text-[10px] font-bold text-slate-400 w-16 text-right">{{ s.total_attempts }} tries</span>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-xs font-bold text-slate-400">No attempts recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ============ INLINE REVIEW: TASK SUBMISSIONS ============ #}
+    <section id="task-review" class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 bg-rose-50/30 flex justify-between items-center">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">Freelance task submissions to review</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                    <tr>
+                        <th class="px-5 py-3">User</th>
+                        <th class="px-5 py-3">Task</th>
+                        <th class="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for sub in pending_submissions %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3">
+                            <p class="text-xs font-black text-slate-900">{{ sub.user.username }}</p>
+                            <p class="text-[11px] text-slate-500">{{ sub.submitted_at.strftime('%d %b · %H:%M') }}</p>
+                        </td>
+                        <td class="px-5 py-3">
+                            <span class="text-xs font-bold text-indigo-700">{{ sub.task.title }}</span>
+                            <span class="text-xs font-bold bg-indigo-50 text-indigo-500 px-1.5 py-0.5 rounded ml-1">₹{{ sub.task.reward_amount }}</span>
+                            <a href="{{ sub.proof_url }}" target="_blank" class="block text-[11px] text-slate-500 hover:text-indigo-600 underline mt-1 truncate max-w-xs">{{ sub.proof_url }}</a>
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <div class="flex justify-end gap-2">
+                                <form action="{{ url('core:admin_reject', sub.id) }}" method="POST" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <button type="submit" class="inline-flex rounded-lg border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-600 hover:bg-rose-50">Reject</button>
+                                </form>
+                                <form action="{{ url('core:admin_approve', sub.id) }}" method="POST" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <button type="submit" class="inline-flex rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-700">Approve</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">Nothing pending. Great job!</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ============ INLINE REVIEW: DEMO REQUESTS ============ #}
+    <section id="demo-requests" class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 bg-indigo-50/30 flex justify-between items-center">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">Demo requests pending</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left min-w-[720px]">
+                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                    <tr>
+                        <th class="px-5 py-3">Requester</th>
+                        <th class="px-5 py-3">Tutor</th>
+                        <th class="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for d in latest_demo_requests %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3">
+                            <p class="text-xs font-black text-slate-900">{{ d.requester.get_username() }}</p>
+                            <p class="text-[11px] text-slate-500">{{ d.contact_phone or d.requester.email or '—' }}</p>
+                        </td>
+                        <td class="px-5 py-3">
+                            <a href="{{ url('hometutor:tutor_detail', slug=d.tutor.slug) }}" class="text-xs font-black text-indigo-700 hover:underline" target="_blank" rel="noopener">{{ d.tutor.display_name }}</a>
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <div class="flex justify-end gap-2">
+                                <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="DECLINED">
+                                    <button type="submit" class="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">Decline</button>
+                                </form>
+                                <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="ACCEPTED">
+                                    <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Accept</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No demo requests pending.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ============ INLINE REVIEW: TUTOR LEADS ============ #}
+    <section id="tutor-leads" class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 bg-emerald-50/30 flex justify-between items-center">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">New tutor requirement leads</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left min-w-[720px]">
+                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
+                    <tr>
+                        <th class="px-5 py-3">Requester</th>
+                        <th class="px-5 py-3">Requirement</th>
+                        <th class="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for row in latest_tutor_requests %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-5 py-3">
+                            <p class="text-xs font-black text-slate-900">{{ row.full_name }}</p>
+                            <p class="text-[11px] text-slate-500">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
+                        </td>
+                        <td class="px-5 py-3 text-xs text-slate-700">
+                            {{ row.city }}{% if row.area %} · {{ row.area }}{% endif %} — {{ row.subjects }}{% if row.class_grade %} · Class {{ row.class_grade }}{% endif %}
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <div class="flex justify-end gap-2">
+                                <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="CONTACTED">
+                                    <button type="submit" class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">Contacted</button>
+                                </form>
+                                <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
+                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                                    <input type="hidden" name="status" value="CLOSED">
+                                    <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Closed</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No new leads.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {# ============ FOOTER: content inventory + backup health (reference only, de-emphasized) ============ #}
+    <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-xs font-bold text-slate-500">
+        <p>{{ content.total_questions }} questions · {{ content.total_videos }} videos · {{ content.total_skills }} active skills</p>
+        {% if backup.is_stale %}
+        <p class="text-rose-600">⚠ {% if backup.latest %}Last backup {{ backup.days_old }} day(s) ago{% else %}No backups yet{% endif %} — <a href="{{ url('dashboard:backup_center') }}" class="underline">open backup center</a></p>
+        {% else %}
+        <p class="text-emerald-600">✓ Last backup {{ backup.days_old }} day(s) ago</p>
+        {% endif %}
+        <a href="/sd/" class="text-indigo-700 hover:underline">Advanced admin /sd/ →</a>
+    </section>
+
+</div>
+{% endblock %}

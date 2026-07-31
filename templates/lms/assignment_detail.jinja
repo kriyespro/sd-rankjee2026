@@ -8,7 +8,7 @@
     <header class="mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <h1 class="text-xl font-black tracking-tight text-slate-900">{{ assignment.title }}</h1>
-            {% if is_staff_lms %}
+            {% if can_manage_lms %}
             <a href="{{ url('lms:assignment_edit', pk=assignment.pk) }}"
                class="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">
                 Edit assignment
@@ -32,14 +32,28 @@
             <span class="font-semibold normal-case tracking-normal opacity-90">· {{ assignment.study_topic }}</span>
         </a>
         {% endif %}
+        {% if assignment.skill_id %}
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+            <a href="{{ assignment.take_test_url() }}"
+               class="inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white shadow-sm hover:bg-amber-500">
+                📝 {% if my_skill_attempt %}Retake test{% else %}Take the test{% endif %}
+                <span class="font-semibold normal-case tracking-normal opacity-90">· {{ assignment.skill.name }}</span>
+            </a>
+            {% if my_skill_attempt %}
+            <span class="rounded-full {% if my_skill_attempt.passed %}bg-emerald-50 text-emerald-700{% else %}bg-rose-50 text-rose-700{% endif %} px-3 py-1 text-[11px] font-black uppercase tracking-wider">
+                Your score: {{ my_skill_attempt.score }}% {% if my_skill_attempt.passed %}· Passed{% else %}· Not passed{% endif %}
+            </span>
+            {% endif %}
+        </div>
+        {% endif %}
         <div class="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-wider">
             {% if assignment.topic %}
             <span class="rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">{{ assignment.topic.title }}</span>
             {% endif %}
-            {% if assignment.batch %}
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ assignment.batch.name }}</span>
+            {% if assignment.course %}
+            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{{ assignment.course.name }}</span>
             {% else %}
-            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">All students</span>
+            <span class="rounded-full bg-indigo-50 px-2 py-0.5 text-indigo-700">Platform-wide</span>
             {% endif %}
             {% if assignment.due_at %}
             <span class="rounded-full {% if past_due %}bg-rose-50 text-rose-700{% else %}bg-amber-50 text-amber-800{% endif %} px-2 py-0.5">
@@ -110,6 +124,29 @@
     </section>
     {% elif past_due and not my_sub %}
     <p class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900">Deadline passed — submissions closed.</p>
+    {% endif %}
+
+    {% if (can_manage_lms or is_office_lms) and assignment.skill_id and skill_roster %}
+    <section class="mb-6 rounded-2xl border border-amber-200 bg-amber-50/40 p-5">
+        <h2 class="mb-3 text-xs font-black uppercase tracking-widest text-amber-800">
+            Test results · {{ assignment.skill.name }}
+            {% if is_office_lms and not can_manage_lms %}<span class="ml-1 font-semibold normal-case text-amber-700">(read-only)</span>{% endif %}
+        </h2>
+        <div class="space-y-2">
+            {% for row in skill_roster %}
+            <div class="flex items-center justify-between gap-2 rounded-xl bg-white px-4 py-2.5 text-sm">
+                <span class="font-bold text-slate-800">{{ row.student.get_username() }}</span>
+                {% if row.attempt %}
+                <span class="rounded-full {% if row.attempt.passed %}bg-emerald-50 text-emerald-700{% else %}bg-rose-50 text-rose-700{% endif %} px-3 py-1 text-[11px] font-black uppercase tracking-wider">
+                    {{ row.attempt.score }}% {% if row.attempt.passed %}· Passed{% else %}· Not passed{% endif %}
+                </span>
+                {% else %}
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black uppercase tracking-wider text-slate-500">Not attempted</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </section>
     {% endif %}
 
     <h2 class="mb-3 text-xs font-black uppercase tracking-widest text-slate-500">Class feed</h2>

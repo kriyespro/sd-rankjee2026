@@ -104,6 +104,16 @@ def mock_test_landing(request, exam_slug, city_slug=None):
     if city_slug:
         canonical_kwargs["city_slug"] = slugify(city_label)
 
+    crumbs = [
+        {"label": "Tests & exams", "url": reverse("assessment:index")},
+        {
+            "label": f"{exam_label} mock test",
+            "url": reverse("assessment:mock_test_landing", kwargs={"exam_slug": slugify(exam_label)}),
+        },
+    ]
+    if city_slug:
+        crumbs.append({"label": city_label, "url": None})
+
     return render(
         request,
         "assessment/mock_test_landing.jinja",
@@ -116,6 +126,7 @@ def mock_test_landing(request, exam_slug, city_slug=None):
             "seo_description": seo_description,
             "canonical_url": request.build_absolute_uri(reverse(canonical_name, kwargs=canonical_kwargs)),
             "faq_items": faq_items,
+            "crumbs": crumbs,
         },
     )
 
@@ -483,7 +494,16 @@ from .models import Certificate
 @login_required
 def view_certificate(request, certificate_id):
     cert = get_object_or_404(Certificate, certificate_id=certificate_id, user=request.user)
-    return render(request, 'assessment/certificate_view.jinja', {'cert': cert, 'seo_noindex': True})
+    crumbs = [
+        {'label': 'Tests & exams', 'url': reverse('assessment:index')},
+        {'label': cert.skill.name},
+        {'label': 'Certificate'},
+    ]
+    return render(
+        request,
+        'assessment/certificate_view.jinja',
+        {'cert': cert, 'seo_noindex': True, 'crumbs': crumbs},
+    )
 
 @login_required
 def download_certificate(request, certificate_id):

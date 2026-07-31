@@ -167,5 +167,15 @@
         <code class="bg-white/20 px-4 py-2 rounded-lg font-mono font-bold text-xl tracking-widest">{{ user.referral_code }}</code>
     </div>
 
+    {% if user.role in ('PARENT', 'STUDENT') %}
+    <div class="bg-white rounded-2xl shadow p-6 mt-6 border border-slate-100 flex items-center justify-between gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-900">👨‍👩‍👧 Family</h2>
+            <p class="text-sm text-slate-500">{% if user.role == 'PARENT' %}Link to your child's account to see their progress.{% else %}Approve a parent's request to share your progress.{% endif %}</p>
+        </div>
+        <a href="{{ url('users:family_hub') }}" class="whitespace-nowrap rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Open</a>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

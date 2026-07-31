@@ -5,7 +5,8 @@
 <div class="mx-auto max-w-[90rem] px-5 pb-12 pt-8 sm:px-8">
     <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Command centre</a>
+            {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'Student daily log'}] %}
+            {% include "partials/_breadcrumb.jinja" %}
             <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Student daily log</h1>
             <p class="mt-1 text-sm text-slate-600">Per-student class attendance and topics submitted from the student dashboard.</p>
         </div>

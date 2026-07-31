@@ -9,19 +9,19 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
     LmsAssignmentForm,
-    LmsBatchForm,
-    LmsBatchMemberForm,
     LmsCommentForm,
+    LmsCourseForm,
+    LmsCourseMemberForm,
     LmsReviewForm,
     LmsSubmissionForm,
     LmsTopicForm,
 )
-from .models import LmsAssignment, LmsBatch, LmsBatchMembership, LmsReaction, LmsSubmission, LmsTopic
+from .models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsReaction, LmsSubmission, LmsTopic
 from . import services
 
 
 def _require_lms_access(user):
-    if not services.is_lms_student(user) and not services.is_lms_staff(user):
+    if not services.is_lms_student(user) and not services.is_lms_staff(user) and not services.is_lms_office(user):
         return False
     return True
 
@@ -49,10 +49,12 @@ def home(request):
     )[:12]
     sidebar = services.home_sidebar_data(request.user)
     is_staff = services.is_lms_staff(request.user)
-    admin_stats = services.admin_home_stats() if is_staff else None
-    lms_notify = services.lms_notifications_for_user(request.user) if not is_staff else None
+    is_admin = services.is_lms_admin(request.user)
+    is_office = services.is_lms_office(request.user)
+    admin_stats = services.admin_home_stats(request.user) if (is_staff or is_office) else None
+    lms_notify = services.lms_notifications_for_user(request.user) if not is_staff and not is_office else None
     ticker_items = (
-        services.student_assignment_ticker(request.user) if not is_staff else []
+        services.student_assignment_ticker(request.user) if not is_staff and not is_office else []
     )
     return render(
         request,
@@ -65,6 +67,8 @@ def home(request):
             'best_likes': sidebar['best_likes'],
             'latest_comments': sidebar['latest_comments'],
             'is_staff_lms': is_staff,
+            'is_admin_lms': is_admin,
+            'is_office_lms': is_office,
             'admin_stats': admin_stats,
             'lms_notify': lms_notify,
             'ticker_items': ticker_items,
@@ -96,7 +100,7 @@ def assignment_create(request):
     if not services.is_lms_staff(request.user):
         return HttpResponseForbidden('Staff only.')
     if request.method == 'POST':
-        form = LmsAssignmentForm(request.POST)
+        form = LmsAssignmentForm(request.POST, user=request.user)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.created_by = request.user
@@ -112,7 +116,7 @@ def assignment_create(request):
         topic_id = request.GET.get('topic')
         if topic_id and LmsTopic.objects.filter(pk=topic_id).exists():
             initial['topic'] = topic_id
-        form = LmsAssignmentForm(initial=initial)
+        form = LmsAssignmentForm(initial=initial, user=request.user)
 
     topic = None
     if getattr(form, 'is_bound', False) and form.is_valid():
@@ -143,11 +147,13 @@ def assignment_edit(request, pk):
     if not services.is_lms_staff(request.user):
         return HttpResponseForbidden('Staff only.')
     assignment = get_object_or_404(
-        LmsAssignment.objects.select_related('topic'),
+        LmsAssignment.objects.select_related('topic', 'course'),
         pk=pk,
     )
+    if not services.can_manage_assignment(request.user, assignment):
+        return HttpResponseForbidden('You can only edit assignments in your own courses.')
     if request.method == 'POST':
-        form = LmsAssignmentForm(request.POST, instance=assignment)
+        form = LmsAssignmentForm(request.POST, instance=assignment, user=request.user)
         if form.is_valid():
             was_published = assignment.is_published
             obj = form.save(commit=False)
@@ -159,7 +165,7 @@ def assignment_edit(request, pk):
             messages.success(request, f'Assignment “{obj.title}” updated.')
             return redirect('lms:assignment_detail', pk=obj.pk)
     else:
-        form = LmsAssignmentForm(instance=assignment)
+        form = LmsAssignmentForm(instance=assignment, user=request.user)
     crumb_parts = []
     if assignment.topic_id:
         crumb_parts.append(
@@ -239,7 +245,7 @@ def topic_detail(request, pk):
         for assignment in services.assignments_for_user(request.user)
         if assignment.topic_id == topic.pk
     ]
-    if not assignments and not services.is_lms_staff(request.user):
+    if not assignments and not services.is_lms_staff(request.user) and not services.is_lms_office(request.user):
         raise Http404()
     return render(
         request,
@@ -259,11 +265,13 @@ def assignment_detail(request, pk):
     assignment = get_object_or_404(
         LmsAssignment.objects.select_related(
             'topic',
-            'batch',
+            'course',
+            'course__owner',
             'concept_video',
             'concept_video__skill',
             'study_topic',
             'study_topic__parent',
+            'skill',
         ),
         pk=pk,
     )
@@ -271,6 +279,7 @@ def assignment_detail(request, pk):
         raise Http404()
 
     is_staff = services.is_lms_staff(request.user)
+    can_manage = services.can_manage_assignment(request.user, assignment)
     my_sub = LmsSubmission.objects.filter(assignment=assignment, student=request.user).first()
     can_submit = (
         getattr(request.user, 'role', None) == 'STUDENT'
@@ -306,7 +315,7 @@ def assignment_detail(request, pk):
     elif show_submit_form:
         submit_form = LmsSubmissionForm(instance=my_sub)
 
-    if request.method == 'POST' and request.POST.get('action') == 'review' and is_staff:
+    if request.method == 'POST' and request.POST.get('action') == 'review' and can_manage:
         sub_id = request.POST.get('submission_id')
         sub = get_object_or_404(LmsSubmission, pk=sub_id, assignment=assignment)
         review_form = LmsReviewForm(request.POST)
@@ -321,6 +330,14 @@ def assignment_detail(request, pk):
             messages.success(request, f'Review saved for {sub.student.get_username()}.')
             return redirect('lms:assignment_detail', pk=pk)
 
+    my_skill_attempt = (
+        services.student_skill_attempt_for_assignment(request.user, assignment)
+        if getattr(request.user, 'role', None) == 'STUDENT'
+        else None
+    )
+    is_office = services.is_lms_office(request.user)
+    skill_roster = services.assignment_skill_roster(assignment) if (can_manage or is_office) else []
+
     feed = list(services.submissions_feed(assignment))
     # Attach per-user reaction + review form for staff
     my_reactions = {}
@@ -334,7 +351,7 @@ def assignment_detail(request, pk):
     for s in feed:
         s.user_reaction = my_reactions.get(s.pk)
         s.link_rows = services.submission_link_rows(s)
-        if is_staff:
+        if can_manage:
             s.review_form = LmsReviewForm(
                 initial={
                     'marks': s.marks,
@@ -354,7 +371,11 @@ def assignment_detail(request, pk):
             'show_submit_form': show_submit_form,
             'my_sub': my_sub,
             'past_due': past_due,
+            'my_skill_attempt': my_skill_attempt,
+            'skill_roster': skill_roster,
+            'is_office_lms': is_office,
             'is_staff_lms': is_staff,
+            'can_manage_lms': can_manage,
             'comment_form': LmsCommentForm(),
             'url_rows_json': json.dumps(submit_form.url_rows if submit_form else []),
             'crumbs': services.lms_crumbs(
@@ -443,48 +464,70 @@ def comment(request, pk):
 
 @login_required
 @require_http_methods(['GET', 'POST'])
-def batches(request):
-    if not services.is_lms_staff(request.user):
+def courses(request):
+    is_manager = services.is_lms_staff(request.user)
+    is_office = services.is_lms_office(request.user)
+    if not is_manager and not is_office:
         return HttpResponseForbidden('Staff only.')
 
-    batch_form = LmsBatchForm()
-    member_form = LmsBatchMemberForm()
+    is_admin = services.is_lms_admin(request.user)
+    # Enrollment (assigning a student to a faculty's course) is the one action Office can do —
+    # everything else (creating a course/assignment, editing ownership) stays admin+faculty-only.
+    can_manage_enrollment = is_manager or is_office
+    course_form = LmsCourseForm(user=request.user) if is_manager else None
+    member_form = LmsCourseMemberForm() if can_manage_enrollment else None
+
+    def _visible_course_or_404(course_id):
+        qs = LmsCourse.objects.all() if (is_admin or is_office) else LmsCourse.objects.filter(owner_id=request.user.id)
+        return get_object_or_404(qs, pk=course_id)
+
+    if request.method == 'POST' and not can_manage_enrollment:
+        return HttpResponseForbidden('Read-only access.')
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'create_batch':
-            batch_form = LmsBatchForm(request.POST)
-            if batch_form.is_valid():
-                batch_form.save()
-                messages.success(request, 'Batch created.')
-                return redirect('lms:batches')
+        if action == 'create_course':
+            if not is_manager:
+                return HttpResponseForbidden('Only faculty/admin can create courses.')
+            course_form = LmsCourseForm(request.POST, user=request.user)
+            if course_form.is_valid():
+                course = course_form.save(commit=False)
+                if not is_admin:
+                    course.owner = request.user
+                course.save()
+                messages.success(request, 'Course created.')
+                return redirect('lms:courses')
         elif action == 'add_member':
-            batch = get_object_or_404(LmsBatch, pk=request.POST.get('batch_id'))
-            member_form = LmsBatchMemberForm(request.POST)
+            course = _visible_course_or_404(request.POST.get('course_id'))
+            member_form = LmsCourseMemberForm(request.POST)
             if member_form.is_valid():
                 user = member_form.cleaned_data['username']
-                services.add_batch_member(batch, user)
-                messages.success(request, f'Added {user.username} to {batch.name}.')
-                return redirect('lms:batches')
+                services.add_course_member(course, user)
+                messages.success(request, f'Added {user.username} to {course.name}.')
+                return redirect('lms:courses')
         elif action == 'remove_member':
-            batch = get_object_or_404(LmsBatch, pk=request.POST.get('batch_id'))
+            course = _visible_course_or_404(request.POST.get('course_id'))
             mid = request.POST.get('membership_id')
-            m = get_object_or_404(LmsBatchMembership, pk=mid, batch=batch)
+            m = get_object_or_404(LmsCourseEnrollment, pk=mid, course=course)
             m.delete()
             messages.success(request, 'Member removed.')
-            return redirect('lms:batches')
+            return redirect('lms:courses')
 
-    batch_list = list(
-        LmsBatch.objects.prefetch_related('memberships__user').order_by('name')
-    )
+    course_list = list(services.courses_for_user(request.user))
+    unassigned_purchases = services.purchases_missing_lms_enrollment(limit=10) if (is_admin or is_office) else []
     return render(
         request,
-        'lms/batches.jinja',
+        'lms/courses.jinja',
         {
-            'batches': batch_list,
-            'batch_form': batch_form,
+            'courses': course_list,
+            'course_form': course_form,
             'member_form': member_form,
-            'is_staff_lms': True,
-            'crumbs': services.lms_crumbs(services.crumb('Batches')),
+            'is_staff_lms': is_manager,
+            'is_admin_lms': is_admin,
+            'is_office_lms': is_office,
+            'can_manage_enrollment': can_manage_enrollment,
+            'unassigned_purchases': unassigned_purchases,
+            'student_options': services.student_directory_options(),
+            'crumbs': services.lms_crumbs(services.crumb('Courses')),
         },
     )

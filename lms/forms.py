@@ -4,8 +4,8 @@ from django.core.validators import URLValidator
 
 from .models import (
     LmsAssignment,
-    LmsBatch,
     LmsComment,
+    LmsCourse,
     LmsSubmission,
     LmsSubmissionUrl,
     LmsTopic,
@@ -57,7 +57,8 @@ class LmsAssignmentForm(forms.ModelForm):
             'instructions',
             'concept_video',
             'study_topic',
-            'batch',
+            'skill',
+            'course',
             'due_at',
             'is_published',
         ]
@@ -69,7 +70,8 @@ class LmsAssignmentForm(forms.ModelForm):
             ),
             'concept_video': forms.Select(attrs={'class': _INPUT}),
             'study_topic': forms.Select(attrs={'class': _INPUT}),
-            'batch': forms.Select(attrs={'class': _INPUT}),
+            'skill': forms.Select(attrs={'class': _INPUT}),
+            'course': forms.Select(attrs={'class': _INPUT}),
             'due_at': forms.DateTimeInput(
                 attrs={'class': _INPUT, 'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M',
@@ -82,17 +84,24 @@ class LmsAssignmentForm(forms.ModelForm):
         labels = {
             'concept_video': 'Lecture recording',
             'study_topic': 'Study topic',
+            'skill': 'Graded test',
+            'course': 'Course',
         }
         help_texts = {
             'concept_video': 'Opens the matching video on /learning/ for students.',
             'study_topic': 'Opens the matching chapter on /admin/study/ for students.',
+            'skill': 'Links a /assessment/ test — course roster results show on this assignment page.',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from assessment.models import Skill
         from learning.models import ConceptVideo
         from tutor_study.models import StudyTopic
 
+        from . import services
+
+        self.user = user
         self.fields['topic'].queryset = LmsTopic.objects.order_by('title')
         self.fields['topic'].required = False
         self.fields['topic'].empty_label = 'Choose a topic…'
@@ -115,9 +124,27 @@ class LmsAssignmentForm(forms.ModelForm):
         )
         self.fields['study_topic'].required = False
         self.fields['study_topic'].empty_label = 'No study topic linked…'
-        self.fields['batch'].queryset = LmsBatch.objects.filter(is_active=True)
-        self.fields['batch'].required = False
-        self.fields['batch'].empty_label = 'All students (no batch)'
+
+        self.fields['skill'].queryset = Skill.objects.filter(is_active=True).select_related('path').order_by(
+            'path__level_order', 'order', 'name'
+        )
+        self.fields['skill'].required = False
+        self.fields['skill'].empty_label = 'No graded test linked…'
+        self.fields['skill'].label_from_instance = (
+            lambda obj: f'{obj.name}' + (f' · {obj.path.name}' if obj.path_id else '')
+        )
+
+        self._is_admin = bool(user and services.is_lms_admin(user))
+        if self._is_admin:
+            self.fields['course'].queryset = LmsCourse.objects.filter(is_active=True).order_by('name')
+            self.fields['course'].empty_label = 'Platform-wide (all students, no course)'
+        else:
+            self.fields['course'].queryset = LmsCourse.objects.filter(
+                is_active=True, owner_id=getattr(user, 'id', None)
+            ).order_by('name')
+            self.fields['course'].empty_label = 'Choose one of your courses…'
+        self.fields['course'].required = False
+
         self.fields['due_at'].required = False
         self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
         if self.instance and self.instance.pk and self.instance.topic_id and not self.data:
@@ -135,6 +162,8 @@ class LmsAssignmentForm(forms.ModelForm):
                     title=title,
                     description=(cleaned.get('new_topic_description') or '').strip(),
                 )
+        if not self._is_admin and not cleaned.get('course'):
+            self.add_error('course', 'Faculty must select one of their own courses. Create one first under Courses.')
         return cleaned
 
 
@@ -240,29 +269,76 @@ class LmsCommentForm(forms.ModelForm):
         }
 
 
-class LmsBatchForm(forms.ModelForm):
+class LmsCourseForm(forms.ModelForm):
     class Meta:
-        model = LmsBatch
-        fields = ['name', 'is_active']
+        model = LmsCourse
+        fields = ['name', 'owner', 'catalog_course', 'is_default_for_catalog', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Digital Marketing Batch A'}),
+            'owner': forms.Select(attrs={'class': _INPUT}),
+            'catalog_course': forms.Select(attrs={'class': _INPUT}),
+            'is_default_for_catalog': forms.CheckboxInput(
+                attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
+            ),
             'is_active': forms.CheckboxInput(
                 attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
             ),
         }
+        labels = {
+            'catalog_course': 'Paid course (/courses/) this batch delivers',
+            'is_default_for_catalog': 'Auto-enroll new buyers of that course here',
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.db.models import Q
+
+        from . import services
+
+        self.user = user
+        is_admin = bool(user and services.is_lms_admin(user))
+        if is_admin:
+            # Any staff account, any flagged faculty, or any Tutor/Faculty-role marketplace
+            # account (same role for LMS purposes) can be assigned to own/teach a course.
+            self.fields['owner'].queryset = User.objects.filter(
+                Q(is_staff=True) | Q(is_lms_faculty=True) | Q(role__in=['TUTOR', 'FACULTY'])
+            ).distinct().order_by('username')
+            self.fields['owner'].required = False
+            self.fields['owner'].empty_label = 'Platform-wide (no single owner)'
+
+            from core.models import Course as CatalogCourse
+
+            self.fields['catalog_course'].queryset = CatalogCourse.objects.filter(is_active=True).order_by('title')
+            self.fields['catalog_course'].required = False
+            self.fields['catalog_course'].empty_label = 'Not linked to a paid catalog course'
+        else:
+            # Faculty can't reassign ownership or link a batch to the sales catalog —
+            # both are admin/monetization decisions made when the batch is set up.
+            del self.fields['owner']
+            del self.fields['catalog_course']
+            del self.fields['is_default_for_catalog']
 
 
-class LmsBatchMemberForm(forms.Form):
+class LmsCourseMemberForm(forms.Form):
     username = forms.CharField(
         max_length=150,
-        widget=forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'Student username'}),
+        widget=forms.TextInput(
+            attrs={'class': _INPUT, 'placeholder': 'Student username or email', 'list': 'lms-student-options'}
+        ),
+        label='Student',
+        help_text='Start typing to pick from the suggestion list, or paste a username/email directly.',
     )
 
     def clean_username(self):
-        username = self.cleaned_data['username'].strip()
-        user = User.objects.filter(username__iexact=username).first()
+        raw = self.cleaned_data['username'].strip()
+        # Accept "username · email@x.com" (picked from the <datalist>) as well as a bare
+        # username or a bare email — whichever the admin/office user actually typed or pasted.
+        candidate = raw.split('·')[0].strip() if '·' in raw else raw
+        user = User.objects.filter(username__iexact=candidate).first()
+        if not user and '@' in candidate:
+            user = User.objects.filter(email__iexact=candidate).first()
         if not user:
-            raise forms.ValidationError('User not found.')
+            raise forms.ValidationError(f'No student found matching "{raw}".')
         return user
 
 

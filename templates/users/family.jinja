@@ -1,0 +1,163 @@
+{% extends "base.jinja" %}
+{% block title %}Family — RankJee{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white mb-6">
+        <h1 class="text-3xl font-extrabold">Family</h1>
+        {% if user_role == 'PARENT' %}
+        <p class="text-white/70 mt-1">Link to your child's student account to see their progress (read-only).</p>
+        {% elif user_role == 'STUDENT' %}
+        <p class="text-white/70 mt-1">Approve a parent's request to let them see your progress (read-only).</p>
+        {% else %}
+        <p class="text-white/70 mt-1">Parent-student linking is available for Parent and Student accounts.</p>
+        {% endif %}
+    </div>
+
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="rounded-xl px-4 py-3 text-sm font-bold {% if message.tags == 'error' %}bg-rose-50 text-rose-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if user_role == 'PARENT' %}
+    <div class="bg-white rounded-2xl shadow p-6 mb-6">
+        <h2 class="text-xl font-bold mb-4">Link a student</h2>
+        <form method="post" class="flex flex-wrap items-end gap-3">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="action" value="request_link">
+            <div class="min-w-[16rem] flex-1">
+                <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ request_form.identifier.label }}</label>
+                {{ request_form.identifier }}
+                {% if request_form.identifier.errors %}
+                <p class="mt-1 text-xs font-bold text-rose-600">{{ request_form.identifier.errors.0 }}</p>
+                {% endif %}
+            </div>
+            <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Send request</button>
+        </form>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-xl font-bold mb-4">Your links</h2>
+        {% if my_links %}
+        <div class="space-y-4">
+            {% for link in my_links %}
+            <div class="rounded-xl border border-slate-200 p-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-black text-slate-900">{{ link.student.get_username() }}
+                        {% if link.is_verified %}
+                        <span class="ml-2 text-[10px] font-black uppercase text-emerald-600">Approved</span>
+                        {% else %}
+                        <span class="ml-2 text-[10px] font-black uppercase text-amber-600">Pending approval</span>
+                        {% endif %}
+                    </p>
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="link_id" value="{{ link.pk }}">
+                        <button type="submit" class="text-[11px] font-black uppercase tracking-wider text-rose-600 hover:underline">Remove</button>
+                    </form>
+                </div>
+                {% if link.is_verified %}
+                {% set summary = student_summaries.get(link.student_id) %}
+                {% if summary %}
+                <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div class="rounded-lg bg-slate-50 p-3 text-center">
+                        <p class="text-lg font-black text-slate-900">{{ summary.total_attempts }}</p>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Tests taken</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 text-center">
+                        <p class="text-lg font-black text-emerald-600">{{ summary.passed_attempts }}</p>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Passed</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 text-center">
+                        <p class="text-lg font-black text-indigo-600">{{ summary.xp_points }}</p>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">XP</p>
+                    </div>
+                    <div class="rounded-lg bg-slate-50 p-3 text-center">
+                        <p class="text-lg font-black text-orange-500">🔥 {{ summary.streak_days }}</p>
+                        <p class="text-[10px] font-bold uppercase text-slate-500">Streak</p>
+                    </div>
+                </div>
+                {% if summary.lms_enrollments %}
+                <p class="mt-3 text-xs font-bold uppercase tracking-wider text-slate-500">LMS courses</p>
+                <ul class="mt-1 flex flex-wrap gap-2">
+                    {% for enrollment in summary.lms_enrollments %}
+                    <li class="rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-bold text-indigo-700">{{ enrollment.course.name }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if summary.recent_attempts %}
+                <p class="mt-3 text-xs font-bold uppercase tracking-wider text-slate-500">Recent tests</p>
+                <ul class="mt-1 space-y-1">
+                    {% for attempt in summary.recent_attempts %}
+                    <li class="text-xs text-slate-600">{{ attempt.skill.name }} — {{ attempt.score }}% ({{ 'Passed' if attempt.passed else 'Not passed' }})</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+                {% if summary.recent_attendance %}
+                <p class="mt-3 text-xs font-bold uppercase tracking-wider text-slate-500">
+                    Attendance (self-reported) — {{ summary.attendance_present_count }}/{{ summary.attendance_total_count }} present, last {{ summary.attendance_total_count }} logs
+                </p>
+                <ul class="mt-1 flex flex-wrap gap-1.5">
+                    {% for log in summary.recent_attendance %}
+                    <li class="rounded-full px-2.5 py-1 text-[10px] font-black {% if log.attendance == 'PRESENT' %}bg-emerald-50 text-emerald-700{% else %}bg-rose-50 text-rose-700{% endif %}" title="{{ log.topic }}">
+                        {{ log.log_date }} · {{ 'Present' if log.attendance == 'PRESENT' else 'Absent' }}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="mt-3 text-xs text-slate-400">No attendance logs yet.</p>
+                {% endif %}
+                {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No links yet — send a request above using your child's student username or email.</p>
+        {% endif %}
+    </div>
+    {% elif user_role == 'STUDENT' %}
+    <div class="bg-white rounded-2xl shadow p-6">
+        <h2 class="text-xl font-bold mb-4">Parent link requests</h2>
+        {% if my_parent_links %}
+        <div class="space-y-3">
+            {% for link in my_parent_links %}
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-4">
+                <p class="font-black text-slate-900">{{ link.parent.get_username() }}
+                    {% if link.is_verified %}
+                    <span class="ml-2 text-[10px] font-black uppercase text-emerald-600">Approved — can see your progress</span>
+                    {% else %}
+                    <span class="ml-2 text-[10px] font-black uppercase text-amber-600">Pending your approval</span>
+                    {% endif %}
+                </p>
+                <div class="flex gap-3">
+                    {% if not link.is_verified %}
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="approve">
+                        <input type="hidden" name="link_id" value="{{ link.pk }}">
+                        <button type="submit" class="text-[11px] font-black uppercase tracking-wider text-emerald-600 hover:underline">Approve</button>
+                    </form>
+                    {% endif %}
+                    <form method="post">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="link_id" value="{{ link.pk }}">
+                        <button type="submit" class="text-[11px] font-black uppercase tracking-wider text-rose-600 hover:underline">{{ 'Reject' if not link.is_verified else 'Revoke' }}</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-slate-500">No parent link requests yet.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

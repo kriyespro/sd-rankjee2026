@@ -2,6 +2,8 @@
 {% block title %}Content CMS - RankJee{% endblock %}
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 py-10">
+  {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'CMS'}] %}
+  {% include "partials/_breadcrumb.jinja" %}
   <h1 class="text-3xl font-black text-slate-900 mb-6">Content CMS</h1>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
     <a href="{{ url('dashboard:cms_skillpaths') }}" class="bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-300 shadow-sm">

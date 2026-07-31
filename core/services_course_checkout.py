@@ -176,6 +176,12 @@ def complete_course_order_after_payment(
                 course=c,
                 defaults={"order": order},
             )
+    # Auto-enroll the buyer into whichever LMS batch delivers this catalog course, if any
+    # tutor/faculty has been assigned to teach it yet (see lms.LmsCourse.catalog_course).
+    from lms import services as lms_services
+
+    for c in courses:
+        lms_services.enroll_from_catalog_purchase(user, c)
     finalize_referral_commissions(user, courses, paid_unit_prices=paid_unit_prices)
     clear_cart(request)
 

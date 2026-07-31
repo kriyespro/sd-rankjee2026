@@ -14,11 +14,60 @@ from django.db.models import Avg, Count, Sum
 
 from core.hometutor_data import FEATURED_HOME_TUTORS, LANDING_SUBJECTS, PILOT_CITY
 
+from django.utils.text import slugify
+
 from .models import DemoRequest, PincodeGeo, TutorEngagement, TutorProfile
 
 logger = logging.getLogger('rankjee.hometutor')
 
 TUTORS_PER_PAGE = 24
+
+
+def crumb(label: str, url: str | None = None) -> dict:
+    return {'label': label, 'url': url}
+
+
+def landing_crumbs(city=None, subject=None, grade=None, location=None) -> list[dict]:
+    """Breadcrumb trail for the tutor marketplace pages (fix: whole-app navigation pass).
+
+    Mirrors the exact same city → subject → grade → location escalation used to build
+    `canonical_name`/`canonical_kwargs` in `hometutor.views.tutor_city_landing` — these SEO
+    landing pages can be up to 5 levels deep, and had zero breadcrumb support before this.
+    """
+    crumbs = [crumb('Find a tutor', reverse('hometutor:tutor_list'))]
+    if not city:
+        return crumbs
+
+    city_kwargs = {'city_slug': slugify(city)}
+    if not subject:
+        crumbs.append(crumb(city))
+        return crumbs
+    crumbs.append(crumb(city, reverse('hometutor:tutor_city_landing', kwargs=city_kwargs)))
+
+    subject_kwargs = {**city_kwargs, 'subject_slug': slugify(subject)}
+    if not grade:
+        crumbs.append(crumb(subject))
+        return crumbs
+    crumbs.append(crumb(subject, reverse('hometutor:tutor_city_subject_landing', kwargs=subject_kwargs)))
+
+    grade_kwargs = {**subject_kwargs, 'grade': grade}
+    if not location:
+        crumbs.append(crumb(f'Class {grade}'))
+        return crumbs
+    crumbs.append(
+        crumb(f'Class {grade}', reverse('hometutor:tutor_city_subject_class_landing', kwargs=grade_kwargs))
+    )
+    crumbs.append(crumb(location))
+    return crumbs
+
+
+def tutor_detail_crumbs(profile: TutorProfile) -> list[dict]:
+    city = (profile.city or '').strip()
+    crumbs = [crumb('Find a tutor', reverse('hometutor:tutor_list'))]
+    if city:
+        crumbs.append(crumb(city, reverse('hometutor:tutor_city_landing', kwargs={'city_slug': slugify(city)})))
+    crumbs.append(crumb(profile.display_name))
+    return crumbs
 
 
 def get_tutor_profile(user) -> TutorProfile | None:

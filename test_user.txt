@@ -23,6 +23,67 @@
 - **Username:** demo_tutor · **Email:** demo_tutor@example.com · **Role:** Tutor
 - **Username:** demo_parent · **Email:** demo_parent@example.com · **Role:** Parent
 
+## LMS Faculty demo (password: test1234) — proves per-faculty course isolation
+- **Username:** faculty_priya · is_staff=True, is_superuser=False · owns course "Priya - SEO Batch A"
+- **Username:** faculty_arjun · is_staff=True, is_superuser=False · owns course "Arjun - Ads Batch B"
+- **Username:** student_ravi · enrolled only in Priya's course
+- Log in as `faculty_priya` at `/admin/lms/` → sees only her own course + students; `faculty_arjun`'s course/students are invisible to her (404 if she tries the direct URL). Same isolation verified in reverse for `faculty_arjun`. The superuser `admin` still sees everything across both.
+
+## Course→Tutor assignment demo (password: demo1234) — proves catalog purchase auto-enrolls into a batch
+- **Username:** tutor_demo · role=TUTOR, is_staff=False · became `is_lms_faculty=True` automatically the
+  moment it was assigned owner of the LMS batch "AI Automation Pro - Batch A (tutor_demo)".
+- That batch has `catalog_course` = the paid catalog course "AI Automation Engineering Pro"
+  (`/courses/ai-automation-engineering-pro/`) and `is_default_for_catalog=True`.
+- Anyone who buys "AI Automation Engineering Pro" via `/courses/` checkout is now auto-enrolled into
+  `tutor_demo`'s batch — verify by completing a purchase, then checking `/admin/lms/courses/` as
+  `tutor_demo` (student should already be listed under the batch, no manual step needed). Admins can see
+  any purchase still missing a delivery batch on the same page ("N course purchases have no delivery
+  batch yet" banner).
+- Log in as `tutor_demo` at `/admin/lms/` to manage that batch's assignments/videos/tests exactly like
+  the faculty_priya/faculty_arjun demo below.
+
+## Parent<->Student link demo — proves read-only visibility only after student approves
+- Use `demo_parent` (see above) and `demo_student` — log in as `demo_parent`, go to `/users/family/`,
+  request a link by entering `demo_student` (username or email).
+- Log in as `demo_student` and go to `/users/family/` to approve (or reject) the request.
+- Once approved, log back in as `demo_parent` and `/users/family/` shows demo_student's exam attempts,
+  LMS course enrollments, XP, streak, and daily attendance log — read-only, nothing the student couldn't
+  already see about themselves. Before approval, the parent sees the link as "Pending approval" with no
+  progress data.
+- `demo_student` has 3 sample attendance entries seeded (self-logged via `/dashboard/daily-class-log/`) so
+  the parent view's "Attendance (self-reported)" chips (green=Present, red=Absent) have something to show.
+
+## Exam ↔ assignment link demo (password: test1234) — proves graded tests roll up on assignments
+- "Priya assignment 1" (owned by `faculty_priya`'s course) is now linked to the "Digital Marketing"
+  skill test (`/assessment/`).
+- Log in as `student_ravi` (enrolled in Priya's course) and open that assignment: a "Take the test"
+  button appears (links straight to `/assessment/<skill_id>/take/`); after submitting the test, the
+  assignment page shows the score + pass/fail badge, and the button changes to "Retake test".
+- Log in as `faculty_priya` and open the same assignment: a "Test results" panel lists every enrolled
+  student's latest score (or "Not attempted") for that test — faculty never sees another faculty's
+  roster, and platform-wide (no-course) assignments never show a roster since there's no fixed class
+  list to check against.
+- Any assignment can optionally link a test via the "Graded test" field on the assignment form
+  (`/admin/lms/assignments/new/` or edit) — leave it blank for assignments with no linked test.
+
+## Office (CITY_ADMIN/GLOBAL_ADMIN) oversight + enrollment demo — password: test1234
+- **Username:** office_demo · role=GLOBAL_ADMIN, is_staff=False, is_superuser=False.
+- Log in as `office_demo` and open `/admin/lms/`: sees the same staff-style header/stats as
+  faculty, but with NO "New assignment" button.
+- `/admin/lms/courses/` shows **every** faculty's courses (Priya's, Arjun's, tutor_demo's) in
+  one list labelled "Office · enrollment only". No "Add course" form (course/assignment
+  creation stays admin+faculty-only) — but each course card now has an "Assign student" box
+  (type/pick a username or email from the suggestion list) and a "Remove" button per student,
+  so Office/Admin can put a purchased/registered student into the right faculty's course
+  without needing that faculty to do it. Typing a wrong/unknown username or email shows
+  "No student found matching ..." right under the box instead of failing silently.
+- Opening any assignment (even ones owned by faculty who aren't office_demo) works — no "Edit
+  assignment" link, no review/grading form on submissions, and if the assignment has a linked
+  skill test, the "Test results" roster still shows (marked "(read-only)").
+- Office still can never create/edit courses or assignments — POSTing `action=create_course` to
+  `/admin/lms/courses/` or opening `/admin/lms/assignments/new/` returns 403. Only
+  `add_member`/`remove_member` (enrollment) are allowed for Office.
+
 One-command local wiring (approved tutor listing + sample pending demos):
 
 `python3 manage.py setup_demo_three_roles`

@@ -1,9 +1,11 @@
+from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from hometutor.models import TutorProfile
+from . import services
 from .forms import CustomUserCreationForm
-from .models import CustomUser
+from .models import CustomUser, ParentStudentLink
 from .onboarding import SESSION_PENDING_SIGNUP_ROLE, apply_social_signup_onboarding
 
 
@@ -145,3 +147,106 @@ class OnboardingFlowTests(TestCase):
         )
         self.assertRedirects(res, reverse('users:onboarding_profile'))
         self.assertNotIn('needs_role_picker', self.client.session)
+
+
+class ParentStudentLinkTests(TestCase):
+    """fix-rankjee.md Phase 2 — parent<->student linking must be opt-in (student approves)
+    and must never leak visibility before approval."""
+
+    def setUp(self):
+        self.parent = CustomUser.objects.create_user(
+            username='parent1', email='parent1@example.com', password='StrongPass!123',
+            role=CustomUser.Role.PARENT,
+        )
+        self.student = CustomUser.objects.create_user(
+            username='student1link', email='student1link@example.com', password='StrongPass!123',
+            role=CustomUser.Role.STUDENT,
+        )
+        self.other_parent = CustomUser.objects.create_user(
+            username='parent2', email='parent2@example.com', password='StrongPass!123',
+            role=CustomUser.Role.PARENT,
+        )
+
+    def test_request_link_creates_pending_unverified_link(self):
+        link = services.request_parent_link(self.parent, self.student.username)
+        self.assertFalse(link.is_verified)
+        self.assertFalse(services.can_parent_view_student(self.parent, self.student))
+
+    def test_request_link_is_idempotent(self):
+        link1 = services.request_parent_link(self.parent, self.student.username)
+        link2 = services.request_parent_link(self.parent, self.student.username)
+        self.assertEqual(link1.pk, link2.pk)
+        self.assertEqual(ParentStudentLink.objects.filter(parent=self.parent, student=self.student).count(), 1)
+
+    def test_request_link_by_email_works(self):
+        link = services.request_parent_link(self.parent, self.student.email)
+        self.assertEqual(link.student_id, self.student.id)
+
+    def test_non_parent_cannot_request_link(self):
+        with self.assertRaises(ValidationError):
+            services.request_parent_link(self.student, self.other_parent.username)
+
+    def test_cannot_link_to_non_student(self):
+        with self.assertRaises(ValidationError):
+            services.request_parent_link(self.parent, self.other_parent.username)
+
+    def test_cannot_link_to_unknown_identifier(self):
+        with self.assertRaises(ValidationError):
+            services.request_parent_link(self.parent, 'no-such-user')
+
+    def test_approve_grants_visibility_only_after_student_approves(self):
+        link = services.request_parent_link(self.parent, self.student.username)
+        self.assertFalse(services.can_parent_view_student(self.parent, self.student))
+        services.approve_parent_link(self.student, link.pk)
+        self.assertTrue(services.can_parent_view_student(self.parent, self.student))
+
+    def test_other_student_cannot_approve_someone_elses_link(self):
+        link = services.request_parent_link(self.parent, self.student.username)
+        intruder = CustomUser.objects.create_user(
+            username='intruder', email='intruder@example.com', password='StrongPass!123',
+            role=CustomUser.Role.STUDENT,
+        )
+        with self.assertRaises(ValidationError):
+            services.approve_parent_link(intruder, link.pk)
+        link.refresh_from_db()
+        self.assertFalse(link.is_verified)
+
+    def test_remove_link_only_by_participant(self):
+        link = services.request_parent_link(self.parent, self.student.username)
+        removed_by_stranger = services.remove_parent_link(self.other_parent, link.pk)
+        self.assertFalse(removed_by_stranger)
+        self.assertTrue(ParentStudentLink.objects.filter(pk=link.pk).exists())
+
+        removed_by_student = services.remove_parent_link(self.student, link.pk)
+        self.assertTrue(removed_by_student)
+        self.assertFalse(ParentStudentLink.objects.filter(pk=link.pk).exists())
+
+    def test_family_hub_view_requires_login(self):
+        res = self.client.get(reverse('users:family_hub'))
+        self.assertEqual(res.status_code, 302)
+
+    def test_parent_can_request_link_via_view(self):
+        self.client.force_login(self.parent)
+        res = self.client.post(
+            reverse('users:family_hub'),
+            data={'action': 'request_link', 'identifier': self.student.username},
+        )
+        self.assertRedirects(res, reverse('users:family_hub'))
+        self.assertTrue(ParentStudentLink.objects.filter(parent=self.parent, student=self.student).exists())
+
+    def test_student_can_approve_link_via_view(self):
+        link = services.request_parent_link(self.parent, self.student.username)
+        self.client.force_login(self.student)
+        res = self.client.post(
+            reverse('users:family_hub'),
+            data={'action': 'approve', 'link_id': link.pk},
+        )
+        self.assertRedirects(res, reverse('users:family_hub'))
+        link.refresh_from_db()
+        self.assertTrue(link.is_verified)
+
+    def test_student_progress_summary_shape(self):
+        summary = services.student_progress_summary(self.student)
+        self.assertIn('total_attempts', summary)
+        self.assertIn('lms_enrollments', summary)
+        self.assertEqual(summary['total_attempts'], 0)

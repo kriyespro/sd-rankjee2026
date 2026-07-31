@@ -10,9 +10,9 @@ from django.utils import timezone
 
 from .models import (
     LmsAssignment,
-    LmsBatch,
-    LmsBatchMembership,
     LmsComment,
+    LmsCourse,
+    LmsCourseEnrollment,
     LmsReaction,
     LmsSubmission,
     LmsSubmissionUrl,
@@ -50,8 +50,50 @@ def attach_orphan_assignments_to_general() -> int:
 logger = logging.getLogger('rankjee.lms')
 
 
+def is_lms_admin(user) -> bool:
+    """Platform admin — sees and manages every faculty's courses/students."""
+    return bool(user and user.is_authenticated and user.is_superuser)
+
+
+def is_lms_faculty(user) -> bool:
+    """Faculty — scoped to their own courses only.
+
+    Home Tutor and Faculty are the SAME role for LMS purposes (fix: a marketplace Tutor
+    shouldn't need an admin to pre-create a course and hand them ownership before they can
+    touch the LMS at all — they can self-serve create their own first course). Backed by
+    three independent signals, any one is sufficient:
+    - `role` is TUTOR or FACULTY — grants self-serve LMS access (create a course, teach it)
+      with zero admin setup required.
+    - `is_lms_faculty` flag (also set automatically the moment a user is given an LmsCourse
+      to own, e.g. by an admin assigning ownership directly).
+    - Legacy: `is_staff` (non-superuser) — kept for existing ops-created staff accounts.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, 'is_lms_faculty', False):
+        return True
+    from users.models import CustomUser
+
+    if getattr(user, 'role', None) in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
+        return True
+    return bool(user.is_staff and not user.is_superuser)
+
+
 def is_lms_staff(user) -> bool:
-    return bool(user and user.is_authenticated and (user.is_staff or user.is_superuser))
+    """Any staff-like LMS access (admin or faculty) — i.e. can *manage* something."""
+    return is_lms_admin(user) or is_lms_faculty(user)
+
+
+def is_lms_office(user) -> bool:
+    """Office / ops (CITY_ADMIN, GLOBAL_ADMIN) — platform-wide READ-ONLY oversight for
+    support & QA (fix-rankjee.md §4.2). Never grants create/edit/review rights — those stay
+    gated by is_lms_admin/is_lms_faculty via can_manage_course/can_manage_assignment.
+    """
+    if not user or not user.is_authenticated:
+        return False
+    from users.models import CustomUser
+
+    return getattr(user, 'role', None) in (CustomUser.Role.CITY_ADMIN, CustomUser.Role.GLOBAL_ADMIN)
 
 
 def is_lms_student(user) -> bool:
@@ -60,33 +102,59 @@ def is_lms_student(user) -> bool:
     return getattr(user, 'role', None) == 'STUDENT' or is_lms_staff(user)
 
 
-def user_batch_ids(user) -> set[int]:
+def user_course_ids(user) -> set[int]:
     if not user or not user.is_authenticated:
         return set()
     return set(
-        LmsBatchMembership.objects.filter(user=user, batch__is_active=True).values_list(
-            'batch_id', flat=True
+        LmsCourseEnrollment.objects.filter(user=user, course__is_active=True).values_list(
+            'course_id', flat=True
         )
     )
 
 
 def assignments_for_user(user) -> QuerySet[LmsAssignment]:
-    qs = LmsAssignment.objects.select_related('topic', 'batch', 'created_by')
-    if is_lms_staff(user):
+    qs = LmsAssignment.objects.select_related('topic', 'course', 'course__owner', 'created_by')
+    if is_lms_admin(user) or is_lms_office(user):
         return qs.all()
-    # Students: published + (no batch OR member of batch)
-    batch_ids = user_batch_ids(user)
-    return qs.filter(is_published=True).filter(Q(batch__isnull=True) | Q(batch_id__in=batch_ids))
+    if is_lms_faculty(user):
+        # Own courses + platform-wide (unbatched) content; never another faculty's course.
+        return qs.filter(Q(course__owner_id=user.id) | Q(course__isnull=True))
+    # Students: published + (platform-wide OR enrolled in the course)
+    course_ids = user_course_ids(user)
+    return qs.filter(is_published=True).filter(Q(course__isnull=True) | Q(course_id__in=course_ids))
 
 
 def can_view_assignment(user, assignment: LmsAssignment) -> bool:
-    if is_lms_staff(user):
+    if is_lms_admin(user) or is_lms_office(user):
         return True
+    if is_lms_faculty(user):
+        if assignment.course_id:
+            return assignment.course.owner_id == user.id
+        return True  # platform-wide content is visible to all faculty
     if not assignment.is_published:
         return False
-    if assignment.batch_id is None:
+    if assignment.course_id is None:
         return is_lms_student(user)
-    return assignment.batch_id in user_batch_ids(user)
+    return assignment.course_id in user_course_ids(user)
+
+
+def can_manage_assignment(user, assignment: LmsAssignment) -> bool:
+    """Edit / review rights — narrower than can_view_assignment for faculty."""
+    if is_lms_admin(user):
+        return True
+    if is_lms_faculty(user):
+        if assignment.course_id:
+            return assignment.course.owner_id == user.id
+        return assignment.created_by_id == user.id
+    return False
+
+
+def can_manage_course(user, course: LmsCourse) -> bool:
+    if is_lms_admin(user):
+        return True
+    if is_lms_faculty(user):
+        return course.owner_id == user.id
+    return False
 
 
 def can_edit_submission(user, submission: LmsSubmission) -> bool:
@@ -232,16 +300,30 @@ def home_sidebar_data(user, limit: int = 5) -> dict:
     }
 
 
-def admin_home_stats() -> dict:
-    """Staff-only LMS overview counts for the home header badges."""
-    total_assignments = LmsAssignment.objects.count()
-    topics_covered = LmsTopic.objects.filter(assignments__isnull=False).distinct().count()
+def admin_home_stats(user) -> dict:
+    """Staff LMS overview counts for the home header badges.
+
+    Admin (superuser) sees platform-wide counts; faculty see only their own courses
+    plus platform-wide (unbatched) content.
+    """
+    assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True)) or [0]
+    assignment_qs = LmsAssignment.objects.filter(pk__in=assignment_ids)
+
+    total_assignments = assignment_qs.count()
+    topics_covered = LmsTopic.objects.filter(assignments__in=assignment_ids).distinct().count()
     students_submitted = (
-        LmsSubmission.objects.values('student_id').distinct().count()
+        LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
+        .values('student_id')
+        .distinct()
+        .count()
     )
-    pending = LmsSubmission.objects.filter(status=LmsSubmission.Status.SUBMITTED).count()
+    pending = LmsSubmission.objects.filter(
+        assignment_id__in=assignment_ids,
+        status=LmsSubmission.Status.SUBMITTED,
+    ).count()
     pending_topic_titles = list(
         LmsTopic.objects.filter(
+            assignments__in=assignment_ids,
             assignments__submissions__status=LmsSubmission.Status.SUBMITTED,
         )
         .distinct()
@@ -252,6 +334,7 @@ def admin_home_stats() -> dict:
     orphan_pending = LmsSubmission.objects.filter(
         status=LmsSubmission.Status.SUBMITTED,
         assignment__topic__isnull=True,
+        assignment_id__in=assignment_ids,
     ).exists()
     if orphan_pending and 'General' not in pending_topic_titles:
         pending_topic_titles = ['General', *pending_topic_titles][:8]
@@ -354,8 +437,8 @@ def notify_new_assignment(assignment: LmsAssignment) -> None:
     link = reverse('lms:assignment_detail', kwargs={'pk': assignment.pk})
     title = assignment.title
     msg = _lms_message('assignment', assignment.pk, f'New assignment: {title}')
-    if assignment.batch_id:
-        user_ids = LmsBatchMembership.objects.filter(batch_id=assignment.batch_id).values_list(
+    if assignment.course_id:
+        user_ids = LmsCourseEnrollment.objects.filter(course_id=assignment.course_id).values_list(
             'user_id', flat=True
         )
         students = User.objects.filter(id__in=user_ids, is_active=True)
@@ -624,14 +707,142 @@ def _notify_status(submission: LmsSubmission, *, old_status: str) -> None:
     _lms_send(submission.student, 'status', body, _submission_link(submission), ref_id=submission.pk)
 
 
-def add_batch_member(batch: LmsBatch, user) -> LmsBatchMembership:
-    obj, _ = LmsBatchMembership.objects.get_or_create(batch=batch, user=user)
+def student_directory_options(limit: int = 300) -> list[dict]:
+    """Username + email for the "Add student" typeahead on /admin/lms/courses/ (fix: make
+    assigning a student to a faculty simple — no more hunting down an exact username by memory).
+    Capped and STUDENT-role-only to keep the page light; if the platform grows past this, swap
+    for an HTMX live-search endpoint like hometutor.quick_tutor_search."""
+    from users.models import CustomUser
+
+    return list(
+        CustomUser.objects.filter(role=CustomUser.Role.STUDENT)
+        .order_by('username')
+        .values('username', 'email')[:limit]
+    )
+
+
+def add_course_member(course: LmsCourse, user) -> LmsCourseEnrollment:
+    obj, _ = LmsCourseEnrollment.objects.get_or_create(course=course, user=user)
     return obj
 
 
-def remove_batch_member(batch: LmsBatch, user) -> int:
-    deleted, _ = LmsBatchMembership.objects.filter(batch=batch, user=user).delete()
+def remove_course_member(course: LmsCourse, user) -> int:
+    deleted, _ = LmsCourseEnrollment.objects.filter(course=course, user=user).delete()
     return deleted
+
+
+def courses_for_user(user) -> QuerySet[LmsCourse]:
+    """Courses this user can see. Admin manages all; Office (read-only) also sees all for
+    oversight; Faculty sees (and manages) only their own."""
+    qs = LmsCourse.objects.select_related('owner', 'catalog_course').prefetch_related('enrollments__user')
+    if is_lms_admin(user) or is_lms_office(user):
+        return qs.order_by('name')
+    return qs.filter(owner_id=user.id).order_by('name')
+
+
+def default_lms_course_for_catalog(catalog_course_id: int) -> LmsCourse | None:
+    """The delivery batch new buyers of a paid catalog course auto-enroll into.
+
+    Prefers a batch explicitly flagged `is_default_for_catalog`; otherwise falls back to
+    the oldest active batch linked to that catalog course.
+    """
+    return (
+        LmsCourse.objects.filter(catalog_course_id=catalog_course_id, is_active=True)
+        .order_by('-is_default_for_catalog', 'id')
+        .first()
+    )
+
+
+def enroll_from_catalog_purchase(user, catalog_course) -> LmsCourseEnrollment | None:
+    """Called right after a `core.CoursePurchase` is created. Auto-enrolls the buyer into
+    whichever LmsCourse batch delivers that catalog course. Returns None (and logs a
+    warning) if no faculty/tutor has been assigned to deliver it yet — admin needs to
+    create an LmsCourse with `catalog_course` set and assign an owner.
+    """
+    course = default_lms_course_for_catalog(catalog_course.pk)
+    if not course:
+        logger.warning(
+            'No LMS delivery batch assigned for catalog course id=%s (%r) — purchase by user id=%s '
+            'has no classroom to join yet. Create an LmsCourse with catalog_course set.',
+            catalog_course.pk,
+            getattr(catalog_course, 'title', ''),
+            user.id,
+        )
+        return None
+    enrollment, _ = LmsCourseEnrollment.objects.get_or_create(course=course, user=user)
+    return enrollment
+
+
+def purchases_missing_lms_enrollment(limit: int = 50) -> list:
+    """Recent catalog purchases whose buyer has no matching LmsCourse enrollment yet —
+    surfaced to admins so they know which paid courses still need a tutor/batch assigned.
+    """
+    from core.models import CoursePurchase
+
+    purchases = list(
+        CoursePurchase.objects.select_related('user', 'course').order_by('-created_at')[:500]
+    )
+    if not purchases:
+        return []
+    catalog_ids = {p.course_id for p in purchases}
+    enrolled_pairs = set(
+        LmsCourseEnrollment.objects.filter(course__catalog_course_id__in=catalog_ids).values_list(
+            'user_id', 'course__catalog_course_id'
+        )
+    )
+    missing = [p for p in purchases if (p.user_id, p.course_id) not in enrolled_pairs]
+    return missing[:limit]
+
+
+def student_skill_attempt_for_assignment(user, assignment: LmsAssignment):
+    """Best (most recent) attempt this student has made at the assignment's linked skill
+    test, or None if no skill is linked / they haven't attempted it yet."""
+    if not assignment.skill_id or not user or not user.is_authenticated:
+        return None
+    from assessment.models import UserAttempt
+
+    return (
+        UserAttempt.objects.filter(user=user, skill_id=assignment.skill_id)
+        .order_by('-attempt_date')
+        .first()
+    )
+
+
+def assignment_skill_roster(assignment: LmsAssignment) -> list[dict]:
+    """For faculty/admin managing this assignment: each enrolled student's latest attempt
+    at the linked skill test (or "not attempted" if none). Platform-wide assignments
+    (no course) have no fixed roster, so this returns an empty list for those — use
+    `assignments_for_user`/course enrollment as the source of truth for who's expected
+    to take the test.
+    """
+    if not assignment.skill_id or not assignment.course_id:
+        return []
+    from assessment.models import UserAttempt
+
+    enrollments = (
+        LmsCourseEnrollment.objects.filter(course_id=assignment.course_id)
+        .select_related('user')
+        .order_by('user__username')
+    )
+    if not enrollments:
+        return []
+    student_ids = [e.user_id for e in enrollments]
+    attempts_by_user = {}
+    for attempt in (
+        UserAttempt.objects.filter(user_id__in=student_ids, skill_id=assignment.skill_id)
+        .order_by('user_id', '-attempt_date')
+    ):
+        attempts_by_user.setdefault(attempt.user_id, attempt)  # first hit per user = latest (ordered)
+
+    roster = []
+    for enrollment in enrollments:
+        roster.append(
+            {
+                'student': enrollment.user,
+                'attempt': attempts_by_user.get(enrollment.user_id),
+            }
+        )
+    return roster
 
 
 def save_submission_with_urls(

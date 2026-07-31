@@ -4,49 +4,82 @@ from django.db import models
 from django.utils.text import slugify
 
 
-class LmsBatch(models.Model):
+class LmsCourse(models.Model):
+    """A faculty's own class/course. Students enrol via LmsCourseEnrollment."""
+
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=140, unique=True, blank=True)
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_courses_owned',
+        help_text='Faculty/tutor who owns this course. Empty = platform-wide course (superuser managed).',
+    )
+    catalog_course = models.ForeignKey(
+        'core.Course',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_courses',
+        help_text='Paid catalog course (/courses/) this batch delivers. Buyers auto-enroll into the default batch for this catalog course.',
+    )
+    is_default_for_catalog = models.BooleanField(
+        default=False,
+        help_text='If multiple batches deliver the same catalog course, new buyers auto-enroll into the one marked default.',
+    )
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['name']
-        verbose_name = 'LMS batch'
-        verbose_name_plural = 'LMS batches'
+        verbose_name = 'LMS course'
+        verbose_name_plural = 'LMS courses'
 
     def __str__(self):
         return self.name
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base = slugify(self.name)[:120] or 'batch'
+            base = slugify(self.name)[:120] or 'course'
             candidate = base
             n = 2
-            while LmsBatch.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
+            while LmsCourse.objects.filter(slug=candidate).exclude(pk=self.pk).exists():
                 candidate = f'{base}-{n}'
                 n += 1
             self.slug = candidate
         super().save(*args, **kwargs)
+        if self.owner_id:
+            # Owning a course is what makes someone "faculty" — independent of is_staff.
+            from django.contrib.auth import get_user_model
+
+            get_user_model().objects.filter(pk=self.owner_id, is_lms_faculty=False).update(
+                is_lms_faculty=True
+            )
+        if self.is_default_for_catalog and self.catalog_course_id:
+            LmsCourse.objects.filter(catalog_course_id=self.catalog_course_id).exclude(pk=self.pk).update(
+                is_default_for_catalog=False
+            )
 
 
-class LmsBatchMembership(models.Model):
-    batch = models.ForeignKey(LmsBatch, on_delete=models.CASCADE, related_name='memberships')
+class LmsCourseEnrollment(models.Model):
+    course = models.ForeignKey(LmsCourse, on_delete=models.CASCADE, related_name='enrollments')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='lms_batch_memberships',
+        related_name='lms_course_enrollments',
     )
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-joined_at']
         constraints = [
-            models.UniqueConstraint(fields=['batch', 'user'], name='unique_lms_batch_member'),
+            models.UniqueConstraint(fields=['course', 'user'], name='unique_lms_course_member'),
         ]
 
     def __str__(self):
-        return f'{self.user_id} ∈ {self.batch_id}'
+        return f'{self.user_id} ∈ {self.course_id}'
 
 
 class LmsTopic(models.Model):
@@ -83,13 +116,13 @@ class LmsAssignment(models.Model):
         blank=True,
         related_name='assignments',
     )
-    batch = models.ForeignKey(
-        LmsBatch,
+    course = models.ForeignKey(
+        LmsCourse,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='assignments',
-        help_text='Empty = visible to all STUDENT users.',
+        help_text='Empty = platform-wide (superuser only). Otherwise scoped to this faculty course.',
     )
     title = models.CharField(max_length=220)
     instructions = models.TextField(blank=True)
@@ -116,6 +149,14 @@ class LmsAssignment(models.Model):
         related_name='lms_assignments',
         help_text='Optional Study hub topic from /admin/study/ linked to this assignment.',
     )
+    skill = models.ForeignKey(
+        'assessment.Skill',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_assignments',
+        help_text='Optional graded test from /assessment/ linked to this assignment — course roster results roll up on the assignment page.',
+    )
     is_published = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -140,6 +181,14 @@ class LmsAssignment(models.Model):
         if video.concept_tag:
             params['concept'] = video.concept_tag
         return f"{reverse('learning:index')}?{urlencode(params)}"
+
+    def take_test_url(self) -> str:
+        """Deep-link to /assessment/<skill_id>/take/ for this assignment's linked skill test."""
+        from django.urls import reverse
+
+        if not self.skill_id:
+            return reverse('assessment:index')
+        return reverse('assessment:take_test', kwargs={'skill_id': self.skill_id})
 
     def study_topic_url(self) -> str:
         """Deep-link to /admin/study/topic/<id>/ with return path to this LMS assignment."""

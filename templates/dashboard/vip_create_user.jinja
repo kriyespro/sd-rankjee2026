@@ -5,7 +5,8 @@
 <div class="mx-auto max-w-lg px-4 py-10 sm:px-6">
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Dashboard</a>
+            {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'Add student or tutor'}] %}
+            {% include "partials/_breadcrumb.jinja" %}
             <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Add student or tutor</h1>
             <p class="mt-1 text-sm text-slate-600">Creates a login they can use immediately. Optional: attach your referral.</p>
         </div>

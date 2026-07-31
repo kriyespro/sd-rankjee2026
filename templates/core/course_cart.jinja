@@ -11,7 +11,7 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8 md:py-10">
-    <a href="{{ url('core:courses') }}" class="text-xs font-black uppercase tracking-wider text-indigo-700 hover:text-indigo-500">← Back to courses</a>
+    {% include "partials/_breadcrumb.jinja" %}
     <h1 class="mt-4 text-2xl md:text-3xl font-black text-slate-900">Your Course Cart</h1>
     <p class="mt-2 text-sm text-slate-600">Review selected courses and complete secure checkout with Razorpay (UPI, cards, wallets).</p>
 

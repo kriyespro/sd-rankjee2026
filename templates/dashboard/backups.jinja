@@ -5,7 +5,8 @@
 <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
     <div class="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
-            <a href="{{ url('dashboard:index') }}" class="text-xs font-black uppercase tracking-wider text-indigo-600 hover:underline">← Admin dashboard</a>
+            {% set crumbs = [{'label': 'Dashboard', 'url': url('dashboard:index')}, {'label': 'Backups'}] %}
+            {% include "partials/_breadcrumb.jinja" %}
             <h1 class="mt-2 text-2xl font-black tracking-tight text-slate-900">Backups</h1>
             <p class="mt-1 text-sm text-slate-600">Daily full-project and DB backups. Download any artifact below.</p>
             <p class="mt-1 text-xs font-bold text-slate-500">Auto-delete policy: keep latest {{ backup_keep_full }} full backups and {{ backup_keep_db }} DB backups.</p>

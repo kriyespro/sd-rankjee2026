@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404, redirect, render
@@ -219,6 +220,62 @@ def profile_view(request):
             'inquiries': inquiries,
         },
     )
+
+
+@login_required
+def family_hub(request):
+    """Parent <-> Student linking (fix-rankjee.md Phase 2).
+
+    Parents request a link by username/email; Students approve/reject; either side can
+    revoke later. Approved parents get a read-only progress snapshot per linked student.
+    """
+    from . import services as family_services
+    from .forms import ParentLinkRequestForm
+    from .models import CustomUser
+
+    role = getattr(request.user, 'role', None)
+    request_form = ParentLinkRequestForm()
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'request_link' and role == CustomUser.Role.PARENT:
+            request_form = ParentLinkRequestForm(request.POST)
+            if request_form.is_valid():
+                try:
+                    family_services.request_parent_link(
+                        request.user, request_form.cleaned_data['identifier']
+                    )
+                    messages.success(request, 'Request sent — the student needs to approve it.')
+                    return redirect('users:family_hub')
+                except ValidationError as exc:
+                    request_form.add_error('identifier', exc.messages[0] if hasattr(exc, 'messages') else str(exc))
+        elif action == 'approve':
+            try:
+                family_services.approve_parent_link(request.user, request.POST.get('link_id'))
+                messages.success(request, 'Link approved.')
+            except ValidationError as exc:
+                messages.error(request, str(exc))
+            return redirect('users:family_hub')
+        elif action == 'remove':
+            if family_services.remove_parent_link(request.user, request.POST.get('link_id')):
+                messages.success(request, 'Link removed.')
+            return redirect('users:family_hub')
+
+    context = {
+        'user_role': role,
+        'request_form': request_form,
+    }
+    if role == CustomUser.Role.PARENT:
+        links = list(family_services.linked_students_for_parent(request.user, verified_only=False))
+        context['my_links'] = links
+        context['student_summaries'] = {
+            link.student_id: family_services.student_progress_summary(link.student)
+            for link in links
+            if link.is_verified
+        }
+    elif role == CustomUser.Role.STUDENT:
+        context['my_parent_links'] = list(family_services.links_for_student(request.user))
+    return render(request, 'users/family.jinja', context)
 
 
 def set_ui_lang(request, lang):
