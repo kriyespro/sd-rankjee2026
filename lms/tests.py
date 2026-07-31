@@ -700,3 +700,334 @@ class TopicPerCourseTests(TestCase):
             {'title': 'Should fail', 'description': '', 'course': self.course_a.pk},
         )
         self.assertEqual(res.status_code, 403)
+
+
+class ResubmitAfterChangesRequestedTests(TestCase):
+    """Fix: resubmitting after a faculty marked "changes requested" left `status` untouched
+    forever — the revision never came back into any pending-review queue. Editing/resubmitting
+    now resets status to SUBMITTED so faculty see it again."""
+
+    def setUp(self):
+        self.faculty = User.objects.create_user(
+            username='resubmit_faculty', email='resubmit_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Resubmit course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        self.student = User.objects.create_user(
+            username='resubmit_student', email='resubmit_student@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course, user=self.student)
+        self.assignment = LmsAssignment.objects.create(
+            title='Resubmit homework', course=self.course, created_by=self.faculty, is_published=True,
+        )
+        self.submission = LmsSubmission.objects.create(
+            assignment=self.assignment, student=self.student,
+            status=LmsSubmission.Status.CHANGES_REQUESTED, caption='v1',
+        )
+
+    def test_resubmit_resets_status_to_submitted(self):
+        self.client.force_login(self.student)
+        res = self.client.post(
+            reverse('lms:assignment_detail', kwargs={'pk': self.assignment.pk}),
+            {
+                'action': 'submit',
+                'caption': 'v2 — addressed feedback',
+                'url_0': 'https://drive.google.com/v2',
+                'url_kind_0': 'DRIVE',
+            },
+        )
+        self.assertEqual(res.status_code, 302)
+        self.submission.refresh_from_db()
+        self.assertEqual(self.submission.status, LmsSubmission.Status.SUBMITTED)
+        self.assertEqual(self.submission.caption, 'v2 — addressed feedback')
+
+    def test_resubmit_reappears_in_faculty_pending_queue(self):
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('lms:assignment_detail', kwargs={'pk': self.assignment.pk}),
+            {
+                'action': 'submit',
+                'caption': 'v2',
+                'url_0': 'https://drive.google.com/v2',
+                'url_kind_0': 'DRIVE',
+            },
+        )
+        pending_ids = set(
+            LmsSubmission.objects.filter(status=LmsSubmission.Status.SUBMITTED).values_list('pk', flat=True)
+        )
+        self.assertIn(self.submission.pk, pending_ids)
+
+    def test_editing_approved_submission_reverts_to_submitted_for_review(self):
+        self.submission.status = LmsSubmission.Status.APPROVED
+        self.submission.save(update_fields=['status'])
+        self.client.force_login(self.student)
+        self.client.post(
+            reverse('lms:assignment_detail', kwargs={'pk': self.assignment.pk}),
+            {
+                'action': 'submit',
+                'caption': 'changed my answer',
+                'url_0': 'https://drive.google.com/v3',
+                'url_kind_0': 'DRIVE',
+            },
+        )
+        self.submission.refresh_from_db()
+        self.assertEqual(self.submission.status, LmsSubmission.Status.SUBMITTED)
+
+
+class RemovedStudentKeepsReadOnlyAccessTests(TestCase):
+    """Fix: unenrolling a student (or deactivating their course) used to 404 them out of their
+    OWN already-graded submission/feedback entirely. They now keep read-only access to their
+    own past work; they just can't edit/resubmit it once no longer part of the course."""
+
+    def setUp(self):
+        self.faculty = User.objects.create_user(
+            username='removed_faculty', email='removed_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Removal course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        self.student = User.objects.create_user(
+            username='removed_student', email='removed_student@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        self.enrollment = LmsCourseEnrollment.objects.create(course=self.course, user=self.student)
+        self.assignment = LmsAssignment.objects.create(
+            title='Graded before removal', course=self.course, created_by=self.faculty, is_published=True,
+        )
+        self.submission = LmsSubmission.objects.create(
+            assignment=self.assignment, student=self.student,
+            status=LmsSubmission.Status.APPROVED, marks=9, caption='great work',
+        )
+
+    def test_still_enrolled_student_has_full_view_and_edit_access(self):
+        self.assertTrue(services.can_view_assignment(self.student, self.assignment))
+        self.assertTrue(services.can_edit_submission(self.student, self.submission))
+
+    def test_unenrolled_student_keeps_view_access_to_own_graded_submission(self):
+        self.enrollment.delete()
+        self.assertTrue(services.can_view_assignment(self.student, self.assignment))
+
+    def test_unenrolled_student_can_no_longer_edit_the_submission(self):
+        self.enrollment.delete()
+        self.assertFalse(services.can_edit_submission(self.student, self.submission))
+
+    def test_unenrolled_student_gets_200_not_404_on_assignment_detail(self):
+        self.enrollment.delete()
+        self.client.force_login(self.student)
+        res = self.client.get(reverse('lms:assignment_detail', kwargs={'pk': self.assignment.pk}))
+        self.assertEqual(res.status_code, 200)
+        self.assertContains(res, 'great work')
+
+    def test_deactivated_course_also_keeps_read_only_access(self):
+        self.course.is_active = False
+        self.course.save(update_fields=['is_active'])
+        self.assertTrue(services.can_view_assignment(self.student, self.assignment))
+        self.assertFalse(services.can_edit_submission(self.student, self.submission))
+
+    def test_student_never_enrolled_still_denied_entirely(self):
+        stranger = User.objects.create_user(
+            username='removed_stranger', email='removed_stranger@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        self.assertFalse(services.can_view_assignment(stranger, self.assignment))
+
+
+class OfficeIsNeverCountedAsFacultyTests(TestCase):
+    """Fix: office (CITY_ADMIN/GLOBAL_ADMIN) accounts are also `is_staff=True`, so the legacy
+    "is_staff and not superuser" branch in is_lms_faculty() used to also match office — making
+    is_lms_staff() true for office everywhere, including narrow "is this a teacher" checks like
+    attaching a grading form. Office must never satisfy is_lms_faculty."""
+
+    def setUp(self):
+        # Office accounts are commonly also given is_staff=True in production so they can reach
+        # /sd/ — that combination is exactly what used to accidentally satisfy is_lms_faculty's
+        # legacy fallback branch.
+        self.office = User.objects.create_user(
+            username='exclusivity_office', email='exclusivity_office@example.com',
+            password='StrongPass!123', role='CITY_ADMIN', is_staff=True,
+        )
+        self.faculty = User.objects.create_user(
+            username='exclusivity_faculty', email='exclusivity_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Exclusivity course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+
+    def test_office_is_not_lms_faculty(self):
+        self.assertTrue(self.office.is_staff)
+        self.assertFalse(services.is_lms_faculty(self.office))
+
+    def test_office_is_lms_office_but_not_lms_staff(self):
+        """is_lms_office is its own explicit permission — office reads everything (handled
+        separately wherever `is_lms_office` is checked alongside `is_lms_staff`), but
+        is_lms_staff itself ("can manage something") stays admin/faculty-only, by design."""
+        self.assertTrue(services.is_lms_office(self.office))
+        self.assertFalse(services.is_lms_staff(self.office))
+
+    def test_office_cannot_manage_a_faculty_owned_assignment(self):
+        assignment = LmsAssignment.objects.create(
+            title='Faculty-only', course=self.course, created_by=self.faculty,
+        )
+        self.assertFalse(services.can_manage_assignment(self.office, assignment))
+
+    def test_legacy_staff_account_without_office_role_still_counts_as_faculty(self):
+        """The legacy is_staff fallback still works for a plain ops account with no explicit
+        office role — only office (CITY_ADMIN/GLOBAL_ADMIN) is excluded."""
+        legacy_staff = User.objects.create_user(
+            username='exclusivity_legacy', email='exclusivity_legacy@example.com',
+            password='StrongPass!123', is_staff=True,
+        )
+        self.assertTrue(services.is_lms_faculty(legacy_staff))
+
+
+class CourseMemberFormStudentRoleOnlyTests(TestCase):
+    """Fix: LmsCourseMemberForm.clean_username used to match ANY user by username/email — a
+    typo could silently enroll a tutor, parent, or staff account into a course's student
+    roster. Now student-role only."""
+
+    def setUp(self):
+        self.office = User.objects.create_user(
+            username='memberform_office', email='memberform_office@example.com',
+            password='StrongPass!123', role='CITY_ADMIN',
+        )
+        self.faculty = User.objects.create_user(
+            username='memberform_faculty', email='memberform_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Member form course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        self.tutor = User.objects.create_user(
+            username='memberform_tutor', email='memberform_tutor@example.com',
+            password='StrongPass!123', role='TUTOR',
+        )
+        self.student = User.objects.create_user(
+            username='memberform_student', email='memberform_student@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+
+    def test_cannot_add_a_tutor_account_as_a_student_member(self):
+        self.client.force_login(self.office)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'add_member', 'course_id': self.course.pk, 'username': self.tutor.username},
+        )
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('No student found matching', res.content.decode())
+        self.assertFalse(LmsCourseEnrollment.objects.filter(course=self.course, user=self.tutor).exists())
+
+    def test_can_still_add_an_actual_student_by_username(self):
+        self.client.force_login(self.office)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'add_member', 'course_id': self.course.pk, 'username': self.student.username},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(LmsCourseEnrollment.objects.filter(course=self.course, user=self.student).exists())
+
+    def test_can_still_add_an_actual_student_by_email(self):
+        self.client.force_login(self.office)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'add_member', 'course_id': self.course.pk, 'username': self.student.email},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(LmsCourseEnrollment.objects.filter(course=self.course, user=self.student).exists())
+
+
+class CourseDeleteCascadesTests(TestCase):
+    """Fix: LmsAssignment.course / LmsTopic.course used to SET_NULL on course delete — an
+    orphaned assignment/topic silently became "platform-wide" and visible to every student on
+    the platform. Deleting a course now cascades its own assignments/topics/submissions with
+    it instead."""
+
+    def setUp(self):
+        self.faculty = User.objects.create_user(
+            username='cascade_faculty', email='cascade_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Doomed course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        self.topic = LmsTopic.objects.create(title='Doomed topic', course=self.course)
+        self.assignment = LmsAssignment.objects.create(
+            title='Doomed assignment', course=self.course, topic=self.topic, created_by=self.faculty,
+        )
+        self.student = User.objects.create_user(
+            username='cascade_student', email='cascade_student@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course, user=self.student)
+        self.submission = LmsSubmission.objects.create(assignment=self.assignment, student=self.student)
+
+    def test_deleting_course_deletes_its_assignment_not_orphans_it(self):
+        self.course.delete()
+        self.assertFalse(LmsAssignment.objects.filter(pk=self.assignment.pk).exists())
+
+    def test_deleting_course_deletes_its_topic_not_orphans_it(self):
+        self.course.delete()
+        self.assertFalse(LmsTopic.objects.filter(pk=self.topic.pk).exists())
+
+    def test_deleting_course_deletes_dependent_submissions(self):
+        self.course.delete()
+        self.assertFalse(LmsSubmission.objects.filter(pk=self.submission.pk).exists())
+
+    def test_deleting_course_deletes_enrollments(self):
+        self.course.delete()
+        self.assertFalse(LmsCourseEnrollment.objects.filter(course_id=self.course.pk).exists())
+
+
+class ReassignOwnerToPlatformWideWarnsTests(TestCase):
+    """Fix: unassigning a course's owner (reassign to "no owner") used to give the same plain
+    success toast whether the course was empty or full of live assignments/students — the
+    latter now warns that only a superuser can manage/grade it going forward."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='ownerwarn_admin', email='ownerwarn_admin@example.com', password='StrongPass!123',
+        )
+        self.faculty = User.objects.create_user(
+            username='ownerwarn_faculty', email='ownerwarn_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Owner warn course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+
+    def test_warns_when_unassigning_owner_of_course_with_assignments(self):
+        LmsAssignment.objects.create(title='Live homework', course=self.course, created_by=self.faculty)
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': ''},
+            follow=True,
+        )
+        self.assertContains(res, 'only a superuser can manage or grade')
+
+    def test_no_warning_when_unassigning_owner_of_empty_course(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': ''},
+            follow=True,
+        )
+        self.assertNotContains(res, 'only a superuser can manage or grade')
+        self.assertContains(res, 'platform-wide (no faculty owner)')
+
+
+class CourseListShowsSetupCountsTests(TestCase):
+    """Fix: the courses list only ever showed student count — an empty, half-built course
+    looked identical to a fully-set-up one. Now also surfaces topic/assignment counts."""
+
+    def setUp(self):
+        self.faculty = User.objects.create_user(
+            username='setupcount_faculty', email='setupcount_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Setup count course', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        LmsTopic.objects.create(title='Setup topic', course=self.course)
+        LmsAssignment.objects.create(title='Setup assignment', course=self.course, created_by=self.faculty)
+
+    def test_courses_for_user_annotates_topic_and_assignment_counts(self):
+        course = services.courses_for_user(self.faculty).get(pk=self.course.pk)
+        self.assertEqual(course.topic_count, 1)
+        self.assertEqual(course.assignment_count, 1)
+
+    def test_courses_page_renders_counts(self):
+        self.client.force_login(self.faculty)
+        res = self.client.get(reverse('lms:courses'))
+        self.assertContains(res, '1 topic')
+        self.assertContains(res, '1 assignment')

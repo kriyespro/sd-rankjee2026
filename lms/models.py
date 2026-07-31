@@ -88,7 +88,10 @@ class LmsTopic(models.Model):
     description = models.TextField(blank=True)
     course = models.ForeignKey(
         LmsCourse,
-        on_delete=models.SET_NULL,
+        # CASCADE (not SET_NULL): a topic scoped to a course is that course's own curriculum
+        # structure — if the course is deleted it should go with it, not silently reappear as a
+        # platform-wide topic visible to every student on the platform.
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='topics',
@@ -130,7 +133,12 @@ class LmsAssignment(models.Model):
     )
     course = models.ForeignKey(
         LmsCourse,
-        on_delete=models.SET_NULL,
+        # CASCADE (not SET_NULL): if a course-scoped assignment's course is deleted, the
+        # assignment (and its submissions) must go with it — leaving it as an orphaned
+        # "platform-wide" assignment would silently expose it to every student on the platform.
+        # Explicitly choosing "platform-wide" on the form (course left empty) is unaffected —
+        # this only governs what happens when the referenced course row itself is deleted.
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name='assignments',

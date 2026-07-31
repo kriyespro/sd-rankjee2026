@@ -314,6 +314,11 @@ def assignment_detail(request, pk):
                 student=request.user,
                 status=LmsSubmission.Status.SUBMITTED,
             )
+            if my_sub is not None and my_sub.status != LmsSubmission.Status.SUBMITTED:
+                # Fix: resubmitting after "changes requested" (or editing an already-approved
+                # submission) left status untouched forever — it never came back into any
+                # pending-review queue for faculty to see the revision.
+                sub.status = LmsSubmission.Status.SUBMITTED
             services.save_submission_with_urls(
                 sub,
                 caption=submit_form.cleaned_data.get('caption', ''),
@@ -450,7 +455,10 @@ def comment(request, pk):
     )
     sub.user_reaction = user_reaction
     sub.link_rows = services.submission_link_rows(sub)
-    if services.is_lms_staff(request.user):
+    # Fix: was `is_lms_staff` (true for admin AND office AND any faculty account, regardless of
+    # whether they actually own this submission's course) — the review form's POST silently
+    # no-ops for anyone who isn't `can_manage_assignment`, which is confusing UI to show them.
+    if services.can_manage_assignment(request.user, sub.assignment):
         sub.review_form = LmsReviewForm(
             initial={
                 'marks': sub.marks,
@@ -537,7 +545,22 @@ def courses(request):
                 messages.success(request, f'{course.name} is now taught by {owner.get_username()}.')
             else:
                 course.owner = None
-                messages.success(request, f'{course.name} is now platform-wide (no faculty owner).')
+                # Fix: unassigning a course's owner used to give no signal that this leaves the
+                # course's existing assignments/students with nobody but a superuser able to
+                # manage or grade them going forward (can_manage_course/can_manage_assignment are
+                # faculty-owner-only) — warn instead of a plain success toast so it's a deliberate
+                # choice, not an accidental click.
+                has_data = course.assignments.exists() or course.enrollments.exists()
+                if has_data:
+                    messages.warning(
+                        request,
+                        f'{course.name} is now platform-wide (no faculty owner) — it still has '
+                        f'assignments and/or enrolled students, and only a superuser can manage or '
+                        f'grade them from here on. Reassign to another faculty instead if that '
+                        f'wasn\u2019t the intent.',
+                    )
+                else:
+                    messages.success(request, f'{course.name} is now platform-wide (no faculty owner).')
             course.save(update_fields=['owner'])
             return redirect('lms:courses')
 

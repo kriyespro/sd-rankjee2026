@@ -349,9 +349,11 @@ class LmsCourseMemberForm(forms.Form):
         # Accept "username · email@x.com" (picked from the <datalist>) as well as a bare
         # username or a bare email — whichever the admin/office user actually typed or pasted.
         candidate = raw.split('·')[0].strip() if '·' in raw else raw
-        user = User.objects.filter(username__iexact=candidate).first()
+        # Fix: previously matched ANY user by username/email — a typo could silently enroll a
+        # tutor, parent, or staff account into a course's student roster. Student-role only.
+        user = User.objects.filter(username__iexact=candidate, role='STUDENT').first()
         if not user and '@' in candidate:
-            user = User.objects.filter(email__iexact=candidate).first()
+            user = User.objects.filter(email__iexact=candidate, role='STUDENT').first()
         if not user:
             raise forms.ValidationError(f'No student found matching "{raw}".')
         return user

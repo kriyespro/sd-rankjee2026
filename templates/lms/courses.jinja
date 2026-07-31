@@ -82,7 +82,13 @@
                     </span>
                     {% endif %}
                 </h2>
-                <span class="text-[11px] font-bold text-slate-500">{{ c.enrollments.all()|length }} students</span>
+                <span class="flex items-center gap-2 text-[11px] font-bold text-slate-500">
+                    <span>{{ c.enrollments.all()|length }} students</span>
+                    <span class="text-slate-300">·</span>
+                    <span class="{% if not c.topic_count %}text-amber-600{% endif %}">{{ c.topic_count }} topic{{ 's' if c.topic_count != 1 else '' }}</span>
+                    <span class="text-slate-300">·</span>
+                    <span class="{% if not c.assignment_count %}text-amber-600{% endif %}">{{ c.assignment_count }} assignment{{ 's' if c.assignment_count != 1 else '' }}</span>
+                </span>
             </div>
             {% if is_admin_lms or is_office_lms %}
             <form method="post" class="mb-3 flex flex-wrap items-center gap-1.5">

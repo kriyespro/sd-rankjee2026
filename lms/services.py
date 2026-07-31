@@ -76,6 +76,13 @@ def is_lms_faculty(user) -> bool:
 
     if getattr(user, 'role', None) in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
         return True
+    # Fix: office (CITY_ADMIN/GLOBAL_ADMIN) accounts are also `is_staff=True`, so the legacy
+    # branch below used to also count them as "faculty" — an accidental overlap that made
+    # is_lms_staff() true for office everywhere, even in call sites that only meant to ask
+    # "is this a teacher" (e.g. attaching a grading form). Office has its own explicit role
+    # (is_lms_office) and never gets teaching rights, so it must never match here too.
+    if is_lms_office(user):
+        return False
     return bool(user.is_staff and not user.is_superuser)
 
 
@@ -151,7 +158,13 @@ def can_view_assignment(user, assignment: LmsAssignment) -> bool:
         return False
     if assignment.course_id is None:
         return is_lms_student(user)
-    return assignment.course_id in user_course_ids(user)
+    if assignment.course_id in user_course_ids(user):
+        return True
+    # Fix: a student unenrolled from the course (or whose course got deactivated) used to lose
+    # access to their OWN already-graded submission/feedback outright (404) — they keep read
+    # access to their own past work even after leaving; can_edit_submission still blocks them
+    # from editing/resubmitting it once they're no longer part of the course.
+    return LmsSubmission.objects.filter(assignment_id=assignment.pk, student_id=user.id).exists()
 
 
 def can_manage_assignment(user, assignment: LmsAssignment) -> bool:
@@ -207,6 +220,11 @@ def can_edit_submission(user, submission: LmsSubmission) -> bool:
         return False
     due = submission.assignment.due_at
     if due and timezone.now() > due:
+        return False
+    course_id = submission.assignment.course_id
+    if course_id and course_id not in user_course_ids(user):
+        # Pairs with can_view_assignment's read-only fallback above: still visible to a
+        # removed/deactivated-course student, but no longer editable/resubmittable.
         return False
     return True
 
@@ -818,7 +836,17 @@ def remove_course_member(course: LmsCourse, user) -> int:
 def courses_for_user(user) -> QuerySet[LmsCourse]:
     """Courses this user can see. Admin manages all; Office (read-only) also sees all for
     oversight; Faculty sees (and manages) only their own."""
-    qs = LmsCourse.objects.select_related('owner', 'catalog_course').prefetch_related('enrollments__user')
+    qs = (
+        LmsCourse.objects.select_related('owner', 'catalog_course')
+        .prefetch_related('enrollments__user')
+        # "How set up is this course?" at a glance on the courses list — fix: previously the
+        # only visible signal was student count, so an empty/half-built course looked identical
+        # to one nobody had ever touched.
+        .annotate(
+            assignment_count=Count('assignments', distinct=True),
+            topic_count=Count('topics', distinct=True),
+        )
+    )
     if is_lms_admin(user) or is_lms_office(user):
         return qs.order_by('name')
     return qs.filter(owner_id=user.id).order_by('name')

@@ -571,6 +571,61 @@
   classes are added to a `.jinja` template, re-run `npm run build:css` before it'll show up — the dev
   server does NOT compile Tailwind live.
 
+- [DONE] Full audit of the admin→faculty→course→student LMS flow ("check flauty - course -
+  student - admin flow, fix any bug, make easy and useful"). Ran a dedicated explore pass over
+  models/services/views/forms/templates, then fixed the highest-impact concrete findings:
+  - **Bug — resubmit after "changes requested" was stuck forever**: editing/resubmitting an
+    existing submission never reset `status`, so it never came back into any pending-review
+    queue for faculty to see the revision. `assignment_detail` now resets status to SUBMITTED
+    whenever a student edits an existing submission (covers changes-requested→resubmit and
+    approved→re-edit alike).
+  - **Bug — unenrolled/deactivated-course students 404'd out of their own graded history**:
+    `can_view_assignment` now keeps read-only access to a student's own past submission/marks/
+    remark even after they leave the course or it's deactivated; `can_edit_submission` was
+    tightened (course membership required) so they can't keep editing/resubmitting once gone —
+    net effect: view yes, edit no.
+  - **Bug — course delete silently leaked its content platform-wide**: `LmsAssignment.course`
+    and `LmsTopic.course` were `SET_NULL` — deleting a course orphaned its assignments/topics
+    into "platform-wide" (visible to every student on the platform instead of disappearing with
+    the course). Changed both to `CASCADE` (migration `lms/0012_assignment_topic_
+    cascade_on_course_delete.py` — **not yet applied, review + `migrate` per DB safety rule**).
+    Explicitly setting "platform-wide" via the assignment/topic form (course left empty) is
+    completely unaffected — this only governs what happens when the course row itself is deleted.
+  - **Bug — office accounts (is_staff=True) accidentally satisfied is_lms_faculty**: the legacy
+    "is_staff and not superuser" fallback in `is_lms_faculty()` didn't exclude Office (CITY_ADMIN/
+    GLOBAL_ADMIN), which is commonly also given `is_staff=True` in production for /sd/ access.
+    Added an explicit `is_lms_office(user) → return False` guard so Office can never accidentally
+    pick up faculty-only behavior anywhere `is_lms_faculty`/`is_lms_staff` is checked — this also
+    fixed a related minor bug where Office could see a (non-functional) grading form attached to
+    submission cards via the `comment` HTMX endpoint; that endpoint was also switched from the
+    blanket `is_lms_staff` check to the precise `can_manage_assignment` check as defense in depth.
+  - **Bug — "assign a student" form accepted any role**: `LmsCourseMemberForm.clean_username`
+    matched any user by username/email — a typo could enroll a tutor/parent/staff account into a
+    course's student roster. Restricted the lookup to `role='STUDENT'`.
+  - **UX — reassigning a course to "no owner" gave no warning**: if the course still has
+    assignments/students, only a superuser can manage/grade it once ownerless (faculty-only
+    `can_manage_*` checks). The `reassign_owner` action now shows a warning (not a plain success
+    toast) when unassigning the owner of a course that still has live data.
+  - **UX — courses list only showed a student count**: an empty, never-touched course looked
+    identical to a fully-built one. `courses_for_user()` now annotates `topic_count` and
+    `assignment_count`; the courses list highlights zero counts in amber so it's obvious which
+    courses still need topics/assignments.
+  - Added ~24 new regression tests across 7 new test classes (`ResubmitAfterChangesRequestedTests`,
+    `RemovedStudentKeepsReadOnlyAccessTests`, `OfficeIsNeverCountedAsFacultyTests`,
+    `CourseMemberFormStudentRoleOnlyTests`, `CourseDeleteCascadesTests`,
+    `ReassignOwnerToPlatformWideWarnsTests`, `CourseListShowsSetupCountsTests`). Full suite now
+    110/110 passing (was 86/86 before this pass). `makemigrations --check` clean except for the
+    one new reviewed migration above. Rebuilt `static/css/app.css`.
+  - Deliberately **not** touched this pass (logged for a future pass, not bugs — larger scope/
+    lower urgency): no delete-course UI (only via /sd/), no post-create course edit UI, no
+    pagination on the courses list, no bulk grading, no per-course pending-review view, no
+    max students/courses limits, parent family page doesn't yet surface LMS pending/graded work
+    (only course names) — see the audit transcript for the full findings list if any of these
+    become priorities.
+  - **NOT YET migrated on production** — review `lms/migrations/
+    0012_assignment_topic_cascade_on_course_delete.py` (AlterField only, on_delete behavior
+    change — no data touched by the migration itself) and run `migrate` there.
+
 ### Completed - Phase 2 (Growth) Web Features ✅
 - Leaderboard & XP points display
 - Gamification badges (first test, first earn, referral, streaks)
