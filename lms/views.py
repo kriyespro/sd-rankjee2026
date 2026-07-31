@@ -516,6 +516,22 @@ def courses(request):
             m.delete()
             messages.success(request, 'Member removed.')
             return redirect('lms:courses')
+        elif action == 'reassign_owner':
+            # Fix: previously the only way to assign/change a course's faculty owner was at
+            # creation time — there was no way to reassign an *existing* course. Admin/office only.
+            if not (is_admin or is_office):
+                return HttpResponseForbidden('Admin/office only.')
+            course = _visible_course_or_404(request.POST.get('course_id'))
+            owner_id = request.POST.get('owner_id') or ''
+            if owner_id:
+                owner = get_object_or_404(services.lms_owner_queryset(), pk=owner_id)
+                course.owner = owner
+                messages.success(request, f'{course.name} is now taught by {owner.get_username()}.')
+            else:
+                course.owner = None
+                messages.success(request, f'{course.name} is now platform-wide (no faculty owner).')
+            course.save(update_fields=['owner'])
+            return redirect('lms:courses')
 
     course_list = list(services.courses_for_user(request.user))
     unassigned_purchases = services.purchases_missing_lms_enrollment(limit=10) if (is_admin or is_office) else []
@@ -535,6 +551,7 @@ def courses(request):
             # Faculty never sees another student's email in the assign-student suggestions —
             # only admin/office, who need it to disambiguate students, get the email shown.
             'student_options': services.student_directory_options(include_email=(is_admin or is_office)),
+            'owner_options': services.lms_owner_queryset() if (is_admin or is_office) else [],
             'crumbs': services.lms_crumbs(services.crumb('Courses')),
         },
     )

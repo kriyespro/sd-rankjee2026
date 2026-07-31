@@ -60,6 +60,87 @@
         </div>
     </section>
 
+    {# ============ FACULTY & COURSE QUICK SETUP ============ #}
+    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-100 bg-indigo-50/40 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Faculty &amp; course quick setup</h2>
+            <a href="{{ url('lms:courses') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Manage all courses →</a>
+        </div>
+        <div class="p-5 grid gap-5 md:grid-cols-2">
+            <div>
+                <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">1. Create a course &amp; assign faculty</h3>
+                <form method="post" action="{{ url('lms:courses') }}" class="space-y-2">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="create_course">
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course name</label>
+                        {{ lms_course_form.name }}
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Faculty</label>
+                        {{ lms_course_form.owner }}
+                    </div>
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        {{ lms_course_form.is_active }} Active
+                    </label>
+                    <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Create course</button>
+                </form>
+            </div>
+            <div>
+                <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">2. Assign a student to an existing course</h3>
+                <form method="post" action="{{ url('lms:courses') }}" class="space-y-2">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="add_member">
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course</label>
+                        <select name="course_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                            <option value="">Pick a course…</option>
+                            {% for c in lms_quick_courses %}
+                            <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} — {{ c.owner.get_username() }}{% else %} — platform-wide{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Student</label>
+                        <input type="text" name="username" list="lms-dash-student-options" placeholder="Student username or email"
+                               class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    </div>
+                    <datalist id="lms-dash-student-options">
+                        {% for s in lms_student_options %}
+                        <option value="{{ s.username }}{% if s.email %} · {{ s.email }}{% endif %}">
+                        {% endfor %}
+                    </datalist>
+                    <button type="submit" class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Assign student</button>
+                </form>
+            </div>
+        </div>
+        {% if lms_quick_courses %}
+        <div class="border-t border-slate-100 px-5 py-4">
+            <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">Reassign an existing course's faculty</h3>
+            <div class="grid gap-2">
+                {% for c in lms_quick_courses %}
+                <form method="post" action="{{ url('lms:courses') }}" class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="reassign_owner">
+                    <input type="hidden" name="course_id" value="{{ c.pk }}">
+                    <span class="text-xs font-bold text-slate-800 min-w-[8rem]">{{ c.name }}</span>
+                    <select name="owner_id" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">
+                        <option value="">Platform-wide (no owner)</option>
+                        {% for o in lms_owner_options %}
+                        <option value="{{ o.pk }}" {% if c.owner_id == o.pk %}selected{% endif %}>{{ o.get_username() }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="text-[11px] text-slate-400">{{ c.enrollments.all()|length }} students</span>
+                    <button type="submit" class="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Save</button>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <p class="px-5 pb-4 text-xs text-slate-500">No courses yet — create the first one above.</p>
+        {% endif %}
+    </section>
+
     {# ============ REVENUE ============ #}
     <section class="mb-8">
         <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Revenue collected (real payments, SUCCESS only)</h2>

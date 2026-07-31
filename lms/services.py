@@ -771,6 +771,21 @@ def student_directory_options(limit: int = 300, *, include_email: bool = True) -
     return rows
 
 
+def lms_owner_queryset():
+    """Users eligible to own an `LmsCourse` — staff, explicitly-flagged LMS faculty, or a
+    TUTOR/FACULTY role. Shared by `LmsCourseForm` (create) and the `reassign_owner` action /
+    superadmin quick-assign panel (existing course), so the two paths never drift apart."""
+    from django.db.models import Q as _Q
+
+    from users.models import CustomUser
+
+    return (
+        CustomUser.objects.filter(_Q(is_staff=True) | _Q(is_lms_faculty=True) | _Q(role__in=['TUTOR', 'FACULTY']))
+        .distinct()
+        .order_by('username')
+    )
+
+
 def add_course_member(course: LmsCourse, user) -> LmsCourseEnrollment:
     obj, _ = LmsCourseEnrollment.objects.get_or_create(course=course, user=user)
     return obj

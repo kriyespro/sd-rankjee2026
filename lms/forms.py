@@ -304,8 +304,6 @@ class LmsCourseForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        from django.db.models import Q
-
         from . import services
 
         self.user = user
@@ -316,9 +314,7 @@ class LmsCourseForm(forms.ModelForm):
         if can_assign_owner:
             # Any staff account, any flagged faculty, or any Tutor/Faculty-role marketplace
             # account (same role for LMS purposes) can be assigned to own/teach a course.
-            self.fields['owner'].queryset = User.objects.filter(
-                Q(is_staff=True) | Q(is_lms_faculty=True) | Q(role__in=['TUTOR', 'FACULTY'])
-            ).distinct().order_by('username')
+            self.fields['owner'].queryset = services.lms_owner_queryset()
             self.fields['owner'].required = False
             self.fields['owner'].empty_label = 'Platform-wide (no single owner)'
         else:

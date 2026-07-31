@@ -9,6 +9,27 @@
 - None
 
 ### Completed recently
+- [DONE] "Make an easy students & courses assign method to faculty in /admin for superuser":
+  1. **Closed a real gap** — a course's faculty owner could previously only be set at *creation*
+     time (`LmsCourseForm`); there was no way to reassign an existing course. Added a new
+     `reassign_owner` POST action to `lms/views.py::courses()` (admin/office only, validated
+     against the same `lms_owner_queryset()` used by the create form — via a new shared
+     `lms/services.py::lms_owner_queryset()` helper so create and reassign never drift). Wired
+     an inline "Faculty: [dropdown] [Save]" control into `templates/lms/courses.jinja` per
+     course (admin/office only; faculty still just see a static "Owner: X" label).
+  2. **New "Faculty & course quick setup" panel directly on the superadmin Command Center**
+     (`/admin/`, `admin_dashboard_v2.jinja`) — no more hunting for `/admin/lms/courses/` to do
+     the 3 most common LMS setup actions:
+     - Create a course + assign a faculty owner in one form
+     - Assign a student to any existing course (course dropdown + student autocomplete)
+     - Reassign the faculty on any of the most recent 8 courses inline
+     All three POST straight to the existing, already-tested `lms:courses` view/actions (no new
+     endpoint on the heavily-trafficked `dashboard:index` view — kept that view GET-only to
+     minimize production risk) and land back on `/admin/lms/courses/` with a success message.
+  Added `CourseOwnerReassignmentTests` (7 tests: admin/office can reassign, faculty forbidden
+  even for their own course, unassign to platform-wide, dropdown visibility gating). Full `lms
+  dashboard` suite: 45 tests green. Verified live: `/admin/` renders the new panel with all 3
+  actions present for a superuser. Rebuilt `app.css` for the new panel's Tailwind classes.
 - [DONE] Tightened LMS scoping further per explicit request: "admin creates courses -> faculty
   assigned to that course -> students assigned to that course -> in faculty/tutor dashboard and
   LMS show only that course's topic". Two parts:

@@ -477,3 +477,94 @@ class TopicAndStudentPrivacyPermissionTests(TestCase):
             self.client.force_login(user)
             res = self.client.get(reverse('lms:courses'))
             self.assertContains(res, 'topics_student_secret@example.com')
+
+
+class CourseOwnerReassignmentTests(TestCase):
+    """Fix: "make an easy students & courses assign method to faculty in /admin for superuser" —
+    previously a course's faculty owner could only be set at creation time; there was no way to
+    reassign an *existing* course to a different (or no) faculty. Adds the `reassign_owner`
+    action, admin/office only."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='reassign_admin', email='reassign_admin@example.com', password='StrongPass!123',
+        )
+        self.office = User.objects.create_user(
+            username='reassign_office', email='reassign_office@example.com',
+            password='StrongPass!123', role='CITY_ADMIN',
+        )
+        self.faculty_a = User.objects.create_user(
+            username='reassign_faculty_a', email='reassign_faculty_a@example.com', password='StrongPass!123',
+        )
+        # Must already qualify as a valid course owner (lms_owner_queryset) to be a legitimate
+        # reassignment target — matches the real dropdown, which only ever lists staff/flagged
+        # faculty/TUTOR-or-FACULTY-role accounts, never an arbitrary student.
+        self.faculty_b = User.objects.create_user(
+            username='reassign_faculty_b', email='reassign_faculty_b@example.com',
+            password='StrongPass!123', role='FACULTY',
+        )
+        self.course = LmsCourse.objects.create(name='Reassignable batch', owner=self.faculty_a)
+        self.faculty_a.refresh_from_db()
+
+    def test_admin_can_reassign_course_owner(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': self.faculty_b.pk},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.owner_id, self.faculty_b.pk)
+
+    def test_office_can_reassign_course_owner(self):
+        self.client.force_login(self.office)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': self.faculty_b.pk},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.owner_id, self.faculty_b.pk)
+
+    def test_admin_can_unassign_course_owner(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': ''},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.course.refresh_from_db()
+        self.assertIsNone(self.course.owner_id)
+
+    def test_faculty_cannot_reassign_someone_elses_course_owner(self):
+        self.client.force_login(self.faculty_b)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': self.faculty_b.pk},
+        )
+        self.assertEqual(res.status_code, 403)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.owner_id, self.faculty_a.pk)
+
+    def test_faculty_cannot_reassign_own_course_owner(self):
+        """Even a faculty who owns the course can't hand it off — only admin/office can."""
+        self.client.force_login(self.faculty_a)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'reassign_owner', 'course_id': self.course.pk, 'owner_id': self.faculty_b.pk},
+        )
+        self.assertEqual(res.status_code, 403)
+        self.course.refresh_from_db()
+        self.assertEqual(self.course.owner_id, self.faculty_a.pk)
+
+    def test_courses_page_shows_owner_dropdown_for_admin_and_office(self):
+        for user in (self.admin, self.office):
+            self.client.force_login(user)
+            res = self.client.get(reverse('lms:courses'))
+            self.assertContains(res, 'name="owner_id"')
+            self.assertContains(res, 'reassign_owner')
+
+    def test_courses_page_hides_owner_dropdown_for_faculty(self):
+        self.client.force_login(self.faculty_a)
+        res = self.client.get(reverse('lms:courses'))
+        self.assertNotContains(res, 'name="owner_id"')

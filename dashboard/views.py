@@ -1822,6 +1822,15 @@ def index(request):
         # on disk untouched as a rollback reference but are no longer rendered from here.
         from . import services as dash_services
         from hometutor.models import DemoRequest
+        from lms import services as lms_services
+        from lms.forms import LmsCourseForm
+
+        # Fix: "make an easy students & courses assign method to faculty in /admin for
+        # superuser" — a compact create-course/assign-faculty/assign-student panel right on the
+        # Command Center, so a superuser never has to hunt for /admin/lms/courses/ to do the
+        # three most common LMS setup actions. Forms POST straight to lms:courses (same
+        # validated actions used on that page) and land back there with a success message.
+        lms_quick_courses = list(lms_services.courses_for_user(request.user).order_by('-created_at')[:8])
 
         pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').select_related(
             'user', 'task'
@@ -1862,6 +1871,10 @@ def index(request):
                 'pending_submissions': pending_submissions,
                 'latest_demo_requests': latest_demo_requests,
                 'latest_tutor_requests': latest_tutor_requests,
+                'lms_course_form': LmsCourseForm(user=request.user),
+                'lms_quick_courses': lms_quick_courses,
+                'lms_owner_options': list(lms_services.lms_owner_queryset()),
+                'lms_student_options': lms_services.student_directory_options(include_email=True),
             },
         )
 

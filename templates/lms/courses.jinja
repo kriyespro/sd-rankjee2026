@@ -68,10 +68,10 @@
     <div class="space-y-4">
         {% for c in courses %}
         <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <h2 class="text-sm font-black text-slate-900">{{ c.name }}
                     {% if not c.is_active %}<span class="ml-2 text-[10px] font-black uppercase text-rose-600">Inactive</span>{% endif %}
-                    {% if is_admin_lms or is_office_lms %}
+                    {% if not (is_admin_lms or is_office_lms) %}
                     <span class="ml-2 text-[10px] font-bold uppercase text-slate-400">
                         {% if c.owner %}Owner: {{ c.owner.get_username() }}{% else %}Platform-wide{% endif %}
                     </span>
@@ -84,6 +84,21 @@
                 </h2>
                 <span class="text-[11px] font-bold text-slate-500">{{ c.enrollments.all()|length }} students</span>
             </div>
+            {% if is_admin_lms or is_office_lms %}
+            <form method="post" class="mb-3 flex flex-wrap items-center gap-1.5">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <input type="hidden" name="action" value="reassign_owner">
+                <input type="hidden" name="course_id" value="{{ c.pk }}">
+                <label class="text-[10px] font-black uppercase tracking-wider text-slate-400">Faculty:</label>
+                <select name="owner_id" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">
+                    <option value="">Platform-wide (no owner)</option>
+                    {% for o in owner_options %}
+                    <option value="{{ o.pk }}" {% if c.owner_id == o.pk %}selected{% endif %}>{{ o.get_username() }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Save</button>
+            </form>
+            {% endif %}
             <ul class="mb-3 space-y-1">
                 {% for m in c.enrollments.all() %}
                 <li class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
