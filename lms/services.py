@@ -85,15 +85,27 @@ def is_lms_staff(user) -> bool:
 
 
 def is_lms_office(user) -> bool:
-    """Office / ops (CITY_ADMIN, GLOBAL_ADMIN) — platform-wide READ-ONLY oversight for
-    support & QA (fix-rankjee.md §4.2). Never grants create/edit/review rights — those stay
-    gated by is_lms_admin/is_lms_faculty via can_manage_course/can_manage_assignment.
+    """Office / ops (CITY_ADMIN, GLOBAL_ADMIN) — platform-wide oversight + setup for support &
+    QA (fix-rankjee.md §4.2). Office is the "sets up who teaches what" role: they may create
+    courses, assign a faculty/tutor as owner, and manage enrollment (see can_manage_topics,
+    LmsCourseForm, courses()). They never get *teaching* rights — creating/editing/grading
+    assignments stays gated by is_lms_admin/is_lms_faculty via can_manage_course/
+    can_manage_assignment.
     """
     if not user or not user.is_authenticated:
         return False
     from users.models import CustomUser
 
     return getattr(user, 'role', None) in (CustomUser.Role.CITY_ADMIN, CustomUser.Role.GLOBAL_ADMIN)
+
+
+def can_manage_topics(user) -> bool:
+    """Topics (curriculum categories) are managed centrally by Admin/Office, not by individual
+    faculty — a faculty creating an ad-hoc topic per course would fragment the same subject
+    into duplicates across every batch. Faculty still pick from existing topics when creating
+    an assignment; they just can't mint new ones.
+    """
+    return is_lms_admin(user) or is_lms_office(user)
 
 
 def is_lms_student(user) -> bool:
@@ -734,18 +746,27 @@ def _notify_status(submission: LmsSubmission, *, old_status: str) -> None:
     _lms_send(submission.student, 'status', body, _submission_link(submission), ref_id=submission.pk)
 
 
-def student_directory_options(limit: int = 300) -> list[dict]:
-    """Username + email for the "Add student" typeahead on /admin/lms/courses/ (fix: make
-    assigning a student to a faculty simple — no more hunting down an exact username by memory).
-    Capped and STUDENT-role-only to keep the page light; if the platform grows past this, swap
-    for an HTMX live-search endpoint like hometutor.quick_tutor_search."""
+def student_directory_options(limit: int = 300, *, include_email: bool = True) -> list[dict]:
+    """Username (+ optional email) for the "Assign student" typeahead on /admin/lms/courses/
+    (fix: make assigning a student to a faculty simple — no more hunting down an exact username
+    by memory). Capped and STUDENT-role-only to keep the page light; if the platform grows past
+    this, swap for an HTMX live-search endpoint like hometutor.quick_tutor_search.
+
+    `include_email=False` (used for faculty/tutor callers) strips email from every row so a
+    faculty browsing the suggestion list never sees another student's email address — only
+    admin/office, who actually need it to disambiguate same-username-ish students, get it.
+    """
     from users.models import CustomUser
 
-    return list(
+    rows = list(
         CustomUser.objects.filter(role=CustomUser.Role.STUDENT)
         .order_by('username')
         .values('username', 'email')[:limit]
     )
+    if not include_email:
+        for row in rows:
+            row['email'] = ''
+    return rows
 
 
 def add_course_member(course: LmsCourse, user) -> LmsCourseEnrollment:

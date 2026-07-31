@@ -183,27 +183,47 @@ class OfficeOversightTests(TestCase):
         self.assertNotContains(res, reverse('lms:assignment_create'))
 
     def test_office_can_view_courses_page_and_assign_students(self):
-        """Office is enrollment-only, not fully read-only (fix: "assign student to faculty"
-        is the one action Office needs, so they can now add/remove course members)."""
+        """Office sets up who teaches what (fix: "faculty will be assigned to that course" by
+        admin/office) — they can create a course, assign a faculty/tutor as owner, and manage
+        enrollment. They still never touch assignments/grading."""
         self.client.force_login(self.city_admin)
         res = self.client.get(reverse('lms:courses'))
         self.assertEqual(res.status_code, 200)
         body = res.content.decode()
         self.assertIn('Office Oversight Batch', body)
-        self.assertIn('enrollment only', body)
+        self.assertIn('course & student setup', body)
         self.assertIn('Assign student', body)
         self.assertIn('name="action" value="remove_member"', body)
-        # But never course creation — that stays admin/faculty-only.
-        self.assertNotIn('name="action" value="create_course"', body)
+        # Office CAN create courses + assign an owner now.
+        self.assertIn('name="action" value="create_course"', body)
+        self.assertContains(res, 'Owner (faculty/tutor)')
 
-    def test_office_cannot_post_create_course(self):
-        self.client.force_login(self.city_admin)
+    def test_office_can_create_course_and_assign_faculty_owner(self):
+        """The actual "admin/office assigns faculty to that course" flow."""
+        self.client.force_login(self.global_admin)
+        other_faculty = User.objects.create_user(
+            username='office_assigns_owner', email='office_assigns_owner@example.com',
+            password='StrongPass!123', role='FACULTY',
+        )
         res = self.client.post(
             reverse('lms:courses'),
-            {'action': 'create_course', 'name': 'Sneaky office course', 'is_active': 'on'},
+            {
+                'action': 'create_course',
+                'name': 'Office-created batch',
+                'owner': other_faculty.pk,
+                'is_active': 'on',
+            },
         )
-        self.assertEqual(res.status_code, 403)
-        self.assertFalse(LmsCourse.objects.filter(name='Sneaky office course').exists())
+        self.assertEqual(res.status_code, 302)
+        course = LmsCourse.objects.get(name='Office-created batch')
+        self.assertEqual(course.owner_id, other_faculty.pk)
+
+    def test_office_cannot_set_catalog_fields_when_creating_course(self):
+        """Monetization-linked catalog fields stay admin-only even though office can now
+        create courses — the form simply never exposes those fields to office."""
+        self.client.force_login(self.city_admin)
+        res = self.client.get(reverse('lms:courses'))
+        self.assertNotContains(res, 'Paid course (/courses/)')
 
     def test_office_can_add_and_remove_course_members(self):
         """The actual "assign student to faculty" flow — Office adds a student to any
@@ -342,3 +362,89 @@ class FacultyOwnStudentScopeTests(TestCase):
 
         stats_a = services.admin_home_stats(self.faculty_a)
         self.assertEqual(stats_a['students_submitted'], 1)
+
+
+class TopicAndStudentPrivacyPermissionTests(TestCase):
+    """Fix: (1) topics are curriculum categories admin/office manage centrally — faculty pick
+    from the existing list only, never mint new ones; (2) admin/office can now create a course
+    AND assign a faculty/tutor to teach it ("faculty will be assigned to that course"); (3) a
+    faculty/tutor never sees another student's email address anywhere in the LMS UI."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='topics_admin', email='topics_admin@example.com', password='StrongPass!123',
+        )
+        self.office = User.objects.create_user(
+            username='topics_office', email='topics_office@example.com',
+            password='StrongPass!123', role='CITY_ADMIN',
+        )
+        self.faculty = User.objects.create_user(
+            username='topics_faculty', email='topics_faculty@example.com', password='StrongPass!123',
+        )
+        self.course = LmsCourse.objects.create(name='Topics test batch', owner=self.faculty)
+        self.faculty.refresh_from_db()
+        self.student = User.objects.create_user(
+            username='topics_student', email='topics_student_secret@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course, user=self.student)
+        self.topic = LmsTopic.objects.create(title='Existing Topic')
+
+    def test_faculty_cannot_create_or_edit_topics(self):
+        self.client.force_login(self.faculty)
+        res = self.client.get(reverse('lms:topic_create'))
+        self.assertEqual(res.status_code, 403)
+        res = self.client.get(reverse('lms:topic_edit', kwargs={'pk': self.topic.pk}))
+        self.assertEqual(res.status_code, 403)
+
+    def test_office_can_create_and_edit_topics(self):
+        self.client.force_login(self.office)
+        res = self.client.get(reverse('lms:topic_create'))
+        self.assertEqual(res.status_code, 200)
+        res = self.client.post(reverse('lms:topic_create'), {'title': 'Office-made topic', 'description': ''})
+        self.assertEqual(res.status_code, 302)
+        self.assertTrue(LmsTopic.objects.filter(title='Office-made topic').exists())
+        res = self.client.get(reverse('lms:topic_edit', kwargs={'pk': self.topic.pk}))
+        self.assertEqual(res.status_code, 200)
+
+    def test_admin_can_create_topics(self):
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(reverse('lms:topic_create')).status_code, 200)
+
+    def test_faculty_assignment_form_has_no_create_new_topic_option(self):
+        self.client.force_login(self.faculty)
+        res = self.client.get(reverse('lms:assignment_create'))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'name="topic_mode"')
+        self.assertNotContains(res, 'name="new_topic_title"')
+
+    def test_admin_assignment_form_has_create_new_topic_option(self):
+        self.client.force_login(self.admin)
+        res = self.client.get(reverse('lms:assignment_create'))
+        self.assertContains(res, 'name="topic_mode"')
+
+    def test_office_can_create_course_and_assign_faculty_owner(self):
+        other_faculty = User.objects.create_user(
+            username='office_assigns_owner', email='office_assigns_owner@example.com',
+            password='StrongPass!123', role='FACULTY',
+        )
+        self.client.force_login(self.office)
+        res = self.client.post(
+            reverse('lms:courses'),
+            {'action': 'create_course', 'name': 'Office-created batch', 'owner': other_faculty.pk, 'is_active': 'on'},
+        )
+        self.assertEqual(res.status_code, 302)
+        course = LmsCourse.objects.get(name='Office-created batch')
+        self.assertEqual(course.owner_id, other_faculty.pk)
+
+    def test_faculty_cannot_see_student_email_in_courses_datalist(self):
+        self.client.force_login(self.faculty)
+        res = self.client.get(reverse('lms:courses'))
+        self.assertEqual(res.status_code, 200)
+        self.assertNotContains(res, 'topics_student_secret@example.com')
+
+    def test_admin_and_office_see_student_email_in_courses_datalist(self):
+        for user in (self.admin, self.office):
+            self.client.force_login(user)
+            res = self.client.get(reverse('lms:courses'))
+            self.assertContains(res, 'topics_student_secret@example.com')

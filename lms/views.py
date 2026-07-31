@@ -191,8 +191,8 @@ def assignment_edit(request, pk):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def topic_create(request):
-    if not services.is_lms_staff(request.user):
-        return HttpResponseForbidden('Staff only.')
+    if not services.can_manage_topics(request.user):
+        return HttpResponseForbidden('Admin/office only.')
     form = LmsTopicForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         topic = form.save()
@@ -213,8 +213,8 @@ def topic_create(request):
 @login_required
 @require_http_methods(['GET', 'POST'])
 def topic_edit(request, pk):
-    if not services.is_lms_staff(request.user):
-        return HttpResponseForbidden('Staff only.')
+    if not services.can_manage_topics(request.user):
+        return HttpResponseForbidden('Admin/office only.')
     topic = get_object_or_404(LmsTopic, pk=pk)
     form = LmsTopicForm(request.POST or None, instance=topic)
     if request.method == 'POST' and form.is_valid():
@@ -254,6 +254,7 @@ def topic_detail(request, pk):
             'topic': topic,
             'assignments': assignments,
             'is_staff_lms': services.is_lms_staff(request.user),
+            'can_manage_topics': services.can_manage_topics(request.user),
             'crumbs': services.lms_crumbs(services.crumb(topic.title)),
         },
     )
@@ -471,10 +472,11 @@ def courses(request):
         return HttpResponseForbidden('Staff only.')
 
     is_admin = services.is_lms_admin(request.user)
-    # Enrollment (assigning a student to a faculty's course) is the one action Office can do —
-    # everything else (creating a course/assignment, editing ownership) stays admin+faculty-only.
+    # Office sets up who teaches what: create a course + assign a faculty/tutor as owner, and
+    # manage enrollment. Only actual teaching (assignments, grading) stays faculty/admin-only.
+    can_create_course = is_manager or is_office
     can_manage_enrollment = is_manager or is_office
-    course_form = LmsCourseForm(user=request.user) if is_manager else None
+    course_form = LmsCourseForm(user=request.user) if can_create_course else None
     member_form = LmsCourseMemberForm() if can_manage_enrollment else None
 
     def _visible_course_or_404(course_id):
@@ -487,12 +489,14 @@ def courses(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         if action == 'create_course':
-            if not is_manager:
-                return HttpResponseForbidden('Only faculty/admin can create courses.')
+            if not can_create_course:
+                return HttpResponseForbidden('Only faculty/admin/office can create courses.')
             course_form = LmsCourseForm(request.POST, user=request.user)
             if course_form.is_valid():
                 course = course_form.save(commit=False)
-                if not is_admin:
+                # Faculty self-serving their own course always own it; admin/office pick an
+                # owner (or leave it platform-wide) via the form's owner field.
+                if not (is_admin or is_office):
                     course.owner = request.user
                 course.save()
                 messages.success(request, 'Course created.')
@@ -526,8 +530,11 @@ def courses(request):
             'is_admin_lms': is_admin,
             'is_office_lms': is_office,
             'can_manage_enrollment': can_manage_enrollment,
+            'can_create_course': can_create_course,
             'unassigned_purchases': unassigned_purchases,
-            'student_options': services.student_directory_options(),
+            # Faculty never sees another student's email in the assign-student suggestions —
+            # only admin/office, who need it to disambiguate students, get the email shown.
+            'student_options': services.student_directory_options(include_email=(is_admin or is_office)),
             'crumbs': services.lms_crumbs(services.crumb('Courses')),
         },
     )

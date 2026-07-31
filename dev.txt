@@ -9,6 +9,46 @@
 - None
 
 ### Completed recently
+- [DONE] Reworked the LMS course setup pipeline per explicit request: "admin or office adds
+  topic → faculty assigned to that course → student assigned to that course and faculty
+  (faculty/tutor cannot see students' email)". Three changes, all in `lms/`:
+  1. **Topics are admin/office-managed curriculum** — `lms/services.py::can_manage_topics(user)`
+     (`is_lms_admin or is_lms_office`) now gates `topic_create`/`topic_edit` (was `is_lms_staff`,
+     which wrongly let faculty mint topics; Office was wrongly blocked). `LmsAssignmentForm` now
+     deletes `topic_mode`/`new_topic_title`/`new_topic_description` for non-admin users, so
+     faculty creating an assignment only ever pick from the existing topic list — the "Create
+     new topic" radio + inline fields only render for admin (`assignment_form.jinja` branches on
+     `form.topic_mode` existing). `home.jinja`'s "+ New"/"Edit" topic links and
+     `topic_detail.jinja`'s "Edit topic" link switched from `is_staff_lms` to
+     `is_admin_lms or is_office_lms` (split from the "New assignment" link, which stays
+     `is_staff_lms`-gated since that's still faculty's job).
+  2. **Office can now create a course AND assign a faculty/tutor as its owner** — previously
+     Office was fully blocked from `create_course`; only superuser-admin could set `owner`
+     (faculty could only self-serve their own course, never assign someone else's). Renamed the
+     `courses()` view's gate to `can_create_course = is_manager or is_office`; the owner-forced-
+     to-self branch is now `if not (is_admin or is_office)`. `LmsCourseForm.__init__` splits
+     `can_assign_owner` (admin OR office — gets the owner picker) from `is_admin` (admin only —
+     gets the monetization-linked `catalog_course`/`is_default_for_catalog` fields, which stay
+     off-limits to office). `courses.jinja`'s create-course form now shows for
+     `can_create_course`; copy updated ("Office · course & student setup" /
+     "Create a course and assign a faculty/tutor to teach it, then assign or remove students
+     below.").
+  3. **Faculty/tutor never sees another student's email** — the "Assign student" datalist on
+     `/admin/lms/courses/` was showing `username · email` to EVERYONE with enrollment rights,
+     including faculty (a real PII leak — faculty had no business need to see student emails,
+     only admin/office need it to disambiguate similar usernames). `student_directory_options`
+     gained `include_email: bool` (default True); `courses()` view now calls it with
+     `include_email=(is_admin or is_office)`, stripping email for faculty. Backend email lookup
+     fallback in `LmsCourseMemberForm.clean_username` is untouched — a faculty who already knows
+     a student's email can still type it in and it resolves; they just never see it *suggested*.
+  Added `lms/tests.py::TopicAndStudentPrivacyPermissionTests` (9 tests: faculty blocked from
+  topic create/edit, office+admin allowed, faculty's assignment form has no create-new-topic
+  option (admin's does), office can create a course + assign a faculty owner, faculty never
+  sees a student's email in the datalist while admin/office do). Updated the two
+  `OfficeOversightTests` cases that previously asserted office *couldn't* create courses (now
+  the opposite is true by design) + added a catalog-fields-hidden-from-office check. Full `lms`
+  suite: 35 tests green. Full `lms dashboard hometutor users tutor_study` suite: 62 tests green.
+  No CSS rebuild needed — only reused existing Tailwind utility classes.
 - [FIXED] Two more Tutor/Faculty gaps reported after the nav-unification pass:
   1. **Top nav missing LMS link for TUTOR/FACULTY** — `templates/base.jinja`'s desktop nav
      `current_role == 'TUTOR'` branch only had Demo Inbox/My Listing/Marketplace (marketplace-only);

@@ -76,7 +76,7 @@
         <aside class="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-2">
                 <h2 class="text-[10px] font-black uppercase tracking-widest text-slate-500">Topics</h2>
-                {% if is_staff_lms %}
+                {% if is_admin_lms or is_office_lms %}
                 <a href="{{ url('lms:topic_create') }}" class="rounded bg-indigo-600 px-2 py-0.5 text-[9px] font-black uppercase text-white hover:bg-indigo-500">+ New</a>
                 {% endif %}
             </div>
@@ -95,7 +95,7 @@
                                     <span class="mt-0.5 block text-[10px] text-slate-500">{{ item.assignments|length }} asgn</span>
                                 </span>
                             </a>
-                            {% if is_staff_lms and item.topic %}
+                            {% if (is_admin_lms or is_office_lms) and item.topic %}
                             <a href="{{ url('lms:topic_edit', pk=item.topic.pk) }}" class="mr-1.5 mt-2 shrink-0 px-1.5 py-0.5 text-[8px] font-black uppercase text-slate-400 hover:text-indigo-600">Edit</a>
                             {% endif %}
                         </div>

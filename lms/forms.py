@@ -145,9 +145,22 @@ class LmsAssignmentForm(forms.ModelForm):
             self.fields['course'].empty_label = 'Choose one of your courses…'
         self.fields['course'].required = False
 
+        # Topics are admin/office-managed curriculum categories (services.can_manage_topics) —
+        # faculty pick from the existing list only, never mint a new one inline here.
+        if not self._is_admin:
+            del self.fields['topic_mode']
+            del self.fields['new_topic_title']
+            del self.fields['new_topic_description']
+
         self.fields['due_at'].required = False
         self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
-        if self.instance and self.instance.pk and self.instance.topic_id and not self.data:
+        if (
+            self._is_admin
+            and self.instance
+            and self.instance.pk
+            and self.instance.topic_id
+            and not self.data
+        ):
             self.fields['topic_mode'].initial = self.TOPIC_EXISTING
 
     def clean(self):
@@ -297,7 +310,10 @@ class LmsCourseForm(forms.ModelForm):
 
         self.user = user
         is_admin = bool(user and services.is_lms_admin(user))
-        if is_admin:
+        # Office sets up who teaches what: they assign a faculty/tutor as owner when creating a
+        # course, same as admin — they just never get the monetization-linked catalog fields.
+        can_assign_owner = is_admin or bool(user and services.is_lms_office(user))
+        if can_assign_owner:
             # Any staff account, any flagged faculty, or any Tutor/Faculty-role marketplace
             # account (same role for LMS purposes) can be assigned to own/teach a course.
             self.fields['owner'].queryset = User.objects.filter(
@@ -305,16 +321,19 @@ class LmsCourseForm(forms.ModelForm):
             ).distinct().order_by('username')
             self.fields['owner'].required = False
             self.fields['owner'].empty_label = 'Platform-wide (no single owner)'
+        else:
+            # Faculty self-serving their own course can't reassign ownership — it's forced to
+            # themselves in the view.
+            del self.fields['owner']
 
+        if is_admin:
             from core.models import Course as CatalogCourse
 
             self.fields['catalog_course'].queryset = CatalogCourse.objects.filter(is_active=True).order_by('title')
             self.fields['catalog_course'].required = False
             self.fields['catalog_course'].empty_label = 'Not linked to a paid catalog course'
         else:
-            # Faculty can't reassign ownership or link a batch to the sales catalog —
-            # both are admin/monetization decisions made when the batch is set up.
-            del self.fields['owner']
+            # Linking a batch to the sales catalog is an admin/monetization decision only.
             del self.fields['catalog_course']
             del self.fields['is_default_for_catalog']
 

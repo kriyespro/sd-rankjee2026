@@ -6,10 +6,10 @@
     {% include "partials/_breadcrumb.jinja" %}
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">{% if is_office_lms %}Office · enrollment only{% else %}Staff{% endif %}</p>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">{% if is_office_lms %}Office · course & student setup{% else %}Staff{% endif %}</p>
             <h1 class="text-2xl font-black tracking-tight text-slate-900">{% if is_admin_lms or is_office_lms %}All courses{% else %}My courses{% endif %}</h1>
             {% if is_office_lms %}
-            <p class="mt-1 text-xs text-slate-500">You can view every faculty's courses and assign or remove students below. You can't create courses/assignments or edit anything else here.</p>
+            <p class="mt-1 text-xs text-slate-500">Create a course and assign a faculty/tutor to teach it, then assign or remove students below. You can't create assignments or edit anything else here.</p>
             {% elif not is_admin_lms %}
             <p class="mt-1 text-xs text-slate-500">Only you can see and manage the students and assignments in your own courses.</p>
             {% endif %}
@@ -35,7 +35,7 @@
     </div>
     {% endif %}
 
-    {% if is_staff_lms %}
+    {% if can_create_course %}
     <form method="post" class="mb-8 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         <input type="hidden" name="action" value="create_course">
@@ -43,7 +43,7 @@
             <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">New course name</label>
             {{ course_form.name }}
         </div>
-        {% if is_admin_lms and course_form.owner %}
+        {% if course_form.owner %}
         <div class="min-w-[12rem] flex-1">
             <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Owner (faculty/tutor)</label>
             {{ course_form.owner }}
@@ -115,7 +115,9 @@
                 </div>
                 <button type="submit" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Assign student</button>
             </form>
-            <p class="mt-1 text-[10px] text-slate-400">Start typing a username or email — matching students appear as suggestions.</p>
+            <p class="mt-1 text-[10px] text-slate-400">
+                {% if is_admin_lms or is_office_lms %}Start typing a username or email — matching students appear as suggestions.{% else %}Start typing a student's username — matching students appear as suggestions.{% endif %}
+            </p>
             {% endif %}
         </section>
         {% else %}

@@ -13,10 +13,14 @@
                 <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ topic.description }}</p>
                 {% endif %}
             </div>
-            {% if is_staff_lms %}
+            {% if is_staff_lms or can_manage_topics %}
             <div class="flex gap-2">
+                {% if can_manage_topics %}
                 <a href="{{ url('lms:topic_edit', pk=topic.pk) }}" class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Edit topic</a>
+                {% endif %}
+                {% if is_staff_lms %}
                 <a href="{{ url('lms:assignment_create') }}?topic={{ topic.pk }}" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">New assignment</a>
+                {% endif %}
             </div>
             {% endif %}
         </div>
