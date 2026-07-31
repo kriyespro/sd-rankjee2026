@@ -9,6 +9,24 @@
 - None
 
 ### Completed recently
+- [DONE] Promoted the `/admin_2/` dashboard rewrite to be the canonical `/admin/` Command
+  Center. `dashboard.views.index`'s `_staff_only` branch now runs the same
+  aggregation/render logic that used to live in the standalone `index_v2` view (real
+  action-center queues, revenue/growth/balance-sheet, hurdle topics, inline task/demo/tutor-lead
+  review) and renders `admin_dashboard_v2.jinja` instead of the old `admin_dashboard.jinja`.
+  Removed the "(Preview)" title and the preview banner ("Dashboard rewrite preview... Back to
+  classic /admin/") from that template since it's no longer a preview. `/admin_2/` (`index_v2`)
+  is now just a one-line permanent redirect to `dashboard:index`, so old bookmarks/links keep
+  working. The old `admin_dashboard.jinja` + all its stat-computation code is left completely
+  untouched on disk (no longer referenced anywhere) as a rollback reference — to roll back,
+  swap the `_staff_only` branch body back and restore the old `index_v2`. Access level is
+  unchanged: still gated by the existing `_staff_only(request)` check (superuser OR is_staff
+  excluding TUTOR/FACULTY) — not narrowed to superuser-only like the old `/admin_2/` preview was.
+  One known nuance: the old dashboard scoped stats to a CITY_ADMIN-with-is_staff account's own
+  state; the new one shows global numbers to everyone who passes `_staff_only` (no per-city
+  scoping) — acceptable since real ops/admin `is_staff` accounts are expected to see
+  platform-wide data. Verified: superuser sees the new dashboard at `/admin/`, `/admin_2/`
+  redirects to `/admin/`, no "(Preview)" text anywhere; 48/48 tests still green.
 - [DONE] Faculty/Tutor dashboard (`/admin/` → `role_tutor.jinja`) used to show ONLY hometutor
   marketplace metrics (demos, engagements, payouts) — zero visibility into actual LMS teaching
   work, even though that's now the primary self-serve flow. Added a new "LMS teaching" section

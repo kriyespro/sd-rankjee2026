@@ -1,9 +1,10 @@
-"""Superadmin dashboard aggregation logic (fix: /admin_2 preview rewrite).
+"""Superadmin dashboard aggregation logic.
 
-Deliberately additive and read-only — the original dashboard.views.index /
-templates/dashboard/admin_dashboard.jinja (served at /admin/) are untouched. This module only
-backs the new preview at /admin_2/ (dashboard.views.index_v2). Every number here is a real,
-directly-queried fact — no invented percentages or decorative trend lines.
+Backs the main superadmin Command Center at /admin/ (dashboard.views.index, `_staff_only`
+branch — rendering templates/dashboard/admin_dashboard_v2.jinja). The original stats/template
+(templates/dashboard/admin_dashboard.jinja) are left on disk untouched as a rollback reference
+only. Every number here is a real, directly-queried fact — no invented percentages or
+decorative trend lines.
 """
 
 from __future__ import annotations

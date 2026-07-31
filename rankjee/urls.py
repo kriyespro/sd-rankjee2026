@@ -41,7 +41,7 @@ urlpatterns = [
     path('api/courses/checkout/verify/', course_checkout.course_checkout_verify, name='api_courses_checkout_verify'),
     path('sd/', admin.site.urls), # standard django admin
     path('admin/lms/', include('lms.urls')),  # classroom LMS portfolio feed
-    path('admin_2/', dashboard_views.index_v2, name='dashboard_v2'),  # superadmin dashboard rewrite preview — see fix-rankjee.md-style plan in dev.txt; not yet linked in prod nav
+    path('admin_2/', dashboard_views.index_v2, name='dashboard_v2'),  # legacy URL — permanently redirects to /admin/ now that the rewrite is the main dashboard (see dev.txt)
     path('admin/', include('dashboard.urls')), # custom dashboard
     path('robots.txt', core_views.robots_txt, name='robots_txt'),
     path(

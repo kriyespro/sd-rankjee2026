@@ -1685,59 +1685,10 @@ def admin_student_daily_logs(request):
 
 @login_required
 def index_v2(request):
-    """Superadmin dashboard rewrite preview — /admin_2/ (fix: full rewrite, only signal a
-    superadmin actually needs to act on: pending queues, real revenue, real growth). Additive:
-    does not touch `index`/`admin_dashboard.jinja` below. Superuser-only for now; everyone else
-    is bounced to the classic dashboard."""
-    if not request.user.is_superuser:
-        messages.info(request, "The new dashboard preview is superadmin-only for now.")
-        return redirect('dashboard:index')
-
-    from . import services as dash_services
-    from core.models import UserTaskSubmission
-    from hometutor.models import DemoRequest
-
-    pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').select_related(
-        'user', 'task'
-    ).order_by('-submitted_at')[:8]
-    latest_demo_requests = (
-        DemoRequest.objects.filter(status=DemoRequest.Status.PENDING)
-        .select_related('tutor', 'requester')
-        .order_by('-created_at')[:8]
-    )
-    latest_tutor_requests = (
-        TutorLeadRequest.objects.filter(status=TutorLeadRequest.Status.NEW)
-        .order_by('-created_at')[:8]
-    )
-
-    revenue_trend = dash_services.revenue_trend()
-    signup_trend = dash_services.signup_trend()
-    max_revenue_day = max((row['amount'] for row in revenue_trend), default=dash_services.ZERO) or dash_services.ZERO
-    max_signup_day = max((row['count'] for row in signup_trend), default=0) or 1
-    for row in revenue_trend:
-        row['pct'] = int((row['amount'] / max_revenue_day) * 100) if max_revenue_day else 0
-    for row in signup_trend:
-        row['pct'] = int((row['count'] / max_signup_day) * 100) if max_signup_day else 0
-
-    return render(
-        request,
-        'dashboard/admin_dashboard_v2.jinja',
-        {
-            'action_items': dash_services.action_center(),
-            'revenue': dash_services.revenue_summary(),
-            'growth': dash_services.growth_summary(),
-            'wow': dash_services.week_over_week(),
-            'balance_sheet': dash_services.balance_sheet_summary(),
-            'hurdle_skills': dash_services.hurdle_skills(),
-            'backup': dash_services.backup_health(),
-            'content': dash_services.content_inventory(),
-            'revenue_trend': revenue_trend,
-            'signup_trend': signup_trend,
-            'pending_submissions': pending_submissions,
-            'latest_demo_requests': latest_demo_requests,
-            'latest_tutor_requests': latest_tutor_requests,
-        },
-    )
+    """`/admin_2/` — kept only as a permanent redirect to `/admin/` for anyone with the old
+    preview URL bookmarked (fix: /admin_2 was promoted to be `dashboard:index` itself, see the
+    `_staff_only` branch above)."""
+    return redirect('dashboard:index')
 
 
 @login_required
@@ -1764,120 +1715,53 @@ def index(request):
     }
 
     if _staff_only(request):
-        is_city_admin = role == 'CITY_ADMIN'
-        admin_scope_label = 'Global'
-        scoped_users = User.objects.all()
-        if is_city_admin and getattr(request.user, 'state', None):
-            scoped_users = User.objects.filter(state=request.user.state)
-            admin_scope_label = f"City/State: {request.user.get_state_display()}"
-        elif is_city_admin:
-            admin_scope_label = 'City/State: not set'
-
-        # App-wide Admin Dashboard Stats
-        total_users_count = scoped_users.count()
-        total_questions = Question.objects.count()
-        total_videos = ConceptVideo.objects.count()
-        total_skills = Skill.objects.filter(is_active=True).count()
-        
-        # User Search & Pagination
-        search_query = request.GET.get('q', '').strip()
-        users_queryset = scoped_users.order_by('-date_joined')
-        if search_query:
-            users_queryset = users_queryset.filter(
-                Q(username__icontains=search_query) | Q(email__icontains=search_query)
-            )
-        
-        paginator = Paginator(users_queryset, 10) # 10 students per page
-        page_number = request.GET.get('page', 1)
-        students_page = paginator.get_page(page_number)
-        
-        # Performance Analytics
-        # Get pass rates per skill (top 5 difficult vs top 5 easiest)
-        skill_stats = Skill.objects.filter(is_active=True).annotate(
-            total_attempts=Count('userattempt'),
-            pass_count=Count('userattempt', filter=Q(userattempt__passed=True)),
-            avg_score=Avg('userattempt__score')
-        ).filter(total_attempts__gt=0)
-        
-        difficult_skills = skill_stats.order_by('avg_score')[:5]
-        easiest_skills = skill_stats.order_by('-avg_score')[:5]
-        
-        # Platform Activity (Last 7 days)
-        last_7_days = timezone.now() - timedelta(days=7)
-        recent_attempts_count = UserAttempt.objects.filter(attempt_date__gte=last_7_days).count()
-        recent_submissions_count = UserTaskSubmission.objects.filter(submitted_at__gte=last_7_days).count()
-        recent_registrations_count = scoped_users.filter(date_joined__gte=last_7_days).count()
-        
-        # New analytics
-        pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').order_by('-submitted_at')
-        pending_count = pending_submissions.count()
-        
-        total_payouts = UserTaskSubmission.objects.filter(status='APPROVED').aggregate(
-            total=Sum('task__reward_amount')
-        )['total'] or 0
-        
-        # Calculate total XP across platform to show engagement
-        total_xp_platform = scoped_users.aggregate(Sum('xp_points'))['xp_points__sum'] or 0
-
-        pending_withdrawals = WithdrawalRequest.objects.filter(status='PENDING').select_related(
-            'user'
-        ).order_by('-requested_at')[:10]
-        pending_withdrawals_count = WithdrawalRequest.objects.filter(status='PENDING').count()
-        latest_tutor_requests = TutorLeadRequest.objects.select_related('requester').order_by('-created_at')[:12]
-        tutor_requests_count = TutorLeadRequest.objects.count()
+        # /admin_2 dashboard rewrite promoted to be the canonical /admin/ Command Center (fix:
+        # "make /admin_2 as main /admin"). The old stats/template (admin_dashboard.jinja) are left
+        # on disk untouched as a rollback reference but are no longer rendered from here.
+        from . import services as dash_services
         from hometutor.models import DemoRequest
 
+        pending_submissions = UserTaskSubmission.objects.filter(status='PENDING').select_related(
+            'user', 'task'
+        ).order_by('-submitted_at')[:8]
         latest_demo_requests = (
-            DemoRequest.objects.select_related('tutor', 'requester', 'tutor__user')
-            .order_by('-created_at')[:20]
+            DemoRequest.objects.filter(status=DemoRequest.Status.PENDING)
+            .select_related('tutor', 'requester')
+            .order_by('-created_at')[:8]
         )
-        demo_requests_count = DemoRequest.objects.count()
-        demo_requests_pending = DemoRequest.objects.filter(status=DemoRequest.Status.PENDING).count()
-        recent_failed_attempts = (
-            UserAttempt.objects.filter(passed=False)
-            .select_related("user", "skill")
-            .order_by("-attempt_date")[:12]
+        latest_tutor_requests = (
+            TutorLeadRequest.objects.filter(status=TutorLeadRequest.Status.NEW)
+            .order_by('-created_at')[:8]
         )
 
-        recent_daily_class_logs_qs = StudentDailyClassLog.objects.select_related("user").order_by(
-            "-log_date", "-id"
-        )
-        if is_city_admin and getattr(request.user, "state", None):
-            recent_daily_class_logs_qs = recent_daily_class_logs_qs.filter(user__state=request.user.state)
-        recent_daily_class_logs = list(recent_daily_class_logs_qs[:12])
-        latest_backups = list(
-            BackupArtifact.objects.select_related("created_by").order_by("-created_at")[:5]
-        )
+        revenue_trend = dash_services.revenue_trend()
+        signup_trend = dash_services.signup_trend()
+        max_revenue_day = max((row['amount'] for row in revenue_trend), default=dash_services.ZERO) or dash_services.ZERO
+        max_signup_day = max((row['count'] for row in signup_trend), default=0) or 1
+        for row in revenue_trend:
+            row['pct'] = int((row['amount'] / max_revenue_day) * 100) if max_revenue_day else 0
+        for row in signup_trend:
+            row['pct'] = int((row['count'] / max_signup_day) * 100) if max_signup_day else 0
 
-        return render(request, 'dashboard/admin_dashboard.jinja', {
-            'admin_role': role,
-            'admin_scope_label': admin_scope_label,
-            'total_users': total_users_count,
-            'total_questions': total_questions,
-            'total_videos': total_videos,
-            'total_skills': total_skills,
-            'students_page': students_page,
-            'search_query': search_query,
-            'difficult_skills': difficult_skills,
-            'easiest_skills': easiest_skills,
-            'recent_attempts': recent_attempts_count,
-            'recent_submissions': recent_submissions_count,
-            'recent_registrations': recent_registrations_count,
-            'total_xp_platform': total_xp_platform,
-            'pending_submissions': pending_submissions[:5],
-            'pending_count': pending_count,
-            'total_payouts': total_payouts,
-            'pending_withdrawals': pending_withdrawals,
-            'pending_withdrawals_count': pending_withdrawals_count,
-            'latest_tutor_requests': latest_tutor_requests,
-            'tutor_requests_count': tutor_requests_count,
-            'latest_demo_requests': latest_demo_requests,
-            'demo_requests_count': demo_requests_count,
-            'demo_requests_pending': demo_requests_pending,
-            'recent_failed_attempts': recent_failed_attempts,
-            'recent_daily_class_logs': recent_daily_class_logs,
-            'latest_backups': latest_backups,
-        })
+        return render(
+            request,
+            'dashboard/admin_dashboard_v2.jinja',
+            {
+                'action_items': dash_services.action_center(),
+                'revenue': dash_services.revenue_summary(),
+                'growth': dash_services.growth_summary(),
+                'wow': dash_services.week_over_week(),
+                'balance_sheet': dash_services.balance_sheet_summary(),
+                'hurdle_skills': dash_services.hurdle_skills(),
+                'backup': dash_services.backup_health(),
+                'content': dash_services.content_inventory(),
+                'revenue_trend': revenue_trend,
+                'signup_trend': signup_trend,
+                'pending_submissions': pending_submissions,
+                'latest_demo_requests': latest_demo_requests,
+                'latest_tutor_requests': latest_tutor_requests,
+            },
+        )
 
     # Role-dedicated dashboards for non-staff roles.
     if role in ['TUTOR', 'FACULTY', 'PARENT', 'CITY_ADMIN', 'GLOBAL_ADMIN']:
