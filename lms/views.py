@@ -239,13 +239,21 @@ def topic_edit(request, pk):
 
 @login_required
 def topic_detail(request, pk):
-    topic = get_object_or_404(LmsTopic, pk=pk)
+    topic = get_object_or_404(LmsTopic.objects.select_related('course', 'course__owner'), pk=pk)
     assignments = [
         assignment
         for assignment in services.assignments_for_user(request.user)
         if assignment.topic_id == topic.pk
     ]
-    if not assignments and not services.is_lms_staff(request.user) and not services.is_lms_office(request.user):
+    # A topic pre-built for a course (no assignments under it yet — see "add topic per course")
+    # is still visible to that course's own enrolled students, not just once the first
+    # assignment under it lands.
+    can_view_empty_topic = (
+        services.is_lms_staff(request.user)
+        or services.is_lms_office(request.user)
+        or (bool(topic.course_id) and topic.course_id in services.user_course_ids(request.user))
+    )
+    if not assignments and not can_view_empty_topic:
         raise Http404()
     return render(
         request,

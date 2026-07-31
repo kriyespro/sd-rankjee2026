@@ -92,6 +92,9 @@
                                 </span>
                                 <span class="min-w-0">
                                     <span class="block text-xs font-bold leading-snug text-slate-900 break-words">{{ item.title }}</span>
+                                    {% if item.topic and item.topic.course %}
+                                    <span class="mt-0.5 block text-[9px] font-black uppercase tracking-wide text-indigo-500 truncate">{{ item.topic.course.name }}</span>
+                                    {% endif %}
                                     <span class="mt-0.5 block text-[10px] text-slate-500">{{ item.assignments|length }} asgn</span>
                                 </span>
                             </a>

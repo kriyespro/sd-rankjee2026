@@ -86,6 +86,18 @@ class LmsTopic(models.Model):
     title = models.CharField(max_length=160)
     slug = models.SlugField(max_length=180, unique=True, blank=True)
     description = models.TextField(blank=True)
+    course = models.ForeignKey(
+        LmsCourse,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='topics',
+        help_text=(
+            'Optional: scope this topic to one course so it appears in that course\'s LMS '
+            'sidebar right away, even before any assignment exists under it yet. Empty = '
+            'platform-wide topic (only appears once an assignment under it exists).'
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

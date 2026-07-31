@@ -238,6 +238,25 @@ def topics_for_user(user) -> list[dict]:
                 'assignments': [],
             }
         grouped[topic.pk]['assignments'].append(assignment)
+
+    # Fix: "add topic per course, need to show in LMS sidebar" — a topic explicitly scoped to a
+    # course this user can access should appear right away, even before any assignment exists
+    # under it (lets admin/office pre-build a course's topic structure ahead of assignments).
+    if is_lms_admin(user) or is_lms_office(user):
+        course_scoped_topics = LmsTopic.objects.filter(course__isnull=False)
+    elif is_lms_faculty(user):
+        course_scoped_topics = LmsTopic.objects.filter(course__owner_id=user.id)
+    else:
+        course_scoped_topics = LmsTopic.objects.filter(course_id__in=user_course_ids(user))
+    for topic in course_scoped_topics.select_related('course'):
+        if topic.pk not in grouped:
+            grouped[topic.pk] = {
+                'topic': topic,
+                'title': topic.title,
+                'description': topic.description,
+                'assignments': [],
+            }
+
     return sorted(grouped.values(), key=lambda item: item['title'].lower())
 
 

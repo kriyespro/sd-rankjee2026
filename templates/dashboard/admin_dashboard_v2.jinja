@@ -123,6 +123,27 @@
                 </form>
             </div>
         </div>
+        <div class="border-t border-slate-100 px-5 py-4">
+            <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">3. Add a topic to a course</h3>
+            <form method="post" action="{{ url('lms:topic_create') }}" class="grid gap-2 sm:grid-cols-[2fr_2fr_auto] sm:items-end">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Topic title</label>
+                    <input type="text" name="title" required placeholder="e.g. Week 1 — Fundamentals" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Course</label>
+                    <select name="course" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                        <option value="">Platform-wide (no single course)</option>
+                        {% for c in lms_quick_courses %}
+                        <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} — {{ c.owner.get_username() }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Add topic</button>
+            </form>
+            <p class="mt-1 text-[10px] text-slate-400">Shows in that course's LMS sidebar immediately — no assignment needed yet.</p>
+        </div>
         {% if lms_quick_courses %}
         <div class="border-t border-slate-100 px-5 py-4">
             <h3 class="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-500">Reassign an existing course's faculty</h3>

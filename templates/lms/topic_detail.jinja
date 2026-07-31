@@ -9,6 +9,9 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h1 class="text-2xl font-black tracking-tight text-slate-900">{{ topic.title }}</h1>
+                {% if topic.course %}
+                <span class="mt-1 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-indigo-700">{{ topic.course.name }}</span>
+                {% endif %}
                 {% if topic.description %}
                 <p class="mt-2 text-sm leading-relaxed text-slate-600">{{ topic.description }}</p>
                 {% endif %}

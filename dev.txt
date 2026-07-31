@@ -9,6 +9,36 @@
 - None
 
 ### Completed recently
+- [DONE] Two explicit requests answered together:
+  1. **"Confirm student only assigned to faculty can use this LMS of that course"** — verified
+     (already correct, no bug): `can_view_assignment`/`can_submit_assignment`/`assignments_for_user`
+     all gate a student's access to a course-scoped assignment on
+     `assignment.course_id in user_course_ids(user)` (real enrollment via `LmsCourseEnrollment`).
+     A student enrolled only in Course A gets a 404→redirect on Course B's assignment detail and
+     a submit POST is silently rejected (no `LmsSubmission` row created). Platform-wide
+     (course=None) content stays visible to every student, by design. Added
+     `StudentCourseIsolationTests` (5 tests) since this had no dedicated regression coverage
+     before, despite being correct.
+  2. **"Add option to add topic that shows in LMS sidebar, per course, in /admin (superadmin)"**
+     — `LmsTopic` gained an optional `course` FK (migration `0011_lmstopic_course`, nullable,
+     `SET_NULL`). Previously a Topic only ever appeared in the LMS sidebar once an assignment
+     existed under it (`topics_for_user` grouped purely from assignments) — now admin/office can
+     pre-build a course's topic structure ahead of time and it shows immediately for that
+     course's faculty owner + enrolled students, even with zero assignments yet. Wired into:
+     - `LmsTopicForm` — new `course` field (empty = platform-wide, unchanged old behavior)
+     - `topics_for_user()` — additionally surfaces topics scoped to a course the user can access
+     - `topic_detail` view — 404 guard relaxed so a course's own student/faculty can view an
+       still-empty course-scoped topic page (before, only staff/office could)
+     - `templates/lms/home.jinja` sidebar — small course-name badge under a scoped topic's title
+     - `templates/lms/topic_detail.jinja` — course badge in the header
+     - New **"3. Add a topic to a course"** mini-form in the `/admin/` "Faculty & course quick
+       setup" panel (title + course dropdown, posts to `lms:topic_create`) — topic creation stays
+       admin/office only (`can_manage_topics`), unchanged permission model.
+  Added `TopicPerCourseTests` (8 tests). Full `lms` suite: 59 tests green. Full
+  `lms dashboard hometutor users tutor_study` suite: 86 tests green. Verified live: dashboard
+  renders the new "Add a topic to a course" form. Rebuilt `app.css`. Migration applied locally
+  (`0011_lmstopic_course` — nullable FK, zero-downtime additive column, safe for the live
+  server's auto-migrate-on-deploy).
 - [DONE] Follow-up on the /admin/ quick-setup panel — surfaced the real paid catalog
   (https://rankjee.com/courses/, e.g. "AI Automation Engineering Pro") in the "Create a course &
   assign faculty" form: added `catalog_course` (which paid course this LMS batch delivers) +

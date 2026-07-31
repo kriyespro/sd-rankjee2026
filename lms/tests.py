@@ -5,7 +5,7 @@ from django.urls import reverse
 from assessment.models import Skill, UserAttempt
 
 from . import services
-from .models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsTopic
+from .models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsSubmission, LmsTopic
 
 User = get_user_model()
 
@@ -568,3 +568,135 @@ class CourseOwnerReassignmentTests(TestCase):
         self.client.force_login(self.faculty_a)
         res = self.client.get(reverse('lms:courses'))
         self.assertNotContains(res, 'name="owner_id"')
+
+
+class StudentCourseIsolationTests(TestCase):
+    """Confirms (per explicit request) that a student enrolled only in Course A cannot view or
+    submit an assignment scoped to a DIFFERENT faculty's Course B — this was already enforced by
+    `can_view_assignment`/`assignments_for_user` (course_id must be in `user_course_ids(user)`),
+    but had no dedicated regression test. Platform-wide (course=None) content remains visible to
+    every student regardless of enrollment, by design."""
+
+    def setUp(self):
+        self.faculty_a = User.objects.create_user(
+            username='isolation_faculty_a', email='isolation_faculty_a@example.com', password='StrongPass!123',
+        )
+        self.faculty_b = User.objects.create_user(
+            username='isolation_faculty_b', email='isolation_faculty_b@example.com', password='StrongPass!123',
+        )
+        self.course_a = LmsCourse.objects.create(name='Isolation course A', owner=self.faculty_a)
+        self.course_b = LmsCourse.objects.create(name='Isolation course B', owner=self.faculty_b)
+        self.student_a = User.objects.create_user(
+            username='isolation_student_a', email='isolation_student_a@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course_a, user=self.student_a)
+        self.assignment_b = LmsAssignment.objects.create(
+            title='Course B private homework', course=self.course_b, created_by=self.faculty_b,
+        )
+
+    def test_can_view_assignment_false_for_unrelated_course(self):
+        self.assertFalse(services.can_view_assignment(self.student_a, self.assignment_b))
+
+    def test_can_submit_assignment_false_for_unrelated_course(self):
+        self.assertFalse(services.can_submit_assignment(self.student_a, self.assignment_b))
+
+    def test_assignments_for_user_excludes_unrelated_course(self):
+        ids = set(services.assignments_for_user(self.student_a).values_list('pk', flat=True))
+        self.assertNotIn(self.assignment_b.pk, ids)
+
+    def test_assignment_detail_denied_for_unrelated_course(self):
+        self.client.force_login(self.student_a)
+        res = self.client.get(reverse('lms:assignment_detail', kwargs={'pk': self.assignment_b.pk}))
+        self.assertEqual(res.status_code, 302)  # can_view_assignment=False -> Http404 -> redirect
+
+    def test_submit_post_denied_for_unrelated_course(self):
+        self.client.force_login(self.student_a)
+        res = self.client.post(
+            reverse('lms:assignment_detail', kwargs={'pk': self.assignment_b.pk}),
+            {'action': 'submit', 'caption': 'sneaky submission'},
+        )
+        self.assertEqual(res.status_code, 302)
+        self.assertFalse(LmsSubmission.objects.filter(assignment=self.assignment_b, student=self.student_a).exists())
+
+    def test_platform_wide_assignment_still_visible_to_every_student(self):
+        platform = LmsAssignment.objects.create(title='Everyone sees this', created_by=self.faculty_a)
+        self.assertTrue(services.can_view_assignment(self.student_a, platform))
+
+
+class TopicPerCourseTests(TestCase):
+    """Fix: "add topic that show in LMS (left sidebar), need to add topic per course in /admin
+    (superadmin or superuser)" — LmsTopic gained an optional `course` FK so admin/office can
+    pre-build a course's topic structure (it shows in that course's sidebar immediately) before
+    any assignment exists under it yet."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser(
+            username='topiccourse_admin', email='topiccourse_admin@example.com', password='StrongPass!123',
+        )
+        self.faculty_a = User.objects.create_user(
+            username='topiccourse_faculty_a', email='topiccourse_faculty_a@example.com', password='StrongPass!123',
+        )
+        self.faculty_b = User.objects.create_user(
+            username='topiccourse_faculty_b', email='topiccourse_faculty_b@example.com', password='StrongPass!123',
+        )
+        self.course_a = LmsCourse.objects.create(name='Topic-per-course A', owner=self.faculty_a)
+        self.course_b = LmsCourse.objects.create(name='Topic-per-course B', owner=self.faculty_b)
+        self.faculty_a.refresh_from_db()
+        self.faculty_b.refresh_from_db()
+        self.student_a = User.objects.create_user(
+            username='topiccourse_student_a', email='topiccourse_student_a@example.com',
+            password='StrongPass!123', role='STUDENT',
+        )
+        LmsCourseEnrollment.objects.create(course=self.course_a, user=self.student_a)
+
+    def test_admin_can_create_topic_scoped_to_a_course(self):
+        self.client.force_login(self.admin)
+        res = self.client.post(
+            reverse('lms:topic_create'),
+            {'title': 'Week 1', 'description': '', 'course': self.course_a.pk},
+        )
+        self.assertEqual(res.status_code, 302)
+        topic = LmsTopic.objects.get(title='Week 1')
+        self.assertEqual(topic.course_id, self.course_a.pk)
+
+    def test_empty_course_scoped_topic_shows_for_owning_faculty(self):
+        topic = LmsTopic.objects.create(title='Pre-built topic', course=self.course_a)
+        items = services.topics_for_user(self.faculty_a)
+        self.assertIn(topic.pk, [item['topic'].pk for item in items])
+
+    def test_empty_course_scoped_topic_shows_for_enrolled_student(self):
+        topic = LmsTopic.objects.create(title='Pre-built topic for students', course=self.course_a)
+        items = services.topics_for_user(self.student_a)
+        self.assertIn(topic.pk, [item['topic'].pk for item in items])
+
+    def test_empty_course_scoped_topic_hidden_from_unrelated_faculty(self):
+        topic = LmsTopic.objects.create(title='Only for A', course=self.course_a)
+        items = services.topics_for_user(self.faculty_b)
+        self.assertNotIn(topic.pk, [item['topic'].pk for item in items])
+
+    def test_topic_sidebar_on_lms_home_shows_empty_course_scoped_topic(self):
+        LmsTopic.objects.create(title='Sidebar-visible topic', course=self.course_a)
+        self.client.force_login(self.faculty_a)
+        res = self.client.get(reverse('lms:home'))
+        self.assertContains(res, 'Sidebar-visible topic')
+
+    def test_topic_detail_viewable_by_enrolled_student_even_with_zero_assignments(self):
+        topic = LmsTopic.objects.create(title='Empty but viewable', course=self.course_a)
+        self.client.force_login(self.student_a)
+        res = self.client.get(reverse('lms:topic_detail', kwargs={'pk': topic.pk}))
+        self.assertEqual(res.status_code, 200)
+
+    def test_topic_detail_404_for_unrelated_student_with_zero_assignments(self):
+        topic = LmsTopic.objects.create(title='Not yours', course=self.course_b)
+        self.client.force_login(self.student_a)
+        res = self.client.get(reverse('lms:topic_detail', kwargs={'pk': topic.pk}))
+        self.assertEqual(res.status_code, 302)  # Http404 -> redirect
+
+    def test_faculty_cannot_create_topic(self):
+        self.client.force_login(self.faculty_a)
+        res = self.client.post(
+            reverse('lms:topic_create'),
+            {'title': 'Should fail', 'description': '', 'course': self.course_a.pk},
+        )
+        self.assertEqual(res.status_code, 403)

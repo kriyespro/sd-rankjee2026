@@ -360,10 +360,22 @@ class LmsCourseMemberForm(forms.Form):
 class LmsTopicForm(forms.ModelForm):
     class Meta:
         model = LmsTopic
-        fields = ['title', 'description']
+        fields = ['title', 'description', 'course']
         widgets = {
             'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. SEO Basics'}),
             'description': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Short topic summary…'}
             ),
+            'course': forms.Select(attrs={'class': _INPUT}),
         }
+        labels = {'course': 'Course (optional)'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # topic_create/topic_edit already gate on can_manage_topics (admin/office only), so
+        # everyone who reaches this form may freely scope a topic to any course — fix: "add
+        # topic per course in /admin" so a course's structure can be pre-built before any
+        # assignment exists under it yet.
+        self.fields['course'].queryset = LmsCourse.objects.select_related('owner').order_by('name')
+        self.fields['course'].required = False
+        self.fields['course'].empty_label = 'Platform-wide (no single course)'

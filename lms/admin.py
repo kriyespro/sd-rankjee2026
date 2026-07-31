@@ -47,9 +47,11 @@ class LmsCourseAdmin(admin.ModelAdmin):
 
 @admin.register(LmsTopic)
 class LmsTopicAdmin(admin.ModelAdmin):
-    list_display = ('title', 'slug', 'created_at')
+    list_display = ('title', 'course', 'slug', 'created_at')
+    list_filter = ('course',)
     prepopulated_fields = {'slug': ('title',)}
-    search_fields = ('title', 'description')
+    search_fields = ('title', 'description', 'course__name')
+    raw_id_fields = ('course',)
 
 
 @admin.register(LmsAssignment)
