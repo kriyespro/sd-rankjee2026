@@ -393,7 +393,12 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-slate-50 text-slate-900 flex flex-col min-h-screen antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans pwa-safe-body md:pb-0">
-    {% set current_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
+    {# FACULTY and TUTOR are the same role for every behavioral/nav purpose in the app — only the
+       raw `request.user.role` value differs for admin-facing labels. Normalize here once so every
+       `current_role == 'TUTOR'` check below (nav, mobile nav, footer study box) also covers
+       FACULTY, instead of each callsite needing its own FACULTY-aware check. #}
+    {% set _raw_role = request.user.role if request.user.is_authenticated and request.user.role is defined else 'STUDENT' %}
+    {% set current_role = 'TUTOR' if _raw_role == 'FACULTY' else _raw_role %}
 
     <header class="sticky top-0 z-50 pwa-safe-header">
     <nav class="nav-glass border-t-0">

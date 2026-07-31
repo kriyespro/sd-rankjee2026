@@ -78,10 +78,12 @@ def _pagination_query(request) -> str:
 
 
 def _is_tutor_user(user) -> bool:
+    # TUTOR and FACULTY are the same role for access purposes (fix: FACULTY accounts were being
+    # bounced out of the demo inbox / listing / marketplace views with "Tutor access only").
     return bool(
         user
         and user.is_authenticated
-        and getattr(user, 'role', None) == CustomUser.Role.TUTOR
+        and getattr(user, 'role', None) in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY)
     )
 
 

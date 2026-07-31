@@ -61,7 +61,8 @@ def _study_seo_ctx(request):
 def tutor_required(view_fn):
     @wraps(view_fn)
     def _inner(request, *args, **kwargs):
-        if request.user.role != CustomUser.Role.TUTOR:
+        # TUTOR and FACULTY are the same role for access purposes.
+        if request.user.role not in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
             messages.warning(request, 'That area is for tutors.')
             return redirect('dashboard:study')
         if not get_tutor_profile(request.user):
@@ -174,7 +175,7 @@ def _study_lms_shell(
 
 @login_required
 def student_hub(request, study_urls=None):
-    if request.user.role == CustomUser.Role.TUTOR:
+    if request.user.role in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     urls = study_urls or STUDY_URLS_STANDALONE
     if study_urls is None and request.user.role in (
@@ -209,7 +210,7 @@ def student_hub(request, study_urls=None):
 
 
 def _render_student_topic_page(request, topic_pk, urls):
-    if request.user.role == CustomUser.Role.TUTOR:
+    if request.user.role in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     merged_urls = urls or STUDY_URLS_STANDALONE
     if urls is None and request.user.role in (
@@ -302,7 +303,7 @@ def student_topic_workspace(request, topic_pk, study_urls=None):
 @login_required
 def student_material_detail(request, pk, study_urls=None):
     urls = study_urls or STUDY_URLS_STANDALONE
-    if request.user.role == CustomUser.Role.TUTOR:
+    if request.user.role in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     material = get_object_or_404(
         StudyMaterial.objects.select_related('tutor', 'study_topic', 'study_topic__parent'), pk=pk
@@ -340,7 +341,7 @@ def student_material_detail(request, pk, study_urls=None):
 @login_required
 def student_assignment_detail(request, pk, study_urls=None):
     urls = study_urls or STUDY_URLS_STANDALONE
-    if request.user.role == CustomUser.Role.TUTOR:
+    if request.user.role in (CustomUser.Role.TUTOR, CustomUser.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     assignment = get_object_or_404(
         StudyAssignment.objects.select_related(

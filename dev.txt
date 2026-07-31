@@ -9,6 +9,28 @@
 - None
 
 ### Completed recently
+- [FIXED] "Tutor and Faculty conflict" — a FACULTY-role user clicking Inbox/Listing/Marketplace
+  from their own `/admin/` dashboard (or the top-nav links, or `/study/`) was bounced back with a
+  stray "Tutor access only. Please sign in with a tutor account." error banner, and the site nav
+  showed them generic/admin links instead of the tutor marketplace links (Demo Inbox / My Listing
+  / Marketplace). Root cause: the earlier role-unification work only updated `lms.services` and
+  `dashboard.views._role_dashboard_context`/`_staff_only` — several *other* access checks across
+  the app still did an exact `role == 'TUTOR'` match with no FACULTY branch:
+  `hometutor.views._is_tutor_user` (gates the whole demo inbox / listing / marketplace app),
+  `tutor_study.views.tutor_required` + 4 student/tutor redirect checks (the `/study/` notes &
+  assignments upload area), 5 `/admin/study/*` dashboard-chrome wrappers in `dashboard/views.py`,
+  and — the one with the widest blast radius — `templates/base.jinja`'s `current_role` variable,
+  which drives the entire top nav, mobile bottom nav, and footer "Open tutor study" link for every
+  page on the site. Fixed all of them so FACULTY is treated identically to TUTOR everywhere
+  behavior is gated on role (`hometutor` app, `tutor_study` app, dashboard study wrappers, and
+  `base.jinja`'s `current_role` normalization: `FACULTY` now maps to `'TUTOR'` for nav-branch
+  purposes in one place instead of needing per-callsite awareness). Left untouched, intentionally:
+  the public signup role picker (`users/onboarding.py`) and the VIP manual-account-creation tool
+  (`dashboard/forms.py`) — FACULTY accounts are admin/office-provisioned, not self-service, so
+  they correctly don't appear in those self-signup flows. Verified via Django test client with a
+  real FACULTY account (`faculty_priya`): demo inbox / listing / marketplace / study routes all
+  reachable with no stray error banner, nav shows "Demo Inbox" link; full `dashboard`/`hometutor`/
+  `lms`/`users` suite still green (48 tests).
 - [DONE] Full pass on the Faculty/Tutor dashboard (`/admin/` → `role_tutor.jinja` +
   `dashboard.views._role_dashboard_context`, TUTOR/FACULTY branch) — the previous version already
   had the LMS-teaching stat cards but still made a tutor hunt across 4+ separate panels (SLA

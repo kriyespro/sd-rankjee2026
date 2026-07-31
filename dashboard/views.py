@@ -1132,7 +1132,7 @@ def dashboard_study(request):
     from tutor_study.views import STUDY_URLS_DASHBOARD, student_hub as ts_student_hub
 
     role = getattr(request.user, 'role', None)
-    if role == User.Role.TUTOR:
+    if role in (User.Role.TUTOR, User.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         return redirect('study:student_hub')
@@ -1144,7 +1144,7 @@ def dashboard_study_topic_general(request):
     from tutor_study.views import STUDY_URLS_DASHBOARD, student_topic_workspace_general as ts_topic_general
 
     role = getattr(request.user, 'role', None)
-    if role == User.Role.TUTOR:
+    if role in (User.Role.TUTOR, User.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         target = reverse('study:student_topic_general')
@@ -1158,7 +1158,7 @@ def dashboard_study_topic(request, topic_pk):
     from tutor_study.views import STUDY_URLS_DASHBOARD, student_topic_workspace as ts_topic
 
     role = getattr(request.user, 'role', None)
-    if role == User.Role.TUTOR:
+    if role in (User.Role.TUTOR, User.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     if role not in (User.Role.STUDENT, User.Role.PARENT, User.Role.VIP_USER):
         target = reverse('study:student_topic', kwargs={'topic_pk': topic_pk})
@@ -1172,7 +1172,7 @@ def dashboard_study_material(request, pk):
     from tutor_study.views import student_material_detail as ts_student_material_detail
 
     role = getattr(request.user, 'role', None)
-    if role == User.Role.TUTOR:
+    if role in (User.Role.TUTOR, User.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     return ts_student_material_detail(request, pk, study_urls=_study_urls_for_dashboard_role(role))
 
@@ -1182,7 +1182,7 @@ def dashboard_study_assignment(request, pk):
     from tutor_study.views import student_assignment_detail as ts_student_assignment_detail
 
     role = getattr(request.user, 'role', None)
-    if role == User.Role.TUTOR:
+    if role in (User.Role.TUTOR, User.Role.FACULTY):
         return redirect('study:tutor_dashboard')
     return ts_student_assignment_detail(request, pk, study_urls=_study_urls_for_dashboard_role(role))
 
@@ -1801,6 +1801,7 @@ def index(request):
     now = timezone.now()
     role_intro_map = {
         'TUTOR': "Manage your tutor listing, handle demo requests, and grow student enrollments.",
+        'FACULTY': "Manage your tutor listing, handle demo requests, and grow student enrollments.",
         'PARENT': "Find trusted tutors, track demos, and support your child with guided prep.",
         'STUDENT': "Build mastery with tests and videos, and connect with the right tutor when needed.",
         'CITY_ADMIN': "Track city-level tutor quality, disputes, and demand trends for operational excellence.",
@@ -1808,6 +1809,7 @@ def index(request):
     }
     role_marketplace_label_map = {
         'TUTOR': "Review incoming demos and keep your tutor profile optimized for conversions.",
+        'FACULTY': "Review incoming demos and keep your tutor profile optimized for conversions.",
         'PARENT': "Browse tutors and request demos to choose the best tutor for your child.",
         'STUDENT': "Explore tutors and request a demo to accelerate your preparation.",
         'CITY_ADMIN': "Review city tutor supply and conversion funnels from discovery to engagement.",
@@ -2132,7 +2134,7 @@ def index(request):
         {'label': 'Mastery', 'value': f'{progress}%'},
         {'label': 'XP Rank (India)', 'value': f'#{xp_rank_india}'},
     ]
-    if role == 'TUTOR':
+    if role in ('TUTOR', 'FACULTY'):
         role_stat_cards.append({'label': 'Incoming Demo Requests', 'value': str(hometutor_pending_incoming)})
     elif role == 'PARENT':
         role_stat_cards.append({'label': 'My Pending Tutor Requests', 'value': str(hometutor_my_pending_sent)})
