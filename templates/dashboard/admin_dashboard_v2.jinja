@@ -29,9 +29,11 @@
         <a href="/sd/" class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:bg-slate-50 shadow-sm">⚙️ /sd/</a>
     </div>
 
-    {# ============ ACTION CENTER ============ #}
-    {# hot_items / clear_items pre-split in views.py (action_hot / action_clear) #}
-    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" x-data="{ showClear: false }">
+    {# ============ 3-COLUMN: ACTION CENTER · DEMO REQUESTS · TUTOR LEADS ============ #}
+    <div class="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+
+    {# COL 1: Action Center #}
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" x-data="{ showClear: false }">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-3"
              style="background: linear-gradient(135deg, #fff7f7 0%, #fff 100%);">
             <div class="flex items-center gap-3">
@@ -111,13 +113,95 @@
         </div>
         {% endif %}
     </section>
+    {# END COL 1 #}
+
+    {# COL 2: Demo Requests #}
+    <section id="demo-requests" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-2"
+             style="background: linear-gradient(135deg, #eef2ff 0%, #fff 100%);">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">📅 Demo requests</h3>
+            {% set demo_count = latest_demo_requests | length %}
+            {% if demo_count > 0 %}
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px] font-black">{{ demo_count }}</span>
+            {% endif %}
+        </div>
+        <div class="divide-y divide-slate-100 max-h-[28rem] overflow-y-auto">
+            {% for d in latest_demo_requests %}
+            <div class="px-4 py-3">
+                <div class="flex items-start justify-between gap-2 mb-2">
+                    <div class="min-w-0">
+                        <p class="text-xs font-black text-slate-900 truncate">{{ d.requester.get_username() }}</p>
+                        <p class="text-[10px] text-slate-500 truncate">{{ d.contact_phone or d.requester.email or '—' }}</p>
+                        <a href="{{ url('hometutor:tutor_detail', slug=d.tutor.slug) }}" target="_blank"
+                           class="text-[10px] font-bold text-indigo-600 hover:underline truncate block">→ {{ d.tutor.display_name }}</a>
+                    </div>
+                </div>
+                <div class="flex gap-1.5">
+                    <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="flex-1">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="DECLINED">
+                        <button type="submit" class="w-full rounded-lg border border-rose-200 bg-rose-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">Decline</button>
+                    </form>
+                    <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="flex-1">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="ACCEPTED">
+                        <button type="submit" class="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Accept</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="px-4 py-8 text-center text-slate-400 text-xs font-bold">No demo requests pending.</div>
+            {% endfor %}
+        </div>
+    </section>
+    {# END COL 2 #}
+
+    {# COL 3: Tutor Leads #}
+    <section id="tutor-leads" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-2"
+             style="background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">🎯 Tutor leads</h3>
+            {% set lead_count = latest_tutor_requests | length %}
+            {% if lead_count > 0 %}
+            <span class="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-black">{{ lead_count }}</span>
+            {% endif %}
+        </div>
+        <div class="divide-y divide-slate-100 max-h-[28rem] overflow-y-auto">
+            {% for row in latest_tutor_requests %}
+            <div class="px-4 py-3">
+                <div class="mb-2">
+                    <p class="text-xs font-black text-slate-900 truncate">{{ row.full_name }}</p>
+                    <p class="text-[10px] text-slate-500">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
+                    <p class="text-[10px] text-indigo-600 truncate">{{ row.city }}{% if row.area %} · {{ row.area }}{% endif %} — {{ row.subjects }}{% if row.class_grade %} · Cls {{ row.class_grade }}{% endif %}</p>
+                </div>
+                <div class="flex gap-1.5">
+                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="flex-1">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="CONTACTED">
+                        <button type="submit" class="w-full rounded-lg border border-amber-200 bg-amber-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">Contacted</button>
+                    </form>
+                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="flex-1">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                        <input type="hidden" name="status" value="CLOSED">
+                        <button type="submit" class="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Closed</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="px-4 py-8 text-center text-slate-400 text-xs font-bold">No new leads.</div>
+            {% endfor %}
+        </div>
+    </section>
+    {# END COL 3 #}
+
+    </div>{# end 3-col grid #}
 
     {# ============ FACULTY & COURSE QUICK SETUP ============ #}
-    <section class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
+    <section class="mb-8 bg-slate-50 rounded-2xl border border-indigo-100 shadow-sm overflow-hidden"
              x-data="{ tab: 'create' }">
 
         {# Header #}
-        <div class="p-4 border-b border-slate-100 bg-indigo-50/30 flex flex-wrap items-center justify-between gap-2">
+        <div class="p-4 border-b border-indigo-100 bg-indigo-100/60 flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-3">
                 <h2 class="text-xs font-black uppercase tracking-widest text-slate-800">Faculty &amp; Course Quick Setup</h2>
                 {% if lms_stats.needs_attention > 0 %}
@@ -128,7 +212,7 @@
         </div>
 
         {# LMS Pulse Bar #}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/50">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-indigo-100 border-b border-indigo-100 bg-white/80">
             <div class="px-4 py-3 text-center">
                 <p class="text-xl font-black text-slate-900">{{ lms_stats.total_courses }}</p>
                 <p class="text-[10px] font-black uppercase text-slate-500 mt-0.5">Active courses</p>
@@ -156,7 +240,7 @@
         </div>
 
         {# Tabs #}
-        <div class="flex border-b border-slate-100 overflow-x-auto">
+        <div class="flex border-b border-indigo-100 overflow-x-auto bg-white/60">
             <button @click="tab='create'"
                     :class="tab==='create' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
                     class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
@@ -185,7 +269,7 @@
         </div>
 
         {# ── Tab: Create course ── #}
-        <div x-show="tab==='create'" x-cloak class="p-5">
+        <div x-show="tab==='create'" x-cloak class="p-5 bg-slate-50/80">
             <datalist id="lms-dash-student-options">
                 {% for s in lms_student_options %}
                 <option value="{{ s.username }}{% if s.email %} · {{ s.email }}{% endif %}">
@@ -224,7 +308,7 @@
         </div>
 
         {# ── Tab: Add student ── #}
-        <div x-show="tab==='student'" x-cloak class="p-5">
+        <div x-show="tab==='student'" x-cloak class="p-5 bg-slate-50/80">
             <p class="mb-3 text-xs font-bold text-slate-500">Enroll a student into an existing course. Only <strong>STUDENT-role</strong> accounts are accepted.</p>
             <form method="post" action="{{ url('lms:courses') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -255,7 +339,7 @@
         </div>
 
         {# ── Tab: Add topic ── #}
-        <div x-show="tab==='topic'" x-cloak class="p-5">
+        <div x-show="tab==='topic'" x-cloak class="p-5 bg-slate-50/80">
             <p class="mb-3 text-xs font-bold text-slate-500">Create a curriculum topic scoped to a specific course. It shows in that course's LMS sidebar immediately — no assignment needed first.</p>
             <form method="post" action="{{ url('lms:topic_create') }}" class="grid gap-3 sm:grid-cols-[2fr_2fr_auto] sm:items-end">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
@@ -278,7 +362,7 @@
         </div>
 
         {# ── Tab: Reassign faculty ── #}
-        <div x-show="tab==='faculty'" x-cloak class="p-5">
+        <div x-show="tab==='faculty'" x-cloak class="p-5 bg-slate-50/80">
             <p class="mb-3 text-xs font-bold text-slate-500">Change which faculty/tutor teaches an existing course. Saves immediately. Warning: removing the owner means only a superuser can manage or grade it.</p>
             {% if lms_quick_courses %}
             <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
@@ -380,33 +464,103 @@
         </div>
     </section>
 
-    {# ============ REVENUE ============ #}
-    <section class="mb-8">
-        <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Revenue collected (real payments, SUCCESS only)</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1">Today</p>
-                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.today) }}</p>
+    {# ============ REVENUE + GROWTH side by side ============ #}
+    <div class="mb-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        {# LEFT: Revenue #}
+        <section>
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">💰 Revenue (SUCCESS payments only)</h2>
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Today</p>
+                    <p class="text-xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.today) }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">7 days
+                        {% if wow.revenue_pct_change is not none %}
+                        <span class="block {{ 'text-emerald-600' if wow.revenue_pct_change >= 0 else 'text-rose-600' }} normal-case">{{ '▲' if wow.revenue_pct_change >= 0 else '▼' }} {{ wow.revenue_pct_change|abs }}%</span>
+                        {% endif %}
+                    </p>
+                    <p class="text-xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.week) }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">30 days</p>
+                    <p class="text-xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.month) }}</p>
+                </div>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1 flex items-center justify-between">
-                    Last 7 days
-                    {% if wow.revenue_pct_change is not none %}
-                    <span class="{{ 'text-emerald-600' if wow.revenue_pct_change >= 0 else 'text-rose-600' }} text-[11px] font-black normal-case">
-                        {{ '▲' if wow.revenue_pct_change >= 0 else '▼' }} {{ wow.revenue_pct_change|abs }}% vs prior 7d
-                    </span>
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-[10px] uppercase font-black tracking-widest text-slate-600 border-b">
+                        <tr>
+                            <th class="px-4 py-2.5">Source</th>
+                            <th class="px-3 py-2.5 text-right">Today</th>
+                            <th class="px-3 py-2.5 text-right">7d</th>
+                            <th class="px-3 py-2.5 text-right">30d</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for row in revenue.by_source %}
+                        <tr>
+                            <td class="px-4 py-2.5 text-xs font-bold text-slate-800">
+                                {{ row.label }}
+                                {% if row.key == 'hometutor' %}
+                                <span class="block text-[10px] font-normal text-slate-400">Gross — tutor share paid separately</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2.5 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.today) }}</td>
+                            <td class="px-3 py-2.5 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.week) }}</td>
+                            <td class="px-3 py-2.5 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.month) }}</td>
+                        </tr>
+                        {% if row.key == 'hometutor' %}
+                        <tr class="bg-emerald-50/40">
+                            <td class="px-4 py-2 text-[10px] font-black text-emerald-700 pl-7">↳ platform net fee</td>
+                            <td class="px-3 py-2 text-[10px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.today) }}</td>
+                            <td class="px-3 py-2 text-[10px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.week) }}</td>
+                            <td class="px-3 py-2 text-[10px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.month) }}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {# RIGHT: Growth #}
+        <section>
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">📈 Growth</h2>
+            <div class="grid grid-cols-3 gap-3 mb-3">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-xl font-black text-slate-900">{{ growth.total_users }}</p>
+                    <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Total users</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-xl font-black text-emerald-600">+{{ growth.new_today }}</p>
+                    <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Today</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-xl font-black text-emerald-600">+{{ growth.new_week }}</p>
+                    <p class="text-[10px] font-black uppercase text-slate-500 mt-1">7d signups</p>
+                    {% if wow.signups_pct_change is not none %}
+                    <p class="text-[10px] font-black mt-0.5 {{ 'text-emerald-600' if wow.signups_pct_change >= 0 else 'text-rose-600' }}">{{ '▲' if wow.signups_pct_change >= 0 else '▼' }} {{ wow.signups_pct_change|abs }}%</p>
                     {% endif %}
-                </p>
-                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.week) }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+                    <p class="text-xl font-black text-emerald-600">+{{ growth.new_month }}</p>
+                    <p class="text-[10px] font-black uppercase text-slate-500 mt-1">30d signups</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center col-span-2">
+                    <p class="text-xl font-black text-indigo-600">{{ growth.active_week }}</p>
+                    <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Active last 7 days</p>
+                </div>
             </div>
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <p class="text-xs font-black uppercase text-slate-500 tracking-widest mb-1">Last 30 days</p>
-                <p class="text-2xl font-black text-slate-900">₹{{ "{:,.0f}".format(revenue.totals.month) }}</p>
-            </div>
-        </div>
-        {# Real 14-day trend bars — no smoothing, no fake curves #}
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
-            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Daily revenue — last 14 days</p>
+        </section>
+
+    </div>
+
+    {# ============ DAILY TREND CHARTS side by side ============ #}
+    <div class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">📊 Daily revenue — last 14 days</p>
             <div class="flex items-end gap-1.5 h-24">
                 {% for row in revenue_trend %}
                 <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
@@ -416,74 +570,9 @@
                 {% endfor %}
             </div>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
-                    <tr>
-                        <th class="px-5 py-3">Source</th>
-                        <th class="px-5 py-3 text-right">Today</th>
-                        <th class="px-5 py-3 text-right">7 days</th>
-                        <th class="px-5 py-3 text-right">30 days</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for row in revenue.by_source %}
-                    <tr>
-                        <td class="px-5 py-3 text-xs font-bold text-slate-800">
-                            {{ row.label }}
-                            {% if row.key == 'hometutor' %}
-                            <span class="block text-[10px] font-bold text-slate-400 normal-case">Gross (parent payment) — tutor's share is paid out separately via payouts</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.today) }}</td>
-                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.week) }}</td>
-                        <td class="px-5 py-3 text-xs font-bold text-slate-700 text-right">₹{{ "{:,.0f}".format(row.month) }}</td>
-                    </tr>
-                    {% if row.key == 'hometutor' %}
-                    <tr class="bg-emerald-50/40">
-                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 pl-8">↳ of which platform keeps (net fee)</td>
-                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.today) }}</td>
-                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.week) }}</td>
-                        <td class="px-5 py-2 text-[11px] font-black text-emerald-700 text-right">₹{{ "{:,.0f}".format(revenue.hometutor_platform_fee.month) }}</td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    {# ============ GROWTH ============ #}
-    <section class="mb-8">
-        <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Growth</h2>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                <p class="text-xl font-black text-slate-900">{{ growth.total_users }}</p>
-                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Total users</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                <p class="text-xl font-black text-emerald-600">+{{ growth.new_today }}</p>
-                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups today</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                <p class="text-xl font-black text-emerald-600">+{{ growth.new_week }}</p>
-                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups (7d)</p>
-                {% if wow.signups_pct_change is not none %}
-                <p class="text-[10px] font-black mt-0.5 {{ 'text-emerald-600' if wow.signups_pct_change >= 0 else 'text-rose-600' }}">{{ '▲' if wow.signups_pct_change >= 0 else '▼' }} {{ wow.signups_pct_change|abs }}% vs prior 7d</p>
-                {% endif %}
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                <p class="text-xl font-black text-emerald-600">+{{ growth.new_month }}</p>
-                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Signups (30d)</p>
-            </div>
-            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
-                <p class="text-xl font-black text-indigo-600">{{ growth.active_week }}</p>
-                <p class="text-[10px] font-black uppercase text-slate-500 mt-1">Active (7d)</p>
-            </div>
-        </div>
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Daily signups — last 14 days</p>
-            <div class="flex items-end gap-1.5 h-20">
+            <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">👥 Daily signups — last 14 days</p>
+            <div class="flex items-end gap-1.5 h-24">
                 {% for row in signup_trend %}
                 <div class="flex-1 flex flex-col items-center justify-end h-full group relative">
                     <div class="w-full rounded-t bg-emerald-500 group-hover:bg-emerald-600 transition-colors" style="height: {{ row.pct }}%; min-height: {{ '2px' if row.count == 0 else '4px' }};"></div>
@@ -492,7 +581,7 @@
                 {% endfor %}
             </div>
         </div>
-    </section>
+    </div>
 
     {# ============ BALANCE SHEET + CONTENT HEALTH ============ #}
     <section class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -586,100 +675,6 @@
                     </tr>
                     {% else %}
                     <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">Nothing pending. Great job!</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    {# ============ INLINE REVIEW: DEMO REQUESTS ============ #}
-    <section id="demo-requests" class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
-        <div class="p-4 border-b border-slate-100 bg-indigo-50/30 flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">Demo requests pending</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left min-w-[720px]">
-                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
-                    <tr>
-                        <th class="px-5 py-3">Requester</th>
-                        <th class="px-5 py-3">Tutor</th>
-                        <th class="px-5 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for d in latest_demo_requests %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-5 py-3">
-                            <p class="text-xs font-black text-slate-900">{{ d.requester.get_username() }}</p>
-                            <p class="text-[11px] text-slate-500">{{ d.contact_phone or d.requester.email or '—' }}</p>
-                        </td>
-                        <td class="px-5 py-3">
-                            <a href="{{ url('hometutor:tutor_detail', slug=d.tutor.slug) }}" class="text-xs font-black text-indigo-700 hover:underline" target="_blank" rel="noopener">{{ d.tutor.display_name }}</a>
-                        </td>
-                        <td class="px-5 py-3 text-right">
-                            <div class="flex justify-end gap-2">
-                                <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <input type="hidden" name="status" value="DECLINED">
-                                    <button type="submit" class="inline-flex rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-rose-700 hover:bg-rose-100">Decline</button>
-                                </form>
-                                <form method="post" action="{{ url('dashboard:update_demo_request_status', demo_id=d.id) }}" class="inline">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <input type="hidden" name="status" value="ACCEPTED">
-                                    <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Accept</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No demo requests pending.</td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    {# ============ INLINE REVIEW: TUTOR LEADS ============ #}
-    <section id="tutor-leads" class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
-        <div class="p-4 border-b border-slate-100 bg-emerald-50/30 flex justify-between items-center">
-            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">New tutor requirement leads</h3>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-left min-w-[720px]">
-                <thead class="bg-slate-50 text-xs uppercase font-black tracking-widest text-slate-600 border-b">
-                    <tr>
-                        <th class="px-5 py-3">Requester</th>
-                        <th class="px-5 py-3">Requirement</th>
-                        <th class="px-5 py-3 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                    {% for row in latest_tutor_requests %}
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-5 py-3">
-                            <p class="text-xs font-black text-slate-900">{{ row.full_name }}</p>
-                            <p class="text-[11px] text-slate-500">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
-                        </td>
-                        <td class="px-5 py-3 text-xs text-slate-700">
-                            {{ row.city }}{% if row.area %} · {{ row.area }}{% endif %} — {{ row.subjects }}{% if row.class_grade %} · Class {{ row.class_grade }}{% endif %}
-                        </td>
-                        <td class="px-5 py-3 text-right">
-                            <div class="flex justify-end gap-2">
-                                <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <input type="hidden" name="status" value="CONTACTED">
-                                    <button type="submit" class="inline-flex rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">Contacted</button>
-                                </form>
-                                <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="inline">
-                                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                                    <input type="hidden" name="status" value="CLOSED">
-                                    <button type="submit" class="inline-flex rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Closed</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr><td colspan="3" class="px-5 py-8 text-center text-slate-400 font-bold text-sm">No new leads.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
