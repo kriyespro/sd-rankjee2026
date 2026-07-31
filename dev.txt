@@ -9,6 +9,32 @@
 - None
 
 ### Completed recently
+- [DONE] Full pass on the Faculty/Tutor dashboard (`/admin/` → `role_tutor.jinja` +
+  `dashboard.views._role_dashboard_context`, TUTOR/FACULTY branch) — the previous version already
+  had the LMS-teaching stat cards but still made a tutor hunt across 4+ separate panels (SLA
+  banner, grading queue, stale-engagement note, preview-mode notice) to know what to do next, and
+  had zero shared view of a tutor's students across the two disconnected systems (LMS course
+  enrollments vs. marketplace engagements). Three additions, all reusing existing models/queries —
+  no new migrations:
+  1. "Today's priorities" — a single ranked, color-coded action list at the very top (replacing the
+     scattered preview/SLA notices) built from data already computed for the KPI cards: missing
+     listing (amber), demo SLA breach >24h (rose), submissions awaiting grading (rose, links to a
+     new `#lms-grading` anchor on the same page), stale active engagements 7d+ (amber), and plain
+     new demo requests (indigo) when nothing is overdue. Shows a green "You're all caught up"
+     state when the list is empty instead of an empty section.
+  2. "My students" roster — merges `LmsCourseEnrollment.objects.filter(course__owner=user)` and
+     `TutorEngagement.objects.filter(tutor_profile=..., status=ACTIVE)` into one deduplicated table
+     (student, LMS courses enrolled in, marketplace Active badge, one action link to the engagement
+     Room or LMS courses page). Previously a tutor had no single place to see "who are my students
+     and where do they show up."
+  3. "Today's sessions" — a compact panel listing `SessionAttendance` rows `scheduled_for__date =
+     today` across the tutor's engagements (this is the tutor-marks-attendance model, distinct from
+     the student-self-reported `StudentDailyClassLog` used on the parent family hub), each linking
+     to the engagement room to log/update it. Hidden entirely when there's nothing today.
+  Also added a "+ New assignment" quick link to the top quick-links row (previously only available
+  inside the LMS-teaching section). Verified via Django test client against the real `demo_tutor`
+  account (200 OK, priorities + roster render); full `dashboard`/`hometutor`/`lms`/`users` suites
+  green (48 tests); rebuilt `static/css/app.css` for the new table/list markup.
 - [DONE] Promoted the `/admin_2/` dashboard rewrite to be the canonical `/admin/` Command
   Center. `dashboard.views.index`'s `_staff_only` branch now runs the same
   aggregation/render logic that used to live in the standalone `index_v2` view (real

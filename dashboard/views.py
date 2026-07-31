@@ -313,6 +313,102 @@ def _role_dashboard_context(request):
             lms_assignment_qs.select_related('course').order_by('-created_at')[:5]
         )
 
+        # Today's sessions (marketplace) — SessionAttendance the tutor logs per-engagement in the
+        # room; surfacing today's scheduled ones here saves hunting through each engagement room.
+        todays_sessions = list(
+            SessionAttendance.objects.filter(
+                engagement__tutor_profile=tutor_profile,
+                scheduled_for__date=now.date(),
+            )
+            .select_related('engagement', 'engagement__student')
+            .order_by('scheduled_for')
+            if tutor_profile
+            else []
+        )
+
+        # Unified "My Students" roster — a faculty/tutor's students live in two separate systems
+        # (marketplace TutorEngagement + LMS LmsCourseEnrollment) with zero shared view before this
+        # (fix: "make productive" — one roster instead of hunting through two disconnected panels).
+        _students_by_id = {}
+        for enrollment in (
+            LmsCourseEnrollment.objects.filter(course__owner=user)
+            .select_related('user', 'course')
+            .order_by('user__username')
+        ):
+            row = _students_by_id.setdefault(
+                enrollment.user_id,
+                {'student': enrollment.user, 'lms_courses': [], 'engagement': None},
+            )
+            row['lms_courses'].append(enrollment.course.name)
+        if tutor_profile:
+            for engagement in (
+                TutorEngagement.objects.filter(
+                    tutor_profile=tutor_profile, status=TutorEngagement.Status.ACTIVE
+                )
+                .select_related('student')
+                .order_by('student__username')
+            ):
+                row = _students_by_id.setdefault(
+                    engagement.student_id,
+                    {'student': engagement.student, 'lms_courses': [], 'engagement': None},
+                )
+                row['engagement'] = engagement
+        unified_students = sorted(_students_by_id.values(), key=lambda r: r['student'].get_username())
+        unified_student_count = len(unified_students)
+
+        # Today's priorities — one ranked, actionable list instead of scanning SLA banners, the
+        # grading queue, and the stale-engagement note separately to figure out what to do first.
+        priority_items = []
+        if tutor_preview_mode:
+            priority_items.append(
+                {
+                    'label': 'Create your tutor listing to start receiving demo requests',
+                    'count': None,
+                    'url': reverse('hometutor:my_profile'),
+                    'tone': 'amber',
+                }
+            )
+        if tutor_demo_sla_risk_count > 0:
+            priority_items.append(
+                {
+                    'label': f'{tutor_demo_sla_risk_count} demo request'
+                    f'{"s" if tutor_demo_sla_risk_count != 1 else ""} waiting over 24h — reply now',
+                    'count': tutor_demo_sla_risk_count,
+                    'url': reverse('hometutor:tutor_demos'),
+                    'tone': 'rose',
+                }
+            )
+        if lms_pending_review_count > 0:
+            priority_items.append(
+                {
+                    'label': f'{lms_pending_review_count} submission'
+                    f'{"s" if lms_pending_review_count != 1 else ""} waiting for grading',
+                    'count': lms_pending_review_count,
+                    'url': '#lms-grading',
+                    'tone': 'rose',
+                }
+            )
+        if stale_active_engagement_count > 0:
+            priority_items.append(
+                {
+                    'label': f'{stale_active_engagement_count} active engagement'
+                    f'{"s" if stale_active_engagement_count != 1 else ""} idle 7+ days — check in',
+                    'count': stale_active_engagement_count,
+                    'url': reverse('hometutor:tutor_demos'),
+                    'tone': 'amber',
+                }
+            )
+        if pending_incoming > 0 and tutor_demo_sla_risk_count == 0:
+            priority_items.append(
+                {
+                    'label': f'{pending_incoming} new demo request'
+                    f'{"s" if pending_incoming != 1 else ""} to respond to',
+                    'count': pending_incoming,
+                    'url': reverse('hometutor:tutor_demos'),
+                    'tone': 'indigo',
+                }
+            )
+
         activity_timeline = []
         for d in latest_pending_demos[:4]:
             activity_timeline.append(
@@ -343,6 +439,10 @@ def _role_dashboard_context(request):
                 {'label': 'Active students', 'value': active_engagements},
                 {'label': 'Open disputes', 'value': open_disputes},
             ],
+            'priority_items': priority_items,
+            'todays_sessions': todays_sessions,
+            'unified_students': unified_students,
+            'unified_student_count': unified_student_count,
             'lms_course_count': lms_course_count,
             'lms_student_count': lms_student_count,
             'lms_assignment_count': lms_assignment_count,
