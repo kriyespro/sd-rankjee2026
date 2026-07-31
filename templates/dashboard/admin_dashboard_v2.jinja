@@ -80,6 +80,15 @@
                         <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Faculty</label>
                         {{ lms_course_form.owner }}
                     </div>
+                    {% if lms_course_form.catalog_course %}
+                    <div>
+                        <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Paid course (/courses/)</label>
+                        {{ lms_course_form.catalog_course }}
+                    </div>
+                    <label class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        {{ lms_course_form.is_default_for_catalog }} Auto-enroll buyers of that paid course here
+                    </label>
+                    {% endif %}
                     <label class="flex items-center gap-2 text-xs font-bold text-slate-700">
                         {{ lms_course_form.is_active }} Active
                     </label>
@@ -96,7 +105,7 @@
                         <select name="course_id" required class="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm">
                             <option value="">Pick a course…</option>
                             {% for c in lms_quick_courses %}
-                            <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} — {{ c.owner.get_username() }}{% else %} — platform-wide{% endif %}</option>
+                            <option value="{{ c.pk }}">{{ c.name }}{% if c.catalog_course %} · {{ c.catalog_course.title }}{% endif %}{% if c.owner %} — {{ c.owner.get_username() }}{% else %} — platform-wide{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -123,7 +132,10 @@
                     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                     <input type="hidden" name="action" value="reassign_owner">
                     <input type="hidden" name="course_id" value="{{ c.pk }}">
-                    <span class="text-xs font-bold text-slate-800 min-w-[8rem]">{{ c.name }}</span>
+                    <span class="text-xs font-bold text-slate-800 min-w-[8rem]">
+                        {{ c.name }}
+                        {% if c.catalog_course %}<br><span class="text-[10px] font-normal text-indigo-600">→ {{ c.catalog_course.title }}</span>{% endif %}
+                    </span>
                     <select name="owner_id" class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[11px] font-bold text-slate-700">
                         <option value="">Platform-wide (no owner)</option>
                         {% for o in lms_owner_options %}

@@ -9,6 +9,17 @@
 - None
 
 ### Completed recently
+- [DONE] Follow-up on the /admin/ quick-setup panel — surfaced the real paid catalog
+  (https://rankjee.com/courses/, e.g. "AI Automation Engineering Pro") in the "Create a course &
+  assign faculty" form: added `catalog_course` (which paid course this LMS batch delivers) +
+  `is_default_for_catalog` (auto-enroll buyers) fields, admin-only (mirrors the full
+  `/admin/lms/courses/` page — `LmsCourseForm` already strips these fields for office/faculty).
+  Also showed the linked catalog course title in the "Assign a student" course dropdown and the
+  "Reassign faculty" list so it's clear which real product each LMS batch maps to. Verified
+  live: dropdown lists all 27 active catalog courses straight from `core.models.Course` (same
+  table that powers /courses/). Full `lms dashboard` suite still 45/45 green (purely additive —
+  no new form fields on the model, just exposing existing `LmsCourseForm` fields in the compact
+  panel). Rebuilt `app.css`.
 - [DONE] "Make an easy students & courses assign method to faculty in /admin for superuser":
   1. **Closed a real gap** — a course's faculty owner could previously only be set at *creation*
      time (`LmsCourseForm`); there was no way to reassign an existing course. Added a new
