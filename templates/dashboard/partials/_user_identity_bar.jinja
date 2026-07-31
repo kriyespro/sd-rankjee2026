@@ -1,0 +1,51 @@
+{# ── User identity bar ──────────────────────────────────────────────────────
+   Shows logged-in user's avatar initial, username, email, and role badge.
+   Included at the top of every role dashboard rendered at /admin/.
+   Uses request.user directly — no extra context variable needed.
+───────────────────────────────────────────────────────────────────────── #}
+{% set _role = request.user.role if request.user.role else ('SUPERADMIN' if request.user.is_superuser else '') %}
+{% set _initial = request.user.username[0]|upper if request.user.username else '?' %}
+
+{# Role colour mapping #}
+{% if _role in ['TUTOR', 'FACULTY'] %}
+  {% set _pill = 'bg-emerald-100 text-emerald-800 border border-emerald-200' %}
+  {% set _avatar = 'bg-emerald-100 text-emerald-700' %}
+{% elif _role == 'PARENT' %}
+  {% set _pill = 'bg-amber-100 text-amber-800 border border-amber-200' %}
+  {% set _avatar = 'bg-amber-100 text-amber-700' %}
+{% elif _role == 'CITY_ADMIN' %}
+  {% set _pill = 'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-200' %}
+  {% set _avatar = 'bg-fuchsia-100 text-fuchsia-700' %}
+{% elif _role == 'GLOBAL_ADMIN' %}
+  {% set _pill = 'bg-slate-200 text-slate-800 border border-slate-300' %}
+  {% set _avatar = 'bg-slate-200 text-slate-700' %}
+{% elif _role == 'SUPERADMIN' or request.user.is_superuser %}
+  {% set _pill = 'bg-indigo-100 text-indigo-800 border border-indigo-200' %}
+  {% set _avatar = 'bg-indigo-100 text-indigo-700' %}
+{% elif _role == 'STUDENT' %}
+  {% set _pill = 'bg-sky-100 text-sky-800 border border-sky-200' %}
+  {% set _avatar = 'bg-sky-100 text-sky-700' %}
+{% else %}
+  {% set _pill = 'bg-slate-100 text-slate-700 border border-slate-200' %}
+  {% set _avatar = 'bg-slate-100 text-slate-600' %}
+{% endif %}
+
+<div class="mb-5 flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm">
+    {# Avatar initial #}
+    <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-black {{ _avatar }}">
+        {{ _initial }}
+    </span>
+
+    {# Name + email #}
+    <div class="min-w-0 flex-1">
+        <p class="text-sm font-black text-slate-900 truncate leading-tight">{{ request.user.username }}</p>
+        {% if request.user.email %}
+        <p class="text-[10px] text-slate-400 truncate">{{ request.user.email }}</p>
+        {% endif %}
+    </div>
+
+    {# Role badge #}
+    <span class="flex-shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest {{ _pill }}">
+        {{ _role or 'USER' }}
+    </span>
+</div>
