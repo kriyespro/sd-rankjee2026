@@ -273,11 +273,15 @@ class OfficeOversightTests(TestCase):
 
 
 class FacultyOwnStudentScopeTests(TestCase):
-    """Fix: a platform-wide (unbatched) assignment is visible to every faculty (shared
-    curriculum), but that used to leak every OTHER faculty's students' submissions into a
-    faculty's own LMS home page (top scores, best likes, latest comments, recent activity,
-    pending-review counts) — `faculty_student_scope` narrows all of that to a faculty's own
-    roster, while an admin/office account still sees everything."""
+    """Fix: a platform-wide (unbatched) assignment used to be visible to every faculty (shared
+    curriculum), which leaked every OTHER faculty's students' submissions into a faculty's own
+    LMS home page (top scores, best likes, latest comments, recent activity, pending-review
+    counts). Later hardened further per explicit request ("in LMS show only that course's
+    topic") — `assignments_for_user` now excludes platform-wide content from faculty entirely,
+    so a faculty's whole LMS world is exactly the courses admin/office assigned them.
+    `faculty_student_scope`/`own_student_ids` remain as defense-in-depth for the residual
+    edge case (a student unenrolled after already submitting). Admin/office still see
+    everything, including platform-wide content, by design."""
 
     def setUp(self):
         self.faculty_a = User.objects.create_user(
@@ -333,23 +337,48 @@ class FacultyOwnStudentScopeTests(TestCase):
         self.assertEqual(services.own_student_ids(self.faculty_a), {self.student_a.id})
         self.assertEqual(services.own_student_ids(self.faculty_b), {self.student_b.id})
 
-    def test_home_page_hides_other_faculty_students_platform_wide_submission(self):
+    def test_home_page_hides_platform_wide_assignment_entirely_from_faculty(self):
+        """Neither faculty sees the platform-wide assignment or either student's submission to
+        it at all now — it's simply not part of their LMS world anymore."""
         self._submit(self.student_a, self.platform_assignment)
         self._submit(self.student_b, self.platform_assignment)
 
         self.client.force_login(self.faculty_a)
         res = self.client.get(reverse('lms:home'))
         body = res.content.decode()
-        self.assertIn('scope_student_a', body)
+        self.assertNotIn('scope_student_a', body)
         self.assertNotIn('scope_student_b', body)
+        self.assertNotIn('Shared platform-wide quiz', body)
 
-    def test_admin_home_stats_pending_count_scoped_to_own_students(self):
+    def test_admin_sees_platform_wide_assignment_and_both_students(self):
+        admin = User.objects.create_superuser(
+            username='scope_admin2', email='scope_admin2@example.com', password='StrongPass!123',
+        )
+        self._submit(self.student_a, self.platform_assignment)
+        self._submit(self.student_b, self.platform_assignment)
+
+        stats = services.admin_home_stats(admin)
+        self.assertEqual(stats['pending'], 2)
+        self.assertEqual(stats['students_submitted'], 2)
+
+    def test_admin_home_stats_excludes_platform_wide_for_faculty(self):
+        """Faculty stats are scoped to their own course only — the platform-wide submissions
+        from either student don't count towards them at all anymore."""
         self._submit(self.student_a, self.platform_assignment)
         self._submit(self.student_b, self.platform_assignment)
 
         stats_a = services.admin_home_stats(self.faculty_a)
-        self.assertEqual(stats_a['pending'], 1)
-        self.assertEqual(stats_a['students_submitted'], 1)
+        self.assertEqual(stats_a['pending'], 0)
+        self.assertEqual(stats_a['students_submitted'], 0)
+
+    def test_assignments_for_user_excludes_platform_wide_for_faculty(self):
+        ids = set(services.assignments_for_user(self.faculty_a).values_list('pk', flat=True))
+        self.assertNotIn(self.platform_assignment.pk, ids)
+
+    def test_faculty_cannot_view_platform_wide_assignment_detail(self):
+        self.client.force_login(self.faculty_a)
+        res = self.client.get(reverse('lms:assignment_detail', kwargs={'pk': self.platform_assignment.pk}))
+        self.assertEqual(res.status_code, 302)  # can_view_assignment=False -> Http404 -> redirect
 
     def test_own_course_submission_never_filtered_out(self):
         """Belt-and-suspenders: even if enrollment were ever removed after submission, a

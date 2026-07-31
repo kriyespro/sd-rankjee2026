@@ -9,6 +9,36 @@
 - None
 
 ### Completed recently
+- [DONE] Tightened LMS scoping further per explicit request: "admin creates courses -> faculty
+  assigned to that course -> students assigned to that course -> in faculty/tutor dashboard and
+  LMS show only that course's topic". Two parts:
+  1. **"Your courses" panel on the Tutor/Faculty ops dashboard (`/admin/`)** — already showed
+     multiple courses (`lms_courses_overview`, up to 6, via `LmsCourse.objects.filter(owner=user)`
+     with a "Manage" link to the full list at `/admin/lms/courses/`) from the earlier dashboard
+     upgrade. Verified this already satisfies "show multiple courses assigned to them" — no
+     change needed there.
+  2. **LMS home "Topics" sidebar was showing platform-wide (unbatched) topics unrelated to a
+     faculty's own courses** — `lms/services.py::assignments_for_user` used to give faculty
+     `Q(course__owner_id=user.id) | Q(course__isnull=True)` (their own courses PLUS every
+     platform-wide/admin-broadcast assignment, treated as "shared curriculum"). Removed the
+     `course__isnull=True` arm for faculty entirely — a faculty's LMS world (Topics sidebar,
+     recent submissions/assignments, admin_stats counts, topic_detail, assignment_detail direct
+     access) is now strictly the courses admin/office assigned them, nothing broader. Also
+     updated `can_view_assignment` so a faculty can no longer open a platform-wide assignment's
+     detail page directly (404→redirect) — matches `assignments_for_user`. Students are
+     completely unaffected (still see platform-wide + their enrolled courses, as before).
+     Mirrored the same restriction in the Django `/sd/` admin (`lms/admin.py::_owned_assignment_ids`
+     and `LmsAssignmentAdmin.get_queryset`) for consistency — a non-superuser staff account
+     browsing `/sd/` now also only sees their own courses, not platform-wide content.
+     `faculty_student_scope`/`own_student_ids` (previous session's narrowing fix) are kept as
+     defense-in-depth but are now mostly a no-op in practice since platform-wide never enters a
+     faculty's assignment set at all anymore. Rewrote `FacultyOwnStudentScopeTests` to match
+     (platform-wide assignment title/students now invisible to faculty entirely, not just
+     narrowed; added `test_admin_sees_platform_wide_assignment_and_both_students` proving
+     admin/office visibility is untouched). Verified live via a Client-based smoke script: a
+     faculty's own-course topic shows on `/admin/lms/`, a platform-wide topic does not.
+     Full `lms` suite: 38 tests green. Full `lms dashboard hometutor users tutor_study` suite:
+     65 tests green. No migration, no CSS rebuild needed.
 - [DONE] Reworked the LMS course setup pipeline per explicit request: "admin or office adds
   topic → faculty assigned to that course → student assigned to that course and faculty
   (faculty/tutor cannot see students' email)". Three changes, all in `lms/`:

@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.db.models import Q
 
 from .models import (
     LmsAssignment,
@@ -13,10 +12,10 @@ from .models import (
 
 
 def _owned_assignment_ids(user):
-    """Assignment PKs visible to a non-superuser staff (faculty): own courses + platform-wide."""
-    return LmsAssignment.objects.filter(
-        Q(course__owner_id=user.id) | Q(course__isnull=True)
-    ).values_list('pk', flat=True)
+    """Assignment PKs visible to a non-superuser staff (faculty) in the /sd/ admin — strictly
+    their own courses, matching lms.services.assignments_for_user (platform-wide/unbatched
+    content is admin-only now)."""
+    return LmsAssignment.objects.filter(course__owner_id=user.id).values_list('pk', flat=True)
 
 
 class LmsCourseEnrollmentInline(admin.TabularInline):
@@ -75,7 +74,7 @@ class LmsAssignmentAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        return qs.filter(Q(course__owner_id=request.user.id) | Q(course__isnull=True))
+        return qs.filter(course__owner_id=request.user.id)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == 'course' and not request.user.is_superuser:

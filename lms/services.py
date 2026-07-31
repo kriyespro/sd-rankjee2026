@@ -129,8 +129,12 @@ def assignments_for_user(user) -> QuerySet[LmsAssignment]:
     if is_lms_admin(user) or is_lms_office(user):
         return qs.all()
     if is_lms_faculty(user):
-        # Own courses + platform-wide (unbatched) content; never another faculty's course.
-        return qs.filter(Q(course__owner_id=user.id) | Q(course__isnull=True))
+        # Strictly the courses admin/office assigned to them — never another faculty's course,
+        # and no longer platform-wide/unbatched content either (fix: "in LMS show only that
+        # course's topic" — a faculty's whole world is exactly the courses they were assigned,
+        # nothing broader). Platform-wide broadcasts are admin/office-only content now; students
+        # still see them (below) regardless of which course, if any, they're enrolled in.
+        return qs.filter(course__owner_id=user.id)
     # Students: published + (platform-wide OR enrolled in the course)
     course_ids = user_course_ids(user)
     return qs.filter(is_published=True).filter(Q(course__isnull=True) | Q(course_id__in=course_ids))
@@ -140,9 +144,9 @@ def can_view_assignment(user, assignment: LmsAssignment) -> bool:
     if is_lms_admin(user) or is_lms_office(user):
         return True
     if is_lms_faculty(user):
-        if assignment.course_id:
-            return assignment.course.owner_id == user.id
-        return True  # platform-wide content is visible to all faculty
+        # Matches assignments_for_user — a faculty can only ever view assignments in a course
+        # they own; platform-wide (course=None) assignments are admin/office territory now.
+        return bool(assignment.course_id) and assignment.course.owner_id == user.id
     if not assignment.is_published:
         return False
     if assignment.course_id is None:
@@ -181,14 +185,13 @@ def own_student_ids(user) -> set[int]:
 def faculty_student_scope(user) -> Q | None:
     """Q() that scopes an `LmsSubmission` queryset to a faculty's own students.
 
-    Fix: `assignments_for_user` correctly includes platform-wide (unbatched) assignments for
-    every faculty (they're shared curriculum), but that meant the LMS home page's per-student
-    aggregates (top scores, best likes, latest comments, recent activity, pending-review counts)
-    showed submissions from ANY student who submitted to a platform-wide assignment — including
-    other faculty's own students, not just this faculty's. Submissions on a faculty's *own*
-    course-scoped assignments were already naturally student-scoped (only enrolled students can
-    submit), so the OR below is a no-op for those and only narrows the platform-wide case.
-    Returns None for admin/office — full platform visibility is correct for them by design.
+    `assignments_for_user` now excludes platform-wide content from faculty entirely (they only
+    ever see their own courses), so in practice every submission this scopes is already a
+    faculty's own student by construction — this is a second line of defense against any future
+    change re-introducing shared/platform-wide assignments into a faculty's queryset, and against
+    the edge case where a student was unenrolled after already submitting (still shows, via the
+    `assignment__course__owner_id` arm). Returns None for admin/office — full platform
+    visibility is correct for them by design.
     """
     if is_lms_admin(user) or is_lms_office(user):
         return None
@@ -346,8 +349,8 @@ def home_sidebar_data(user, limit: int = 5) -> dict:
 def admin_home_stats(user) -> dict:
     """Staff LMS overview counts for the home header badges.
 
-    Admin (superuser) sees platform-wide counts; faculty see only their own courses
-    plus platform-wide (unbatched) content.
+    Admin (superuser) sees platform-wide counts; faculty see only their own assigned courses
+    (assignments_for_user excludes platform-wide content from faculty entirely).
     """
     assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True)) or [0]
     assignment_qs = LmsAssignment.objects.filter(pk__in=assignment_ids)
@@ -355,9 +358,8 @@ def admin_home_stats(user) -> dict:
     total_assignments = assignment_qs.count()
     topics_covered = LmsTopic.objects.filter(assignments__in=assignment_ids).distinct().count()
 
-    # Student-level data (who submitted, pending review) must stay scoped to this faculty's own
-    # students even on platform-wide assignments — see faculty_student_scope(). Assignment/topic
-    # counts above are unaffected: shared curriculum visibility is fine for every faculty.
+    # Student-level data (who submitted, pending review) — see faculty_student_scope() docstring
+    # for why this is now mostly a defense-in-depth no-op for faculty.
     submissions_qs = LmsSubmission.objects.filter(assignment_id__in=assignment_ids)
     scope = faculty_student_scope(user)
     if scope is not None:
