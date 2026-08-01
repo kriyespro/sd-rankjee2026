@@ -10,11 +10,19 @@
     </div>
     {% endif %}
 
+    {# ── Compact header: role title + identity inline ─────────────────────── #}
+    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-100 bg-white px-4 py-2.5 shadow-sm">
+        <div class="min-w-0 flex-shrink-0">
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-sky-600 leading-none mb-0.5">Student workspace</p>
+            <h1 class="text-base font-black text-slate-900 leading-tight">My Dashboard</h1>
+        </div>
+        <div class="hidden sm:block h-7 w-px bg-slate-200 flex-shrink-0"></div>
+        {% include "dashboard/partials/_user_identity_inline.jinja" %}
+    </div>
+
     {# ── Stats strip ─────────────────────────────────────────────────────── #}
     {% set kpi_cards = role_stat_cards %}
     {% include "dashboard/partials/_dash_kpi_strip.jinja" %}
-
-    {% include "dashboard/partials/_user_identity_bar.jinja" %}
 
     {# ── TODAY'S FOCUS — 3-column priority row ────────────────────────────── #}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
