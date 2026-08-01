@@ -47,53 +47,67 @@
                     <tr class="border-b border-slate-100 bg-slate-50">
                         <th class="px-4 py-2.5 text-left font-black uppercase tracking-wider text-slate-500">Student</th>
                         <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-slate-500">Total</th>
-                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-emerald-600">Present</th>
-                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-amber-600">Late</th>
-                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-rose-600">Absent</th>
+                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-emerald-600">P</th>
+                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-amber-600">L</th>
+                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-rose-600">A</th>
                         <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-indigo-600">Rate</th>
-                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-slate-400">This month</th>
-                        <th class="px-3 py-2.5 text-right font-black uppercase tracking-wider text-slate-400">Actions</th>
+                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-indigo-400">Log P</th>
+                        <th class="px-3 py-2.5 text-center font-black uppercase tracking-wider text-slate-400">{{ month_name[:3] }} dots</th>
+                        <th class="px-3 py-2.5 text-right font-black uppercase tracking-wider text-slate-400">Detail</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for row in rows %}
                     {% set s = row.summary %}
+                    {% set cl = row.class_log %}
                     <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-4 py-2.5">
+                        <td class="px-4 py-2">
                             <div class="flex items-center gap-2">
-                                <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-black text-slate-600">
+                                <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-black text-slate-600">
                                     {{ row.user.username[0]|upper }}
                                 </span>
-                                <p class="font-black text-slate-800">{{ row.user.username }}</p>
+                                <p class="text-xs font-black text-slate-800">{{ row.user.username }}</p>
                             </div>
                         </td>
-                        <td class="px-3 py-2.5 text-center font-bold text-slate-600">{{ s.total }}</td>
-                        <td class="px-3 py-2.5 text-center font-black text-emerald-700">{{ s.present }}</td>
-                        <td class="px-3 py-2.5 text-center font-black text-amber-700">{{ s.late }}</td>
-                        <td class="px-3 py-2.5 text-center font-black text-rose-600">{{ s.absent }}</td>
-                        <td class="px-3 py-2.5 text-center">
+                        <td class="px-3 py-2 text-center text-xs font-bold text-slate-600">{{ s.total }}</td>
+                        <td class="px-3 py-2 text-center text-xs font-black text-emerald-700">{{ s.present }}</td>
+                        <td class="px-3 py-2 text-center text-xs font-black text-amber-700">{{ s.late }}</td>
+                        <td class="px-3 py-2 text-center text-xs font-black text-rose-600">{{ s.absent }}</td>
+                        <td class="px-3 py-2 text-center">
                             {% if s.rate is not none %}
-                            <span class="font-black {{ 'text-emerald-700' if s.rate >= 75 else 'text-amber-700' if s.rate >= 50 else 'text-rose-600' }}">
-                                {{ s.rate }}%
+                            <div class="flex flex-col items-center gap-0.5">
+                                <span class="text-xs font-black {{ 'text-emerald-700' if s.rate >= 75 else 'text-amber-700' if s.rate >= 50 else 'text-rose-600' }}">{{ s.rate }}%</span>
+                                <div class="w-12 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                    <div class="h-1.5 rounded-full {{ 'bg-emerald-400' if s.rate >= 75 else 'bg-amber-400' if s.rate >= 50 else 'bg-rose-400' }}" style="width:{{ s.rate }}%"></div>
+                                </div>
+                            </div>
+                            {% else %}<span class="text-slate-300 text-xs">—</span>{% endif %}
+                        </td>
+                        {# Student class log present count this month #}
+                        <td class="px-3 py-2 text-center">
+                            {% if cl.get('PRESENT', 0) %}
+                            <span class="inline-flex items-center gap-1 text-[10px] font-black text-indigo-700">
+                                <span class="h-2 w-2 rounded-full bg-indigo-500"></span>{{ cl.get('PRESENT', 0) }}
                             </span>
                             {% else %}
-                            <span class="text-slate-300">—</span>
+                            <span class="text-slate-300 text-xs">—</span>
                             {% endif %}
                         </td>
-                        <td class="px-3 py-2.5">
-                            {# Tiny month dot strip for this month #}
+                        <td class="px-3 py-2">
+                            {# Dot strip: faculty attendance · indigo dot = class log #}
                             <div class="flex flex-wrap gap-px">
                                 {% for d in row.month_days %}
-                                <span class="h-2.5 w-2.5 rounded-sm
+                                <span class="relative h-3 w-3 rounded-sm
                                     {{ 'bg-emerald-400' if d.status == 'PRESENT' else 'bg-amber-400' if d.status == 'LATE' else 'bg-rose-300' if d.status == 'ABSENT' else 'bg-slate-100' }}"
-                                      title="{{ d.date }} — {{ d.status or 'No record' }}"></span>
+                                      title="{{ d.date }} — {{ d.status or 'No faculty record' }}">
+                                </span>
                                 {% endfor %}
                             </div>
                         </td>
-                        <td class="px-3 py-2.5 text-right">
+                        <td class="px-3 py-2 text-right">
                             <a href="{{ url('lms:attendance_student', pk=course.pk) }}?student_id={{ row.user.pk }}&year={{ year }}&month={{ month }}"
                                class="rounded-md border border-indigo-200 bg-indigo-50 px-2 py-1 text-[10px] font-black uppercase text-indigo-700 hover:bg-indigo-100">
-                                View →
+                                📅 →
                             </a>
                         </td>
                     </tr>

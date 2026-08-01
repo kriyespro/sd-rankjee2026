@@ -801,6 +801,20 @@ def attendance_student(request, pk):
     days = services.student_monthly_calendar(course, student, year, month)
     summary = services.attendance_summary(course, student)
 
+    # Load student class logs for this month (self-reported by student)
+    from dashboard.models import StudentDailyClassLog
+    class_logs = {
+        log.log_date: log
+        for log in StudentDailyClassLog.objects.filter(
+            user=student,
+            log_date__year=year,
+            log_date__month=month,
+        )
+    }
+    # Merge class log data into each day dict
+    for day in days:
+        day['class_log'] = class_logs.get(day['date'])
+
     # Prev/next month
     if month == 1:
         prev_year, prev_month = year - 1, 12
@@ -814,6 +828,8 @@ def attendance_student(request, pk):
     month_name = _date(year, month, 1).strftime('%B %Y')
     weekday_start = _date(year, month, 1).weekday()  # 0=Mon
 
+    is_faculty_or_admin = services.is_lms_admin(request.user) or course.owner_id == request.user.pk
+
     crumbs = services.lms_crumbs(
         services.crumb(course.name, None),
         services.crumb('Attendance'),
@@ -823,6 +839,7 @@ def attendance_student(request, pk):
         'student': student,
         'days': days,
         'summary': summary,
+        'is_faculty_or_admin': is_faculty_or_admin,
         'year': year,
         'month': month,
         'month_name': month_name,
@@ -831,6 +848,7 @@ def attendance_student(request, pk):
         'prev_month': prev_month,
         'next_year': next_year,
         'next_month': next_month,
+        'today_date': _date.today(),
         'breadcrumbs': crumbs,
     })
 
@@ -862,6 +880,20 @@ def attendance_course_summary(request, pk):
         .order_by('user__username')
     )
 
+    # Class log counts for the month per student (self-reported)
+    from dashboard.models import StudentDailyClassLog
+    student_ids = [enr.user_id for enr in enrolled]
+    log_counts = {}
+    for log in StudentDailyClassLog.objects.filter(
+        user_id__in=student_ids,
+        log_date__year=year,
+        log_date__month=month,
+    ).values('user_id', 'attendance'):
+        uid = log['user_id']
+        if uid not in log_counts:
+            log_counts[uid] = {'PRESENT': 0, 'ABSENT': 0}
+        log_counts[uid][log['attendance']] = log_counts[uid].get(log['attendance'], 0) + 1
+
     # Build per-student summary
     rows = []
     for enr in enrolled:
@@ -871,6 +903,7 @@ def attendance_course_summary(request, pk):
             'user': enr.user,
             'summary': summary,
             'month_days': month_days,
+            'class_log': log_counts.get(enr.user_id, {}),
         })
 
     if month == 1:
