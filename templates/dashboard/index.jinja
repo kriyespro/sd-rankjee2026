@@ -4,8 +4,6 @@
 {% block content %}
 <div class="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 pb-10 pt-6 sm:px-6">
 
-    {% include "dashboard/partials/_user_identity_bar.jinja" %}
-
     {% if server_buy_success %}
     <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900" role="status">
         {{ server_buy_success_message }}
@@ -15,6 +13,8 @@
     {# ── Stats strip ─────────────────────────────────────────────────────── #}
     {% set kpi_cards = role_stat_cards %}
     {% include "dashboard/partials/_dash_kpi_strip.jinja" %}
+
+    {% include "dashboard/partials/_user_identity_bar.jinja" %}
 
     {# ── TODAY'S FOCUS — 3-column priority row ────────────────────────────── #}
     <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">

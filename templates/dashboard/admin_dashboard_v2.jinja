@@ -4,9 +4,7 @@
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-6">
 
-    {% include "dashboard/partials/_user_identity_bar.jinja" %}
-
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
         <div>
             <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-0.5">RankJee · Command Center</p>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Superadmin Overview</h1>
@@ -18,6 +16,8 @@
                    class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
         </form>
     </div>
+
+    {% include "dashboard/partials/_user_identity_bar.jinja" %}
 
     {# ============ QUICK ACTIONS ============ #}
     <div class="mb-8 flex flex-wrap gap-2">
@@ -59,30 +59,30 @@
             {% for item in action_hot %}
             {% set is_critical = item.priority == 'critical' %}
             {% set is_warning = item.priority == 'warning' %}
-            <div class="flex items-center justify-between gap-4 px-5 py-3.5
+            <div class="flex items-center justify-between gap-2 px-3 py-2
                         {{ 'border-l-4 border-rose-500 bg-rose-50/30' if is_critical else 'border-l-4 border-amber-400 bg-amber-50/20' if is_warning else 'border-l-4 border-indigo-300 bg-indigo-50/10' }}">
-                <div class="flex items-center gap-3 min-w-0">
-                    <span class="text-base leading-none flex-shrink-0">{{ item.icon }}</span>
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-sm leading-none flex-shrink-0">{{ item.icon }}</span>
                     <div class="min-w-0">
-                        <p class="text-sm font-bold text-slate-800 leading-snug">{{ item.label }}</p>
+                        <p class="text-xs font-bold text-slate-800 leading-snug truncate">{{ item.label }}</p>
                         {% if item.amount is not none and item.amount > 0 %}
-                        <p class="text-[11px] font-black text-emerald-700 mt-0.5">₹{{ "{:,.0f}".format(item.amount) }}</p>
+                        <p class="text-[10px] font-black text-emerald-700">₹{{ "{:,.0f}".format(item.amount) }}</p>
                         {% endif %}
                     </div>
                 </div>
-                <div class="flex items-center gap-3 flex-shrink-0">
-                    <span class="inline-flex h-7 w-7 items-center justify-center rounded-full
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full
                                  {{ 'bg-rose-600 text-white' if is_critical else 'bg-amber-500 text-white' if is_warning else 'bg-indigo-600 text-white' }}
-                                 text-xs font-black flex-shrink-0">{{ item.count }}</span>
+                                 text-[10px] font-black flex-shrink-0">{{ item.count }}</span>
                     {% if item.url %}
                     <a href="{{ item.url }}"
-                       class="whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors
+                       class="whitespace-nowrap rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider transition-colors
                               {{ 'bg-rose-600 text-white hover:bg-rose-700' if is_critical else 'bg-amber-500 text-white hover:bg-amber-600' if is_warning else 'bg-indigo-600 text-white hover:bg-indigo-700' }}">
                         Open →
                     </a>
                     {% elif item.anchor %}
                     <a href="{{ item.anchor }}"
-                       class="whitespace-nowrap rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-colors
+                       class="whitespace-nowrap rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider transition-colors
                               {{ 'bg-rose-600 text-white hover:bg-rose-700' if is_critical else 'bg-amber-500 text-white hover:bg-amber-600' if is_warning else 'bg-indigo-600 text-white hover:bg-indigo-700' }}">
                         Review ↓
                     </a>
@@ -92,9 +92,9 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="px-5 py-6 text-center">
-            <p class="text-2xl mb-1">🎉</p>
-            <p class="text-sm font-bold text-emerald-700">Everything's under control — no open queues right now.</p>
+        <div class="px-4 py-4 text-center">
+            <p class="text-xl mb-0.5">🎉</p>
+            <p class="text-xs font-bold text-emerald-700">Everything's under control.</p>
         </div>
         {% endif %}
 
@@ -103,12 +103,12 @@
         <div x-show="showClear" class="border-t border-slate-100">
             <div class="divide-y divide-slate-100/70">
                 {% for item in action_clear %}
-                <div class="flex items-center justify-between gap-4 px-5 py-2.5 opacity-60">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <span class="text-sm leading-none flex-shrink-0">{{ item.icon }}</span>
-                        <p class="text-xs font-bold text-slate-500 truncate">{{ item.label }}</p>
+                <div class="flex items-center justify-between gap-2 px-3 py-1.5 opacity-60">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-xs leading-none flex-shrink-0">{{ item.icon }}</span>
+                        <p class="text-[11px] font-bold text-slate-500 truncate">{{ item.label }}</p>
                     </div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex-shrink-0">✓ Clear</span>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-emerald-600 flex-shrink-0">✓</span>
                 </div>
                 {% endfor %}
             </div>
