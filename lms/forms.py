@@ -4,6 +4,7 @@ from django.core.validators import URLValidator
 
 from .models import (
     LmsAssignment,
+    LmsAttendance,
     LmsComment,
     LmsCourse,
     LmsSubmission,
@@ -357,6 +358,20 @@ class LmsCourseMemberForm(forms.Form):
         if not user:
             raise forms.ValidationError(f'No student found matching "{raw}".')
         return user
+
+
+class LmsAttendanceDateForm(forms.Form):
+    """Simple form to pick a date for marking attendance."""
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': _INPUT, 'type': 'date'}),
+        label='Session date',
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.utils import timezone
+        if not self.data:
+            self.fields['date'].initial = timezone.localdate()
 
 
 class LmsTopicForm(forms.ModelForm):

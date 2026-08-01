@@ -351,3 +351,52 @@ class LmsSubmissionUrl(models.Model):
 
     def __str__(self):
         return f'{self.get_kind_display()}: {self.url[:60]}'
+
+
+class LmsAttendance(models.Model):
+    """Faculty-marked attendance for a student in a course session."""
+
+    class Status(models.TextChoices):
+        PRESENT = 'PRESENT', 'Present'
+        ABSENT = 'ABSENT', 'Absent'
+        LATE = 'LATE', 'Late'
+
+    course = models.ForeignKey(
+        LmsCourse,
+        on_delete=models.CASCADE,
+        related_name='attendance_records',
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='lms_attendance',
+    )
+    marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='attendance_marked',
+    )
+    date = models.DateField(db_index=True)
+    status = models.CharField(
+        max_length=10,
+        choices=Status.choices,
+        default=Status.ABSENT,
+        db_index=True,
+    )
+    note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-date', 'student__username']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['course', 'student', 'date'],
+                name='uniq_lms_attendance_per_student_date',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.student_id} · {self.course_id} · {self.date} — {self.status}'

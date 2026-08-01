@@ -1,0 +1,118 @@
+{% extends "base.jinja" %}
+{% block title %}Mark Attendance — {{ course.name }} — RankJee{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl px-4 py-6 sm:px-6">
+
+    {# Breadcrumbs #}
+    {% if breadcrumbs %}
+    <nav class="mb-4 flex flex-wrap items-center gap-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+        <a href="{{ url('lms:home') }}" class="hover:text-indigo-600 transition-colors">LMS</a>
+        {% for crumb in breadcrumbs %}
+        <span class="opacity-40">›</span>
+        {% if crumb.url %}<a href="{{ crumb.url }}" class="hover:text-indigo-600 transition-colors">{{ crumb.label }}</a>
+        {% else %}<span class="text-slate-700">{{ crumb.label }}</span>{% endif %}
+        {% endfor %}
+    </nav>
+    {% endif %}
+
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+            <p class="text-[10px] font-black uppercase tracking-widest text-emerald-700">{{ course.name }}</p>
+            <h1 class="text-xl font-black text-slate-900">Mark Attendance</h1>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url('lms:attendance_course_summary', pk=course.pk) }}"
+               class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 hover:bg-slate-50 shadow-sm">
+                📊 Monthly summary
+            </a>
+            <a href="{{ url('lms:courses') }}"
+               class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-500 hover:bg-slate-50 shadow-sm">
+                ← Courses
+            </a>
+        </div>
+    </div>
+
+    {# Messages #}
+    {% for msg in messages %}
+    <div class="mb-4 rounded-xl border px-4 py-2.5 text-sm font-semibold
+        {{ 'border-emerald-200 bg-emerald-50 text-emerald-900' if msg.tags and 'success' in msg.tags else 'border-amber-200 bg-amber-50 text-amber-900' }}">
+        {{ msg }}
+    </div>
+    {% endfor %}
+
+    {# Date picker #}
+    <form method="get" class="mb-5 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div class="flex-1 min-w-[10rem]">
+            <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Session date</label>
+            <input type="date" name="date" value="{{ selected_date }}"
+                   class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+        </div>
+        <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black text-white hover:bg-indigo-500">
+            Load date →
+        </button>
+    </form>
+
+    {% if not enrolled %}
+    <div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <p class="text-2xl mb-2">👥</p>
+        <p class="text-sm font-bold text-slate-500">No students enrolled in this course yet.</p>
+        <a href="{{ url('lms:courses') }}" class="mt-3 inline-block text-xs font-black text-indigo-600 hover:underline">Enroll students →</a>
+    </div>
+    {% else %}
+    <form method="post">
+        {{ csrf_input }}
+        <input type="hidden" name="date" value="{{ selected_date }}">
+
+        <div class="mb-3 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-2">
+            <p class="text-xs font-black text-indigo-700">{{ enrolled | length }} student(s) · {{ selected_date }}</p>
+            <div class="flex gap-2">
+                <button type="button"
+                        onclick="document.querySelectorAll('select[name^=status_]').forEach(s=>s.value='PRESENT')"
+                        class="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase text-emerald-700 hover:bg-emerald-100">
+                    ✓ All present
+                </button>
+                <button type="button"
+                        onclick="document.querySelectorAll('select[name^=status_]').forEach(s=>s.value='ABSENT')"
+                        class="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black uppercase text-rose-700 hover:bg-rose-100">
+                    ✗ All absent
+                </button>
+            </div>
+        </div>
+
+        <div class="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {% for enr in enrolled %}
+            {% set prev = existing.get(enr.user.pk, 'ABSENT') %}
+            <div class="flex items-center gap-3 px-4 py-2.5
+                {{ 'bg-emerald-50/40' if prev == 'PRESENT' else 'bg-amber-50/30' if prev == 'LATE' else '' }}">
+                <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600">
+                    {{ enr.user.username[0]|upper }}
+                </span>
+                <div class="min-w-0 flex-1">
+                    <p class="text-sm font-black text-slate-800 leading-tight">{{ enr.user.username }}</p>
+                    {% if enr.user.get_full_name() %}
+                    <p class="text-[10px] text-slate-400">{{ enr.user.get_full_name() }}</p>
+                    {% endif %}
+                </div>
+                <select name="status_{{ enr.user.pk }}"
+                        class="rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-black focus:ring-2 focus:ring-indigo-100 outline-none
+                               {{ 'border-emerald-300 text-emerald-700' if prev == 'PRESENT' else 'border-amber-300 text-amber-700' if prev == 'LATE' else 'border-rose-300 text-rose-700' }}">
+                    {% for val, label in statuses %}
+                    <option value="{{ val }}" {{ 'selected' if prev == val else '' }}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button type="submit"
+                    class="rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-black uppercase tracking-wider text-white hover:bg-emerald-500 shadow-sm">
+                💾 Save attendance
+            </button>
+        </div>
+    </form>
+    {% endif %}
+
+</div>
+{% endblock %}

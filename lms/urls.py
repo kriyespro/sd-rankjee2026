@@ -17,5 +17,10 @@ urlpatterns = [
     path('courses/', views.courses, name='courses'),
     path('courses/bulk-enroll/', views.bulk_enroll, name='bulk_enroll'),
     path('courses/<int:pk>/students/', views.students_for_course, name='students_for_course'),
+    # Attendance
+    path('courses/<int:pk>/attendance/mark/', views.attendance_mark, name='attendance_mark'),
+    path('courses/<int:pk>/attendance/', views.attendance_student, name='attendance_student'),
+    path('courses/<int:pk>/attendance/summary/', views.attendance_course_summary, name='attendance_course_summary'),
+    path('attendance/', views.attendance_admin_all, name='attendance_admin'),
     path('notifications/<int:note_id>/read/', views.notification_read, name='notification_read'),
 ]

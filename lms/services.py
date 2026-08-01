@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from .models import (
     LmsAssignment,
+    LmsAttendance,
     LmsComment,
     LmsCourse,
     LmsCourseEnrollment,
@@ -999,3 +1000,81 @@ def submission_link_rows(submission: LmsSubmission) -> list[dict]:
             'label': 'Website',
         })
     return legacy
+
+
+# ── Attendance helpers ────────────────────────────────────────────────────────
+
+def attendance_mark_session(course, date, marked_by, status_map: dict) -> int:
+    """Bulk upsert attendance for a session.
+
+    status_map: {user_id: 'PRESENT'|'ABSENT'|'LATE'}
+    Returns the count of records saved.
+    """
+    saved = 0
+    for user_id, status in status_map.items():
+        if status not in LmsAttendance.Status.values:
+            continue
+        LmsAttendance.objects.update_or_create(
+            course=course,
+            student_id=user_id,
+            date=date,
+            defaults={'status': status, 'marked_by': marked_by},
+        )
+        saved += 1
+    return saved
+
+
+def attendance_monthly(course, student, year: int, month: int) -> dict:
+    """Return a dict of {date: status} for student in course for the given month."""
+    records = LmsAttendance.objects.filter(
+        course=course,
+        student=student,
+        date__year=year,
+        date__month=month,
+    ).values('date', 'status')
+    return {r['date']: r['status'] for r in records}
+
+
+def attendance_summary(course, student) -> dict:
+    """Overall attendance stats for a student in a course."""
+    qs = LmsAttendance.objects.filter(course=course, student=student)
+    total = qs.count()
+    present = qs.filter(status=LmsAttendance.Status.PRESENT).count()
+    late = qs.filter(status=LmsAttendance.Status.LATE).count()
+    absent = qs.filter(status=LmsAttendance.Status.ABSENT).count()
+    rate = round((present + late) * 100 / total, 1) if total else None
+    return {
+        'total': total,
+        'present': present,
+        'late': late,
+        'absent': absent,
+        'rate': rate,
+    }
+
+
+def attendance_for_admin(year: int, month: int) -> list:
+    """All attendance records for a given month (admin view)."""
+    return list(
+        LmsAttendance.objects.filter(date__year=year, date__month=month)
+        .select_related('course', 'student', 'marked_by')
+        .order_by('-date', 'course__name', 'student__username')
+    )
+
+
+def student_monthly_calendar(course, student, year: int, month: int) -> list[dict]:
+    """Return list of day dicts for the calendar month view."""
+    import calendar
+    from datetime import date as _date
+
+    day_map = attendance_monthly(course, student, year, month)
+    num_days = calendar.monthrange(year, month)[1]
+    days = []
+    for d in range(1, num_days + 1):
+        dt = _date(year, month, d)
+        days.append({
+            'date': dt,
+            'day': d,
+            'weekday': dt.strftime('%a'),
+            'status': day_map.get(dt),
+        })
+    return days

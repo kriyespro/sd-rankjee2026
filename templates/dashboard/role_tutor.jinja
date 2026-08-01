@@ -44,6 +44,7 @@
             <div class="flex flex-wrap gap-1.5">
                 <a href="{{ url('lms:courses') }}" class="inline-flex rounded-md bg-indigo-600 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-500">LMS courses</a>
                 <a href="{{ url('lms:assignment_create') }}" class="inline-flex rounded-md border border-indigo-200 bg-white px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-50">+ New assignment</a>
+                <a href="{{ url('lms:courses') }}#attendance" class="inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">📅 Attendance</a>
                 <a href="{{ url('study:tutor_dashboard') }}" class="inline-flex rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-200">Study</a>
                 <a href="{{ url('hometutor:tutor_demos') }}" class="inline-flex rounded-md bg-emerald-600 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-emerald-500">Inbox{% if pending_incoming %} {{ pending_incoming }}{% endif %}</a>
                 <a href="{{ url('hometutor:my_profile') }}" class="inline-flex rounded-md bg-slate-100 px-2.5 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-200">Listing</a>

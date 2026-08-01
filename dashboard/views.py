@@ -542,6 +542,22 @@ def _role_dashboard_context(request):
             status=DemoRequest.Status.DECLINED,
         ).count()
         parent_paid_count = parent_paid_orders.count()
+
+        # LMS courses of linked child — for attendance shortcut in parent dashboard
+        child_lms_courses = []
+        try:
+            from users.models import ParentStudentLink
+            from lms.models import LmsCourseEnrollment as _LmsCE, LmsCourse as _LmsCourse
+            _link = ParentStudentLink.objects.filter(parent=user).select_related('student').first()
+            if _link:
+                _child_course_ids = list(
+                    _LmsCE.objects.filter(user=_link.student, course__is_active=True)
+                    .values_list('course_id', flat=True)
+                )
+                child_lms_courses = list(_LmsCourse.objects.filter(pk__in=_child_course_ids).order_by('name'))
+        except Exception:
+            pass
+
         parent_next_actions = []
         if parent_demo_sla_risk_ids:
             parent_next_actions.append('Follow up on pending demo requests older than 24h.')
@@ -590,6 +606,7 @@ def _role_dashboard_context(request):
             'parent_demo_declined': parent_demo_declined,
             'parent_paid_count': parent_paid_count,
             'activity_timeline': activity_timeline,
+            'child_lms_courses': child_lms_courses,
             'template_name': 'dashboard/role_parent.jinja',
         }
 

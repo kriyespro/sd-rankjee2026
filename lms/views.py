@@ -10,6 +10,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
     LmsAssignmentForm,
+    LmsAttendanceDateForm,
     LmsCommentForm,
     LmsCourseForm,
     LmsCourseMemberForm,
@@ -17,7 +18,7 @@ from .forms import (
     LmsSubmissionForm,
     LmsTopicForm,
 )
-from .models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsReaction, LmsSubmission, LmsTopic
+from .models import LmsAssignment, LmsAttendance, LmsCourse, LmsCourseEnrollment, LmsReaction, LmsSubmission, LmsTopic
 from . import services
 
 User = get_user_model()
@@ -681,3 +682,279 @@ def bulk_enroll(request):
     if next_url and '/admin/' in next_url:
         return redirect(next_url)
     return redirect('lms:courses')
+
+
+# ── Attendance views ──────────────────────────────────────────────────────────
+
+@login_required
+def attendance_mark(request, pk):
+    """Faculty marks attendance for all enrolled students in a course session."""
+    course = get_object_or_404(LmsCourse, pk=pk)
+
+    # Only course owner (faculty/tutor) or LMS admin can mark attendance
+    is_admin = services.is_lms_admin(request.user)
+    is_owner = course.owner_id == request.user.pk
+    if not (is_admin or is_owner):
+        messages.error(request, 'Only the course faculty or admin can mark attendance.')
+        return redirect('lms:courses')
+
+    # Get enrolled students
+    enrolled = list(
+        LmsCourseEnrollment.objects.filter(course=course)
+        .select_related('user')
+        .order_by('user__username')
+    )
+
+    date_form = LmsAttendanceDateForm(request.GET or None)
+    selected_date = None
+    if date_form.is_valid():
+        selected_date = date_form.cleaned_data['date']
+    else:
+        from django.utils import timezone as _tz
+        selected_date = _tz.localdate()
+
+    # Existing attendance for this date
+    existing = {
+        a.student_id: a.status
+        for a in LmsAttendance.objects.filter(course=course, date=selected_date)
+    }
+
+    if request.method == 'POST':
+        post_date_str = request.POST.get('date')
+        from datetime import date as _date
+        try:
+            session_date = _date.fromisoformat(post_date_str)
+        except (TypeError, ValueError):
+            from django.utils import timezone as _tz
+            session_date = _tz.localdate()
+
+        status_map = {}
+        for enr in enrolled:
+            key = f'status_{enr.user_id}'
+            val = request.POST.get(key, 'ABSENT')
+            if val in LmsAttendance.Status.values:
+                status_map[enr.user_id] = val
+
+        count = services.attendance_mark_session(course, session_date, request.user, status_map)
+        messages.success(request, f'Attendance saved for {count} student(s) on {session_date}.')
+        return redirect(f"{request.path}?date={session_date}")
+
+    crumbs = services.lms_crumbs(
+        services.crumb(course.name, None),
+        services.crumb('Mark attendance'),
+    )
+    return render(request, 'lms/attendance_mark.jinja', {
+        'course': course,
+        'enrolled': enrolled,
+        'selected_date': selected_date,
+        'existing': existing,
+        'date_form': date_form,
+        'statuses': LmsAttendance.Status.choices,
+        'breadcrumbs': crumbs,
+    })
+
+
+@login_required
+def attendance_student(request, pk):
+    """Student/parent views monthly attendance calendar for a course."""
+    from datetime import date as _date
+    import calendar
+
+    course = get_object_or_404(LmsCourse, pk=pk)
+    user = request.user
+    role = getattr(user, 'role', '')
+
+    # Determine whose attendance to show
+    if role == 'STUDENT':
+        student = user
+    elif role == 'PARENT':
+        # Parent: show linked child's attendance
+        from users.models import ParentStudentLink
+        link = ParentStudentLink.objects.filter(parent=user).select_related('student').first()
+        if not link:
+            messages.error(request, 'No child linked to your parent account.')
+            return redirect('dashboard:index')
+        student = link.student
+    elif services.is_lms_admin(request.user) or course.owner_id == user.pk:
+        # Admin or faculty: let them pick a student via query param
+        student_id = request.GET.get('student_id')
+        if student_id:
+            from django.contrib.auth import get_user_model as _gum
+            student = get_object_or_404(_gum(), pk=student_id)
+        else:
+            # Default: show all enrolled students summary
+            return redirect('lms:attendance_course_summary', pk=pk)
+    else:
+        messages.error(request, 'Access denied.')
+        return redirect('dashboard:index')
+
+    # Month/year navigation
+    today = _date.today()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+        if not (1 <= month <= 12):
+            month = today.month
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    days = services.student_monthly_calendar(course, student, year, month)
+    summary = services.attendance_summary(course, student)
+
+    # Prev/next month
+    if month == 1:
+        prev_year, prev_month = year - 1, 12
+    else:
+        prev_year, prev_month = year, month - 1
+    if month == 12:
+        next_year, next_month = year + 1, 1
+    else:
+        next_year, next_month = year, month + 1
+
+    month_name = _date(year, month, 1).strftime('%B %Y')
+    weekday_start = _date(year, month, 1).weekday()  # 0=Mon
+
+    crumbs = services.lms_crumbs(
+        services.crumb(course.name, None),
+        services.crumb('Attendance'),
+    )
+    return render(request, 'lms/attendance_student.jinja', {
+        'course': course,
+        'student': student,
+        'days': days,
+        'summary': summary,
+        'year': year,
+        'month': month,
+        'month_name': month_name,
+        'weekday_start': weekday_start,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
+        'breadcrumbs': crumbs,
+    })
+
+
+@login_required
+def attendance_course_summary(request, pk):
+    """Faculty/admin sees all students' attendance for a course — monthly summary table."""
+    from datetime import date as _date
+
+    course = get_object_or_404(LmsCourse, pk=pk)
+    is_admin = services.is_lms_admin(request.user)
+    is_owner = course.owner_id == request.user.pk
+    if not (is_admin or is_owner):
+        messages.error(request, 'Access denied.')
+        return redirect('lms:courses')
+
+    today = _date.today()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+        if not (1 <= month <= 12):
+            month = today.month
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    enrolled = list(
+        LmsCourseEnrollment.objects.filter(course=course)
+        .select_related('user')
+        .order_by('user__username')
+    )
+
+    # Build per-student summary
+    rows = []
+    for enr in enrolled:
+        summary = services.attendance_summary(course, enr.user)
+        month_days = services.student_monthly_calendar(course, enr.user, year, month)
+        rows.append({
+            'user': enr.user,
+            'summary': summary,
+            'month_days': month_days,
+        })
+
+    if month == 1:
+        prev_year, prev_month = year - 1, 12
+    else:
+        prev_year, prev_month = year, month - 1
+    if month == 12:
+        next_year, next_month = year + 1, 1
+    else:
+        next_year, next_month = year, month + 1
+
+    month_name = _date(year, month, 1).strftime('%B %Y')
+
+    crumbs = services.lms_crumbs(
+        services.crumb(course.name, None),
+        services.crumb('Attendance summary'),
+    )
+    return render(request, 'lms/attendance_summary.jinja', {
+        'course': course,
+        'rows': rows,
+        'year': year,
+        'month': month,
+        'month_name': month_name,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
+        'breadcrumbs': crumbs,
+    })
+
+
+@login_required
+def attendance_admin_all(request):
+    """Superadmin sees all attendance records across all courses — monthly."""
+    from datetime import date as _date
+
+    if not services.is_lms_admin(request.user):
+        messages.error(request, 'Superadmin only.')
+        return redirect('dashboard:index')
+
+    today = _date.today()
+    try:
+        year = int(request.GET.get('year', today.year))
+        month = int(request.GET.get('month', today.month))
+        if not (1 <= month <= 12):
+            month = today.month
+    except (TypeError, ValueError):
+        year, month = today.year, today.month
+
+    records = services.attendance_for_admin(year, month)
+
+    if month == 1:
+        prev_year, prev_month = year - 1, 12
+    else:
+        prev_year, prev_month = year, month - 1
+    if month == 12:
+        next_year, next_month = year + 1, 1
+    else:
+        next_year, next_month = year, month + 1
+
+    month_name = _date(year, month, 1).strftime('%B %Y')
+
+    # Aggregate stats
+    total = len(records)
+    present = sum(1 for r in records if r.status == LmsAttendance.Status.PRESENT)
+    late = sum(1 for r in records if r.status == LmsAttendance.Status.LATE)
+    absent = sum(1 for r in records if r.status == LmsAttendance.Status.ABSENT)
+
+    crumbs = [
+        services.crumb('LMS Admin', None),
+        services.crumb('All Attendance'),
+    ]
+    return render(request, 'lms/attendance_admin.jinja', {
+        'records': records,
+        'year': year,
+        'month': month,
+        'month_name': month_name,
+        'prev_year': prev_year,
+        'prev_month': prev_month,
+        'next_year': next_year,
+        'next_month': next_month,
+        'total': total,
+        'present': present,
+        'late': late,
+        'absent': absent,
+        'breadcrumbs': crumbs,
+    })

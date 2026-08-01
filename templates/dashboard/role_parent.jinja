@@ -154,6 +154,24 @@
                     <a href="{{ url('hometutor:my_demo_requests') }}" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center text-[11px] font-black uppercase tracking-wider text-slate-800 hover:bg-slate-50">My demos</a>
                 </div>
             </div>
+            {# ── LMS Attendance shortcut for parent ── #}
+            {% if child_lms_courses %}
+            <div class="rounded-xl border border-sky-100 bg-sky-50/60 p-4 shadow-sm">
+                <div class="mb-2 flex items-center justify-between">
+                    <h3 class="text-xs font-black uppercase tracking-wider text-sky-800">📅 Child's LMS Attendance</h3>
+                </div>
+                <div class="space-y-1.5">
+                    {% for c in child_lms_courses %}
+                    <a href="{{ url('lms:attendance_student', pk=c.pk) }}"
+                       class="flex items-center justify-between rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-black text-sky-800 hover:bg-sky-100 transition-colors">
+                        <span class="truncate">{{ c.name }}</span>
+                        <span class="text-sky-400">→</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
                 <h3 class="text-xs font-black uppercase tracking-wider text-slate-700">Activity</h3>
                 {% if activity_timeline %}

@@ -167,6 +167,26 @@
                 </div>
                 {% endif %}
             </div>
+            {# ── Attendance quick links ── #}
+            {% if can_manage_enrollment %}
+            <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+                <a href="{{ url('lms:attendance_mark', pk=c.pk) }}"
+                   class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">
+                    📋 Mark attendance
+                </a>
+                <a href="{{ url('lms:attendance_course_summary', pk=c.pk) }}"
+                   class="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-sky-700 hover:bg-sky-100">
+                    📊 Attendance summary
+                </a>
+            </div>
+            {% elif request.user.role == 'STUDENT' %}
+            <div class="mt-3 border-t border-slate-100 pt-3">
+                <a href="{{ url('lms:attendance_student', pk=c.pk) }}"
+                   class="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-sky-700 hover:bg-sky-100">
+                    📅 My attendance
+                </a>
+            </div>
+            {% endif %}
             {% endif %}
         </section>
         {% else %}
