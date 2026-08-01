@@ -4,20 +4,37 @@
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 py-6">
 
-    <div class="mb-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500 mb-0.5">RankJee · Command Center</p>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Superadmin Overview</h1>
-            <p class="text-sm font-medium text-slate-500 mt-0.5">Pending queues · real revenue · real growth.</p>
+    {# ── Compact inline header: title · identity · search ── #}
+    {% set _role = request.user.role if request.user.role else ('SUPERADMIN' if request.user.is_superuser else '') %}
+    {% set _initial = request.user.username[0]|upper if request.user.username else '?' %}
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+        {# Title — compact #}
+        <div class="min-w-0 flex-shrink-0">
+            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-500 leading-none mb-0.5">RankJee · Command Center</p>
+            <h1 class="text-lg font-black text-slate-900 tracking-tight leading-tight">Superadmin Overview</h1>
+            <p class="text-[11px] font-medium text-slate-400 leading-none mt-0.5">Pending queues · real revenue · real growth.</p>
         </div>
-        <form action="/sd/users/customuser/" method="GET" class="relative w-full sm:w-64">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 opacity-40 text-sm">🔍</span>
+
+        {# Divider #}
+        <div class="hidden sm:block h-8 w-px bg-slate-200 flex-shrink-0"></div>
+
+        {# Inline identity: avatar + username/email + role badge #}
+        <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-black text-indigo-700">{{ _initial }}</span>
+            <div class="min-w-0">
+                <p class="text-xs font-black text-slate-900 leading-tight truncate">{{ request.user.username }}</p>
+                {% if request.user.email %}<p class="text-[10px] text-slate-400 truncate leading-none">{{ request.user.email }}</p>{% endif %}
+            </div>
+            <span class="flex-shrink-0 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-indigo-800 border border-indigo-200">{{ _role or 'SUPERADMIN' }}</span>
+        </div>
+
+        {# Search — pushed right #}
+        <form action="/sd/users/customuser/" method="GET" class="relative ml-auto w-full sm:w-52 flex-shrink-0">
+            <span class="absolute left-2.5 top-1/2 -translate-y-1/2 opacity-40 text-xs">🔍</span>
             <input type="text" name="q" placeholder="Find a user…"
-                   class="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
+                   class="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-2 text-xs focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none shadow-sm">
         </form>
     </div>
-
-    {% include "dashboard/partials/_user_identity_bar.jinja" %}
 
     {# ============ QUICK ACTIONS ============ #}
     <div class="mb-8 flex flex-wrap gap-2">
@@ -170,22 +187,24 @@
         </div>
         <div class="divide-y divide-slate-100 max-h-[28rem] overflow-y-auto">
             {% for row in latest_tutor_requests %}
-            <div class="px-4 py-3">
-                <div class="mb-2">
-                    <p class="text-xs font-black text-slate-900 truncate">{{ row.full_name }}</p>
-                    <p class="text-[10px] text-slate-500">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
+            <div class="flex items-center gap-2 px-3 py-2">
+                {# Lead info — left #}
+                <div class="min-w-0 flex-1">
+                    <p class="text-xs font-black text-slate-900 truncate leading-tight">{{ row.full_name }}</p>
+                    <p class="text-[10px] text-slate-500 truncate">{{ row.phone }}{% if row.email %} · {{ row.email }}{% endif %}</p>
                     <p class="text-[10px] text-indigo-600 truncate">{{ row.city }}{% if row.area %} · {{ row.area }}{% endif %} — {{ row.subjects }}{% if row.class_grade %} · Cls {{ row.class_grade }}{% endif %}</p>
                 </div>
-                <div class="flex gap-1.5">
-                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="flex-1">
+                {# Action buttons — right, compact inline #}
+                <div class="flex flex-shrink-0 gap-1">
+                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                         <input type="hidden" name="status" value="CONTACTED">
-                        <button type="submit" class="w-full rounded-lg border border-amber-200 bg-amber-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100">Contacted</button>
+                        <button type="submit" class="rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-amber-700 hover:bg-amber-100 whitespace-nowrap">✉ Done</button>
                     </form>
-                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}" class="flex-1">
+                    <form method="post" action="{{ url('dashboard:update_tutor_request_status', request_id=row.id) }}">
                         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                         <input type="hidden" name="status" value="CLOSED">
-                        <button type="submit" class="w-full rounded-lg border border-emerald-200 bg-emerald-50 py-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100">Closed</button>
+                        <button type="submit" class="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 whitespace-nowrap">✓ Close</button>
                     </form>
                 </div>
             </div>
