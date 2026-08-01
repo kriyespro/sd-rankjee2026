@@ -2158,6 +2158,50 @@ def index(request):
     else:
         role_stat_cards.append({'label': 'Free Test Uses', 'value': str(request.user.trial_tests_left)})
 
+    # ── LMS data for STUDENT ─────────────────────────────────────────────────
+    lms_enrolled_courses = []
+    lms_pending_assignments = []
+    lms_recent_feedback = []
+    lms_all_submissions_map = {}
+    if role == 'STUDENT':
+        try:
+            from lms.models import LmsCourse, LmsCourseEnrollment, LmsAssignment, LmsSubmission as _LmsSub
+            enrolled_ids = list(
+                LmsCourseEnrollment.objects.filter(user=request.user, course__is_active=True)
+                .values_list('course_id', flat=True)
+            )
+            if enrolled_ids:
+                lms_enrolled_courses = list(
+                    LmsCourse.objects.filter(pk__in=enrolled_ids)
+                    .select_related('owner')
+                    .annotate(
+                        assignment_count=Count('assignments'),
+                    )
+                    .order_by('name')
+                )
+                submitted_ids = set(
+                    _LmsSub.objects.filter(
+                        student=request.user,
+                        assignment__course_id__in=enrolled_ids,
+                    ).values_list('assignment_id', flat=True)
+                )
+                lms_pending_assignments = list(
+                    LmsAssignment.objects.filter(course_id__in=enrolled_ids)
+                    .exclude(id__in=submitted_ids)
+                    .select_related('topic', 'course', 'course__owner')
+                    .order_by('-created_at')[:8]
+                )
+                lms_recent_feedback = list(
+                    _LmsSub.objects.filter(
+                        student=request.user,
+                        assignment__course_id__in=enrolled_ids,
+                    )
+                    .select_related('assignment', 'assignment__topic', 'assignment__course', 'assignment__course__owner')
+                    .order_by('-updated_at')[:6]
+                )
+        except Exception:
+            logger.exception("Failed to load student LMS context")
+
     server_buy_success = role == 'STUDENT' and request.GET.get('server_paid') == '1'
     server_buy_success_message = (
         "Your server payment was recorded. We will contact you about provisioning for the domain you entered."
@@ -2219,6 +2263,9 @@ def index(request):
         'next_badge_hint': next_badge_hint,
         'server_buy_success': server_buy_success,
         'server_buy_success_message': server_buy_success_message,
+        'lms_enrolled_courses': lms_enrolled_courses,
+        'lms_pending_assignments': lms_pending_assignments,
+        'lms_recent_feedback': lms_recent_feedback,
     })
 
 
