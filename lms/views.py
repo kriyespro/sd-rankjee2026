@@ -1,8 +1,9 @@
 import json
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponseForbidden
+from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
@@ -18,6 +19,8 @@ from .forms import (
 )
 from .models import LmsAssignment, LmsCourse, LmsCourseEnrollment, LmsReaction, LmsSubmission, LmsTopic
 from . import services
+
+User = get_user_model()
 
 
 def _require_lms_access(user):
@@ -586,3 +589,95 @@ def courses(request):
             'crumbs': services.lms_crumbs(services.crumb('Courses')),
         },
     )
+
+
+# ── Bulk enrollment helpers ───────────────────────────────────────────────────
+
+@login_required
+def students_for_course(request, pk):
+    """HTMX GET: return a student checkbox list partial for the chosen course.
+
+    Used by the superadmin "Bulk enroll" panel in /admin/. Admin-only.
+    """
+    if not services.is_lms_admin(request.user):
+        return HttpResponseForbidden('Superadmin only.')
+
+    course = get_object_or_404(LmsCourse, pk=pk)
+    enrolled_ids = set(
+        LmsCourseEnrollment.objects.filter(course=course).values_list('user_id', flat=True)
+    )
+    # All active student-role users on the platform
+    all_students = list(
+        User.objects.filter(is_active=True, role='STUDENT')
+        .order_by('username')
+        .values('id', 'username', 'email', 'first_name', 'last_name')
+    )
+    for s in all_students:
+        s['enrolled'] = s['id'] in enrolled_ids
+        s['display'] = f"{s['username']}"
+        if s.get('email'):
+            s['display'] += f" · {s['email']}"
+
+    return render(
+        request,
+        'lms/partials/_student_picker.jinja',
+        {
+            'course': course,
+            'students': all_students,
+            'enrolled_count': len(enrolled_ids),
+        },
+    )
+
+
+@login_required
+@require_POST
+def bulk_enroll(request):
+    """POST: enroll multiple students into a course at once. Admin-only.
+
+    Accepts: course_id (int), user_ids (list of int), remove_ids (list of int).
+    """
+    if not services.is_lms_admin(request.user):
+        return HttpResponseForbidden('Superadmin only.')
+
+    course_id = request.POST.get('course_id', '')
+    if not course_id:
+        messages.error(request, 'No course selected.')
+        return redirect('lms:courses')
+
+    course = get_object_or_404(LmsCourse, pk=course_id)
+
+    enroll_ids = request.POST.getlist('user_ids')
+    remove_ids = request.POST.getlist('remove_ids')
+
+    added = 0
+    for uid in enroll_ids:
+        try:
+            user = User.objects.get(pk=int(uid), is_active=True)
+            services.add_course_member(course, user)
+            added += 1
+        except (User.DoesNotExist, ValueError):
+            pass
+
+    removed = 0
+    for uid in remove_ids:
+        try:
+            deleted, _ = LmsCourseEnrollment.objects.filter(course=course, user_id=int(uid)).delete()
+            removed += deleted
+        except (ValueError, LmsCourseEnrollment.DoesNotExist):
+            pass
+
+    parts = []
+    if added:
+        parts.append(f'Enrolled {added} student{"s" if added != 1 else ""}')
+    if removed:
+        parts.append(f'removed {removed}')
+    if parts:
+        messages.success(request, f'{" · ".join(parts)} in "{course.name}".')
+    else:
+        messages.info(request, 'No changes made.')
+
+    # If triggered from the admin dashboard, go back there
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER', '')
+    if next_url and '/admin/' in next_url:
+        return redirect(next_url)
+    return redirect('lms:courses')

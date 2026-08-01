@@ -15,5 +15,7 @@ urlpatterns = [
     path('submissions/<int:pk>/react/', views.react, name='react'),
     path('submissions/<int:pk>/comment/', views.comment, name='comment'),
     path('courses/', views.courses, name='courses'),
+    path('courses/bulk-enroll/', views.bulk_enroll, name='bulk_enroll'),
+    path('courses/<int:pk>/students/', views.students_for_course, name='students_for_course'),
     path('notifications/<int:note_id>/read/', views.notification_read, name='notification_read'),
 ]

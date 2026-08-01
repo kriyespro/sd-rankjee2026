@@ -124,21 +124,49 @@
                 {% endfor %}
             </ul>
             {% if can_manage_enrollment %}
-            <form method="post" class="flex flex-wrap items-start gap-2">
-                <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                <input type="hidden" name="action" value="add_member">
-                <input type="hidden" name="course_id" value="{{ c.pk }}">
-                <div>
-                    {{ member_form.username }}
-                    {% if member_form.username.errors and request.POST.get('course_id') == c.pk|string %}
-                    <p class="mt-1 text-[11px] font-bold text-rose-600">{{ member_form.username.errors|join(' ') }}</p>
+            <div x-data="{ showBrowse: false }">
+                {# Quick typeahead add #}
+                <form method="post" class="flex flex-wrap items-start gap-2 mb-2">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <input type="hidden" name="action" value="add_member">
+                    <input type="hidden" name="course_id" value="{{ c.pk }}">
+                    <div class="flex-1 min-w-[12rem]">
+                        {{ member_form.username }}
+                        {% if member_form.username.errors and request.POST.get('course_id') == c.pk|string %}
+                        <p class="mt-1 text-[11px] font-bold text-rose-600">{{ member_form.username.errors|join(' ') }}</p>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Add →</button>
+                    {% if is_admin_lms %}
+                    <button type="button"
+                            @click="showBrowse = !showBrowse"
+                            hx-get="{{ url('lms:students_for_course', pk=c.pk) }}"
+                            hx-target="#browse-{{ c.pk }}"
+                            hx-swap="innerHTML"
+                            hx-trigger="click once"
+                            class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:bg-indigo-100">
+                        Browse all students
+                    </button>
                     {% endif %}
+                </form>
+                <p class="mb-2 text-[10px] text-slate-400">
+                    {% if is_admin_lms or is_office_lms %}Type username or email to search.{% else %}Type a student's username to add them.{% endif %}
+                    {{ student_options|length }} students on platform.
+                </p>
+                {# HTMX browse panel (admin only) — uses bulk_enroll endpoint #}
+                {% if is_admin_lms %}
+                <div x-show="showBrowse" class="mt-2">
+                    <form method="post" action="{{ url('lms:bulk_enroll') }}">
+                        {{ csrf_input }}
+                        <input type="hidden" name="course_id" value="{{ c.pk }}">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <div id="browse-{{ c.pk }}">
+                            <p class="text-[11px] text-slate-400 italic">Click "Browse all students" to load the list…</p>
+                        </div>
+                    </form>
                 </div>
-                <button type="submit" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50">Assign student</button>
-            </form>
-            <p class="mt-1 text-[10px] text-slate-400">
-                {% if is_admin_lms or is_office_lms %}Start typing a username or email — matching students appear as suggestions.{% else %}Start typing a student's username — matching students appear as suggestions.{% endif %}
-            </p>
+                {% endif %}
+            </div>
             {% endif %}
         </section>
         {% else %}

@@ -1,0 +1,90 @@
+{#
+  HTMX partial: student checkbox list for a specific course.
+  Rendered by lms:students_for_course (GET).
+  Submitted via the bulk-enroll form in admin_dashboard_v2.jinja.
+#}
+{% if not students %}
+<div class="py-8 text-center">
+    <p class="text-sm font-bold text-slate-500">No student accounts on the platform yet.</p>
+</div>
+{% else %}
+{% set already_enrolled = students | selectattr('enrolled') | list %}
+{% set not_enrolled    = students | rejectattr('enrolled') | list %}
+
+<div class="flex items-center justify-between mb-3">
+    <p class="text-xs font-black text-slate-700">
+        {{ students | length }} students on platform ·
+        <span class="text-emerald-600">{{ already_enrolled | length }} enrolled</span> ·
+        <span class="text-amber-700">{{ not_enrolled | length }} not yet</span>
+    </p>
+    <div class="flex gap-2">
+        <button type="button"
+                onclick="document.querySelectorAll('[data-enroll-check]').forEach(cb => { if(!cb.dataset.enrolled) cb.checked = true; })"
+                class="rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-[10px] font-black uppercase text-indigo-700 hover:bg-indigo-100">
+            Select all unenrolled
+        </button>
+        <button type="button"
+                onclick="document.querySelectorAll('[data-enroll-check]').forEach(cb => cb.checked = false)"
+                class="rounded-md border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase text-slate-600 hover:bg-slate-50">
+            Clear
+        </button>
+    </div>
+</div>
+
+{# Search filter #}
+<div class="mb-3">
+    <input type="text" placeholder="Filter by username or email…"
+           oninput="(function(v){ document.querySelectorAll('[data-student-row]').forEach(function(r){ r.style.display = r.dataset.search.toLowerCase().includes(v.toLowerCase()) ? '' : 'none'; }); })(this.value)"
+           class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-200 outline-none">
+</div>
+
+{# Students grouped: unenrolled first, then enrolled #}
+<div class="max-h-[28rem] overflow-y-auto rounded-xl border border-slate-200 divide-y divide-slate-100">
+    {% for group_label, group_students in [('Not enrolled', not_enrolled), ('Already enrolled', already_enrolled)] %}
+    {% if group_students %}
+    <div class="sticky top-0 bg-slate-100 px-4 py-1.5 z-10">
+        <p class="text-[10px] font-black uppercase tracking-wider {{ 'text-amber-700' if group_label == 'Not enrolled' else 'text-emerald-700' }}">
+            {{ group_label }} ({{ group_students | length }})
+        </p>
+    </div>
+    {% for s in group_students %}
+    <label data-student-row data-search="{{ s.username }} {{ s.email }}"
+           class="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-slate-50 transition-colors {{ 'bg-emerald-50/40' if s.enrolled else '' }}">
+        {% if s.enrolled %}
+        {# Enrolled: checkbox triggers removal #}
+        <input type="checkbox" name="remove_ids" value="{{ s.id }}"
+               data-enroll-check data-enrolled="1"
+               class="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+        <div class="min-w-0 flex-1">
+            <p class="text-sm font-black text-slate-800 truncate">{{ s.username }}</p>
+            {% if s.email %}<p class="text-[10px] text-slate-500 truncate">{{ s.email }}</p>{% endif %}
+        </div>
+        <span class="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700">Enrolled ✓</span>
+        <span class="shrink-0 text-[9px] text-rose-500 font-bold hidden group-hover:block">check to remove</span>
+        {% else %}
+        {# Not enrolled: checkbox enrolls them #}
+        <input type="checkbox" name="user_ids" value="{{ s.id }}"
+               data-enroll-check
+               class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+        <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold text-slate-700 truncate">{{ s.username }}</p>
+            {% if s.email %}<p class="text-[10px] text-slate-400 truncate">{{ s.email }}</p>{% endif %}
+        </div>
+        {% endif %}
+    </label>
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+</div>
+
+<div class="mt-3 flex items-center justify-between">
+    <p class="text-[10px] text-slate-400">
+        Check blue boxes to <span class="text-indigo-600 font-bold">enroll</span> ·
+        Check green boxes to <span class="text-rose-600 font-bold">remove</span>
+    </p>
+    <button type="submit"
+            class="rounded-xl bg-indigo-600 px-5 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 shadow-sm">
+        Apply changes →
+    </button>
+</div>
+{% endif %}

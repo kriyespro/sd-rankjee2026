@@ -248,15 +248,25 @@
                     class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
                 ➕ Create course
             </button>
+            <button @click="tab='bulk'"
+                    :class="tab==='bulk' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                👥 Bulk enroll students
+            </button>
             <button @click="tab='student'"
                     :class="tab==='student' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
                     class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
-                👤 Add student
+                👤 Add one student
             </button>
             <button @click="tab='topic'"
                     :class="tab==='topic' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
                     class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
                 📝 Add topic
+            </button>
+            <button @click="tab='content'"
+                    :class="tab==='content' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
+                    class="px-5 py-3 text-[11px] font-black uppercase tracking-wider whitespace-nowrap transition-colors flex-shrink-0">
+                📚 Add content
             </button>
             <button @click="tab='faculty'"
                     :class="tab==='faculty' ? 'border-b-2 border-indigo-600 text-indigo-700 bg-indigo-50/40' : 'text-slate-500 hover:text-slate-800'"
@@ -309,9 +319,67 @@
             </form>
         </div>
 
-        {# ── Tab: Add student ── #}
+        {# ── Tab: Bulk enroll students ── #}
+        <div x-show="tab==='bulk'" x-cloak class="p-5 bg-slate-50/80">
+            <p class="mb-4 text-xs font-bold text-slate-500">
+                Select a course to see all platform students. Check boxes to enroll or remove.
+                One student can be in multiple courses — no limit.
+            </p>
+            {% if lms_quick_courses %}
+            <form method="post" action="{{ url('lms:bulk_enroll') }}" id="bulk-enroll-form">
+                {{ csrf_input }}
+                <input type="hidden" name="next" value="{{ request.path }}">
+
+                {# Step 1: pick a course — HTMX loads student list #}
+                <div class="mb-4">
+                    <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        Step 1 — Select course <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="course_id" required
+                            hx-get=""
+                            hx-trigger="change"
+                            hx-target="#bulk-student-list"
+                            hx-swap="innerHTML"
+                            hx-indicator="#bulk-loading"
+                            @change="
+                                const v = $event.target.value;
+                                if (v) {
+                                    htmx.ajax('GET', '/admin/lms/courses/' + v + '/students/', {target: '#bulk-student-list', swap: 'innerHTML'});
+                                } else {
+                                    document.getElementById('bulk-student-list').innerHTML = '';
+                                }
+                            "
+                            class="w-full max-w-md rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-100 outline-none">
+                        <option value="">Pick a course…</option>
+                        {% for c in lms_quick_courses %}
+                        <option value="{{ c.pk }}">
+                            {{ c.name }}{% if c.owner %} ({{ c.owner.get_username() }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <span id="bulk-loading" class="htmx-indicator ml-3 text-xs font-bold text-indigo-600">Loading students…</span>
+                </div>
+
+                {# Step 2: student list loads here via HTMX #}
+                <div class="mb-2">
+                    <label class="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        Step 2 — Select students
+                    </label>
+                    <div id="bulk-student-list" class="min-h-[3rem]">
+                        <p class="text-xs text-slate-400 italic">↑ Pick a course above to load its student list.</p>
+                    </div>
+                </div>
+            </form>
+            {% else %}
+            <p class="text-xs text-slate-400 py-6 text-center">No courses yet. Create a course first using the "Create course" tab.</p>
+            {% endif %}
+        </div>
+
+        {# ── Tab: Add one student (quick single enroll) ── #}
         <div x-show="tab==='student'" x-cloak class="p-5 bg-slate-50/80">
-            <p class="mb-3 text-xs font-bold text-slate-500">Enroll a student into an existing course. Only <strong>STUDENT-role</strong> accounts are accepted.</p>
+            <p class="mb-3 text-xs font-bold text-slate-500">
+                Quick single-student enroll. For many students at once, use the <button @click="tab='bulk'" class="text-indigo-600 underline font-bold">Bulk enroll</button> tab.
+            </p>
             <form method="post" action="{{ url('lms:courses') }}" class="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
                 <input type="hidden" name="action" value="add_member">
@@ -322,7 +390,6 @@
                         {% for c in lms_quick_courses %}
                         <option value="{{ c.pk }}">
                             {{ c.name }}{% if c.owner %} · {{ c.owner.get_username() }}{% endif %}
-                            {% set sc = c.enrollments.all()|length %} ({{ sc }} student{{ 's' if sc != 1 else '' }})
                         </option>
                         {% endfor %}
                     </select>
@@ -335,9 +402,7 @@
                 </div>
                 <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Enroll →</button>
             </form>
-            {% if lms_quick_courses %}
-            <p class="mt-2 text-[10px] text-slate-400">{{ lms_student_options | length }} student accounts in the typeahead. To remove a student, go to the <a href="{{ url('lms:courses') }}" class="underline text-indigo-600">full LMS courses page</a>.</p>
-            {% endif %}
+            <p class="mt-2 text-[10px] text-slate-400">{{ lms_student_options | length }} student accounts in typeahead.</p>
         </div>
 
         {# ── Tab: Add topic ── #}
@@ -361,6 +426,100 @@
                 </div>
                 <button type="submit" class="rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Add topic →</button>
             </form>
+        </div>
+
+        {# ── Tab: Add content (topics, notes, exams, videos) — superadmin only ── #}
+        <div x-show="tab==='content'" x-cloak class="p-5 bg-slate-50/80">
+            <p class="mb-4 text-xs font-bold text-slate-500">
+                Superadmin adds all curriculum content. Faculty only gives assignments and grades submissions.
+            </p>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {# Add topic #}
+                <div class="rounded-xl border border-indigo-100 bg-white p-4">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-base">📝</span>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-700">New Topic</p>
+                    </div>
+                    <p class="mb-3 text-[10px] text-slate-500 leading-snug">Adds a topic to the LMS sidebar for a course.</p>
+                    <form method="post" action="{{ url('lms:topic_create') }}" class="space-y-2">
+                        {{ csrf_input }}
+                        <input type="text" name="title" required placeholder="Topic title…"
+                               class="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-200 outline-none">
+                        <select name="course" class="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-200 outline-none">
+                            <option value="">All courses (platform-wide)</option>
+                            {% for c in lms_quick_courses %}
+                            <option value="{{ c.pk }}">{{ c.name }}{% if c.owner %} · {{ c.owner.get_username() }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="w-full rounded-lg bg-indigo-600 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:bg-indigo-500">Add topic →</button>
+                    </form>
+                </div>
+
+                {# Add study notes #}
+                <div class="rounded-xl border border-emerald-100 bg-white p-4">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-base">📖</span>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-700">Study Notes</p>
+                    </div>
+                    <p class="mb-3 text-[10px] text-slate-500 leading-snug">Add notes/study material in the study hub.</p>
+                    <div class="space-y-2">
+                        <a href="{{ url('dashboard:study') }}" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100">
+                            Study hub <span>→</span>
+                        </a>
+                        <a href="{{ url('dashboard:blog_post_create') }}" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100">
+                            Add blog/article <span>→</span>
+                        </a>
+                        <a href="{{ url('dashboard:cms_home') }}" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100">
+                            Content CMS <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                {# Add video lecture #}
+                <div class="rounded-xl border border-violet-100 bg-white p-4">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-base">🎬</span>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-700">Video Lecture</p>
+                    </div>
+                    <p class="mb-3 text-[10px] text-slate-500 leading-snug">Add recorded lectures to /learning/ library.</p>
+                    <div class="space-y-2">
+                        <a href="/sd/learning/conceptvideo/add/" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-black text-violet-800 hover:bg-violet-100">
+                            Add video lecture <span>→</span>
+                        </a>
+                        <a href="{{ url('learning:index') }}" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100">
+                            Video library <span>→</span>
+                        </a>
+                    </div>
+                </div>
+
+                {# Add exam / test #}
+                <div class="rounded-xl border border-amber-100 bg-white p-4">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-base">📋</span>
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-700">Exam / Test</p>
+                    </div>
+                    <p class="mb-3 text-[10px] text-slate-500 leading-snug">Add MCQ skills and questions for exams.</p>
+                    <div class="space-y-2">
+                        <a href="/sd/assessment/skill/add/" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
+                            Add skill/exam <span>→</span>
+                        </a>
+                        <a href="/sd/assessment/question/add/" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100">
+                            Add question <span>→</span>
+                        </a>
+                        <a href="{{ url('assessment:index') }}" target="_blank"
+                           class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-100">
+                            Test center <span>→</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
         {# ── Tab: Reassign faculty ── #}
