@@ -2130,6 +2130,15 @@ def index(request):
     selected_path = None
     if selected_path_id:
         selected_path = next((p for p in all_paths if str(p.id) == str(selected_path_id)), None)
+    # Fix: this used to always fall back to all_paths[0] (whatever sorts first by
+    # level_order), which showed an unrelated track like "SSC & Govt Exams" to students
+    # who'd never touched it. Prefer what the student was actually last doing, then their
+    # profile class, before falling back to the platform default.
+    if selected_path is None and latest_attempt and latest_attempt.skill_id and latest_attempt.skill.path_id:
+        selected_path = next((p for p in all_paths if p.id == latest_attempt.skill.path_id), None)
+    if selected_path is None and request.user.class_level:
+        needle = f"class {request.user.class_level}"
+        selected_path = next((p for p in all_paths if needle in p.name.lower()), None)
     if selected_path is None and all_paths:
         selected_path = all_paths[0]
 
