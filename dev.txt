@@ -9,6 +9,108 @@
 - None
 
 ### Completed recently
+- [DONE] fab_role.md — role-by-role dashboard workflow pass (all 7 roles) + superadmin
+  "Recent joins" panel per explicit request. Full suite 110/110 green, all roles smoke-rendered.
+  - **R0 shared priority component**: new `templates/dashboard/partials/_priority_list.jinja`
+    (label/url/tone dicts) — now the ONE "do this next" pattern for tutor, parent, city admin,
+    global admin (city/global previously had plain advice strings with no links).
+  - **City admin**: priorities now actionable (SLA-breach verifications → filtered /sd/ list,
+    stale disputes → /sd/, LMS delivery gap → lms:courses); per-row "Review →"/"Resolve →" deep
+    links on queue cards; no-state-assigned rose warning (was silent all-zeros); Office's
+    existing LMS enrollment power now reachable from their own dashboard.
+  - **Global admin**: same actionable conversion + pending-withdrawal SLA priority + the
+    paid-but-not-in-LMS-batch queue (revenue collected, product undelivered) + per-row deep
+    links on all 3 queue columns.
+  - **Student**: "Continue learning" hero button (first unlocked-unfinished set from the
+    already-computed learning_path — zero new queries; falls back to "Take your first test");
+    sample-data banner when preview mode swaps in demo_student's booking data (was completely
+    unlabeled — trust risk); streak card links to a concrete daily action.
+  - **Parent**: child snapshot card on the dashboard itself (streak/last score/tests passed/
+    14d attendance via existing `student_progress_summary`, approved links only); pay priority
+    deep-links straight to `hometutor_payments:pay_checkout` when exactly 1 payment pending;
+    first-session empty state = "Find a tutor" + "Link your child" instead of zeroed widgets.
+  - **Tutor/Faculty**: NEW self-serve payout request — `hometutor_payments/views.py::
+    request_payout` + `payout/request/` URL (creates PENDING TutorPayoutRequest for full
+    balance; ops still marks PAID in /sd/ as before; blocks duplicates + zero balance), green
+    CTA on the earnings row; per-course grading-backlog chips ("Batch A: 3") when 2+ courses;
+    pending-demo rows got "Reply →" buttons.
+  - **VIP coordinator**: reworked from vanity stats to a workspace — referral-link copy card
+    (Alpine clipboard), "My referrals" list (their own funnel, Active/Quiet 7d flag) replacing
+    the platform-wide recent-users list, "My draft blog posts" with finish-and-publish links.
+  - **Superadmin "Recent joins" panel** (explicit request): new cached
+    `dashboard/services.py::recent_joins()` — newest 15 STUDENT/PARENT/TUTOR/FACULTY signups
+    with mobile (rose "missing" flag), city, ENTRY status (Onboarded/Incomplete badge) and
+    PAYMENT status (green "Paid ₹N" across all 4 payment surfaces vs "Free"), each row linking
+    to the /sd/ user page. Sits between Growth and the trend charts on /admin/.
+  - No migrations. No permission changes (all fixes reuse existing gates). CSS rebuilt.
+- [DONE] Signup/login flow rework — mobile + email + city MANDATORY for every public role
+  (student/parent/tutor-faculty), per explicit request. All paths covered:
+  - **Model**: `CustomUser.phone` (15 chars) + `CustomUser.city` (60 chars) — migration
+    `users/0019_customuser_city_customuser_phone.py` (additive, existing rows get '', applied
+    locally after confirmation; production applies on next deploy's auto-migrate).
+  - **Email signup** (`CustomUserCreationForm`): phone + city + email now required for all 3
+    roles. Phone validated + normalized to bare 10 digits via shared
+    `users/forms.py::clean_phone_value` (accepts "+91 98765 43210" / "09876543210" etc.,
+    rejects non-mobile junk). signup.jinja renders the two new fields (tel/inputmode/autocomplete
+    set for mobile keyboards).
+  - **Google signup path**: those users never see the signup form — `StudentParentOnboardingForm`
+    now also requires phone + city, and the onboarding "Skip" button only works once phone+city
+    are on file (skip still skips name/state — contact info is not skippable).
+  - **Tutor onboarding** (`TutorOnboardingForm`): new required phone field (TutorProfile has no
+    phone column — canonical copy lives on CustomUser; view syncs user.phone + user.city from
+    the form/profile on save). City prefills from signup value.
+  - **Login**: identifier field now accepts email too ("Username or email") — unique-match email
+    is resolved to username before AuthenticationForm/Axes; ambiguous duplicates fall through to
+    normal failure. Username login unchanged.
+  - **Ops**: /sd/ user admin shows/searches phone + city. Demo-request form prefills
+    contact_phone from user.phone (one less field for parents).
+  - Verified: 18/18-check smoke script (3-role signup, normalization, missing/bad phone rejected,
+    google-path student+tutor onboarding, skip gating, email+username login) + full suite
+    110/110 green (4 pre-existing onboarding tests updated for the new mandatory fields —
+    behavior change is intentional). CSS rebuilt.
+  - NOT YET migrated on production — additive column migration, safe for auto-migrate-on-deploy.
+- [DONE] fab5.md pass 1 — "smart · fast · easy · mobile" optimization across all roles
+  (plan in fab5.md, executed after user confirmation):
+  - **Fast**: measured query counts per role page with a test-client script (baseline table in
+    fab5.md). Superadmin /admin/ 77→12 queries via new `dashboard/services.py::cached_stat`
+    decorator (90s TTL on all 11 aggregate functions — locmem dev / Redis prod, counts may lag
+    ≤90s; inline review tables stay live). Tutor dashboard 29→23 + student 29→26 via conditional
+    aggregates (`_demo_status_counts` helper, demo/engagement/paid-order Count(filter=Q(...))
+    merges). LMS `admin_home_stats` + `attendance_summary` merged 4-count patterns into single
+    aggregates. Self-hosted Alpine.js 3.13.3 (static/js/alpine.min.js — last third-party CDN
+    dependency gone). `loading="lazy" decoding="async"` on tutor/course card + video thumb images.
+  - **Mobile**: 5 CMS list tables got `overflow-x-auto` (only tables missing it). Global 16px
+    input font-size under 768px (stops iOS focus zoom). Sticky mobile "Request a free demo" CTA
+    on hometutor detail (sits above tab bar; anchor to #request-demo). Student mobile tab bar
+    trimmed 7→5 tabs (Learn tab now logged-out-only; Class log tab removed — both reachable via
+    dashboard quick links, new "Daily class log" quick link added to student dashboard col 3).
+  - **Easy flow**: parent dashboard "Suggested actions" upgraded from plain-text bullets to
+    the same actionable label+url+tone priority-item pattern the tutor dashboard uses (links to
+    my_demo_requests / family_hub; all-caught-up state). Desktop nav capped at 4 primary links +
+    Alpine "More" dropdown for student/VIP/admin branches (tutor/parent already at 4) — desktop
+    now matches the 4-tab mobile mental model.
+  - **Smart**: tutor search results (`public_tutor_queryset`) now tie-break by accepted-demo
+    count after featured/rating — responsive tutors outrank dormant listings. Verified the
+    fail-test→watch-lesson→retry loop already tight on result.jinja (no change needed).
+  - **Test fix**: `OfficeOversightTests.test_office_can_view_courses_page_and_assign_students`
+    was failing BEFORE this session (verified via git stash) — asserted the literal label
+    "Assign student" which an earlier template redesign renamed to a typeahead + "Add →" button.
+    Assertion now checks `name="action" value="add_member"` (the actual form) instead.
+  - Deferred to next pass (listed in fab5.md): daily digest notifications, empty-state prefills,
+    search-first tutor discovery on home, real-device 360px screenshot audit.
+  - CSS rebuilt. Full suite re-run after changes (see below).
+- [DONE] Superadmin dashboard upgrade — Action Center + Faculty & Course Quick Setup
+  - `dashboard/services.py`: `action_center()` items enriched with `icon` + `priority` (critical/warning/info);
+    added LMS pending grading queue item; new `lms_health_summary()` helper (6 LMS stats).
+  - `dashboard/views.py`: pre-split action_items into `action_hot`/`action_clear` lists so template avoids
+    Jinja filter hacks; added `lms_stats` context key; increased `lms_quick_courses` slice from 8 → 20.
+  - `templates/dashboard/admin_dashboard_v2.jinja`:
+    - Action Center: active queues shown with color-coded left borders (rose=critical, amber=warning,
+      indigo=info); all-clear items collapsed into an Alpine.js toggle — no wall of "All clear" rows.
+    - Faculty & Course Quick Setup: LMS Pulse Bar (6 at-a-glance stats, amber on problem values) +
+      four-tab interface (Create Course / Add Student / Add Topic / Reassign Faculty / Course Health).
+      Course Health tab: per-course table with green/amber/red status dots.
+  - CSS rebuilt. Committed and pushed to main.
 - [DONE] Two explicit requests answered together:
   1. **"Confirm student only assigned to faculty can use this LMS of that course"** — verified
      (already correct, no bug): `can_view_assignment`/`can_submit_assignment`/`assignments_for_user`
@@ -653,3 +755,13 @@
 - Premium landing page redesign (gradient hero, how-it-works, stats bar, CTA)
 - Seed data: 10 MCQ questions + 4 videos + 3 earning tasks
 - dev_plan.txt updated with all Phase 1 complete
+[DONE] Student dashboard deep redesign (/admin for STUDENT role)
+- Added LMS context to dashboard/views.py: lms_enrolled_courses, lms_pending_assignments, lms_recent_feedback
+- 3-col TODAY'S FOCUS row: pending LMS assignments, last test score, streak + quick links
+- My Courses section: cards per enrolled course with pending assignment badges
+- Recent Grades: submission cards showing marks, remark, status colour-coded
+- Compact exam history replaces wide scrollable table
+- Tutor section compacted to 2-col row (booking funnel + slim search form)
+- Activity feed and server order moved to bottom
+- All 200 OK, verified with non-staff student user
+- CSS rebuilt, committed dc90326, pushed to main

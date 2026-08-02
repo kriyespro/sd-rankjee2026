@@ -20,6 +20,35 @@
         {% include "dashboard/partials/_user_identity_inline.jinja" %}
     </div>
 
+    {% if student_preview_mode %}
+    <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-bold text-amber-900" role="status">
+        👀 The tutor-booking section below shows <span class="uppercase">sample data</span> so you can see how it works —
+        <a href="{{ url('hometutor:tutor_list') }}" class="underline font-black">request your first demo</a> to see your own.
+    </div>
+    {% endif %}
+
+    {# ── Continue learning — single resume point, the most common student intent #}
+    {% if continue_item %}
+    <a href="{{ url('assessment:take_test', continue_item.skill.id) }}"
+       class="flex items-center justify-between gap-3 rounded-xl bg-indigo-600 px-5 py-4 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 transition-colors">
+        <div class="min-w-0">
+            <p class="text-[10px] font-black uppercase tracking-wider text-indigo-200">Continue learning</p>
+            <p class="truncate text-base font-black">{{ continue_item.skill.name }} · {{ continue_item.next_set.name }}</p>
+            <p class="text-[11px] font-semibold text-indigo-200">{{ continue_item.passed_sets }}/{{ continue_item.total_sets }} sets done — pick up where you left off</p>
+        </div>
+        <span class="shrink-0 rounded-lg bg-white/15 px-4 py-2 text-sm font-black">Resume →</span>
+    </a>
+    {% elif not latest_attempt %}
+    <a href="{{ url('assessment:index') }}"
+       class="flex items-center justify-between gap-3 rounded-xl bg-indigo-600 px-5 py-4 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-500 transition-colors">
+        <div>
+            <p class="text-[10px] font-black uppercase tracking-wider text-indigo-200">Start here</p>
+            <p class="text-base font-black">Take your first test — find your level in 10 minutes</p>
+        </div>
+        <span class="shrink-0 rounded-lg bg-white/15 px-4 py-2 text-sm font-black">Start →</span>
+    </a>
+    {% endif %}
+
     {# ── Stats strip ─────────────────────────────────────────────────────── #}
     {% set kpi_cards = role_stat_cards %}
     {% include "dashboard/partials/_dash_kpi_strip.jinja" %}
@@ -124,7 +153,7 @@
                 <span class="text-xl">🔥</span>
                 <div>
                     <p class="text-xs font-black text-slate-900">{{ user.streak_days }}-day streak</p>
-                    <p class="text-[10px] text-slate-500">Keep it going — study daily</p>
+                    <p class="text-[10px] text-slate-500"><a href="{{ url('assessment:index') }}" class="hover:underline">Take 1 test today to keep it going →</a></p>
                 </div>
             </div>
 
@@ -145,6 +174,10 @@
                 </a>
                 <a href="{{ url('learning:index') }}" class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
                     <span class="text-[11px] font-black uppercase tracking-wider text-slate-800">Video lessons</span>
+                    <span class="text-slate-400 text-xs">→</span>
+                </a>
+                <a href="{{ url('dashboard:daily_class_log') }}" class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-800">Daily class log</span>
                     <span class="text-slate-400 text-xs">→</span>
                 </a>
                 <a href="{{ url('hometutor:my_demo_requests') }}" class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 hover:bg-slate-100 transition-colors">

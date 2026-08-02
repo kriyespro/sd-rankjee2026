@@ -738,6 +738,64 @@
 
     </div>
 
+    {# ============ RECENT JOINS — entry + payment status per new signup ============ #}
+    <section class="mb-8 bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">🆕 Recent joins — Student · Parent · Tutor · Faculty</h2>
+            <a href="/sd/users/customuser/" class="text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:underline">All users /sd/ →</a>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        <th class="py-2 pr-3">User</th>
+                        <th class="py-2 pr-3">Role</th>
+                        <th class="py-2 pr-3">Joined</th>
+                        <th class="py-2 pr-3">Mobile</th>
+                        <th class="py-2 pr-3">City</th>
+                        <th class="py-2 pr-3">Entry</th>
+                        <th class="py-2">Payment</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for j in recent_joins %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-2 pr-3">
+                            <a href="/sd/users/customuser/{{ j.id }}/change/" class="font-bold text-slate-900 hover:text-indigo-700">@{{ j.username }}</a>
+                            <p class="text-[10px] text-slate-400">{{ j.email }}</p>
+                        </td>
+                        <td class="py-2 pr-3">
+                            <span class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider
+                                {% if j.role == 'TUTOR' or j.role == 'FACULTY' %}bg-violet-50 text-violet-700 ring-1 ring-violet-200
+                                {% elif j.role == 'PARENT' %}bg-sky-50 text-sky-700 ring-1 ring-sky-200
+                                {% else %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200{% endif %}">{{ j.role }}</span>
+                        </td>
+                        <td class="py-2 pr-3 whitespace-nowrap text-xs text-slate-600">{{ j.joined.strftime('%d %b %H:%M') }}</td>
+                        <td class="py-2 pr-3 text-xs {% if j.phone %}text-slate-700 font-semibold{% else %}text-rose-500 font-bold{% endif %}">{{ j.phone or 'missing' }}</td>
+                        <td class="py-2 pr-3 text-xs {% if j.city %}text-slate-700{% else %}text-slate-400{% endif %}">{{ j.city or '—' }}</td>
+                        <td class="py-2 pr-3">
+                            {% if j.onboarded %}
+                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-700">Onboarded</span>
+                            {% else %}
+                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-amber-700">Incomplete</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-2">
+                            {% if j.has_paid %}
+                            <span class="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Paid ₹{{ "{:,.0f}".format(j.paid_total) }}</span>
+                            {% else %}
+                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-slate-500">Free</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" class="py-6 text-center text-sm text-slate-500">No signups yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     {# ============ DAILY TREND CHARTS side by side ============ #}
     <div class="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

@@ -157,7 +157,19 @@ def login_view(request):
     next_url = request.POST.get('next') or request.GET.get('next') or ''
     role_hint = (request.GET.get('role') or '').strip().upper()
     if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+        # Let people log in with the email they signed up with — resolve it to the
+        # username before AuthenticationForm/Axes see it. Ambiguous (duplicate) emails
+        # fall through untouched and fail normal validation.
+        post_data = request.POST
+        identifier = (post_data.get('username') or '').strip()
+        if '@' in identifier:
+            matches = list(
+                CustomUser.objects.filter(email__iexact=identifier).values_list('username', flat=True)[:2]
+            )
+            if len(matches) == 1:
+                post_data = post_data.copy()
+                post_data['username'] = matches[0]
+        form = AuthenticationForm(request, data=post_data)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
@@ -165,6 +177,7 @@ def login_view(request):
             return _auth_redirect(request)
     else:
         form = AuthenticationForm()
+    form.fields['username'].label = 'Username or email'
     return render(
         request,
         'users/login.jinja',
@@ -403,7 +416,8 @@ def onboarding_profile(request):
         if not profile:
             tutor_initial = {
                 'display_name': (request.user.get_full_name() or request.user.username).strip(),
-                'city': PILOT_CITY,
+                'city': request.user.city or PILOT_CITY,
+                'phone': request.user.phone,
                 'subjects': '',
                 'teaching_mode': TutorProfile.TeachingMode.HYBRID,
                 'teaches_from': 6,
@@ -416,8 +430,11 @@ def onboarding_profile(request):
                 obj.user = request.user
                 obj.verification_status = TutorProfile.VerificationStatus.PENDING
                 obj.save()
+                # Contact info is mandatory platform-wide — keep the canonical copy on the user.
+                request.user.phone = form.cleaned_data['phone']
+                request.user.city = obj.city
                 request.user.onboarding_completed = True
-                request.user.save(update_fields=['onboarding_completed'])
+                request.user.save(update_fields=['phone', 'city', 'onboarding_completed'])
                 messages.success(request, 'Tutor onboarding complete. Finish your listing to start receiving demos.')
                 return redirect('hometutor:my_profile')
         else:
@@ -435,7 +452,9 @@ def onboarding_profile(request):
         )
 
     if request.method == 'POST':
-        if request.POST.get('action') == 'skip':
+        # "Skip" only skips the optional fields (name/state) — contact info is mandatory,
+        # so a user without phone+city on file can't bypass the form anymore.
+        if request.POST.get('action') == 'skip' and request.user.phone and request.user.city:
             request.user.onboarding_completed = True
             request.user.save(update_fields=['onboarding_completed'])
             messages.info(request, 'You can finish your profile anytime from settings.')

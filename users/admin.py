@@ -105,6 +105,8 @@ class CustomUserAdmin(UserAdmin):
     list_display = (
         'username',
         'email',
+        'phone',
+        'city',
         'role',
         'show_server_buy_button',
         'state',
@@ -115,6 +117,7 @@ class CustomUserAdmin(UserAdmin):
         'referral_code',
     )
     list_display_links = ('username',)
+    search_fields = ('username', 'email', 'phone', 'first_name', 'last_name')
     list_editable = ('show_server_buy_button',)
     list_per_page = 50
     list_filter = (
@@ -143,6 +146,8 @@ class CustomUserAdmin(UserAdmin):
             {
                 'fields': (
                     'role',
+                    'phone',
+                    'city',
                     'state',
                     'streak_days',
                     'xp_points',

@@ -266,7 +266,18 @@ def public_tutor_queryset(request_get):
             else:
                 qs = qs.none()
 
-    return qs.order_by('-is_featured_home', '-rating_display', 'display_name')
+    # Smart ordering: after featured + rating (which are sparse/tied on a young marketplace),
+    # break ties by proven responsiveness — tutors who actually accept demo requests surface
+    # above dormant listings a parent would otherwise waste a request on.
+    from django.db.models import Q as _Q
+
+    qs = qs.annotate(
+        _accepted_demos=Count(
+            'demo_requests',
+            filter=_Q(demo_requests__status=DemoRequest.Status.ACCEPTED),
+        ),
+    )
+    return qs.order_by('-is_featured_home', '-rating_display', '-_accepted_demos', 'display_name')
 
 
 def paginated_tutor_page(request_get, page_number, user=None):

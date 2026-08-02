@@ -57,14 +57,27 @@ class OnboardingFlowTests(TestCase):
         self.client.force_login(self.user)
         res = self.client.post(
             reverse('users:onboarding_profile'),
-            data={'first_name': 'Demo', 'last_name': '', 'state': ''},
+            data={'first_name': 'Demo', 'last_name': '', 'state': '',
+                  'phone': '9876543210', 'city': 'Ahmedabad'},
         )
         self.user.refresh_from_db()
         self.assertTrue(self.user.onboarding_completed)
         self.assertRedirects(res, reverse('dashboard:index'))
 
-    def test_student_can_skip_profile_onboarding(self):
+    def test_student_can_skip_profile_onboarding_only_with_contact_info(self):
+        # Skip only bypasses the optional name/state fields — phone+city are mandatory,
+        # so a user without them on file stays in onboarding.
         self.client.force_login(self.user)
+        res = self.client.post(
+            reverse('users:onboarding_profile'),
+            data={'action': 'skip'},
+        )
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.onboarding_completed)
+
+        self.user.phone = '9876543210'
+        self.user.city = 'Ahmedabad'
+        self.user.save(update_fields=['phone', 'city'])
         res = self.client.post(
             reverse('users:onboarding_profile'),
             data={'action': 'skip'},
@@ -79,6 +92,8 @@ class OnboardingFlowTests(TestCase):
             data={
                 'username': 'newstudent',
                 'email': 'new@example.com',
+                'phone': '9876543210',
+                'city': 'Ahmedabad',
                 'password1': 'StrongPass!123',
                 'password2': 'StrongPass!123',
                 'role': CustomUser.Role.STUDENT,
@@ -102,6 +117,7 @@ class OnboardingFlowTests(TestCase):
             reverse('users:onboarding_profile'),
             data={
                 'display_name': 'Tutor One',
+                'phone': '9876543210',
                 'city': 'Ahmedabad',
                 'subjects': 'Math, Science',
                 'teaching_mode': TutorProfile.TeachingMode.ONLINE,

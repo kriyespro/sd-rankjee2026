@@ -149,6 +149,24 @@ def _location_from_ip(ip_address):
     return location
 
 
+def _demo_status_counts(demo_qs, now):
+    """One aggregate instead of four separate COUNT queries over the same demo set."""
+    from hometutor.models import DemoRequest
+
+    return demo_qs.aggregate(
+        pending=Count('id', filter=Q(status=DemoRequest.Status.PENDING)),
+        accepted=Count('id', filter=Q(status=DemoRequest.Status.ACCEPTED)),
+        declined=Count('id', filter=Q(status=DemoRequest.Status.DECLINED)),
+        sla_risk=Count(
+            'id',
+            filter=Q(
+                status=DemoRequest.Status.PENDING,
+                created_at__lt=now - timedelta(hours=24),
+            ),
+        ),
+    )
+
+
 def _role_dashboard_context(request):
     """Build focused, role-wise context for non-student dashboards."""
     from hometutor.models import DemoRequest, TutorProfile, TutorEngagement, EngagementDispute, SessionAttendance
@@ -161,40 +179,46 @@ def _role_dashboard_context(request):
     if role in ('TUTOR', 'FACULTY'):
         tutor_profile = TutorProfile.objects.filter(user=user).first()
         tutor_preview_mode = not tutor_profile
-        pending_incoming = (
-            DemoRequest.objects.filter(
-                tutor=tutor_profile,
-                status=DemoRequest.Status.PENDING,
-            ).count()
-            if tutor_profile
-            else 0
-        )
-        accepted_demos = (
-            DemoRequest.objects.filter(
-                tutor=tutor_profile,
-                status=DemoRequest.Status.ACCEPTED,
-            ).count()
-            if tutor_profile
-            else 0
-        )
-        active_engagements = (
-            TutorEngagement.objects.filter(
-                tutor_profile=tutor_profile,
-                status=TutorEngagement.Status.ACTIVE,
-            ).count()
-            if tutor_profile
-            else 0
-        )
+        if tutor_profile:
+            _demo_stats = DemoRequest.objects.filter(tutor=tutor_profile).aggregate(
+                total=Count('id'),
+                pending=Count('id', filter=Q(status=DemoRequest.Status.PENDING)),
+                accepted=Count('id', filter=Q(status=DemoRequest.Status.ACCEPTED)),
+                sla_risk=Count(
+                    'id',
+                    filter=Q(
+                        status=DemoRequest.Status.PENDING,
+                        created_at__lt=now - timedelta(hours=24),
+                    ),
+                ),
+            )
+            _engagement_stats = TutorEngagement.objects.filter(
+                tutor_profile=tutor_profile
+            ).aggregate(
+                active=Count('id', filter=Q(status=TutorEngagement.Status.ACTIVE)),
+                stale_active=Count(
+                    'id',
+                    filter=Q(
+                        status=TutorEngagement.Status.ACTIVE,
+                        updated_at__lt=now - timedelta(days=7),
+                    ),
+                ),
+            )
+        else:
+            _demo_stats = {'total': 0, 'pending': 0, 'accepted': 0, 'sla_risk': 0}
+            _engagement_stats = {'active': 0, 'stale_active': 0}
+        pending_incoming = _demo_stats['pending']
+        accepted_demos = _demo_stats['accepted']
+        total_demos = _demo_stats['total']
+        # Accurate count across ALL pending demos (not just the 5 shown)
+        tutor_demo_sla_risk_count = _demo_stats['sla_risk']
+        active_engagements = _engagement_stats['active']
+        stale_active_engagement_count = _engagement_stats['stale_active']
         open_disputes = (
             EngagementDispute.objects.filter(
                 engagement__tutor_profile=tutor_profile,
                 status__in=[EngagementDispute.Status.OPEN, EngagementDispute.Status.IN_REVIEW],
             ).count()
-            if tutor_profile
-            else 0
-        )
-        total_demos = (
-            DemoRequest.objects.filter(tutor=tutor_profile).count()
             if tutor_profile
             else 0
         )
@@ -218,19 +242,24 @@ def _role_dashboard_context(request):
             if tutor_profile
             else []
         )
-        tutor_paid_orders = (
+        _paid_stats = (
             MarketplaceOrder.objects.filter(
                 engagement__tutor_profile=tutor_profile,
                 status=MarketplaceOrder.Status.SUCCESS,
+            ).aggregate(
+                paid_count=Count('id'),
+                total_credits=Sum('tutor_credit_amount'),
+                month_credits=Sum(
+                    'tutor_credit_amount',
+                    filter=Q(paid_at__gte=now - timedelta(days=30)),
+                ),
             )
             if tutor_profile
-            else MarketplaceOrder.objects.none()
+            else {}
         )
-        tutor_paid_count = tutor_paid_orders.count()
-        tutor_total_credits = tutor_paid_orders.aggregate(total=Sum('tutor_credit_amount'))['total'] or 0
-        tutor_month_credits = tutor_paid_orders.filter(
-            paid_at__gte=now - timedelta(days=30)
-        ).aggregate(total=Sum('tutor_credit_amount'))['total'] or 0
+        tutor_paid_count = _paid_stats.get('paid_count') or 0
+        tutor_total_credits = _paid_stats.get('total_credits') or 0
+        tutor_month_credits = _paid_stats.get('month_credits') or 0
         tutor_pending_payout = (
             TutorPayoutRequest.objects.filter(
                 tutor_profile=tutor_profile,
@@ -258,15 +287,6 @@ def _role_dashboard_context(request):
             if tutor_profile
             else 0
         )
-        stale_active_engagement_count = (
-            TutorEngagement.objects.filter(
-                tutor_profile=tutor_profile,
-                status=TutorEngagement.Status.ACTIVE,
-                updated_at__lt=now - timedelta(days=7),
-            ).count()
-            if tutor_profile
-            else 0
-        )
         accepted_rate = round((accepted_demos / total_demos) * 100, 1) if total_demos else 0
         active_rate = round((active_engagements / accepted_demos) * 100, 1) if accepted_demos else 0
         paid_rate = round((tutor_paid_count / active_engagements) * 100, 1) if active_engagements else 0
@@ -274,16 +294,6 @@ def _role_dashboard_context(request):
         tutor_demo_sla_risk_ids = {
             d.pk for d in latest_pending_demos if (now - d.created_at).total_seconds() > (24 * 3600)
         }
-        # Accurate count across ALL pending demos (not just the 5 shown)
-        tutor_demo_sla_risk_count = (
-            DemoRequest.objects.filter(
-                tutor=tutor_profile,
-                status=DemoRequest.Status.PENDING,
-                created_at__lt=now - timedelta(hours=24),
-            ).count()
-            if tutor_profile
-            else 0
-        )
         # LMS teaching load (fix: this dashboard used to be 100% hometutor-marketplace metrics
         # with zero visibility into a faculty/tutor's actual classroom work — courses, students,
         # and — most actionable — submissions sitting ungraded).
@@ -306,6 +316,13 @@ def _role_dashboard_context(request):
         )
         lms_pending_review_count = lms_pending_submissions_qs.count()
         lms_recent_pending_submissions = list(lms_pending_submissions_qs[:5])
+        # Per-course backlog — a faculty with 2+ batches needs to know WHERE the grading is.
+        lms_pending_by_course = list(
+            lms_pending_submissions_qs.order_by()
+            .values('assignment__course__name')
+            .annotate(n=Count('id'))
+            .order_by('-n')[:6]
+        )
         lms_courses_overview = list(
             lms_course_qs.annotate(student_count=Count('enrollments', distinct=True)).order_by('-created_at')[:6]
         )
@@ -447,6 +464,7 @@ def _role_dashboard_context(request):
             'lms_student_count': lms_student_count,
             'lms_assignment_count': lms_assignment_count,
             'lms_pending_review_count': lms_pending_review_count,
+            'lms_pending_by_course': lms_pending_by_course,
             'lms_recent_pending_submissions': lms_recent_pending_submissions,
             'lms_courses_overview': lms_courses_overview,
             'lms_recent_assignments': lms_recent_assignments,
@@ -545,8 +563,11 @@ def _role_dashboard_context(request):
 
         # LMS courses of linked child — for attendance shortcut in parent dashboard
         child_lms_courses = []
+        child_snapshot = None
+        child_student = None
         try:
             from users.models import ParentStudentLink
+            from users.services import student_progress_summary
             from lms.models import LmsCourseEnrollment as _LmsCE, LmsCourse as _LmsCourse
             _link = ParentStudentLink.objects.filter(parent=user).select_related('student').first()
             if _link:
@@ -555,18 +576,78 @@ def _role_dashboard_context(request):
                     .values_list('course_id', flat=True)
                 )
                 child_lms_courses = list(_LmsCourse.objects.filter(pk__in=_child_course_ids).order_by('name'))
+                # Child snapshot directly on the dashboard — "is my child studying?" shouldn't
+                # need a hop to /users/family/. Approved links only (same gate the hub uses).
+                if _link.is_verified:
+                    child_student = _link.student
+                    child_snapshot = student_progress_summary(_link.student)
         except Exception:
-            pass
+            logger.exception("Parent dashboard child snapshot failed (user_id=%s)", user.id)
 
+        # Direct pay deep link when exactly one engagement awaits payment — every extra
+        # hop before the payment page loses money.
+        pending_pay_engagement_id = None
+        if parent_pending_payment_count == 1:
+            pending_pay_engagement_id = (
+                TutorEngagement.objects.filter(student=user, status=TutorEngagement.Status.ACTIVE)
+                .exclude(marketplace_order__status=MarketplaceOrder.Status.SUCCESS)
+                .values_list('pk', flat=True)
+                .first()
+            )
+
+        # Same actionable shape as the tutor dashboard's priority_items: label + link + tone,
+        # so a parent's next step is always one tap, not a sentence to interpret.
         parent_next_actions = []
-        if parent_demo_sla_risk_ids:
-            parent_next_actions.append('Follow up on pending demo requests older than 24h.')
+        if parent_demo_sla_risk_count > 0:
+            parent_next_actions.append({
+                'label': f'{parent_demo_sla_risk_count} demo request'
+                f'{"s" if parent_demo_sla_risk_count != 1 else ""} waiting over 24h — follow up',
+                'url': reverse('hometutor:my_demo_requests'),
+                'tone': 'rose',
+            })
         if parent_pending_payment_count > 0:
-            parent_next_actions.append('Complete pending engagement payments to avoid class disruption.')
+            parent_next_actions.append({
+                'label': f'{parent_pending_payment_count} engagement payment'
+                f'{"s" if parent_pending_payment_count != 1 else ""} pending — pay to keep classes running',
+                'url': (
+                    reverse('hometutor_payments:pay_checkout', args=[pending_pay_engagement_id])
+                    if pending_pay_engagement_id
+                    else reverse('hometutor:my_demo_requests')
+                ),
+                'tone': 'amber',
+            })
         if parent_attendance_rate and parent_attendance_rate < 80:
-            parent_next_actions.append('Improve attendance rhythm; target at least 80% consistency.')
+            parent_next_actions.append({
+                'label': f'Attendance at {parent_attendance_rate}% — aim for 80%+ consistency',
+                'url': reverse('users:family_hub'),
+                'tone': 'amber',
+            })
+        if pending_sent > 0 and parent_demo_sla_risk_count == 0:
+            parent_next_actions.append({
+                'label': f'{pending_sent} demo request{"s" if pending_sent != 1 else ""} awaiting tutor reply',
+                'url': reverse('hometutor:my_demo_requests'),
+                'tone': 'indigo',
+            })
+        # First-session parent: nothing booked, no child linked — two clear starting points
+        # instead of a wall of zeroed widgets.
+        if pending_sent == 0 and active_learning == 0 and accepted_sent == 0:
+            parent_next_actions.append({
+                'label': 'Find a verified home tutor — first demo class is free',
+                'url': reverse('hometutor:tutor_list'),
+                'tone': 'indigo',
+            })
+            if not child_snapshot:
+                parent_next_actions.append({
+                    'label': "Link your child's account to track their progress here",
+                    'url': reverse('users:family_hub'),
+                    'tone': 'indigo',
+                })
         if not parent_next_actions:
-            parent_next_actions.append('All key metrics are healthy. Continue weekly review cadence.')
+            parent_next_actions.append({
+                'label': "You're all caught up — browse tutors or check your child's progress",
+                'url': reverse('users:family_hub'),
+                'tone': 'emerald',
+            })
         activity_timeline = []
         for d in latest_demo_requests[:5]:
             activity_timeline.append(
@@ -607,6 +688,8 @@ def _role_dashboard_context(request):
             'parent_paid_count': parent_paid_count,
             'activity_timeline': activity_timeline,
             'child_lms_courses': child_lms_courses,
+            'child_snapshot': child_snapshot,
+            'child_student': child_student,
             'template_name': 'dashboard/role_parent.jinja',
         }
 
@@ -668,15 +751,43 @@ def _role_dashboard_context(request):
         city_dispute_sla_risk_ids = [
             d.pk for d in latest_disputes if (now - d.updated_at).total_seconds() > (24 * 3600)
         ]
+        from lms.services import purchases_missing_lms_enrollment
+
+        lms_unassigned_purchases = len(purchases_missing_lms_enrollment(limit=50))
+
         city_next_actions = []
+        if not user.state:
+            city_next_actions.append({
+                'label': 'No state assigned to your account — ask a superadmin to set it, all city stats read zero until then',
+                'url': reverse('users:profile'),
+                'tone': 'rose',
+            })
         if city_verification_sla_risk_ids:
-            city_next_actions.append('Clear aged tutor verification queue to protect onboarding SLA.')
+            city_next_actions.append({
+                'label': f'{len(city_verification_sla_risk_ids)} tutor verification'
+                f'{"s" if len(city_verification_sla_risk_ids) != 1 else ""} waiting 48h+ — review now',
+                'url': '/sd/hometutor/tutorprofile/?verification_status__exact=PENDING',
+                'tone': 'rose',
+            })
         if city_dispute_sla_risk_ids:
-            city_next_actions.append('Resolve stale disputes first to reduce trust risk in city operations.')
+            city_next_actions.append({
+                'label': f'{len(city_dispute_sla_risk_ids)} dispute{"s" if len(city_dispute_sla_risk_ids) != 1 else ""} stale 24h+ — resolve first',
+                'url': '/sd/hometutor/engagementdispute/?status__exact=OPEN',
+                'tone': 'rose',
+            })
+        if lms_unassigned_purchases:
+            city_next_actions.append({
+                'label': f'{lms_unassigned_purchases} paid course purchase'
+                f'{"s" if lms_unassigned_purchases != 1 else ""} with no LMS batch — assign students to faculty',
+                'url': reverse('lms:courses'),
+                'tone': 'amber',
+            })
         if city_paid_rate < 50 and city_total_demos >= 5:
-            city_next_actions.append('Investigate low paid-rate: review engagement follow-through and payment friction.')
-        if not city_next_actions:
-            city_next_actions.append('City health looks stable. Continue daily queue hygiene and weekly funnel audits.')
+            city_next_actions.append({
+                'label': f'Paid rate {city_paid_rate}% — review engagement follow-through and payment friction',
+                'url': '#funnel',
+                'tone': 'amber',
+            })
         activity_timeline = []
         for t in latest_pending_tutors[:5]:
             activity_timeline.append(
@@ -714,6 +825,7 @@ def _role_dashboard_context(request):
             'city_active_rate': city_active_rate,
             'city_paid_rate': city_paid_rate,
             'city_next_actions': city_next_actions,
+            'lms_unassigned_purchases': lms_unassigned_purchases,
             'latest_pending_tutors': latest_pending_tutors,
             'latest_disputes': latest_disputes,
             'city_verification_sla_risk_ids': city_verification_sla_risk_ids,
@@ -764,19 +876,50 @@ def _role_dashboard_context(request):
         global_withdrawal_sla_risk_ids = [
             w.pk for w in latest_withdrawals if (now - w.requested_at).total_seconds() > (24 * 3600)
         ]
+        from lms.services import purchases_missing_lms_enrollment
+
+        lms_unassigned_purchases = len(purchases_missing_lms_enrollment(limit=50))
+
         global_next_actions = []
+        if len(global_verification_sla_risk_ids):
+            global_next_actions.append({
+                'label': f'{len(global_verification_sla_risk_ids)} tutor verification'
+                f'{"s" if len(global_verification_sla_risk_ids) != 1 else ""} waiting 48h+ — review now',
+                'url': '/sd/hometutor/tutorprofile/?verification_status__exact=PENDING',
+                'tone': 'rose',
+            })
+        if len(global_dispute_sla_risk_ids):
+            global_next_actions.append({
+                'label': f'{len(global_dispute_sla_risk_ids)} dispute{"s" if len(global_dispute_sla_risk_ids) != 1 else ""} stale 24h+ — resolve first',
+                'url': '/sd/hometutor/engagementdispute/?status__exact=OPEN',
+                'tone': 'rose',
+            })
+        if len(global_withdrawal_sla_risk_ids):
+            global_next_actions.append({
+                'label': f'{len(global_withdrawal_sla_risk_ids)} withdrawal{"s" if len(global_withdrawal_sla_risk_ids) != 1 else ""} pending 24h+ — process payouts',
+                'url': '/sd/users/withdrawalrequest/?status__exact=PENDING',
+                'tone': 'rose',
+            })
+        if lms_unassigned_purchases:
+            # Revenue already collected but product undelivered — worst queue to be blind to.
+            global_next_actions.append({
+                'label': f'{lms_unassigned_purchases} paid course purchase'
+                f'{"s" if lms_unassigned_purchases != 1 else ""} not yet in any LMS batch — assign delivery',
+                'url': reverse('lms:courses'),
+                'tone': 'rose',
+            })
         if global_accepted_rate < 40 and global_total_demos >= 10:
-            global_next_actions.append('Improve top-of-funnel acceptance by reviewing tutor response speed and profile quality.')
+            global_next_actions.append({
+                'label': f'Demo accept rate {global_accepted_rate}% — review tutor response speed and profile quality',
+                'url': '/sd/hometutor/tutorprofile/',
+                'tone': 'amber',
+            })
         if global_paid_rate < 50 and global_active_engagements >= 10:
-            global_next_actions.append('Prioritize payment conversion improvements for active engagements.')
-        if global_sla_risk_ids := (
-            len(global_verification_sla_risk_ids)
-            + len(global_dispute_sla_risk_ids)
-            + len(global_withdrawal_sla_risk_ids)
-        ):
-            global_next_actions.append(f'Address {global_sla_risk_ids} SLA-risk governance items immediately.')
-        if not global_next_actions:
-            global_next_actions.append('Global metrics are stable. Continue monitoring weekly cohort and revenue trends.')
+            global_next_actions.append({
+                'label': f'Paid rate {global_paid_rate}% — push payment conversion on active engagements',
+                'url': '/sd/hometutor_payments/marketplaceorder/',
+                'tone': 'amber',
+            })
         activity_timeline = []
         for t in latest_pending_tutors[:5]:
             activity_timeline.append(
@@ -822,6 +965,7 @@ def _role_dashboard_context(request):
             'global_active_rate': global_active_rate,
             'global_paid_rate': global_paid_rate,
             'global_next_actions': global_next_actions,
+            'lms_unassigned_purchases': lms_unassigned_purchases,
             'latest_pending_tutors': latest_pending_tutors,
             'latest_disputes': latest_disputes,
             'latest_withdrawals': latest_withdrawals,
@@ -917,9 +1061,20 @@ def vip_smart_dashboard(request):
     from hometutor.models import TutorProfile
 
     last_7 = timezone.now() - timedelta(days=7)
-    recent_attempts = (
-        UserAttempt.objects.select_related("user", "skill")
-        .order_by("-attempt_date")[:14]
+    # A coordinator's workspace is THEIR funnel (accounts they created/referred), not
+    # platform-wide vanity totals — those live on the superadmin Command Center.
+    my_referrals = list(
+        User.objects.filter(referred_by=request.user).order_by('-date_joined')[:20]
+    )
+    active_cutoff = last_7
+    my_referral_ids = [u.pk for u in my_referrals]
+    recently_active_ids = set(
+        User.objects.filter(
+            pk__in=my_referral_ids, last_active_date__gte=active_cutoff.date()
+        ).values_list('pk', flat=True)
+    )
+    my_draft_posts = list(
+        BlogPost.objects.filter(author=request.user, published_at__isnull=True).order_by('-id')[:6]
     )
     ctx = {
         "seo_title": "VIP Smart Dashboard — RankJee",
@@ -935,8 +1090,11 @@ def vip_smart_dashboard(request):
             published_at__lte=timezone.now(),
         ).count(),
         "referrals_linked": User.objects.exclude(referred_by__isnull=True).count(),
-        "recent_users": User.objects.order_by("-date_joined")[:14],
-        "recent_attempts": recent_attempts,
+        "my_referrals": my_referrals,
+        "my_referral_count": User.objects.filter(referred_by=request.user).count(),
+        "recently_active_ids": recently_active_ids,
+        "my_draft_posts": my_draft_posts,
+        "my_referral_code": request.user.referral_code,
     }
     return render(request, "dashboard/vip_smart.jinja", ctx)
 
@@ -1881,6 +2039,7 @@ def index(request):
                 'action_clear': [i for i in _all_action_items if i['count'] == 0],
                 'revenue': dash_services.revenue_summary(),
                 'growth': dash_services.growth_summary(),
+                'recent_joins': dash_services.recent_joins(),
                 'wow': dash_services.week_over_week(),
                 'balance_sheet': dash_services.balance_sheet_summary(),
                 'hurdle_skills': dash_services.hurdle_skills(),
@@ -2074,9 +2233,10 @@ def index(request):
 
     student_demo_qs = DemoRequest.objects.filter(requester=request.user).select_related('tutor').order_by('-created_at')
     student_recent_demos = student_demo_qs[:6]
-    student_demo_pending = student_demo_qs.filter(status=DemoRequest.Status.PENDING).count()
-    student_demo_accepted = student_demo_qs.filter(status=DemoRequest.Status.ACCEPTED).count()
-    student_demo_declined = student_demo_qs.filter(status=DemoRequest.Status.DECLINED).count()
+    _sd_stats = _demo_status_counts(student_demo_qs, now)
+    student_demo_pending = _sd_stats['pending']
+    student_demo_accepted = _sd_stats['accepted']
+    student_demo_declined = _sd_stats['declined']
 
     student_engagements = TutorEngagement.objects.filter(student=request.user).select_related('tutor_profile').order_by('-updated_at')
     student_active_engagements = student_engagements.filter(status=TutorEngagement.Status.ACTIVE).count()
@@ -2091,11 +2251,7 @@ def index(request):
     student_paid_count = len(student_paid_engagement_ids)
     student_parent_approval_pending = student_demo_pending + max(0, student_active_engagements - student_paid_count)
 
-    student_pending_demo_sla_risk_count = DemoRequest.objects.filter(
-        requester=request.user,
-        status=DemoRequest.Status.PENDING,
-        created_at__lt=now - timedelta(hours=24),
-    ).count()
+    student_pending_demo_sla_risk_count = _sd_stats['sla_risk']
     student_preview_mode = False
     _no_demos = (student_demo_pending + student_demo_accepted + student_demo_declined) == 0
     if _no_demos and student_active_engagements == 0:
@@ -2104,9 +2260,10 @@ def index(request):
             student_preview_mode = True
             student_demo_qs = DemoRequest.objects.filter(requester=preview_user).select_related('tutor').order_by('-created_at')
             student_recent_demos = student_demo_qs[:6]
-            student_demo_pending = student_demo_qs.filter(status=DemoRequest.Status.PENDING).count()
-            student_demo_accepted = student_demo_qs.filter(status=DemoRequest.Status.ACCEPTED).count()
-            student_demo_declined = student_demo_qs.filter(status=DemoRequest.Status.DECLINED).count()
+            _sd_stats = _demo_status_counts(student_demo_qs, now)
+            student_demo_pending = _sd_stats['pending']
+            student_demo_accepted = _sd_stats['accepted']
+            student_demo_declined = _sd_stats['declined']
             student_engagements = TutorEngagement.objects.filter(student=preview_user).select_related('tutor_profile').order_by('-updated_at')
             student_active_engagements = student_engagements.filter(status=TutorEngagement.Status.ACTIVE).count()
             student_recent_engagements = student_engagements[:5]
@@ -2119,11 +2276,7 @@ def index(request):
             )
             student_paid_count = len(student_paid_engagement_ids)
             student_parent_approval_pending = student_demo_pending + max(0, student_active_engagements - student_paid_count)
-            student_pending_demo_sla_risk_count = DemoRequest.objects.filter(
-                requester=preview_user,
-                status=DemoRequest.Status.PENDING,
-                created_at__lt=now - timedelta(hours=24),
-            ).count()
+            student_pending_demo_sla_risk_count = _sd_stats['sla_risk']
     quick_tutor_cards = [tutor_to_card_dict(t, PILOT_CITY) for t in public_tutor_queryset({'city': PILOT_CITY})[:6]]
     quick_tutor_cards = attach_demo_status_to_cards(quick_tutor_cards, request.user)
     weak_topic_tutor_cards = []
@@ -2274,6 +2427,12 @@ def index(request):
         'server_order_default_message': server_order_default_message,
         'unread_notifications': unread_notifications,
         'learning_path': learning_path,
+        # Single resume point: first unlocked-but-unfinished skill on the selected path —
+        # powers the "Continue learning" hero button (no extra query, derived from learning_path).
+        'continue_item': next(
+            (row for row in learning_path if row['status'] == 'UNLOCKED' and row['next_set']),
+            None,
+        ),
         'all_paths': all_paths,
         'selected_path': selected_path,
         'top_users': top_users,

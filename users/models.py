@@ -88,6 +88,20 @@ class CustomUser(AbstractUser):
             "time this user is assigned ownership of an LmsCourse."
         ),
     )
+    # Contact info — mandatory at signup/onboarding (form-level) for every public role.
+    # blank=True at the DB level only so pre-existing accounts don't break; forms enforce it.
+    phone = models.CharField(
+        max_length=15,
+        blank=True,
+        default='',
+        help_text="Mobile number (Indian 10-digit, optional +91).",
+    )
+    city = models.CharField(
+        max_length=60,
+        blank=True,
+        default='',
+        help_text="City the user lives/teaches in.",
+    )
 
     def add_xp(self, points):
         self.xp_points += points

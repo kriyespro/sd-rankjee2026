@@ -9,14 +9,37 @@ decorative trend lines.
 
 from __future__ import annotations
 
+import functools
+
 from decimal import Decimal
 from datetime import timedelta
 
+from django.core.cache import cache
 from django.db.models import Avg, Count, Sum
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 
 ZERO = Decimal('0.00')
+
+
+def cached_stat(ttl: int = 90):
+    """Cache a dashboard aggregate for `ttl` seconds (keyed on function name + args).
+
+    Numbers on the Command Center may lag reality by up to `ttl` — acceptable for
+    KPI/queue counts; the inline review tables in the view stay live-queried.
+    """
+    def decorator(fn):
+        @functools.wraps(fn)
+        def wrapper(*args, **kwargs):
+            key = 'dashstat:%s:%s:%s' % (fn.__name__, args, sorted(kwargs.items()))
+            sentinel = object()
+            value = cache.get(key, sentinel)
+            if value is sentinel:
+                value = fn(*args, **kwargs)
+                cache.set(key, value, ttl)
+            return value
+        return wrapper
+    return decorator
 
 
 def _window_total(queryset, amount_field: str, since) -> Decimal:
@@ -49,6 +72,7 @@ def _all_success_revenue_qs():
     )
 
 
+@cached_stat()
 def revenue_summary() -> dict:
     """Real money collected (SUCCESS-only) across every payment surface on the platform.
 
@@ -96,6 +120,7 @@ def revenue_summary() -> dict:
     return {'totals': totals, 'by_source': by_source, 'hometutor_platform_fee': platform_fee}
 
 
+@cached_stat()
 def week_over_week() -> dict:
     """Real this-week-vs-last-week % change for revenue and signups — replaces the old
     dashboard's fabricated '+12% vs last month' with an honestly computed number. `None` = not
@@ -133,6 +158,7 @@ def week_over_week() -> dict:
     }
 
 
+@cached_stat()
 def revenue_trend(days: int = 14) -> list[dict]:
     """Total revenue per day (all sources combined) for the last N days — real bars, no
     interpolation/smoothing."""
@@ -155,6 +181,7 @@ def revenue_trend(days: int = 14) -> list[dict]:
     ]
 
 
+@cached_stat()
 def signup_trend(days: int = 14) -> list[dict]:
     """New user signups per day for the last N days — real bars."""
     from django.contrib.auth import get_user_model
@@ -175,6 +202,7 @@ def signup_trend(days: int = 14) -> list[dict]:
     ]
 
 
+@cached_stat()
 def balance_sheet_summary() -> dict:
     """Money the platform currently holds/owes — a founder-level snapshot, not a queue."""
     from django.contrib.auth import get_user_model
@@ -202,6 +230,7 @@ def balance_sheet_summary() -> dict:
     }
 
 
+@cached_stat()
 def hurdle_skills(limit: int = 5) -> list:
     """Real weakest-performing tests (lowest avg score, attempted at least once) — a genuine
     content-quality signal, not decoration. Restored from the old dashboard's `difficult_skills`."""
@@ -215,6 +244,7 @@ def hurdle_skills(limit: int = 5) -> list:
     )
 
 
+@cached_stat()
 def growth_summary() -> dict:
     """Real signup/activity counts — no fake trend arrows."""
     from django.contrib.auth import get_user_model
@@ -235,6 +265,7 @@ def growth_summary() -> dict:
     }
 
 
+@cached_stat()
 def action_center() -> list[dict]:
     """Every queue a superadmin might genuinely need to act on today, one row each.
 
@@ -363,6 +394,7 @@ def action_center() -> list[dict]:
     ]
 
 
+@cached_stat()
 def lms_health_summary() -> dict:
     """Quick stats for the Faculty & Course quick-setup panel header."""
     from django.db.models import Count as _Count
@@ -386,6 +418,7 @@ def lms_health_summary() -> dict:
     }
 
 
+@cached_stat()
 def backup_health() -> dict:
     """Is the most recent backup recent enough to trust? No status field exists on
     BackupArtifact (rows are only ever written on success), so staleness is the only signal."""
@@ -398,6 +431,7 @@ def backup_health() -> dict:
     return {'latest': latest, 'is_stale': days_old > 7, 'days_old': days_old}
 
 
+@cached_stat()
 def content_inventory() -> dict:
     """Low-priority reference counts — de-emphasized on the dashboard, not action items."""
     from assessment.models import Question, Skill
@@ -408,3 +442,55 @@ def content_inventory() -> dict:
         'total_videos': ConceptVideo.objects.count(),
         'total_skills': Skill.objects.filter(is_active=True).count(),
     }
+
+
+@cached_stat(ttl=60)
+def recent_joins(limit: int = 15) -> list[dict]:
+    """Newest public-role signups (student/parent/tutor/faculty) for the Command Center —
+    entry info (role, contact, joined) + whether they've paid anything yet, across all 4
+    payment surfaces. Answers "who just joined and are they converting?" at a glance."""
+    from django.contrib.auth import get_user_model
+
+    from core.models import CourseOrder
+    from payments.models import PaymentOrder
+    from hometutor_payments.models import MarketplaceOrder
+    from server_buy.models import StudentServerOrder
+
+    user_model = get_user_model()
+    users = list(
+        user_model.objects.filter(role__in=('STUDENT', 'PARENT', 'TUTOR', 'FACULTY'))
+        .order_by('-date_joined')[:limit]
+    )
+    ids = [u.pk for u in users]
+
+    paid_totals: dict[int, Decimal] = {}
+    for qs, amount_field, user_field in (
+        (CourseOrder.objects.filter(status='SUCCESS'), 'total_inr', 'user_id'),
+        (PaymentOrder.objects.filter(status='SUCCESS'), 'amount', 'user_id'),
+        (MarketplaceOrder.objects.filter(status='SUCCESS'), 'amount_gross', 'payer_id'),
+        (StudentServerOrder.objects.filter(status='SUCCESS'), 'total_inr', 'user_id'),
+    ):
+        rows = (
+            qs.filter(**{f'{user_field}__in': ids})
+            .values(user_field)
+            .annotate(total=Sum(amount_field))
+        )
+        for row in rows:
+            uid = row[user_field]
+            paid_totals[uid] = paid_totals.get(uid, ZERO) + (row['total'] or ZERO)
+
+    return [
+        {
+            'id': u.pk,
+            'username': u.get_username(),
+            'role': u.role,
+            'phone': u.phone,
+            'city': u.city,
+            'email': u.email,
+            'joined': u.date_joined,
+            'onboarded': u.onboarding_completed,
+            'paid_total': paid_totals.get(u.pk, ZERO),
+            'has_paid': paid_totals.get(u.pk, ZERO) > 0,
+        }
+        for u in users
+    ]

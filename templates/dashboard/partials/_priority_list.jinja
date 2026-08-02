@@ -1,0 +1,23 @@
+{# Shared "Today's priorities" list — one visual language for "do this next" across
+   every role dashboard. Caller sets `priority_list` (dicts: label, url, tone, optional
+   count) before including. Tones: rose=urgent, amber=attention, indigo=normal,
+   emerald=all-clear. #}
+{% if priority_list %}
+<p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">Today's priorities</p>
+<ul class="space-y-1.5">
+    {% for item in priority_list %}
+    <li>
+        <a href="{{ item.url }}" class="flex items-center justify-between gap-3 rounded-lg border px-3 py-2 min-h-[44px] text-xs font-bold transition
+            {% if item.tone == 'rose' %}border-rose-200 bg-rose-50 text-rose-900 hover:bg-rose-100
+            {% elif item.tone == 'amber' %}border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100
+            {% elif item.tone == 'emerald' %}border-emerald-200 bg-emerald-50 text-emerald-900 hover:bg-emerald-100
+            {% else %}border-indigo-200 bg-indigo-50 text-indigo-900 hover:bg-indigo-100{% endif %}">
+            <span>{{ item.label }}</span>
+            <span class="shrink-0 text-[10px] font-black uppercase tracking-wider">Go &rarr;</span>
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900">You're all caught up — no urgent action needed right now.</p>
+{% endif %}

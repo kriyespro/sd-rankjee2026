@@ -316,7 +316,8 @@ def tutor_detail(request, slug):
     can_request_demo = request.user.is_authenticated and public_ok and not is_owner
     listing_needs_staff = public_ok and not profile.user_id
     if can_request_demo:
-        demo_form = DemoRequestForm()
+        # Phone is mandatory at signup now — prefill so requesting a demo is one field less.
+        demo_form = DemoRequestForm(initial={'contact_phone': getattr(request.user, 'phone', '')})
 
     testimonials = list(
         profile.testimonials.filter(is_published=True).order_by('-created_at')[:8]

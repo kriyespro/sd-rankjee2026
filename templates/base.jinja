@@ -37,10 +37,15 @@
     <link rel="preload" as="style" href="{{ _gf }}" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="{{ _gf }}"></noscript>
     <link rel="stylesheet" href="{{ static('css/app.css') }}">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <script defer src="{{ static('js/alpine.min.js') }}"></script>
     <script defer src="{{ static('js/htmx.min.js') }}"></script>
     <style>
         [x-cloak] { display: none !important; }
+        /* iOS Safari zooms the page when a focused input's font-size is under 16px —
+           forcing 16px on touch-width screens is the only reliable opt-out. */
+        @media (max-width: 767px) {
+            input, select, textarea { font-size: 16px; }
+        }
         /* RankJEE brand palette — see colorp.md */
         :root {
             --rj-navy: #0D2B5E;
@@ -434,26 +439,52 @@
                     <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
-                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                    {% set more_links = [
+                        (url('core:courses'), 'Courses'),
+                        (url('core:earnings'), 'Earn'),
+                    ] %}
                 {% elif current_role == 'CITY_ADMIN' or current_role == 'GLOBAL_ADMIN' or request.user.is_staff or request.user.is_superuser %}
                     <a href="/sd/" class="nav-link">Admin</a>
                     <a href="{{ url('lms:home') }}" class="nav-link">LMS</a>
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Marketplace</a>
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
-                    <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
-                    <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
-                    <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                    {% set more_links = [
+                        (url('learning:index'), 'Learn'),
+                        (url('core:courses'), 'Courses'),
+                        (url('core:earnings'), 'Earn'),
+                    ] %}
                 {% else %}
                     <a href="{{ url('hometutor:tutor_list') }}" class="nav-link">Tutors</a>
                     {% if request.user.is_authenticated %}
                     <a href="{{ url('dashboard:study') }}" class="nav-link">Study</a>
                     <a href="{{ url('lms:home') }}" class="nav-link">LMS</a>
-                    {% endif %}
+                    <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
+                    {% set more_links = [
+                        (url('learning:index'), 'Learn'),
+                        (url('core:courses'), 'Courses'),
+                        (url('core:earnings'), 'Earn'),
+                    ] %}
+                    {% else %}
                     <a href="{{ url('assessment:index') }}" class="nav-link">Exams</a>
                     <a href="{{ url('learning:index') }}" class="nav-link">Learn</a>
                     <a href="{{ url('core:courses') }}" class="nav-link">Courses</a>
                     <a href="{{ url('core:earnings') }}" class="nav-link">Earn</a>
+                    {% endif %}
+                {% endif %}
+                {% if more_links is defined and more_links %}
+                {# Nav capped at 4 primary links per role — the rest live under "More" so desktop
+                   matches the 4-tab mobile bottom bar's mental model. Alpine = dropdown only. #}
+                <div x-data="{ open: false }" @click.outside="open = false" class="relative">
+                    <button type="button" @click="open = !open" class="nav-link uppercase" :aria-expanded="open" aria-haspopup="true">
+                        More ▾
+                    </button>
+                    <div x-show="open" x-cloak
+                         class="absolute left-1/2 -translate-x-1/2 top-full mt-2 min-w-[9rem] rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl text-left normal-case tracking-normal">
+                        {% for href, label in more_links %}
+                        <a href="{{ href }}" class="block px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-600 hover:bg-slate-50 hover:text-indigo-600">{{ label }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
                 {% endif %}
             </div>
             </div>
@@ -504,10 +535,14 @@
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'assessment' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📝</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'assessment' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.test }}</span>
                 </a>
+                {# Learn tab only for logged-out visitors — logged-in students reach Learn from
+                   weak-area links + the desktop "More" menu; tab bar stays at 5 thumb targets. #}
+                {% if not request.user.is_authenticated %}
                 <a href="{{ url('learning:index') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'learning' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🎓</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'learning' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">{{ uil.learn }}</span>
                 </a>
+                {% endif %}
                 {% if request.user.is_authenticated and current_role in ('STUDENT', 'VIP_USER') %}
                 <a href="{{ url('dashboard:study') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/study' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📚</div>
@@ -518,10 +553,6 @@
                 <a href="{{ url('lms:home') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
                     <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if '/admin/lms' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">🖼️</div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if '/admin/lms' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">LMS</span>
-                </a>
-                <a href="{{ url('dashboard:daily_class_log') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">
-                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-lg transition-all {% if 'daily-class-log' in request.path %}bg-indigo-600 text-white shadow-lg shadow-indigo-200{% else %}text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600{% endif %}">📓</div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-center leading-tight {% if 'daily-class-log' in request.path %}text-indigo-600{% else %}text-slate-500{% endif %}">Class log</span>
                 </a>
                 {% endif %}
                 <a href="{{ url('core:earnings') }}" class="flex flex-col items-center gap-0.5 p-1 group min-w-0 flex-1 max-w-[4.5rem]">

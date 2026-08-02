@@ -3,7 +3,7 @@
 
   {% if course.thumbnail_url %}
   <div class="aspect-video overflow-hidden">
-    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" class="w-full h-full object-cover">
+    <img src="{{ course.thumbnail_url }}" alt="{{ course.title }}" loading="lazy" decoding="async" class="w-full h-full object-cover">
   </div>
   {% else %}
   <div class="aspect-video relative overflow-hidden flex items-center justify-center"

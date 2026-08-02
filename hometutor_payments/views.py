@@ -271,3 +271,39 @@ def razorpay_webhook(request):
         return HttpResponse(status=500)
 
     return HttpResponse(status=200)
+
+
+@login_required
+@require_POST
+def request_payout(request):
+    """Tutor self-serve payout request for their full current balance.
+
+    Creates a PENDING TutorPayoutRequest — ops still marks PAID manually in /sd/
+    (same flow as before; this only removes the "ask support to raise it" step).
+    """
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    from hometutor.models import TutorProfile
+
+    from .models import TutorLedgerEntry, TutorPayoutRequest
+
+    profile = TutorProfile.objects.filter(user=request.user).first()
+    if not profile:
+        messages.error(request, 'No tutor profile found for your account.')
+        return redirect('dashboard:index')
+
+    latest_ledger = TutorLedgerEntry.objects.filter(tutor_profile=profile).order_by('-id').first()
+    balance = latest_ledger.balance_after if latest_ledger else 0
+    if balance <= 0:
+        messages.error(request, 'No withdrawable balance yet.')
+        return redirect('dashboard:index')
+    if TutorPayoutRequest.objects.filter(
+        tutor_profile=profile, status=TutorPayoutRequest.Status.PENDING
+    ).exists():
+        messages.info(request, 'You already have a payout request pending — ops will process it soon.')
+        return redirect('dashboard:index')
+
+    TutorPayoutRequest.objects.create(tutor_profile=profile, amount=balance)
+    messages.success(request, f'Payout request for ₹{balance} raised — you will be paid by bank transfer.')
+    return redirect('dashboard:index')

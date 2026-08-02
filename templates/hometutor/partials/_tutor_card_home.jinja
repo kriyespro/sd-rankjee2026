@@ -7,7 +7,7 @@
         <div class="flex items-start gap-4 mb-4">
             {% if t.image_url %}
             <div class="relative shrink-0">
-                <img src="{{ t.image_url }}" alt="{{ t.name }}" class="w-16 h-16 sm:w-[4.25rem] sm:h-[4.25rem] rounded-2xl object-cover border-2 border-white shadow-md" style="box-shadow:0 8px 20px -6px rgba(13,43,94,0.25);">
+                <img src="{{ t.image_url }}" alt="{{ t.name }}" loading="lazy" decoding="async" width="68" height="68" class="w-16 h-16 sm:w-[4.25rem] sm:h-[4.25rem] rounded-2xl object-cover border-2 border-white shadow-md" style="box-shadow:0 8px 20px -6px rgba(13,43,94,0.25);">
                 <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-[10px] font-black" title="Verified">✓</span>
             </div>
             {% else %}

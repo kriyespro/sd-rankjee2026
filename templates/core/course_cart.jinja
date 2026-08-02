@@ -46,7 +46,7 @@
             <div class="flex items-center gap-3">
                 {% if c.thumbnail_url %}
                 <a href="{{ url('core:course_detail', c.slug) }}" class="block">
-                    <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" class="h-12 w-16 md:h-14 md:w-20 rounded-lg object-cover border border-slate-200">
+                    <img src="{{ c.thumbnail_url }}" alt="{{ c.title }}" loading="lazy" decoding="async" class="h-12 w-16 md:h-14 md:w-20 rounded-lg object-cover border border-slate-200">
                 </a>
                 {% endif %}
                 <div>

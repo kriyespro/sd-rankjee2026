@@ -192,7 +192,9 @@ class OfficeOversightTests(TestCase):
         body = res.content.decode()
         self.assertIn('Office Oversight Batch', body)
         self.assertIn('course & student setup', body)
-        self.assertIn('Assign student', body)
+        # The assign-student control is the add_member typeahead form (the visible label
+        # changed in a template redesign — assert the form action, not display copy).
+        self.assertIn('name="action" value="add_member"', body)
         self.assertIn('name="action" value="remove_member"', body)
         # Office CAN create courses + assign an owner now.
         self.assertIn('name="action" value="create_course"', body)

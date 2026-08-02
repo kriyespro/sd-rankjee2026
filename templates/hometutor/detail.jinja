@@ -177,5 +177,16 @@
     <p class="text-center text-xs text-slate-500">
         <a href="{{ url('hometutor:tutor_list') }}" class="text-indigo-600 font-bold hover:underline">← Back to all tutors</a>
     </p>
+
+    {# Mobile-only sticky CTA — the demo form sits far below the fold on phones; keep the
+       one revenue action thumb-reachable. Sits above base.jinja's bottom tab bar. #}
+    {% if can_request_demo and demo_form %}
+    <div class="fixed bottom-16 left-0 right-0 z-40 px-4 pb-2 md:hidden pointer-events-none">
+        <a href="#request-demo"
+           class="pointer-events-auto flex items-center justify-center w-full min-h-[44px] rounded-xl bg-indigo-600 text-white text-sm font-black shadow-lg shadow-indigo-600/30">
+            Request a free demo
+        </a>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}

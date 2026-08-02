@@ -390,10 +390,10 @@ def admin_home_stats(user) -> dict:
     Admin (superuser) sees platform-wide counts; faculty see only their own assigned courses
     (assignments_for_user excludes platform-wide content from faculty entirely).
     """
-    assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True)) or [0]
-    assignment_qs = LmsAssignment.objects.filter(pk__in=assignment_ids)
+    assignment_ids = list(assignments_for_user(user).values_list('pk', flat=True))
+    total_assignments = len(assignment_ids)
+    assignment_ids = assignment_ids or [0]
 
-    total_assignments = assignment_qs.count()
     topics_covered = LmsTopic.objects.filter(assignments__in=assignment_ids).distinct().count()
 
     # Student-level data (who submitted, pending review) — see faculty_student_scope() docstring
@@ -403,9 +403,13 @@ def admin_home_stats(user) -> dict:
     if scope is not None:
         submissions_qs = submissions_qs.filter(scope)
 
-    students_submitted = submissions_qs.values('student_id').distinct().count()
+    _sub_stats = submissions_qs.aggregate(
+        students_submitted=Count('student_id', distinct=True),
+        pending=Count('id', filter=Q(status=LmsSubmission.Status.SUBMITTED)),
+    )
+    students_submitted = _sub_stats['students_submitted']
+    pending = _sub_stats['pending']
     pending_qs = submissions_qs.filter(status=LmsSubmission.Status.SUBMITTED)
-    pending = pending_qs.count()
     pending_assignment_ids = list(pending_qs.values_list('assignment_id', flat=True).distinct())
     pending_topic_titles = list(
         LmsTopic.objects.filter(assignments__id__in=pending_assignment_ids)
@@ -1037,11 +1041,16 @@ def attendance_monthly(course, student, year: int, month: int) -> dict:
 
 def attendance_summary(course, student) -> dict:
     """Overall attendance stats for a student in a course."""
-    qs = LmsAttendance.objects.filter(course=course, student=student)
-    total = qs.count()
-    present = qs.filter(status=LmsAttendance.Status.PRESENT).count()
-    late = qs.filter(status=LmsAttendance.Status.LATE).count()
-    absent = qs.filter(status=LmsAttendance.Status.ABSENT).count()
+    stats = LmsAttendance.objects.filter(course=course, student=student).aggregate(
+        total=Count('id'),
+        present=Count('id', filter=Q(status=LmsAttendance.Status.PRESENT)),
+        late=Count('id', filter=Q(status=LmsAttendance.Status.LATE)),
+        absent=Count('id', filter=Q(status=LmsAttendance.Status.ABSENT)),
+    )
+    total = stats['total']
+    present = stats['present']
+    late = stats['late']
+    absent = stats['absent']
     rate = round((present + late) * 100 / total, 1) if total else None
     return {
         'total': total,

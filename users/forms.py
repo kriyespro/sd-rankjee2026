@@ -6,6 +6,46 @@ from hometutor.models import TutorProfile
 
 from .models import CustomUser, INDIAN_STATES
 
+def clean_phone_value(raw: str) -> str:
+    """Normalize to bare 10 digits (strips spaces/dashes and +91/91/0 prefixes), then
+    validate as an Indian mobile. Raises ValidationError on anything else."""
+    digits = ''.join(c for c in (raw or '') if c.isdigit())
+    if len(digits) == 12 and digits.startswith('91'):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith('0'):
+        digits = digits[1:]
+    if len(digits) != 10 or digits[0] not in '6789':
+        raise forms.ValidationError('Enter a valid 10-digit Indian mobile number.')
+    return digits
+
+
+def phone_field(**kwargs):
+    return forms.CharField(
+        max_length=15,
+        label=kwargs.pop('label', 'Mobile number'),
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
+            'placeholder': 'e.g. 9876543210',
+            'type': 'tel',
+            'inputmode': 'tel',
+            'autocomplete': 'tel',
+        }),
+        **kwargs,
+    )
+
+
+def city_field(**kwargs):
+    return forms.CharField(
+        max_length=60,
+        label=kwargs.pop('label', 'Your city'),
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
+            'placeholder': f'e.g. {PILOT_CITY}',
+            'autocomplete': 'address-level2',
+        }),
+        **kwargs,
+    )
+
 
 class ParentLinkRequestForm(forms.Form):
     identifier = forms.CharField(
@@ -31,17 +71,25 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['role'].widget = forms.RadioSelect()
         self.fields['role'].initial = CustomUser.Role.STUDENT
         self.fields['username'].help_text = 'Pick a simple username — letters and numbers are fine.'
-        self.fields['email'].widget.attrs.update({'placeholder': 'you@email.com'})
+        self.fields['email'].required = True
+        self.fields['email'].widget.attrs.update({'placeholder': 'you@email.com', 'autocomplete': 'email'})
         self.fields['username'].widget.attrs.update({'placeholder': 'e.g. priya2026'})
+
+    # Contact info mandatory for every public role (student/parent/tutor alike).
+    phone = phone_field()
+    city = city_field()
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'role')
+        fields = ('username', 'email', 'phone', 'city', 'role')
         labels = {
             'role': 'I am joining as',
             'username': 'Choose a username',
             'email': 'Your email',
         }
+
+    def clean_phone(self):
+        return clean_phone_value(self.cleaned_data['phone'])
 
 
 class RoleSelectionForm(forms.Form):
@@ -56,9 +104,15 @@ class RoleSelectionForm(forms.Form):
 
 
 class StudentParentOnboardingForm(forms.ModelForm):
+    """Also the contact-info collection point for Google-signup users, who never see the
+    email signup form — phone/city stay mandatory here for that path."""
+
+    phone = phone_field()
+    city = city_field()
+
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'state')
+        fields = ('first_name', 'last_name', 'phone', 'city', 'state')
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
@@ -83,10 +137,17 @@ class StudentParentOnboardingForm(forms.ModelForm):
         self.fields['state'].required = False
         self.fields['state'].choices = [('', 'Select later')] + list(INDIAN_STATES)
 
+    def clean_phone(self):
+        return clean_phone_value(self.cleaned_data['phone'])
+
 
 class TutorOnboardingForm(forms.ModelForm):
-    QUICK_FIELDS = ('display_name', 'city', 'subjects', 'teaching_mode')
+    QUICK_FIELDS = ('display_name', 'phone', 'city', 'subjects', 'teaching_mode')
     OPTIONAL_FIELDS = ('area', 'teaches_from', 'teaches_to', 'languages', 'fee_label', 'bio')
+
+    # Mandatory contact number — stored on CustomUser (TutorProfile has no phone field;
+    # the view copies it to user.phone / user.city on save).
+    phone = phone_field()
 
     class Meta:
         model = TutorProfile
@@ -144,7 +205,11 @@ class TutorOnboardingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['city'].initial = self.initial.get('city') or PILOT_CITY
+        self.fields['phone'].initial = self.initial.get('phone') or ''
         for name in self.OPTIONAL_FIELDS:
             self.fields[name].required = False
         self.fields['teaches_from'].initial = self.initial.get('teaches_from') or 6
         self.fields['teaches_to'].initial = self.initial.get('teaches_to') or 12
+
+    def clean_phone(self):
+        return clean_phone_value(self.cleaned_data['phone'])
