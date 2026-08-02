@@ -9,6 +9,8 @@ from django.urls import reverse
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .forms import (
+    CourseDemoAcceptForm,
+    CourseDemoDeclineForm,
     LmsAssignmentForm,
     LmsAttendanceDateForm,
     LmsCommentForm,
@@ -991,3 +993,89 @@ def attendance_admin_all(request):
         'absent': absent,
         'breadcrumbs': crumbs,
     })
+
+
+@login_required
+def course_demo_inbox(request):
+    """Faculty inbox for HYBRID-course live demo requests routed via core.CourseDemoRequest."""
+    from core.models import CourseDemoRequest
+
+    if not services.is_lms_faculty(request.user) and not services.is_lms_staff(request.user):
+        messages.error(request, 'This inbox is for LMS faculty.')
+        return redirect('dashboard:index')
+
+    pending = CourseDemoRequest.objects.filter(
+        assigned_faculty=request.user,
+        request_type=CourseDemoRequest.RequestType.LIVE_DEMO,
+        status=CourseDemoRequest.Status.PENDING,
+    ).select_related('course', 'requester')
+    pending_rows = [
+        {
+            'demo': d,
+            'accept_form': CourseDemoAcceptForm(prefix=f'acc{d.pk}'),
+            'decline_form': CourseDemoDeclineForm(prefix=f'dec{d.pk}'),
+        }
+        for d in pending
+    ]
+    recent = list(
+        CourseDemoRequest.objects.filter(
+            assigned_faculty=request.user,
+            request_type=CourseDemoRequest.RequestType.LIVE_DEMO,
+        )
+        .exclude(status=CourseDemoRequest.Status.PENDING)
+        .select_related('course', 'requester')
+        .order_by('-updated_at')[:50]
+    )
+    return render(request, 'lms/course_demo_inbox.jinja', {
+        'pending_rows': pending_rows,
+        'recent': recent,
+        'crumbs': [services.crumb('Dashboard', reverse('dashboard:index')), services.crumb('Course demo inbox')],
+    })
+
+
+@login_required
+@require_POST
+def course_demo_accept(request, pk):
+    from core.models import CourseDemoRequest
+
+    demo = get_object_or_404(
+        CourseDemoRequest,
+        pk=pk,
+        assigned_faculty=request.user,
+        status=CourseDemoRequest.Status.PENDING,
+    )
+    form = CourseDemoAcceptForm(request.POST, prefix=f'acc{pk}')
+    if form.is_valid():
+        from django.utils import timezone as tz
+
+        dt = form.cleaned_data['scheduled_at']
+        if tz.is_naive(dt):
+            dt = tz.make_aware(dt, tz.get_current_timezone())
+        demo.scheduled_at = dt
+        demo.status = CourseDemoRequest.Status.ACCEPTED
+        demo.decline_reason = ''
+        demo.save(update_fields=['scheduled_at', 'status', 'decline_reason', 'updated_at'])
+        messages.success(request, 'Demo accepted.')
+    else:
+        messages.error(request, 'Choose a valid date and time for the demo.')
+    return redirect('lms:course_demo_inbox')
+
+
+@login_required
+@require_POST
+def course_demo_decline(request, pk):
+    from core.models import CourseDemoRequest
+
+    demo = get_object_or_404(
+        CourseDemoRequest,
+        pk=pk,
+        assigned_faculty=request.user,
+        status=CourseDemoRequest.Status.PENDING,
+    )
+    form = CourseDemoDeclineForm(request.POST, prefix=f'dec{pk}')
+    reason = form.cleaned_data.get('decline_reason', '').strip() if form.is_valid() else ''
+    demo.status = CourseDemoRequest.Status.DECLINED
+    demo.decline_reason = reason
+    demo.save(update_fields=['status', 'decline_reason', 'updated_at'])
+    messages.success(request, 'Demo request declined.')
+    return redirect('lms:course_demo_inbox')

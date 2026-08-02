@@ -117,6 +117,13 @@
         </label>
         {% if form.is_published.errors %}<p class="text-sm text-rose-600">{% for e in form.is_published.errors %}{{ e }}{% endfor %}</p>{% endif %}
 
+        <label class="flex items-center gap-2 text-sm font-semibold text-slate-700">
+            {{ form.is_free_preview }}
+            {{ form.is_free_preview.label }}
+        </label>
+        <p class="text-xs text-slate-500">Shown to any student who requests a free preview on this course's catalog page. Requires a lecture recording above.</p>
+        {% if form.is_free_preview.errors %}<p class="text-sm text-rose-600">{% for e in form.is_free_preview.errors %}{{ e }}{% endfor %}</p>{% endif %}
+
         {% if form.non_field_errors() %}
         <p class="text-sm text-rose-600">{% for e in form.non_field_errors() %}{{ e }}{% endfor %}</p>
         {% endif %}

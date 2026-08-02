@@ -171,6 +171,7 @@ def _role_dashboard_context(request):
     """Build focused, role-wise context for non-student dashboards."""
     from hometutor.models import DemoRequest, TutorProfile, TutorEngagement, EngagementDispute, SessionAttendance
     from hometutor_payments.models import MarketplaceOrder, TutorLedgerEntry, TutorPayoutRequest
+    from core.services import faculty_pending_course_demo_requests
 
     role = getattr(request.user, 'role', 'STUDENT')
     user = request.user
@@ -373,9 +374,21 @@ def _role_dashboard_context(request):
         unified_students = sorted(_students_by_id.values(), key=lambda r: r['student'].get_username())
         unified_student_count = len(unified_students)
 
+        course_demo_pending_count = faculty_pending_course_demo_requests(user).count()
+
         # Today's priorities — one ranked, actionable list instead of scanning SLA banners, the
         # grading queue, and the stale-engagement note separately to figure out what to do first.
         priority_items = []
+        if course_demo_pending_count > 0:
+            priority_items.append(
+                {
+                    'label': f'{course_demo_pending_count} course demo request'
+                    f'{"s" if course_demo_pending_count != 1 else ""} waiting — recorded/hybrid students',
+                    'count': course_demo_pending_count,
+                    'url': reverse('lms:course_demo_inbox'),
+                    'tone': 'indigo',
+                }
+            )
         if tutor_preview_mode:
             priority_items.append(
                 {

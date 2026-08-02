@@ -23,4 +23,8 @@ urlpatterns = [
     path('courses/<int:pk>/attendance/summary/', views.attendance_course_summary, name='attendance_course_summary'),
     path('attendance/', views.attendance_admin_all, name='attendance_admin'),
     path('notifications/<int:note_id>/read/', views.notification_read, name='notification_read'),
+    # Course demo requests (recorded preview + hybrid live demo routing)
+    path('course-demos/', views.course_demo_inbox, name='course_demo_inbox'),
+    path('course-demos/<int:pk>/accept/', views.course_demo_accept, name='course_demo_accept'),
+    path('course-demos/<int:pk>/decline/', views.course_demo_decline, name='course_demo_decline'),
 ]

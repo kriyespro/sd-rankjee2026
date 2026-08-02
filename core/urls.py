@@ -14,6 +14,7 @@ urlpatterns = [
     path('courses/cart/remove/<int:course_id>/', course_checkout.course_cart_remove, name='course_cart_remove'),
     path('courses/checkout/create/', course_checkout.course_checkout_create, name='course_checkout_create'),
     path('courses/checkout/verify/', course_checkout.course_checkout_verify, name='course_checkout_verify'),
+    path('courses/<slug:slug>/demo/', views.course_request_demo, name='course_request_demo'),
     path('courses/<slug:slug>/<slug:city_slug>/', views.course_city_landing, name='course_city_landing'),
     path('courses/<slug:slug>/', views.course_detail, name='course_detail'),
     path('request-tutor/', views.request_tutor, name='request_tutor'),

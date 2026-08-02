@@ -1,0 +1,9 @@
+{% if demo_request.assigned_faculty %}
+<p class="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-900">
+  Demo requested — {{ demo_request.assigned_faculty.get_full_name() or demo_request.assigned_faculty.username }} will reach out to schedule your live class.
+</p>
+{% else %}
+<p class="mt-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-900">
+  Demo requested — our team will assign a faculty member and reach out shortly.
+</p>
+{% endif %}

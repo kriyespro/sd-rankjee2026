@@ -1,0 +1,14 @@
+{% if preview_assignment and preview_assignment.concept_video %}
+<div class="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-black">
+  <div class="aspect-video w-full">
+    <iframe class="h-full w-full" src="{{ preview_assignment.concept_video.get_embed_url() }}"
+            title="{{ course.title }} — free preview" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+  </div>
+</div>
+{% else %}
+<p class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+  Preview coming soon — our faculty is adding a sample lecture for this course.
+</p>
+{% endif %}

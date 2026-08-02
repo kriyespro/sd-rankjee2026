@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Count, Q, Sum
@@ -14,7 +15,8 @@ import re
 from allauth.socialaccount.models import SocialAccount
 from .forms import TutorLeadRequestForm
 from .ratelimit import ratelimit
-from .models import Course, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
+from .models import Course, CourseDemoRequest, CourseReferral, CoursePurchase, EarningTask, LegalPage, TutorLeadRequest, UserTaskSubmission
+from . import services as course_services
 from .course_content import (
     format_bold_markers,
     resolve_course_includes,
@@ -388,11 +390,18 @@ def courses(request):
         if request.user.is_authenticated
         else set()
     )
+    active_type = (request.GET.get("type") or "").strip().upper()
+    if active_type not in (Course.CourseType.RECORDED, Course.CourseType.HYBRID):
+        active_type = ""
+    filtered_courses = (
+        [c for c in courses_qs if c.course_type == active_type] if active_type else courses_qs
+    )
     return render(
         request,
         "core/courses.jinja",
         {
-            "courses": courses_qs,
+            "courses": filtered_courses,
+            "active_type": active_type,
             "course_purchased_ids": purchased_ids,
             "seo_title": "Courses - Upskill Faster with RankJee",
             "seo_description": "Explore practical courses with outcomes, duration, and pricing to accelerate your career.",
@@ -538,6 +547,32 @@ def course_detail(request, slug):
             "canonical_url": request.build_absolute_uri(request.path),
             "seo_noindex": bool(ref_code),
         },
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def course_request_demo(request, slug):
+    course = get_object_or_404(Course, slug=slug, is_active=True)
+
+    if course.course_type == Course.CourseType.HYBRID:
+        demo_request = course_services.request_course_live_demo(
+            request.user,
+            course,
+            message=(request.POST.get("message") or "").strip(),
+            contact_phone=(request.POST.get("contact_phone") or "").strip(),
+        )
+        return render(
+            request,
+            "core/partials/_course_demo_result.jinja",
+            {"course": course, "demo_request": demo_request},
+        )
+
+    assignment = course_services.request_course_preview(request.user, course)
+    return render(
+        request,
+        "core/partials/_course_preview_result.jinja",
+        {"course": course, "preview_assignment": assignment},
     )
 
 

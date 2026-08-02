@@ -21,6 +21,11 @@
 </section>
 
 <div class="cl-main">
+  <div class="mb-4 flex flex-wrap gap-2">
+    <a href="{{ url('core:courses') }}" class="rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wide {% if not active_type %}border-indigo-600 bg-indigo-600 text-white{% else %}border-slate-200 bg-white text-slate-600{% endif %}">All</a>
+    <a href="{{ url('core:courses') }}?type=recorded" class="rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wide {% if active_type == 'RECORDED' %}border-indigo-600 bg-indigo-600 text-white{% else %}border-slate-200 bg-white text-slate-600{% endif %}">🎥 Recorded</a>
+    <a href="{{ url('core:courses') }}?type=hybrid" class="rounded-full border px-4 py-1.5 text-xs font-black uppercase tracking-wide {% if active_type == 'HYBRID' %}border-indigo-600 bg-indigo-600 text-white{% else %}border-slate-200 bg-white text-slate-600{% endif %}">🏫 Hybrid</a>
+  </div>
   <div class="cl-grid">
     {% for c in courses %}
     <article class="cl-card">
@@ -73,6 +78,26 @@
         </div>
 
         <div class="cl-card-actions">
+          {% if request.user.is_authenticated and c.id not in course_purchased_ids %}
+          <div class="cl-card-actions-row mb-2">
+            {% if c.course_type == 'HYBRID' %}
+            <button type="button"
+                    class="cd-btn-secondary w-full"
+                    hx-post="{{ url('core:course_request_demo', c.slug) }}"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-target="#demo-result-{{ c.id }}"
+                    hx-swap="innerHTML">Request live demo</button>
+            {% else %}
+            <button type="button"
+                    class="cd-btn-secondary w-full"
+                    hx-post="{{ url('core:course_request_demo', c.slug) }}"
+                    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                    hx-target="#demo-result-{{ c.id }}"
+                    hx-swap="innerHTML">Watch free preview</button>
+            {% endif %}
+          </div>
+          <div id="demo-result-{{ c.id }}"></div>
+          {% endif %}
           <div class="cl-card-actions-row">
             <a href="{{ url('core:course_detail', c.slug) }}" class="cd-btn-secondary">View course</a>
             {% if request.user.is_authenticated %}

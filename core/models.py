@@ -35,8 +35,19 @@ class UserTaskSubmission(models.Model):
 
 
 class Course(models.Model):
+    class CourseType(models.TextChoices):
+        RECORDED = "RECORDED", "Recorded"
+        HYBRID = "HYBRID", "Hybrid (Professional)"
+
     title = models.CharField(max_length=180)
     slug = models.SlugField(max_length=200, unique=True, blank=True)
+    course_type = models.CharField(
+        max_length=20,
+        choices=CourseType.choices,
+        default=CourseType.RECORDED,
+        db_index=True,
+        help_text="Recorded = instant free preview + buy. Hybrid = request a live demo class from the assigned faculty.",
+    )
     short_description = models.CharField(max_length=260, blank=True)
     description = models.TextField(blank=True)
     price_inr = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -328,3 +339,60 @@ class TutorLeadRequest(models.Model):
 
     def __str__(self):
         return f"{self.full_name} - {self.city} ({self.get_requester_type_display()})"
+
+
+class CourseDemoRequest(models.Model):
+    """Student demo request against a `Course` — RECORDED gets an instant free preview,
+    HYBRID gets routed to the course's LMS faculty owner for a live demo class."""
+
+    class RequestType(models.TextChoices):
+        PREVIEW = "PREVIEW", "Free preview"
+        LIVE_DEMO = "LIVE_DEMO", "Live demo class"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        DECLINED = "DECLINED", "Declined"
+        COMPLETED = "COMPLETED", "Completed"
+        CANCELLED = "CANCELLED", "Cancelled"
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="demo_requests",
+    )
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="course_demo_requests_sent",
+    )
+    request_type = models.CharField(max_length=12, choices=RequestType.choices)
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    assigned_faculty = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="course_demo_requests_assigned",
+        help_text="Resolved from the catalog course's default LMS batch owner.",
+    )
+    message = models.TextField(blank=True)
+    contact_phone = models.CharField(max_length=20, blank=True)
+    scheduled_at = models.DateTimeField(null=True, blank=True)
+    decline_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["assigned_faculty", "status"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_request_type_display()} · {self.course.title} ← {self.requester_id} ({self.status})"

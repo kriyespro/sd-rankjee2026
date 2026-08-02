@@ -178,6 +178,11 @@ class LmsAssignment(models.Model):
         help_text='Optional graded test from /assessment/ linked to this assignment — course roster results roll up on the assignment page.',
     )
     is_published = models.BooleanField(default=True, db_index=True)
+    is_free_preview = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='Show this assignment\'s concept_video as the public free preview on the linked catalog course.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

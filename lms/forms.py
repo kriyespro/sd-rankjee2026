@@ -12,6 +12,7 @@ from .models import (
     LmsTopic,
 )
 
+
 User = get_user_model()
 
 _INPUT = (
@@ -62,6 +63,7 @@ class LmsAssignmentForm(forms.ModelForm):
             'course',
             'due_at',
             'is_published',
+            'is_free_preview',
         ]
         widgets = {
             'topic': forms.Select(attrs={'class': _INPUT}),
@@ -80,6 +82,9 @@ class LmsAssignmentForm(forms.ModelForm):
             'is_published': forms.CheckboxInput(
                 attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
             ),
+            'is_free_preview': forms.CheckboxInput(
+                attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
+            ),
         }
         input_formats = {'due_at': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']}
         labels = {
@@ -87,11 +92,13 @@ class LmsAssignmentForm(forms.ModelForm):
             'study_topic': 'Study topic',
             'skill': 'Graded test',
             'course': 'Course',
+            'is_free_preview': 'Public free preview',
         }
         help_texts = {
             'concept_video': 'Opens the matching video on /learning/ for students.',
             'study_topic': 'Opens the matching chapter on /admin/study/ for students.',
             'skill': 'Links a /assessment/ test — course roster results show on this assignment page.',
+            'is_free_preview': 'Shown to any student who requests a free preview on this course\'s catalog page. Requires a lecture recording above.',
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -178,6 +185,8 @@ class LmsAssignmentForm(forms.ModelForm):
                 )
         if not self._is_admin and not cleaned.get('course'):
             self.add_error('course', 'Faculty must select one of their own courses. Create one first under Courses.')
+        if cleaned.get('is_free_preview') and not cleaned.get('concept_video'):
+            self.add_error('is_free_preview', 'Attach a lecture recording above before marking it as the free preview.')
         return cleaned
 
 
@@ -372,6 +381,20 @@ class LmsAttendanceDateForm(forms.Form):
         from django.utils import timezone
         if not self.data:
             self.fields['date'].initial = timezone.localdate()
+
+
+class CourseDemoAcceptForm(forms.Form):
+    scheduled_at = forms.DateTimeField(
+        widget=forms.DateTimeInput(attrs={'class': _INPUT, 'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S'],
+    )
+
+
+class CourseDemoDeclineForm(forms.Form):
+    decline_reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'class': _TEXTAREA, 'rows': 2}),
+    )
 
 
 class LmsTopicForm(forms.ModelForm):

@@ -9,6 +9,22 @@
 - None
 
 ### Completed recently
+- [DONE] Course-type selector (1-to-1 / Recorded / Hybrid) + faculty demo controls — student
+  dashboard now has a "Choose how you want to learn" 3-card entry point (1-to-1 → existing
+  hometutor tutor list unchanged; Recorded → instant free preview + existing buy/subscribe;
+  Hybrid Professional → live demo request auto-routed to the catalog course's LMS batch owner).
+  New: core.Course.course_type (RECORDED/HYBRID, default RECORDED), core.CourseDemoRequest
+  model + core/services.py (request_course_preview, request_course_live_demo,
+  faculty_pending_course_demo_requests), core:course_request_demo view/URL, courses()
+  ?type= filter, lms.LmsAssignment.is_free_preview (faculty marks one lecture recording as
+  the public preview via the existing assignment form), lms:course_demo_inbox +
+  accept/decline views mirroring hometutor's demo pattern, faculty dashboard priority_items
+  now surfaces pending course demo count. Migrations core/0015, lms/0014 (additive only).
+  Verified end-to-end via Django test client: student dashboard selector renders, HYBRID
+  demo POST routes to the LmsCourse owner and shows in their /admin/lms/course-demos/ inbox
+  with working accept/decline, RECORDED preview POST returns the marked video embed,
+  assignment form shows the new "Public free preview" checkbox. 1-to-1 hometutor flow
+  untouched (regression-checked only).
 - [DONE] fab_student.md — student profile → personalized dashboard + monthly course billing,
   per explicit request ("dashboard looks overwhelming; keep Pending Assignments/Last Test/Quick
   Links; add For You based on class/subjects/city; book tutor, buy courses, buy monthly academic

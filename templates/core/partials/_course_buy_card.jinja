@@ -54,6 +54,22 @@
         </p>
       </div>
       {% elif request.user.is_authenticated %}
+      {% if course.course_type == 'HYBRID' %}
+      <button type="button" class="cd-btn-secondary w-full mb-2.5"
+              hx-post="{{ url('core:course_request_demo', course.slug) }}"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+              hx-target="#cd-demo-result" hx-swap="innerHTML">
+        Request live demo class
+      </button>
+      {% else %}
+      <button type="button" class="cd-btn-secondary w-full mb-2.5"
+              hx-post="{{ url('core:course_request_demo', course.slug) }}"
+              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+              hx-target="#cd-demo-result" hx-swap="innerHTML">
+        Watch free preview
+      </button>
+      {% endif %}
+      <div id="cd-demo-result"></div>
       <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0 mb-2.5">
         <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
         <button type="submit" class="cd-btn-primary w-full"
