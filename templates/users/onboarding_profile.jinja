@@ -83,6 +83,11 @@
             </button>
             {% endif %}
         </form>
+        {% if subject_suggestions %}
+        <datalist id="subject-suggestions">
+            {% for s in subject_suggestions %}<option value="{{ s }}">{% endfor %}
+        </datalist>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

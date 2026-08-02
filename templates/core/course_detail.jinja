@@ -505,6 +505,16 @@
               Add to cart — ₹{% if referral_price_unlocked %}{{ course_checkout_price_inr }}{% else %}{{ course_list_price_inr }}{% endif %}
             </button>
           </form>
+          {% if course.allow_monthly and course.monthly_price_inr %}
+          <form method="post" action="{{ url('core:course_cart_add', course.id) }}" class="m-0">
+            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+            <input type="hidden" name="monthly" value="1">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 rounded-xl border-2 border-white/70 px-6 py-3 text-sm font-black uppercase tracking-wider text-white hover:bg-white/10 transition-colors">
+              Monthly — ₹{{ course.monthly_price_inr }}/mo
+            </button>
+          </form>
+          {% endif %}
           <a href="{{ url('core:course_cart') }}"
              class="inline-flex items-center rounded-xl border border-white/30 px-5 py-3 text-sm font-bold text-white/80 hover:bg-white/10 transition-colors">
             View cart →

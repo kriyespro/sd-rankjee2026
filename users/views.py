@@ -394,7 +394,10 @@ def onboarding_role(request):
 
 @login_required
 def onboarding_profile(request):
-    if request.user.onboarding_completed:
+    # ?edit=1 lets a completed user reopen this form to update contact/academic info
+    # (e.g. the student dashboard's "Set your class to personalize" link).
+    _editing = request.GET.get('edit') == '1'
+    if request.user.onboarding_completed and not _editing:
         return redirect('dashboard:index')
     if user_needs_role_picker(request):
         return redirect('users:onboarding_role')
@@ -451,15 +454,19 @@ def onboarding_profile(request):
             },
         )
 
+    _is_student = role == CustomUser.Role.STUDENT
     if request.method == 'POST':
         # "Skip" only skips the optional fields (name/state) — contact info is mandatory,
-        # so a user without phone+city on file can't bypass the form anymore.
-        if request.POST.get('action') == 'skip' and request.user.phone and request.user.city:
+        # and a student's class+subjects are too (they drive dashboard personalization).
+        _skip_ok = request.user.phone and request.user.city and (
+            not _is_student or (request.user.class_level and request.user.subjects)
+        )
+        if request.POST.get('action') == 'skip' and _skip_ok:
             request.user.onboarding_completed = True
             request.user.save(update_fields=['onboarding_completed'])
             messages.info(request, 'You can finish your profile anytime from settings.')
             return redirect('dashboard:index')
-        form = StudentParentOnboardingForm(request.POST, instance=request.user)
+        form = StudentParentOnboardingForm(request.POST, instance=request.user, student=_is_student)
         if form.is_valid():
             form.save()
             request.user.onboarding_completed = True
@@ -467,7 +474,7 @@ def onboarding_profile(request):
             messages.success(request, 'Welcome! Your account is ready.')
             return redirect('dashboard:index')
     else:
-        form = StudentParentOnboardingForm(instance=request.user)
+        form = StudentParentOnboardingForm(instance=request.user, student=_is_student)
 
     return render(
         request,
@@ -475,6 +482,7 @@ def onboarding_profile(request):
         {
             'form': form,
             'role': role,
+            'subject_suggestions': StudentParentOnboardingForm.SUBJECT_SUGGESTIONS,
             'role_label': 'Student' if role == CustomUser.Role.STUDENT else 'Parent',
         },
     )

@@ -2277,8 +2277,19 @@ def index(request):
             student_paid_count = len(student_paid_engagement_ids)
             student_parent_approval_pending = student_demo_pending + max(0, student_active_engagements - student_paid_count)
             student_pending_demo_sla_risk_count = _sd_stats['sla_risk']
-    quick_tutor_cards = [tutor_to_card_dict(t, PILOT_CITY) for t in public_tutor_queryset({'city': PILOT_CITY})[:6]]
+    # Personalized tutor suggestions: the student's own city + first subject when set
+    # (falls back to pilot city / unfiltered so the row is never empty).
+    _tutor_query = {'city': request.user.city or PILOT_CITY}
+    _first_subject = (request.user.subjects or '').split(',')[0].strip()
+    if _first_subject:
+        _tutor_query['subject'] = _first_subject
+    quick_tutor_cards = [tutor_to_card_dict(t, PILOT_CITY) for t in public_tutor_queryset(_tutor_query)[:6]]
+    if not quick_tutor_cards:
+        quick_tutor_cards = [tutor_to_card_dict(t, PILOT_CITY) for t in public_tutor_queryset({'city': PILOT_CITY})[:6]]
     quick_tutor_cards = attach_demo_status_to_cards(quick_tutor_cards, request.user)
+    from dashboard.services import student_recommendations as _student_reco
+
+    student_reco_courses = _student_reco(request.user.class_level, request.user.subjects)
     weak_topic_tutor_cards = []
     weak_terms = []
     if isinstance(weak_areas, list):
@@ -2411,6 +2422,7 @@ def index(request):
         'student_pending_demo_sla_risk_count': student_pending_demo_sla_risk_count,
         'hometutor_pilot_city': PILOT_CITY,
         'quick_tutor_cards': quick_tutor_cards,
+        'student_reco_courses': student_reco_courses,
         'weak_terms': weak_terms,
         'weak_topic_tutor_cards': weak_topic_tutor_cards,
         'student_activity': student_activity,

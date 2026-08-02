@@ -105,14 +105,22 @@ class RoleSelectionForm(forms.Form):
 
 class StudentParentOnboardingForm(forms.ModelForm):
     """Also the contact-info collection point for Google-signup users, who never see the
-    email signup form — phone/city stay mandatory here for that path."""
+    email signup form — phone/city stay mandatory here for that path.
+
+    For STUDENT role (pass `student=True`), also collects the academic profile
+    (class level + subjects, area optional) that drives dashboard personalization."""
+
+    SUBJECT_SUGGESTIONS = (
+        'Maths', 'Science', 'Physics', 'Chemistry', 'Biology', 'English',
+        'Hindi', 'Social Science', 'Computer Science', 'Accountancy', 'Economics',
+    )
 
     phone = phone_field()
     city = city_field()
 
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'phone', 'city', 'state')
+        fields = ('first_name', 'last_name', 'phone', 'city', 'state', 'class_level', 'subjects', 'area')
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
@@ -130,12 +138,37 @@ class StudentParentOnboardingForm(forms.ModelForm):
             'state': 'Your state (optional)',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, student=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.is_student = student
         self.fields['first_name'].required = True
         self.fields['last_name'].required = False
         self.fields['state'].required = False
         self.fields['state'].choices = [('', 'Select later')] + list(INDIAN_STATES)
+        base_cls = 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm'
+        if student:
+            self.fields['class_level'].required = True
+            self.fields['subjects'].required = True
+            self.fields['class_level'].label = 'Your class'
+            self.fields['class_level'].widget = forms.Select(
+                choices=[('', 'Select class')] + [(i, f'Class {i}') for i in range(1, 13)],
+                attrs={'class': base_cls},
+            )
+            self.fields['subjects'].label = 'Subjects you want help with'
+            self.fields['subjects'].widget = forms.TextInput(attrs={
+                'class': base_cls,
+                'placeholder': 'e.g. Maths, Science',
+                'list': 'subject-suggestions',
+            })
+            self.fields['area'].label = 'Area / locality (optional)'
+            self.fields['area'].widget = forms.TextInput(attrs={
+                'class': base_cls,
+                'placeholder': 'e.g. Satellite',
+            })
+        else:
+            # Parents: contact info only — academic profile belongs to the student account.
+            for name in ('class_level', 'subjects', 'area'):
+                del self.fields[name]
 
     def clean_phone(self):
         return clean_phone_value(self.cleaned_data['phone'])

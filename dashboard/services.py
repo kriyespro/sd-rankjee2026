@@ -494,3 +494,49 @@ def recent_joins(limit: int = 15) -> list[dict]:
         }
         for u in users
     ]
+
+
+@cached_stat(ttl=300)
+def student_recommendations(class_level, subjects_csv: str, limit: int = 4) -> list[dict]:
+    """Catalog courses matched to a student's academic profile (fab_student.md S3).
+
+    Match order: structured Course.class_level == student's class, then "Class {n}"
+    in the title, then subject keywords. Falls back to featured/top courses so the
+    "For you" strip is never empty. Cached per (class, subjects) for 5 min.
+    """
+    from core.models import Course
+
+    subjects = [s.strip() for s in (subjects_csv or '').split(',') if s.strip()]
+    base = Course.objects.filter(is_active=True)
+    matched: list = []
+    seen: set[int] = set()
+
+    def _take(qs):
+        for course in qs:
+            if course.pk not in seen and len(matched) < limit:
+                seen.add(course.pk)
+                matched.append(course)
+
+    if class_level:
+        _take(base.filter(class_level=class_level))
+        _take(base.filter(title__icontains=f'Class {class_level}'))
+    for subject in subjects[:3]:
+        _take(base.filter(title__icontains=subject))
+    if len(matched) < limit:
+        _take(base.filter(is_featured=True))
+    if len(matched) < limit:
+        _take(base.order_by('-created_at'))
+
+    return [
+        {
+            'id': c.pk,
+            'title': c.title,
+            'slug': c.slug,
+            'price_inr': c.price_inr,
+            'allow_monthly': c.allow_monthly,
+            'monthly_price_inr': c.monthly_price_inr,
+            'thumbnail_url': c.thumbnail_url,
+            'level': c.level,
+        }
+        for c in matched
+    ]

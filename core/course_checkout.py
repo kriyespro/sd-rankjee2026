@@ -15,6 +15,8 @@ from .models import Course, CourseOrder
 from .services_course_checkout import (
     REFERRAL_LEAD_DISCOUNT_PERCENT,
     cart_course_ids,
+    cart_monthly_ids,
+    set_cart_monthly_ids,
     complete_course_order_after_payment,
     complete_free_checkout,
     create_course_checkout_order,
@@ -68,6 +70,13 @@ def course_cart_add(request, course_id):
     if course.id not in ids:
         ids.append(course.id)
         set_cart_course_ids(request, ids)
+    # ?monthly=1 marks this line as a 30-day monthly purchase (only if the course allows it)
+    monthly_ids = cart_monthly_ids(request)
+    if request.POST.get("monthly") == "1" and course.allow_monthly and course.monthly_price_inr:
+        monthly_ids.add(course.id)
+    else:
+        monthly_ids.discard(course.id)
+    set_cart_monthly_ids(request, monthly_ids)
     return redirect("core:course_cart")
 
 
@@ -76,6 +85,9 @@ def course_cart_add(request, course_id):
 def course_cart_remove(request, course_id):
     ids = [i for i in cart_course_ids(request) if i != int(course_id)]
     set_cart_course_ids(request, ids)
+    monthly_ids = cart_monthly_ids(request)
+    monthly_ids.discard(int(course_id))
+    set_cart_monthly_ids(request, monthly_ids)
     return redirect("core:course_cart")
 
 
@@ -95,7 +107,7 @@ def course_checkout_create(request):
             }
         )
 
-    payload = create_course_checkout_order(request.user, courses)
+    payload = create_course_checkout_order(request.user, courses, monthly_ids=cart_monthly_ids(request))
     if "error" in payload:
         status = int(payload.get("http_status") or 400)
         return JsonResponse({"error": payload["error"]}, status=status)

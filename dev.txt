@@ -9,6 +9,55 @@
 - None
 
 ### Completed recently
+- [DONE] fab_student.md — student profile → personalized dashboard + monthly course billing,
+  per explicit request ("dashboard looks overwhelming; keep Pending Assignments/Last Test/Quick
+  Links; add For You based on class/subjects/city; book tutor, buy courses, buy monthly academic
+  course, buy mock-test package"). Full suite 110/110 green.
+  - **S1 profile fields**: `CustomUser.class_level` (1–12, nullable), `.subjects` (CSV text),
+    `.area` (optional locality) — migration `users/0020_customuser_area_customuser_class_level_
+    and_more.py` (additive, applied locally after confirmation). Collected at student onboarding
+    only (not signup — keeps join friction low); `StudentParentOnboardingForm` now takes a
+    `student=True` kwarg that makes class+subjects required with a class dropdown + subject
+    datalist, and hides them entirely for parents. "Skip" still can't bypass mandatory fields
+    (now includes class/subjects for students). `?edit=1` on `/users/onboarding/profile/` lets a
+    completed user reopen the form later (wired from the dashboard's "Set your class" link).
+  - **S3 matching**: new `dashboard/services.py::student_recommendations()` (cached 5 min) —
+    matches active `core.Course` rows by `class_level` then "Class N" in title then subject
+    keywords, falls back to featured/newest so the strip is never empty. Tutor suggestions
+    (`quick_tutor_cards`) now filter by the student's own `city` + first subject instead of the
+    hardcoded pilot city, falling back to city-only or unfiltered if that's empty.
+  - **S2 dashboard reorder**: new "✨ For you" strip at the very top (below the Continue-learning
+    hero) — up to 4 matched courses + one static "📝 Mock-test package" card linking to
+    `payments:plans`; shows "Set your class to personalize" when class_level is unset. Today's
+    Focus (Pending assignments / Last test / Quick links) left completely untouched per explicit
+    request. Exam history table (previously always-open, pushing content down) is now collapsed
+    behind a "Show last N ▾" Alpine toggle — first screen is calmer without losing the data.
+  - **S4-A monthly academic course** (chosen over real recurring billing — faster, lower risk):
+    `Course.allow_monthly` + `.monthly_price_inr` + `.class_level`; `CoursePurchase.access_until`
+    (NULL = lifetime, unchanged old behavior); `CourseOrderLine.is_monthly`. Migrations
+    `core/0013_course_allow_monthly_...` (includes a SQLite-only backfill RunPython — the AddField
+    ops trigger a table rebuild that re-declares the 0012-patched nullable JSON columns NOT NULL,
+    which broke on any row with NULL there; backfills '[]' first, no-op on Postgres) and
+    `core/0014_courseorderline_is_monthly` (both applied locally after confirmation).
+    `core/services_course_checkout.py`: new cart-session key for "buy monthly" course ids,
+    `user_owned_course_ids()` now excludes expired monthly purchases (so the course becomes
+    buyable/renewable again — verified via direct query, not a query-count regression since it's
+    the same table), `create_course_checkout_order()` takes `monthly_ids`, completion sets a
+    30-day `access_until` for monthly lines / extends it by 30 days from expiry-or-now on renewal
+    / clears it back to lifetime if a monthly buyer later does a one-time purchase. Course detail
+    page shows a second "Monthly — ₹N/mo" button next to "Add to cart" when a course has
+    `allow_monthly` set. `/sd/` Course admin exposes the 3 new fields.
+  - Verified via a dedicated smoke script (11 checks): student onboarding blocked without
+    class+subjects, completes with them; dashboard renders "For you"/"Class N"/mock-test card;
+    monthly checkout charges the monthly price; purchase gets a 30-day expiry; renewal extends
+    exactly 30 days; expired monthly drops from owned courses; a later one-time purchase upgrades
+    to lifetime (`access_until` cleared). Full `lms dashboard users hometutor assessment core`
+    suite 110/110 (2 pre-existing onboarding tests updated for the new mandatory student fields).
+    CSS rebuilt.
+  - NOT YET migrated on production — `users/0020` + `core/0013` + `core/0014`, all additive.
+    Production's `users_customuser` table already collided once on a column name during the
+    phone/city migration (0019) — check `\d users_customuser` for existing `class_level`/
+    `subjects`/`area` columns before running `migrate` there, same as that incident's playbook.
 - [DONE] fab_role.md — role-by-role dashboard workflow pass (all 7 roles) + superadmin
   "Recent joins" panel per explicit request. Full suite 110/110 green, all roles smoke-rendered.
   - **R0 shared priority component**: new `templates/dashboard/partials/_priority_list.jinja`

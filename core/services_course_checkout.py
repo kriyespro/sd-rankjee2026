@@ -7,6 +7,8 @@ from decimal import ROUND_HALF_UP, Decimal
 import razorpay.errors as rz_errors
 from django.conf import settings
 from django.db import transaction
+from datetime import timedelta
+
 from django.utils import timezone
 
 from payments.services import get_razorpay_client, make_dummy_order_id, razorpay_dummy_mode
@@ -15,6 +17,7 @@ from .models import Course, CourseOrder, CourseOrderLine, CoursePurchase, Course
 
 
 SESSION_CART_KEY = "course_cart_ids"
+SESSION_CART_MONTHLY_KEY = "course_cart_monthly_ids"
 
 # Referred leads: buyer pays list minus this percent; affiliate earns commission on actual paid amount.
 REFERRAL_LEAD_DISCOUNT_PERCENT = Decimal("15")
@@ -77,10 +80,41 @@ def set_cart_course_ids(request, ids: list[int]) -> None:
 
 def clear_cart(request) -> None:
     request.session.pop(SESSION_CART_KEY, None)
+    request.session.pop(SESSION_CART_MONTHLY_KEY, None)
+
+
+def cart_monthly_ids(request) -> set[int]:
+    """Course ids the user chose to buy as 30-day monthly access (fab_student S4-A)."""
+    raw = request.session.get(SESSION_CART_MONTHLY_KEY) or []
+    out = set()
+    for x in raw:
+        try:
+            out.add(int(x))
+        except (TypeError, ValueError):
+            continue
+    return out
+
+
+def set_cart_monthly_ids(request, ids) -> None:
+    request.session[SESSION_CART_MONTHLY_KEY] = sorted({int(i) for i in ids})
+
+
+def monthly_unit_price_inr(course: Course) -> Decimal | None:
+    if course.allow_monthly and course.monthly_price_inr:
+        return _quantize_inr(course.monthly_price_inr)
+    return None
 
 
 def user_owned_course_ids(user) -> set[int]:
-    return set(CoursePurchase.objects.filter(user=user).values_list("course_id", flat=True))
+    """Courses with ACTIVE access — lifetime rows (access_until NULL) or unexpired monthly.
+    Expired monthly purchases drop out, so the course becomes buyable/renewable again."""
+    from django.db.models import Q
+
+    return set(
+        CoursePurchase.objects.filter(user=user)
+        .filter(Q(access_until__isnull=True) | Q(access_until__gte=timezone.now()))
+        .values_list("course_id", flat=True)
+    )
 
 
 def resolve_cart_courses(user, request) -> tuple[list[Course], Decimal, dict[int, Decimal]]:
@@ -98,10 +132,12 @@ def resolve_cart_courses(user, request) -> tuple[list[Course], Decimal, dict[int
     found_ids = {c.id for c in courses}
     # drop missing/inactive from session
     set_cart_course_ids(request, [i for i in ids if i in found_ids])
+    monthly_ids = cart_monthly_ids(request)
     unit_prices: dict[int, Decimal] = {}
     total = Decimal("0")
     for c in courses:
-        p = unit_checkout_price_inr(c, user)
+        m = monthly_unit_price_inr(c) if c.id in monthly_ids else None
+        p = m if m is not None else unit_checkout_price_inr(c, user)
         unit_prices[c.id] = p
         total += p
     return courses, total, unit_prices
@@ -170,12 +206,29 @@ def complete_course_order_after_payment(
         order.save(
             update_fields=["razorpay_payment_id", "razorpay_signature", "status"],
         )
+        now = timezone.now()
+        monthly_course_ids = {line.course_id for line in lines if line.is_monthly}
         for c in courses:
-            CoursePurchase.objects.get_or_create(
+            purchase, _created = CoursePurchase.objects.get_or_create(
                 user=user,
                 course=c,
-                defaults={"order": order},
+                defaults={
+                    "order": order,
+                    "access_until": (now + timedelta(days=30)) if c.id in monthly_course_ids else None,
+                },
             )
+            if not _created:
+                if c.id in monthly_course_ids and purchase.access_until is not None:
+                    # Renewal: extend 30 days from expiry if still active, else from now.
+                    base = max(purchase.access_until, now)
+                    purchase.access_until = base + timedelta(days=30)
+                    purchase.order = order
+                    purchase.save(update_fields=["access_until", "order"])
+                elif c.id not in monthly_course_ids and purchase.access_until is not None:
+                    # Monthly buyer upgraded to one-time: lifetime access.
+                    purchase.access_until = None
+                    purchase.order = order
+                    purchase.save(update_fields=["access_until", "order"])
     # Auto-enroll the buyer into whichever LMS batch delivers this catalog course, if any
     # tutor/faculty has been assigned to teach it yet (see lms.LmsCourse.catalog_course).
     from lms import services as lms_services
@@ -186,14 +239,22 @@ def complete_course_order_after_payment(
     clear_cart(request)
 
 
-def create_course_checkout_order(user, courses: list[Course]):
+def create_course_checkout_order(user, courses: list[Course], monthly_ids: set[int] | None = None):
     """
     Create Razorpay order + DB CourseOrder + lines. Returns dict for JsonResponse or raises nothing (caller handles).
 
     For dummy mode / misconfiguration returns tuple for JsonResponse construction by caller.
     """
-    lines_payload = [(c, unit_checkout_price_inr(c, user)) for c in courses]
-    total_inr = sum((p for _, p in lines_payload), Decimal("0"))
+    monthly_ids = monthly_ids or set()
+
+    def _line(c):
+        m = monthly_unit_price_inr(c) if c.id in monthly_ids else None
+        if m is not None:
+            return (c, m, True)
+        return (c, unit_checkout_price_inr(c, user), False)
+
+    lines_payload = [_line(c) for c in courses]
+    total_inr = sum((p for _, p, _m in lines_payload), Decimal("0"))
     amount_paise = int(total_inr * 100)
 
     if razorpay_dummy_mode():
@@ -204,8 +265,8 @@ def create_course_checkout_order(user, courses: list[Course]):
             razorpay_order_id=rid,
             status=CourseOrder.Status.PENDING,
         )
-        for c, price in lines_payload:
-            CourseOrderLine.objects.create(order=order, course=c, unit_price_inr=price)
+        for c, price, is_monthly in lines_payload:
+            CourseOrderLine.objects.create(order=order, course=c, unit_price_inr=price, is_monthly=is_monthly)
         return {
             "checkout_mode": "dummy",
             "order_id": rid,
@@ -249,8 +310,8 @@ def create_course_checkout_order(user, courses: list[Course]):
         razorpay_order_id=rz_order["id"],
         status=CourseOrder.Status.PENDING,
     )
-    for c, price in lines_payload:
-        CourseOrderLine.objects.create(order=order, course=c, unit_price_inr=price)
+    for c, price, is_monthly in lines_payload:
+        CourseOrderLine.objects.create(order=order, course=c, unit_price_inr=price, is_monthly=is_monthly)
 
     return {
         "checkout_mode": "live",

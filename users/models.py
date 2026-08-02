@@ -102,6 +102,26 @@ class CustomUser(AbstractUser):
         default='',
         help_text="City the user lives/teaches in.",
     )
+    # Student academic profile — drives dashboard personalization (fab_student.md S1).
+    # DB-blank so non-students and legacy rows are unaffected; the student onboarding
+    # form is where these become required.
+    class_level = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Student's class/grade (1–12).",
+    )
+    subjects = models.CharField(
+        max_length=200,
+        blank=True,
+        default='',
+        help_text="Comma-separated subjects of interest, e.g. 'Maths, Science'.",
+    )
+    area = models.CharField(
+        max_length=80,
+        blank=True,
+        default='',
+        help_text="Locality/area within the city (optional).",
+    )
 
     def add_xp(self, points):
         self.xp_points += points

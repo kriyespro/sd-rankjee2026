@@ -58,7 +58,8 @@ class OnboardingFlowTests(TestCase):
         res = self.client.post(
             reverse('users:onboarding_profile'),
             data={'first_name': 'Demo', 'last_name': '', 'state': '',
-                  'phone': '9876543210', 'city': 'Ahmedabad'},
+                  'phone': '9876543210', 'city': 'Ahmedabad',
+                  'class_level': 9, 'subjects': 'Maths'},
         )
         self.user.refresh_from_db()
         self.assertTrue(self.user.onboarding_completed)
@@ -77,7 +78,9 @@ class OnboardingFlowTests(TestCase):
 
         self.user.phone = '9876543210'
         self.user.city = 'Ahmedabad'
-        self.user.save(update_fields=['phone', 'city'])
+        self.user.class_level = 9
+        self.user.subjects = 'Maths'
+        self.user.save(update_fields=['phone', 'city', 'class_level', 'subjects'])
         res = self.client.post(
             reverse('users:onboarding_profile'),
             data={'action': 'skip'},

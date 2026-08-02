@@ -40,6 +40,24 @@ class Course(models.Model):
     short_description = models.CharField(max_length=260, blank=True)
     description = models.TextField(blank=True)
     price_inr = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Monthly academic option (fab_student.md S4-A): a monthly buy is a normal CourseOrder
+    # that grants 30-day access — no recurring billing; renewal is a reminder notification.
+    allow_monthly = models.BooleanField(
+        default=False,
+        help_text="Offer a 30-day monthly purchase option alongside the one-time price.",
+    )
+    monthly_price_inr = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Price for 30-day access; required if monthly is allowed.",
+    )
+    class_level = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        help_text="Target class/grade 1–12 (for academic courses; blank for skill courses).",
+    )
     duration_weeks = models.PositiveIntegerField(default=4)
     level = models.CharField(max_length=40, blank=True, help_text="Beginner / Intermediate / Advanced")
     thumbnail_url = models.URLField(blank=True)
@@ -142,6 +160,9 @@ class CourseOrder(models.Model):
 
 
 class CourseOrderLine(models.Model):
+    # True when this line was bought at the monthly (30-day access) price — completion
+    # sets/extends CoursePurchase.access_until instead of granting lifetime access.
+    is_monthly = models.BooleanField(default=False)
     order = models.ForeignKey(CourseOrder, on_delete=models.CASCADE, related_name="lines")
     course = models.ForeignKey(Course, on_delete=models.PROTECT)
     unit_price_inr = models.DecimalField(max_digits=10, decimal_places=2)
@@ -163,6 +184,8 @@ class CoursePurchase(models.Model):
         related_name="purchases",
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    # Monthly (30-day) purchases set this; NULL = lifetime access (unchanged old behavior).
+    access_until = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -171,6 +194,12 @@ class CoursePurchase(models.Model):
 
     def __str__(self):
         return f"{self.user_id} owns {self.course.slug}"
+
+    @property
+    def is_access_active(self) -> bool:
+        from django.utils import timezone as _tz
+
+        return self.access_until is None or self.access_until >= _tz.now()
 
 
 class CourseReferral(models.Model):
