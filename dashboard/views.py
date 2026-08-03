@@ -2035,8 +2035,10 @@ def index(request):
 
         recent_daily_class_logs = (
             StudentDailyClassLog.objects.select_related('user')
-            .order_by('-log_date', '-id')[:8]
+            .order_by('-log_date', '-id')[:20]
         )
+        faculty_attendance_today = lms_services.faculty_attendance_today()
+        student_attendance_today = lms_services.student_attendance_today()
 
         _all_action_items = dash_services.action_center()
         revenue_trend = dash_services.revenue_trend()
@@ -2069,6 +2071,8 @@ def index(request):
                 'latest_demo_requests': latest_demo_requests,
                 'latest_tutor_requests': latest_tutor_requests,
                 'recent_daily_class_logs': recent_daily_class_logs,
+                'faculty_attendance_today': faculty_attendance_today,
+                'student_attendance_today': student_attendance_today,
                 'lms_course_form': LmsCourseForm(user=request.user),
                 'lms_quick_courses': lms_quick_courses,
                 'lms_owner_options': list(lms_services.lms_owner_queryset()),

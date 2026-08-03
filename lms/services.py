@@ -1070,6 +1070,45 @@ def attendance_for_admin(year: int, month: int) -> list:
     )
 
 
+def faculty_attendance_today() -> dict:
+    """Compact today's attendance-marking compliance per faculty, for the admin overview."""
+    today = timezone.localdate()
+    owner_ids = set(
+        LmsCourse.objects.filter(is_active=True, owner__isnull=False)
+        .values_list('owner_id', flat=True)
+        .distinct()
+    )
+    marked_owner_ids = set(
+        LmsAttendance.objects.filter(date=today, course__owner_id__in=owner_ids)
+        .values_list('course__owner_id', flat=True)
+        .distinct()
+    )
+    from django.contrib.auth import get_user_model
+    pending_faculty = list(
+        get_user_model().objects.filter(id__in=owner_ids - marked_owner_ids).order_by('username')[:5]
+    )
+    return {
+        'total': len(owner_ids),
+        'marked': len(marked_owner_ids),
+        'pending_count': len(owner_ids) - len(marked_owner_ids),
+        'pending_faculty': pending_faculty,
+    }
+
+
+def student_attendance_today() -> dict:
+    """Compact today's student attendance totals across all courses, for the admin overview."""
+    today = timezone.localdate()
+    stats = LmsAttendance.objects.filter(date=today).aggregate(
+        total=Count('id'),
+        present=Count('id', filter=Q(status=LmsAttendance.Status.PRESENT)),
+        late=Count('id', filter=Q(status=LmsAttendance.Status.LATE)),
+        absent=Count('id', filter=Q(status=LmsAttendance.Status.ABSENT)),
+    )
+    total = stats['total']
+    rate = round((stats['present'] + stats['late']) * 100 / total, 1) if total else None
+    return {**stats, 'rate': rate}
+
+
 def student_monthly_calendar(course, student, year: int, month: int) -> list[dict]:
     """Return list of day dicts for the calendar month view."""
     import calendar

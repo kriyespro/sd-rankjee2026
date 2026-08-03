@@ -47,6 +47,11 @@ def home(request):
     _scope = services.faculty_student_scope(request.user)
     if _scope is not None:
         recent_qs = recent_qs.filter(_scope)
+    elif not services.is_lms_staff(request.user) and not services.is_lms_office(request.user):
+        # Fix: a plain student's "Recent submissions" feed was showing every OTHER student's
+        # submissions (name, caption) on any assignment they could view — including platform-wide
+        # assignments a brand-new student sees before enrolling anywhere. Scope to their own work.
+        recent_qs = recent_qs.filter(student_id=request.user.id)
     recent = recent_qs.select_related('student', 'assignment').order_by('-is_pinned', '-updated_at')[:12]
     recent_assignments = sorted(
         assignments,
