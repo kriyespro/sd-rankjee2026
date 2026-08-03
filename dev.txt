@@ -916,3 +916,29 @@
 - Verified via test client: create course -> add topic (HTMX) -> add assignment (HTMX),
   invalid submissions re-render with inline errors (no crash), faculty/student get 403.
   Full suite 110/110 passing
+
+[DONE] Course builder opened up to Faculty and Office (was superadmin-only)
+- Same /admin/lms/builder/ page for all 3 roles now, capabilities gated by the existing
+  permission rules (unchanged elsewhere in the app):
+  - Admin: sees every course, can add topics + assignments anywhere
+  - Office: creates courses + assigns faculty owner, can add/curate topics (curriculum stays
+    centrally managed per services.can_manage_topics) — but no "Add assignment" form, no
+    teaching rights, matches services.can_manage_course/can_manage_assignment already being
+    admin/faculty-only
+  - Faculty: self-serve creates their own course (owner forced to self), sees only their own
+    courses (services.courses_for_user scoping), adds assignments by picking from EXISTING
+    topics via a dropdown (this course's own + any platform "General" ones) — cannot mint new
+    topics, same rule LmsAssignmentForm already enforces elsewhere
+- Reworked the assignment listing to group by whatever topic each assignment actually belongs
+  to (not just topics created through this page) so nothing silently disappears if an
+  assignment references a topic outside the course-scoped set; unmatched assignments show in
+  a trailing "No topic" section
+- lms/forms.py: LmsQuickAssignmentForm now takes topic as a required dropdown field
+  (course-scoped + general topics only), constructor takes course= to scope the queryset
+- lms/views.py: course_builder/add_topic/add_assignment now use services.courses_for_user for
+  scoping (faculty -> own courses only, 404 for others' courses) and
+  can_manage_topics/can_manage_course for the per-action gate instead of admin-only
+- Verified via test client: faculty self-serve course creation, faculty blocked from adding
+  topics (403), office blocked from adding assignments (403), office can add topics, faculty2
+  gets 404 on faculty1's course (both GET and POST), student still fully blocked, admin still
+  sees/does everything. Full suite 110/110 passing

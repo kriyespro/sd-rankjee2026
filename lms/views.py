@@ -602,63 +602,106 @@ def courses(request):
     )
 
 
-# ── Course builder: one-screen course+topic+assignment setup for superadmin ────
+# ── Course builder: one-screen course+topic+assignment setup, for admin/office/faculty ──
 # Fix: creating a course's content used to mean bouncing across 3 separate full-page forms
 # (courses/, topics/new/, assignments/new/) with a full reload for every single topic or
 # assignment. This page keeps the course open and adds topics/assignments inline via HTMX —
 # no page reload, so setting up many topics/assignments back-to-back is fast.
+#
+# Same page for all three roles, capabilities gated per the existing rules (unchanged from
+# the rest of the app): admin manages everything; office creates courses + curriculum topics
+# but never touches assignments (no teaching rights); faculty manages only their own course's
+# assignments and picks from existing topics (can't mint new ones) — see
+# services.can_manage_topics / services.can_manage_course.
 
-def _course_builder_body_context(course, *, topic_form=None, assignment_forms_by_topic_id=None):
-    topics = list(
-        LmsTopic.objects.filter(course=course)
-        .select_related('level')
-        .prefetch_related(
-            Prefetch('assignments', queryset=LmsAssignment.objects.order_by('sort_order', 'created_at'))
-        )
-        .order_by('title')
+def _lms_builder_access(user) -> bool:
+    return services.is_lms_staff(user) or services.is_lms_office(user)
+
+
+def _course_builder_body_context(course, user, *, topic_form=None, assignment_form=None):
+    assignments = list(
+        LmsAssignment.objects.filter(course=course)
+        .select_related('topic')
+        .order_by('sort_order', 'created_at')
     )
-    forms_by_id = assignment_forms_by_topic_id or {}
+    own_topics = list(LmsTopic.objects.filter(course=course).select_related('level').order_by('title'))
+    own_topic_ids = {t.id for t in own_topics}
+    extra_topic_ids = {a.topic_id for a in assignments if a.topic_id and a.topic_id not in own_topic_ids}
+    extra_topics = (
+        list(LmsTopic.objects.filter(id__in=extra_topic_ids).select_related('level').order_by('title'))
+        if extra_topic_ids else []
+    )
+    assignments_by_topic_id = {}
+    unassigned_assignments = []
+    for a in assignments:
+        if a.topic_id:
+            assignments_by_topic_id.setdefault(a.topic_id, []).append(a)
+        else:
+            unassigned_assignments.append(a)
+
+    can_add_topic = services.can_manage_topics(user)
+    can_add_assignment = services.can_manage_course(user, course)
     return {
         'course': course,
-        'topics': topics,
-        'topic_form': topic_form or LmsQuickTopicForm(),
-        'assignment_forms_by_topic_id': {t.id: forms_by_id.get(t.id) or LmsQuickAssignmentForm() for t in topics},
+        'topics': own_topics + extra_topics,
+        'assignments_by_topic_id': assignments_by_topic_id,
+        'unassigned_assignments': unassigned_assignments,
+        'can_add_topic': can_add_topic,
+        'can_add_assignment': can_add_assignment,
+        'topic_form': (topic_form or LmsQuickTopicForm()) if can_add_topic else None,
+        'assignment_form': (assignment_form or LmsQuickAssignmentForm(course=course)) if can_add_assignment else None,
     }
 
 
 @login_required
 @require_http_methods(['GET', 'POST'])
 def course_builder(request, pk=None):
-    if not services.is_lms_admin(request.user):
-        return HttpResponseForbidden('Superadmin only.')
+    if not _lms_builder_access(request.user):
+        return HttpResponseForbidden('Staff only.')
 
-    course = get_object_or_404(LmsCourse, pk=pk) if pk else None
-    course_form = LmsCourseForm(user=request.user)
+    is_admin = services.is_lms_admin(request.user)
+    is_office = services.is_lms_office(request.user)
+    can_create_course = is_admin or is_office or services.is_lms_faculty(request.user)
+
+    visible_courses = services.courses_for_user(request.user)
+    course = get_object_or_404(visible_courses, pk=pk) if pk else None
+    course_form = LmsCourseForm(user=request.user) if can_create_course else None
 
     if request.method == 'POST':
-        if request.POST.get('action') != 'create_course':
-            return HttpResponseForbidden('Unknown action.')
+        if not can_create_course or request.POST.get('action') != 'create_course':
+            return HttpResponseForbidden('Cannot create courses.')
         course_form = LmsCourseForm(request.POST, user=request.user)
         if course_form.is_valid():
-            new_course = course_form.save()
+            new_course = course_form.save(commit=False)
+            if not (is_admin or is_office):
+                new_course.owner = request.user
+            new_course.save()
             messages.success(request, f'Course "{new_course.name}" created.')
             return redirect('lms:course_builder', pk=new_course.pk)
 
     context = {
-        'all_courses': list(LmsCourse.objects.filter(is_active=True).select_related('owner', 'level').order_by('-created_at')),
+        'all_courses': list(visible_courses),
         'course_form': course_form,
+        'can_create_course': can_create_course,
+        'is_admin_lms': is_admin,
+        'is_office_lms': is_office,
+        'can_add_topic': services.can_manage_topics(request.user),
         'crumbs': services.lms_crumbs(services.crumb('Course builder')),
     }
-    context.update(_course_builder_body_context(course) if course else {'course': None, 'topics': []})
+    context.update(
+        _course_builder_body_context(course, request.user) if course else {'course': None, 'topics': []}
+    )
     return render(request, 'lms/course_builder.jinja', context)
 
 
 @login_required
 @require_POST
 def course_builder_add_topic(request, pk):
-    if not services.is_lms_admin(request.user):
-        return HttpResponseForbidden('Superadmin only.')
-    course = get_object_or_404(LmsCourse, pk=pk)
+    if not _lms_builder_access(request.user):
+        return HttpResponseForbidden('Staff only.')
+    course = get_object_or_404(services.courses_for_user(request.user), pk=pk)
+    if not services.can_manage_topics(request.user):
+        return HttpResponseForbidden('Admin/office only.')
     topic_form = LmsQuickTopicForm(request.POST)
     if topic_form.is_valid():
         topic = topic_form.save(commit=False)
@@ -668,33 +711,31 @@ def course_builder_add_topic(request, pk):
     return render(
         request,
         'lms/partials/_course_builder_body.jinja',
-        _course_builder_body_context(course, topic_form=topic_form),
+        _course_builder_body_context(course, request.user, topic_form=topic_form),
     )
 
 
 @login_required
 @require_POST
 def course_builder_add_assignment(request, pk):
-    if not services.is_lms_admin(request.user):
-        return HttpResponseForbidden('Superadmin only.')
-    course = get_object_or_404(LmsCourse, pk=pk)
-    topic = get_object_or_404(LmsTopic, pk=request.POST.get('topic_id'), course=course)
-    assignment_form = LmsQuickAssignmentForm(request.POST)
-    forms_by_topic = {}
+    if not _lms_builder_access(request.user):
+        return HttpResponseForbidden('Staff only.')
+    course = get_object_or_404(services.courses_for_user(request.user), pk=pk)
+    if not services.can_manage_course(request.user, course):
+        return HttpResponseForbidden('You can only add assignments to your own courses.')
+    assignment_form = LmsQuickAssignmentForm(request.POST, course=course)
     if assignment_form.is_valid():
         obj = assignment_form.save(commit=False)
         obj.course = course
-        obj.topic = topic
         obj.created_by = request.user
         obj.save()
         if obj.is_published:
             services.notify_new_assignment(obj)
-    else:
-        forms_by_topic[topic.id] = assignment_form
+        assignment_form = None
     return render(
         request,
         'lms/partials/_course_builder_body.jinja',
-        _course_builder_body_context(course, assignment_forms_by_topic_id=forms_by_topic),
+        _course_builder_body_context(course, request.user, assignment_form=assignment_form),
     )
 
 

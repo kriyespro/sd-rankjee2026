@@ -388,8 +388,9 @@ class LmsQuickAssignmentForm(forms.ModelForm):
 
     class Meta:
         model = LmsAssignment
-        fields = ['title', 'instructions', 'sort_order', 'due_at', 'is_published']
+        fields = ['topic', 'title', 'instructions', 'sort_order', 'due_at', 'is_published']
         widgets = {
+            'topic': forms.Select(attrs={'class': _INPUT}),
             'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Meta Ads Poster'}),
             'instructions': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'What students should submit (optional)…'}
@@ -404,10 +405,25 @@ class LmsQuickAssignmentForm(forms.ModelForm):
             ),
         }
         input_formats = {'due_at': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']}
-        labels = {'sort_order': 'Position', 'is_published': 'Published'}
+        labels = {'topic': 'Topic', 'sort_order': 'Position', 'is_published': 'Published'}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, course=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from . import services
+
+        # Topics are admin/office-managed curriculum categories — faculty pick from what
+        # already exists (this course's own topics + any platform-wide "General" ones) rather
+        # than minting new ones here, same rule LmsAssignmentForm follows.
+        services.ensure_general_topic()
+        course_qs = LmsTopic.objects.filter(course=course) if course else LmsTopic.objects.none()
+        general_qs = LmsTopic.objects.filter(course__isnull=True)
+        self.fields['topic'].queryset = (course_qs | general_qs).order_by('title')
+        self.fields['topic'].required = True
+        self.fields['topic'].empty_label = None
+        course_id = course.id if course else None
+        self.fields['topic'].label_from_instance = (
+            lambda t: f'{t.title} (this course)' if t.course_id == course_id else t.title
+        )
         self.fields['instructions'].required = False
         self.fields['sort_order'].required = False
         self.fields['due_at'].required = False

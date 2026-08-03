@@ -14,7 +14,7 @@
             <p class="mt-1 text-xs text-slate-500">Only you can see and manage the students and assignments in your own courses.</p>
             {% endif %}
         </div>
-        {% if is_admin_lms %}
+        {% if is_staff_lms or is_office_lms %}
         <a href="{{ url('lms:course_builder') }}" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-100 whitespace-nowrap">🧱 Course builder →</a>
         {% endif %}
         {% if is_admin_lms or is_office_lms %}

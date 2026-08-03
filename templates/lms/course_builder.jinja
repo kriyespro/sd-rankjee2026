@@ -1,21 +1,21 @@
 {% extends "base.jinja" %}
-{% block title %}Course builder · LMS Admin{% endblock %}
+{% block title %}Course builder · LMS{% endblock %}
 
 {% block content %}
 <div class="mx-auto w-full max-w-4xl px-4 py-6 sm:px-6">
     {% include "partials/_breadcrumb.jinja" %}
     <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">Superadmin</p>
+            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600">{% if is_office_lms %}Office{% elif is_admin_lms %}Superadmin{% else %}Faculty{% endif %}</p>
             <h1 class="text-2xl font-black tracking-tight text-slate-900">Course builder</h1>
-            <p class="mt-1 text-xs text-slate-500">Pick or create a course, then add topics and assignments right here — no page reloads.</p>
+            <p class="mt-1 text-xs text-slate-500">Pick or create a course, then add {% if can_add_topic %}topics and {% endif %}assignments right here — no page reloads.</p>
         </div>
         <a href="{{ url('lms:courses') }}" class="rounded-xl border border-slate-200 px-4 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 whitespace-nowrap">Full LMS manager →</a>
     </div>
 
-    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="mb-6 grid grid-cols-1 gap-4 {% if course_form %}sm:grid-cols-2{% endif %}">
         <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p class="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Open an existing course</p>
+            <p class="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">Open a course</p>
             {% if all_courses %}
             <select onchange="if (this.value) window.location.href = this.value;" class="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">
                 <option value="">Choose a course…</option>
@@ -26,10 +26,11 @@
                 {% endfor %}
             </select>
             {% else %}
-            <p class="text-xs font-bold text-slate-400">No courses yet — create one →</p>
+            <p class="text-xs font-bold text-slate-400">No courses yet{% if course_form %} — create one →{% endif %}</p>
             {% endif %}
         </div>
 
+        {% if course_form %}
         <div class="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-4 shadow-sm">
             <p class="mb-2 text-[10px] font-black uppercase tracking-widest text-indigo-700">Create a new course</p>
             <form method="post" class="space-y-2">
@@ -56,12 +57,13 @@
                 <button type="submit" class="w-full rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500">Create & open →</button>
             </form>
         </div>
+        {% endif %}
     </div>
 
     {% if course %}
     {% include "lms/partials/_course_builder_body.jinja" %}
     {% else %}
-    <p class="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-xs font-bold text-slate-400">Pick or create a course above to start adding topics and assignments.</p>
+    <p class="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-xs font-bold text-slate-400">Pick or create a course above to start adding {% if can_add_topic %}topics and {% endif %}assignments.</p>
     {% endif %}
 </div>
 {% endblock %}
