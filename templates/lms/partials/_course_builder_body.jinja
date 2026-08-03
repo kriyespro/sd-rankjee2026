@@ -1,0 +1,85 @@
+{# Expects: course, topics, topic_form, assignment_forms_by_topic_id. Swapped as a whole
+   (hx-swap="outerHTML") whenever a topic or assignment is added, so counts/lists stay fresh. #}
+<div id="builder-body">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div>
+            <p class="text-sm font-black text-slate-900">{{ course.name }}</p>
+            <p class="text-[11px] text-slate-500">
+                {% if course.owner %}Faculty: {{ course.owner.get_full_name() or course.owner.username }}{% else %}Platform-wide{% endif %}
+                {% if course.level %} · {{ course.level.name }}{% endif %}
+                · {{ topics|length }} topic{{ 's' if topics|length != 1 else '' }}
+            </p>
+        </div>
+        <a href="{{ url('lms:courses') }}" class="text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:underline">Edit course details →</a>
+    </div>
+
+    <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 shadow-sm">
+        <p class="mb-2 text-[10px] font-black uppercase tracking-widest text-emerald-700">+ Add topic</p>
+        <form hx-post="{{ url('lms:course_builder_add_topic', pk=course.pk) }}" hx-target="#builder-body" hx-swap="outerHTML"
+              class="flex flex-wrap items-start gap-2">
+            {{ csrf_input }}
+            <div class="min-w-[10rem] flex-1">
+                {{ topic_form.title }}
+                {% if topic_form.title.errors %}<p class="mt-1 text-[11px] font-bold text-rose-600">{{ topic_form.title.errors|join(' ') }}</p>{% endif %}
+            </div>
+            <div class="min-w-[10rem] flex-1">
+                {{ topic_form.description }}
+            </div>
+            <div class="min-w-[9rem]">
+                {{ topic_form.level }}
+            </div>
+            <button type="submit" class="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-emerald-500 whitespace-nowrap">Add topic →</button>
+        </form>
+    </div>
+
+    <div class="space-y-4">
+        {% for t in topics %}
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-sm font-black text-slate-900">{{ t.title }}{% if t.level %} <span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-black uppercase text-slate-500">{{ t.level.name }}</span>{% endif %}</h2>
+                <a href="{{ url('lms:topic_detail', pk=t.pk) }}" class="text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:underline">Open topic →</a>
+            </div>
+
+            <ul class="mb-3 space-y-1">
+                {% for a in t.assignments.all() %}
+                <li class="flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-1.5 text-xs">
+                    <span class="font-bold text-slate-800">#{{ a.sort_order }} · {{ a.title }}</span>
+                    <span class="flex items-center gap-2">
+                        {% if not a.is_published %}<span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase text-amber-700">Draft</span>{% endif %}
+                        <a href="{{ url('lms:assignment_edit', pk=a.pk) }}" class="font-black uppercase tracking-wider text-indigo-600 hover:underline">Edit →</a>
+                    </span>
+                </li>
+                {% else %}
+                <li class="text-xs text-slate-400">No assignments yet.</li>
+                {% endfor %}
+            </ul>
+
+            {% set af = assignment_forms_by_topic_id[t.id] %}
+            <form hx-post="{{ url('lms:course_builder_add_assignment', pk=course.pk) }}" hx-target="#builder-body" hx-swap="outerHTML"
+                  class="flex flex-wrap items-start gap-2 border-t border-slate-100 pt-3">
+                {{ csrf_input }}
+                <input type="hidden" name="topic_id" value="{{ t.id }}">
+                <div class="min-w-[10rem] flex-1">
+                    {{ af.title }}
+                    {% if af.title.errors %}<p class="mt-1 text-[11px] font-bold text-rose-600">{{ af.title.errors|join(' ') }}</p>{% endif %}
+                </div>
+                <div class="min-w-[10rem] flex-1">
+                    {{ af.instructions }}
+                </div>
+                <div class="w-20">
+                    {{ af.sort_order }}
+                </div>
+                <div class="min-w-[11rem]">
+                    {{ af.due_at }}
+                </div>
+                <label class="flex items-center gap-1 pt-2 text-[11px] font-bold text-slate-600 whitespace-nowrap">
+                    {{ af.is_published }} Published
+                </label>
+                <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-wider text-white hover:bg-indigo-500 whitespace-nowrap">Add assignment →</button>
+            </form>
+        </section>
+        {% else %}
+        <p class="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-xs font-bold text-slate-400">No topics yet — add one above to start adding assignments.</p>
+        {% endfor %}
+    </div>
+</div>

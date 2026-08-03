@@ -355,6 +355,67 @@ class LmsCourseForm(forms.ModelForm):
             del self.fields['is_default_for_catalog']
 
 
+class LmsQuickTopicForm(forms.ModelForm):
+    """Minimal topic form for the superadmin Course Builder — course is fixed by the view,
+    so unlike LmsTopicForm there's no course picker to bounce between pages for."""
+
+    class Meta:
+        model = LmsTopic
+        fields = ['title', 'description', 'level']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. SEO Basics'}),
+            'description': forms.Textarea(
+                attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'Short summary (optional)…'}
+            ),
+            'level': forms.Select(attrs={'class': _INPUT}),
+        }
+        labels = {'level': 'Class / level'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from assessment.models import SkillPath
+
+        self.fields['description'].required = False
+        self.fields['level'].queryset = SkillPath.objects.filter(is_active=True).order_by('level_order', 'name')
+        self.fields['level'].required = False
+        self.fields['level'].empty_label = 'General (all levels)'
+
+
+class LmsQuickAssignmentForm(forms.ModelForm):
+    """Minimal assignment form for the superadmin Course Builder — topic/course are fixed by
+    the view. Advanced fields (lecture video, graded test, study topic) stay on the full
+    assignment_edit page; this is for fast batch creation, not fine-tuning."""
+
+    class Meta:
+        model = LmsAssignment
+        fields = ['title', 'instructions', 'sort_order', 'due_at', 'is_published']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Meta Ads Poster'}),
+            'instructions': forms.Textarea(
+                attrs={'class': _TEXTAREA, 'rows': 2, 'placeholder': 'What students should submit (optional)…'}
+            ),
+            'sort_order': forms.NumberInput(attrs={'class': _INPUT, 'min': 0}),
+            'due_at': forms.DateTimeInput(
+                attrs={'class': _INPUT, 'type': 'datetime-local'},
+                format='%Y-%m-%dT%H:%M',
+            ),
+            'is_published': forms.CheckboxInput(
+                attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
+            ),
+        }
+        input_formats = {'due_at': ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']}
+        labels = {'sort_order': 'Position', 'is_published': 'Published'}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['instructions'].required = False
+        self.fields['sort_order'].required = False
+        self.fields['due_at'].required = False
+        self.fields['due_at'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
+        if not self.is_bound:
+            self.fields['is_published'].initial = True
+
+
 class LmsCourseMemberForm(forms.Form):
     username = forms.CharField(
         max_length=150,

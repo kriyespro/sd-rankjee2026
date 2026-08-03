@@ -3,7 +3,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -17,6 +17,8 @@ from .forms import (
     LmsCommentForm,
     LmsCourseForm,
     LmsCourseMemberForm,
+    LmsQuickAssignmentForm,
+    LmsQuickTopicForm,
     LmsReviewForm,
     LmsSubmissionForm,
     LmsTopicForm,
@@ -597,6 +599,102 @@ def courses(request):
             'owner_options': services.lms_owner_queryset() if (is_admin or is_office) else [],
             'crumbs': services.lms_crumbs(services.crumb('Courses')),
         },
+    )
+
+
+# ── Course builder: one-screen course+topic+assignment setup for superadmin ────
+# Fix: creating a course's content used to mean bouncing across 3 separate full-page forms
+# (courses/, topics/new/, assignments/new/) with a full reload for every single topic or
+# assignment. This page keeps the course open and adds topics/assignments inline via HTMX —
+# no page reload, so setting up many topics/assignments back-to-back is fast.
+
+def _course_builder_body_context(course, *, topic_form=None, assignment_forms_by_topic_id=None):
+    topics = list(
+        LmsTopic.objects.filter(course=course)
+        .select_related('level')
+        .prefetch_related(
+            Prefetch('assignments', queryset=LmsAssignment.objects.order_by('sort_order', 'created_at'))
+        )
+        .order_by('title')
+    )
+    forms_by_id = assignment_forms_by_topic_id or {}
+    return {
+        'course': course,
+        'topics': topics,
+        'topic_form': topic_form or LmsQuickTopicForm(),
+        'assignment_forms_by_topic_id': {t.id: forms_by_id.get(t.id) or LmsQuickAssignmentForm() for t in topics},
+    }
+
+
+@login_required
+@require_http_methods(['GET', 'POST'])
+def course_builder(request, pk=None):
+    if not services.is_lms_admin(request.user):
+        return HttpResponseForbidden('Superadmin only.')
+
+    course = get_object_or_404(LmsCourse, pk=pk) if pk else None
+    course_form = LmsCourseForm(user=request.user)
+
+    if request.method == 'POST':
+        if request.POST.get('action') != 'create_course':
+            return HttpResponseForbidden('Unknown action.')
+        course_form = LmsCourseForm(request.POST, user=request.user)
+        if course_form.is_valid():
+            new_course = course_form.save()
+            messages.success(request, f'Course "{new_course.name}" created.')
+            return redirect('lms:course_builder', pk=new_course.pk)
+
+    context = {
+        'all_courses': list(LmsCourse.objects.filter(is_active=True).select_related('owner', 'level').order_by('-created_at')),
+        'course_form': course_form,
+        'crumbs': services.lms_crumbs(services.crumb('Course builder')),
+    }
+    context.update(_course_builder_body_context(course) if course else {'course': None, 'topics': []})
+    return render(request, 'lms/course_builder.jinja', context)
+
+
+@login_required
+@require_POST
+def course_builder_add_topic(request, pk):
+    if not services.is_lms_admin(request.user):
+        return HttpResponseForbidden('Superadmin only.')
+    course = get_object_or_404(LmsCourse, pk=pk)
+    topic_form = LmsQuickTopicForm(request.POST)
+    if topic_form.is_valid():
+        topic = topic_form.save(commit=False)
+        topic.course = course
+        topic.save()
+        topic_form = None
+    return render(
+        request,
+        'lms/partials/_course_builder_body.jinja',
+        _course_builder_body_context(course, topic_form=topic_form),
+    )
+
+
+@login_required
+@require_POST
+def course_builder_add_assignment(request, pk):
+    if not services.is_lms_admin(request.user):
+        return HttpResponseForbidden('Superadmin only.')
+    course = get_object_or_404(LmsCourse, pk=pk)
+    topic = get_object_or_404(LmsTopic, pk=request.POST.get('topic_id'), course=course)
+    assignment_form = LmsQuickAssignmentForm(request.POST)
+    forms_by_topic = {}
+    if assignment_form.is_valid():
+        obj = assignment_form.save(commit=False)
+        obj.course = course
+        obj.topic = topic
+        obj.created_by = request.user
+        obj.save()
+        if obj.is_published:
+            services.notify_new_assignment(obj)
+    else:
+        forms_by_topic[topic.id] = assignment_form
+    return render(
+        request,
+        'lms/partials/_course_builder_body.jinja',
+        _course_builder_body_context(course, assignment_forms_by_topic_id=forms_by_topic),
     )
 
 

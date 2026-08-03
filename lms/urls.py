@@ -16,6 +16,10 @@ urlpatterns = [
     path('submissions/<int:pk>/comment/', views.comment, name='comment'),
     path('courses/', views.courses, name='courses'),
     path('courses/bulk-enroll/', views.bulk_enroll, name='bulk_enroll'),
+    path('builder/', views.course_builder, name='course_builder'),
+    path('builder/<int:pk>/', views.course_builder, name='course_builder'),
+    path('builder/<int:pk>/topics/add/', views.course_builder_add_topic, name='course_builder_add_topic'),
+    path('builder/<int:pk>/assignments/add/', views.course_builder_add_assignment, name='course_builder_add_assignment'),
     path('students/assign/', views.student_assign, name='student_assign'),
     path('courses/<int:pk>/students/', views.students_for_course, name='students_for_course'),
     # Attendance

@@ -897,3 +897,22 @@
   level FK, fall back to the old string match for stragglers
 - Verified: MBA SkillPath signup round-trip (form valid, class_level stays None, level gating
   resolves correctly), backfill left non-numeric accounts untouched. Full suite 110/110 passing
+
+[DONE] Superadmin "Course builder" — one-screen course + topic + assignment setup
+- Root cause of "4-step long process": creating content meant bouncing across 3 separate
+  full-page forms (courses/, topics/new/, assignments/new/) with a full reload every time,
+  and no fast way to add many topics/assignments back-to-back
+- New /admin/lms/builder/ page: pick or create a course, then add topics and assignments
+  inline via HTMX (no page reload) — repeat as many times as needed on one screen
+- lms/forms.py: LmsQuickTopicForm, LmsQuickAssignmentForm (minimal fields — title/description/
+  level for topics, title/instructions/position/due-date/published for assignments; advanced
+  fields like lecture video/graded test still edited on the existing full assignment_edit page)
+- lms/views.py: course_builder, course_builder_add_topic, course_builder_add_assignment
+  (all superadmin-only, 403 for faculty/office/students — verified)
+- templates/lms/course_builder.jinja + templates/lms/partials/_course_builder_body.jinja
+- Linked from admin Command Center Quick Setup header and lms/courses.jinja (🧱 Course builder)
+- No model/migration changes — pure forms/views/templates reusing existing LmsCourse/LmsTopic/
+  LmsAssignment models and the level/drip-order fields already in place
+- Verified via test client: create course -> add topic (HTMX) -> add assignment (HTMX),
+  invalid submissions re-render with inline errors (no crash), faculty/student get 403.
+  Full suite 110/110 passing
