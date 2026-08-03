@@ -28,7 +28,7 @@
                class="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-slate-50 {{ 'bg-indigo-50' if selected_student and selected_student.id == m.id }}">
                 <div class="min-w-0">
                     <p class="text-sm font-black text-slate-900 truncate">@{{ m.username }}</p>
-                    <p class="text-[11px] text-slate-500 truncate">{{ m.email }}{% if m.class_level %} · Class {{ m.class_level }}{% endif %}</p>
+                    <p class="text-[11px] text-slate-500 truncate">{{ m.email }}{% if m.level %} · {{ m.level.name }}{% elif m.class_level %} · Class {{ m.class_level }}{% endif %}</p>
                 </div>
                 <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-indigo-600">Manage →</span>
             </a>

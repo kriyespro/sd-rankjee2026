@@ -2146,6 +2146,8 @@ def index(request):
     # profile class, before falling back to the platform default.
     if selected_path is None and latest_attempt and latest_attempt.skill_id and latest_attempt.skill.path_id:
         selected_path = next((p for p in all_paths if p.id == latest_attempt.skill.path_id), None)
+    if selected_path is None and request.user.level_id:
+        selected_path = next((p for p in all_paths if p.id == request.user.level_id), None)
     if selected_path is None and request.user.class_level:
         needle = f"class {request.user.class_level}"
         selected_path = next((p for p in all_paths if needle in p.name.lower()), None)

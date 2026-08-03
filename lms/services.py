@@ -133,12 +133,15 @@ def user_course_ids(user) -> set[int]:
 
 
 def student_level_id(user) -> int | None:
-    """Resolve a student's active level (SkillPath) from their profile class_level.
+    """Resolve a student's active level (SkillPath) from their profile.
 
-    Same match dashboard/views.py uses for "Continue learning" personalization —
-    class_level=10 -> a SkillPath whose name contains "class 10" (e.g. "Class 10th").
-    Returns None if the student hasn't set a class yet, or no matching path exists.
+    Prefers the explicit `level` FK (covers any program a superadmin has added — Class 1-12,
+    MBA, MTech, etc). Falls back to the legacy class_level-number match for accounts that
+    onboarded before `level` existed and haven't re-saved their profile since.
     """
+    level_id = getattr(user, 'level_id', None)
+    if level_id:
+        return level_id
     class_level = getattr(user, 'class_level', None)
     if not class_level:
         return None

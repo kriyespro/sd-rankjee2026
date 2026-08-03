@@ -726,6 +726,7 @@ def student_assign(request):
         matches = list(
             User.objects.filter(role='STUDENT')
             .filter(Q(username__icontains=q) | Q(email__icontains=q))
+            .select_related('level')
             .order_by('username')[:20]
         )
 

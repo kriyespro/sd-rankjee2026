@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
+from assessment.models import SkillPath
 from hometutor.models import TutorProfile
 from . import services
 from .forms import CustomUserCreationForm
@@ -54,12 +55,13 @@ class OnboardingFlowTests(TestCase):
         self.assertEqual(res.status_code, 200)
 
     def test_student_profile_onboarding_marks_complete(self):
+        class_9 = SkillPath.objects.get(name='Class 9th')
         self.client.force_login(self.user)
         res = self.client.post(
             reverse('users:onboarding_profile'),
             data={'first_name': 'Demo', 'last_name': '', 'state': '',
                   'phone': '9876543210', 'city': 'Ahmedabad',
-                  'class_level': 9, 'subjects': 'Maths'},
+                  'level': class_9.id, 'subjects': 'Maths'},
         )
         self.user.refresh_from_db()
         self.assertTrue(self.user.onboarding_completed)
@@ -68,6 +70,7 @@ class OnboardingFlowTests(TestCase):
     def test_student_can_skip_profile_onboarding_only_with_contact_info(self):
         # Skip only bypasses the optional name/state fields — phone+city are mandatory,
         # so a user without them on file stays in onboarding.
+        class_9 = SkillPath.objects.get(name='Class 9th')
         self.client.force_login(self.user)
         res = self.client.post(
             reverse('users:onboarding_profile'),
@@ -78,9 +81,9 @@ class OnboardingFlowTests(TestCase):
 
         self.user.phone = '9876543210'
         self.user.city = 'Ahmedabad'
-        self.user.class_level = 9
+        self.user.level = class_9
         self.user.subjects = 'Maths'
-        self.user.save(update_fields=['phone', 'city', 'class_level', 'subjects'])
+        self.user.save(update_fields=['phone', 'city', 'level', 'subjects'])
         res = self.client.post(
             reverse('users:onboarding_profile'),
             data={'action': 'skip'},

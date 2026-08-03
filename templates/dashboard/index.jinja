@@ -66,9 +66,9 @@
     <section class="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50/80 to-sky-50/60 p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h2 class="text-xs font-black uppercase tracking-wider text-indigo-800">
-                ✨ For you{% if user.class_level %} — Class {{ user.class_level }}{% endif %}{% if user.subjects %} · {{ user.subjects }}{% endif %}
+                ✨ For you{% if user.level %} — {{ user.level.name }}{% endif %}{% if user.subjects %} · {{ user.subjects }}{% endif %}
             </h2>
-            {% if not user.class_level %}
+            {% if not user.level_id %}
             <a href="{{ url('users:onboarding_profile') }}?edit=1" class="text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:underline">Set your class to personalize →</a>
             {% endif %}
         </div>

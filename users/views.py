@@ -459,7 +459,7 @@ def onboarding_profile(request):
         # "Skip" only skips the optional fields (name/state) — contact info is mandatory,
         # and a student's class+subjects are too (they drive dashboard personalization).
         _skip_ok = request.user.phone and request.user.city and (
-            not _is_student or (request.user.class_level and request.user.subjects)
+            not _is_student or (request.user.level_id and request.user.subjects)
         )
         if request.POST.get('action') == 'skip' and _skip_ok:
             request.user.onboarding_completed = True

@@ -1,10 +1,15 @@
+import re
+
 from django.contrib.auth.forms import UserCreationForm
 from django import forms
 
+from assessment.models import SkillPath
 from core.hometutor_data import PILOT_CITY
 from hometutor.models import TutorProfile
 
 from .models import CustomUser, INDIAN_STATES
+
+_CLASS_LEVEL_RE = re.compile(r'class\s*(\d{1,2})', re.IGNORECASE)
 
 def clean_phone_value(raw: str) -> str:
     """Normalize to bare 10 digits (strips spaces/dashes and +91/91/0 prefixes), then
@@ -120,7 +125,7 @@ class StudentParentOnboardingForm(forms.ModelForm):
 
     class Meta:
         model = CustomUser
-        fields = ('first_name', 'last_name', 'phone', 'city', 'state', 'class_level', 'subjects', 'area')
+        fields = ('first_name', 'last_name', 'phone', 'city', 'state', 'level', 'subjects', 'area')
         widgets = {
             'first_name': forms.TextInput(attrs={
                 'class': 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm',
@@ -147,13 +152,12 @@ class StudentParentOnboardingForm(forms.ModelForm):
         self.fields['state'].choices = [('', 'Select later')] + list(INDIAN_STATES)
         base_cls = 'w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm'
         if student:
-            self.fields['class_level'].required = True
+            self.fields['level'].required = True
             self.fields['subjects'].required = True
-            self.fields['class_level'].label = 'Your class'
-            self.fields['class_level'].widget = forms.Select(
-                choices=[('', 'Select class')] + [(i, f'Class {i}') for i in range(1, 13)],
-                attrs={'class': base_cls},
-            )
+            self.fields['level'].label = 'Your class / level'
+            self.fields['level'].queryset = SkillPath.objects.filter(is_active=True).order_by('level_order', 'name')
+            self.fields['level'].empty_label = 'Select your class / level'
+            self.fields['level'].widget.attrs['class'] = base_cls
             self.fields['subjects'].label = 'Subjects you want help with'
             self.fields['subjects'].widget = forms.TextInput(attrs={
                 'class': base_cls,
@@ -167,11 +171,23 @@ class StudentParentOnboardingForm(forms.ModelForm):
             })
         else:
             # Parents: contact info only — academic profile belongs to the student account.
-            for name in ('class_level', 'subjects', 'area'):
+            for name in ('level', 'subjects', 'area'):
                 del self.fields[name]
 
     def clean_phone(self):
         return clean_phone_value(self.cleaned_data['phone'])
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if self.is_student:
+            # Keep the legacy numeric class_level in sync for code that still filters by grade
+            # number (core.Course targeting, dashboard "Continue learning"). Programs like MBA/
+            # MTech that don't name a school class simply leave it unset.
+            match = _CLASS_LEVEL_RE.search(user.level.name) if user.level_id else None
+            user.class_level = int(match.group(1)) if match else None
+        if commit:
+            user.save()
+        return user
 
 
 class TutorOnboardingForm(forms.ModelForm):

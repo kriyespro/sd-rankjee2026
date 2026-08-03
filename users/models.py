@@ -108,7 +108,19 @@ class CustomUser(AbstractUser):
     class_level = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
-        help_text="Student's class/grade (1–12).",
+        help_text="Student's class/grade (1–12). Legacy numeric mirror of `level` — kept for "
+                   "code that still filters by grade number; auto-derived from `level` when it "
+                   "names a school class.",
+    )
+    level = models.ForeignKey(
+        'assessment.SkillPath',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='students',
+        help_text="Student's class/program — Class 1-12, MBA, MTech, or any other level a "
+                   "superadmin has added at /admin/cms/skill-paths/. Drives LMS content gating "
+                   "and dashboard personalization; replaces the old class-1-to-12-only limit.",
     )
     subjects = models.CharField(
         max_length=200,

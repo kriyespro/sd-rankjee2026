@@ -881,3 +881,19 @@
   Level-tagging (previous fix) only gates platform-wide/unassigned content; an explicit
   enrollment always grants full access to that course regardless of level tag, by design
 - Verified full enroll/unenroll round-trip via test client + permissions check. 83/83 tests pass
+
+[DONE] Student class/level field opened up beyond Class 1-12 (was hardcoded to 12 school grades)
+- Root cause: CustomUser.class_level was a raw int, and StudentParentOnboardingForm hardcoded
+  choices=[Class 1..12] — MBA/MTech/professional students had no way to sign up correctly
+- Added CustomUser.level FK -> assessment.SkillPath (same taxonomy already driving LmsCourse.level/
+  LmsTopic.level gating). Signup dropdown now lists every active SkillPath — superadmin adds any
+  new program (MBA, MTech, whatever) at /admin/cms/skill-paths/, no code change needed ever again
+- class_level kept as a legacy numeric mirror, auto-derived from level.name when it parses as
+  "Class N" (core.Course targeting + dashboard reco still key off the number)
+- Migration 0021 (schema) + 0022 (data): seeded SkillPath rows for Class 1st-12th, reordered
+  existing paths (SSC/Finance/Digital -> level_order 13-15), backfilled level on every existing
+  student from their class_level so nobody needs to redo onboarding
+- lms/services.py::student_level_id + dashboard "Continue learning" matcher both prefer the new
+  level FK, fall back to the old string match for stragglers
+- Verified: MBA SkillPath signup round-trip (form valid, class_level stays None, level gating
+  resolves correctly), backfill left non-numeric accounts untouched. Full suite 110/110 passing
