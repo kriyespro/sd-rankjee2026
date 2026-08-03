@@ -61,6 +61,7 @@ class LmsAssignmentForm(forms.ModelForm):
             'study_topic',
             'skill',
             'course',
+            'sort_order',
             'due_at',
             'is_published',
             'is_free_preview',
@@ -75,6 +76,7 @@ class LmsAssignmentForm(forms.ModelForm):
             'study_topic': forms.Select(attrs={'class': _INPUT}),
             'skill': forms.Select(attrs={'class': _INPUT}),
             'course': forms.Select(attrs={'class': _INPUT}),
+            'sort_order': forms.NumberInput(attrs={'class': _INPUT, 'min': 0}),
             'due_at': forms.DateTimeInput(
                 attrs={'class': _INPUT, 'type': 'datetime-local'},
                 format='%Y-%m-%dT%H:%M',
@@ -92,12 +94,14 @@ class LmsAssignmentForm(forms.ModelForm):
             'study_topic': 'Study topic',
             'skill': 'Graded test',
             'course': 'Course',
+            'sort_order': 'Position',
             'is_free_preview': 'Public free preview',
         }
         help_texts = {
             'concept_video': 'Opens the matching video on /learning/ for students.',
             'study_topic': 'Opens the matching chapter on /admin/study/ for students.',
             'skill': 'Links a /assessment/ test — course roster results show on this assignment page.',
+            'sort_order': 'Lower number = shows first. Students unlock this course\'s assignments one at a time, in this order — the next one appears once they submit the current one.',
             'is_free_preview': 'Shown to any student who requests a free preview on this course\'s catalog page. Requires a lecture recording above.',
         }
 

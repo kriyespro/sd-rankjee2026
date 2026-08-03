@@ -132,6 +132,37 @@ def user_course_ids(user) -> set[int]:
     )
 
 
+def drip_unlocked_assignment_ids(user, course_ids=None) -> set[int]:
+    """Google-Classroom-style sequential release, per enrolled course.
+
+    A plain student only ever sees: every assignment they've already submitted, plus exactly
+    one more — the next one in the faculty's order (sort_order, then created_at) that they
+    haven't submitted yet. Platform-wide (course=None) assignments are exempt — they're not
+    part of any course's sequence and stay always-visible.
+    """
+    course_ids = user_course_ids(user) if course_ids is None else course_ids
+    if not course_ids:
+        return set()
+    submitted_ids = set(
+        LmsSubmission.objects.filter(student=user, assignment__course_id__in=course_ids)
+        .values_list('assignment_id', flat=True)
+    )
+    by_course: dict[int, list[int]] = {}
+    for a_id, a_course_id in (
+        LmsAssignment.objects.filter(course_id__in=course_ids, is_published=True)
+        .order_by('course_id', 'sort_order', 'created_at')
+        .values_list('id', 'course_id')
+    ):
+        by_course.setdefault(a_course_id, []).append(a_id)
+    allowed: set[int] = set()
+    for ids in by_course.values():
+        for a_id in ids:
+            allowed.add(a_id)
+            if a_id not in submitted_ids:
+                break
+    return allowed
+
+
 def assignments_for_user(user) -> QuerySet[LmsAssignment]:
     qs = LmsAssignment.objects.select_related('topic', 'course', 'course__owner', 'created_by')
     if is_lms_admin(user) or is_lms_office(user):
@@ -143,9 +174,12 @@ def assignments_for_user(user) -> QuerySet[LmsAssignment]:
         # nothing broader). Platform-wide broadcasts are admin/office-only content now; students
         # still see them (below) regardless of which course, if any, they're enrolled in.
         return qs.filter(course__owner_id=user.id)
-    # Students: published + (platform-wide OR enrolled in the course)
+    # Students: published + (platform-wide OR enrolled in the course), then sequential release —
+    # only their already-submitted work plus the single next assignment per course is visible.
     course_ids = user_course_ids(user)
-    return qs.filter(is_published=True).filter(Q(course__isnull=True) | Q(course_id__in=course_ids))
+    qs = qs.filter(is_published=True).filter(Q(course__isnull=True) | Q(course_id__in=course_ids))
+    unlocked_ids = drip_unlocked_assignment_ids(user, course_ids)
+    return qs.filter(Q(course__isnull=True) | Q(id__in=unlocked_ids))
 
 
 def can_view_assignment(user, assignment: LmsAssignment) -> bool:
@@ -160,7 +194,11 @@ def can_view_assignment(user, assignment: LmsAssignment) -> bool:
     if assignment.course_id is None:
         return is_lms_student(user)
     if assignment.course_id in user_course_ids(user):
-        return True
+        # Sequential release: enrolled isn't enough on its own — this assignment must actually
+        # be unlocked yet (matches assignments_for_user), otherwise a student could jump ahead
+        # just by guessing/bookmarking the URL.
+        if assignment.id in drip_unlocked_assignment_ids(user, {assignment.course_id}):
+            return True
     # Fix: a student unenrolled from the course (or whose course got deactivated) used to lose
     # access to their OWN already-graded submission/feedback outright (404) — they keep read
     # access to their own past work even after leaving; can_edit_submission still blocks them

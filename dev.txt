@@ -830,3 +830,21 @@
 - Activity feed and server order moved to bottom
 - All 200 OK, verified with non-staff student user
 - CSS rebuilt, committed dc90326, pushed to main
+
+[DONE] LMS sequential assignment release (Google Classroom style) + submission privacy fix + admin/mobile UX
+- Added LmsAssignment.sort_order field (migration 0015) — faculty sets explicit position; ties break by created_at
+- lms/services.py: new drip_unlocked_assignment_ids(user, course_ids) — per enrolled course, a plain
+  student sees every assignment they've already submitted plus exactly the next unsubmitted one, in
+  faculty's order. Platform-wide (course=None) assignments stay exempt/always-visible.
+- assignments_for_user() and can_view_assignment() both enforce the drip gate for students (listing AND
+  direct-URL access) — faculty/admin/office keep full unrestricted visibility of their own course(s)
+- LmsAssignmentForm: added sort_order ("Position") field + widget/help text; assignment_form.jinja updated
+- Fixed privacy leak: lms/views.py home() "Recent submissions" was showing every student's name/caption to
+  any student, including brand-new ones via platform-wide assignments — now scoped to viewer's own work
+- Superadmin Command Center (/admin): compact side-by-side Faculty attendance / Student attendance cards;
+  moved Student daily class log + Recent joins to bottom of page as full-width 2-column panels; wired
+  faculty_attendance_today()/student_attendance_today() services (lms/services.py)
+- Student dashboard: compacted 3-card course-type selector, moved Continue Learning card to bottom
+- Mobile bottom nav: restored Learn tab for logged-in students (was gated to logged-out visitors only)
+- Verified via Django test client + manual drip-unlock scenario (submit A0 -> A1 unlocks, A2 stays locked)
+- Full core+lms+dashboard suite: 83/83 passing throughout

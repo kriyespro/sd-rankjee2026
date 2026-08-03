@@ -107,6 +107,12 @@
             {% if form.course.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.course.errors %}{{ e }}{% endfor %}</p>{% endif %}
         </div>
         <div>
+            <label for="{{ form.sort_order.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.sort_order.label }}</label>
+            {{ form.sort_order }}
+            <p class="mt-1 text-[11px] text-slate-500">{{ form.sort_order.help_text }}</p>
+            {% if form.sort_order.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.sort_order.errors %}{{ e }}{% endfor %}</p>{% endif %}
+        </div>
+        <div>
             <label for="{{ form.due_at.id_for_label }}" class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">{{ form.due_at.label }}</label>
             {{ form.due_at }}
             {% if form.due_at.errors %}<p class="mt-1 text-sm text-rose-600">{% for e in form.due_at.errors %}{{ e }}{% endfor %}</p>{% endif %}

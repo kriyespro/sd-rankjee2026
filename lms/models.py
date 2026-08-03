@@ -177,6 +177,11 @@ class LmsAssignment(models.Model):
         related_name='lms_assignments',
         help_text='Optional graded test from /assessment/ linked to this assignment — course roster results roll up on the assignment page.',
     )
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text='Sequence within its course — controls the order students unlock assignments in (lower first). Ties break by creation order.',
+    )
     is_published = models.BooleanField(default=True, db_index=True)
     is_free_preview = models.BooleanField(
         default=False,
