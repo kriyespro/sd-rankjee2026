@@ -2033,6 +2033,11 @@ def index(request):
             .order_by('-created_at')[:8]
         )
 
+        recent_daily_class_logs = (
+            StudentDailyClassLog.objects.select_related('user')
+            .order_by('-log_date', '-id')[:8]
+        )
+
         _all_action_items = dash_services.action_center()
         revenue_trend = dash_services.revenue_trend()
         signup_trend = dash_services.signup_trend()
@@ -2063,6 +2068,7 @@ def index(request):
                 'pending_submissions': pending_submissions,
                 'latest_demo_requests': latest_demo_requests,
                 'latest_tutor_requests': latest_tutor_requests,
+                'recent_daily_class_logs': recent_daily_class_logs,
                 'lms_course_form': LmsCourseForm(user=request.user),
                 'lms_quick_courses': lms_quick_courses,
                 'lms_owner_options': list(lms_services.lms_owner_queryset()),

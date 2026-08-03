@@ -218,6 +218,30 @@
 
     </div>{# end 3-col grid #}
 
+    {# ============ STUDENT DAILY CLASS LOG ============ #}
+    <section id="class-log" class="mb-8 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden scroll-mt-20">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-2"
+             style="background: linear-gradient(135deg, #eef2ff 0%, #fff 100%);">
+            <h3 class="text-xs font-black uppercase tracking-widest text-slate-800">🗒️ Student daily class log</h3>
+            <a href="{{ url('dashboard:admin_student_daily_logs') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline whitespace-nowrap">Open full log →</a>
+        </div>
+        <div class="divide-y divide-slate-100 max-h-[24rem] overflow-y-auto">
+            {% for row in recent_daily_class_logs %}
+            <div class="flex items-start justify-between gap-3 px-4 py-3">
+                <div class="min-w-0">
+                    <p class="text-xs font-black text-slate-900 truncate">{{ row.user.get_full_name() or row.user.username }}</p>
+                    <p class="text-[10px] text-slate-500 truncate">{{ row.log_date.strftime('%d %b %Y') }} · {{ row.topic|truncate(48) }}</p>
+                </div>
+                <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black uppercase {{ 'bg-emerald-100 text-emerald-700' if row.attendance == 'PRESENT' else 'bg-rose-100 text-rose-700' }}">
+                    {{ 'Present' if row.attendance == 'PRESENT' else 'Absent' }}
+                </span>
+            </div>
+            {% else %}
+            <div class="px-4 py-8 text-center text-slate-400 text-xs font-bold">No student class logs yet.</div>
+            {% endfor %}
+        </div>
+    </section>
+
     {# ============ FACULTY & COURSE QUICK SETUP ============ #}
     <section class="mb-8 bg-slate-50 rounded-2xl border border-indigo-100 shadow-sm overflow-hidden"
              x-data="{ tab: 'create' }">
