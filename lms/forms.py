@@ -299,10 +299,11 @@ class LmsCommentForm(forms.ModelForm):
 class LmsCourseForm(forms.ModelForm):
     class Meta:
         model = LmsCourse
-        fields = ['name', 'owner', 'catalog_course', 'is_default_for_catalog', 'is_active']
+        fields = ['name', 'owner', 'level', 'catalog_course', 'is_default_for_catalog', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. Digital Marketing Batch A'}),
             'owner': forms.Select(attrs={'class': _INPUT}),
+            'level': forms.Select(attrs={'class': _INPUT}),
             'catalog_course': forms.Select(attrs={'class': _INPUT}),
             'is_default_for_catalog': forms.CheckboxInput(
                 attrs={'class': 'rounded border-slate-300 text-indigo-600 focus:ring-indigo-500'}
@@ -312,6 +313,7 @@ class LmsCourseForm(forms.ModelForm):
             ),
         }
         labels = {
+            'level': 'Class / level',
             'catalog_course': 'Paid course (/courses/) this batch delivers',
             'is_default_for_catalog': 'Auto-enroll new buyers of that course here',
         }
@@ -321,6 +323,11 @@ class LmsCourseForm(forms.ModelForm):
         from . import services
 
         self.user = user
+        from assessment.models import SkillPath
+
+        self.fields['level'].queryset = SkillPath.objects.filter(is_active=True).order_by('level_order', 'name')
+        self.fields['level'].required = False
+        self.fields['level'].empty_label = 'General (all levels)'
         is_admin = bool(user and services.is_lms_admin(user))
         # Office sets up who teaches what: they assign a faculty/tutor as owner when creating a
         # course, same as admin — they just never get the monetization-linked catalog fields.
@@ -404,18 +411,21 @@ class CourseDemoDeclineForm(forms.Form):
 class LmsTopicForm(forms.ModelForm):
     class Meta:
         model = LmsTopic
-        fields = ['title', 'description', 'course']
+        fields = ['title', 'description', 'course', 'level']
         widgets = {
             'title': forms.TextInput(attrs={'class': _INPUT, 'placeholder': 'e.g. SEO Basics'}),
             'description': forms.Textarea(
                 attrs={'class': _TEXTAREA, 'rows': 3, 'placeholder': 'Short topic summary…'}
             ),
             'course': forms.Select(attrs={'class': _INPUT}),
+            'level': forms.Select(attrs={'class': _INPUT}),
         }
-        labels = {'course': 'Course (optional)'}
+        labels = {'course': 'Course (optional)', 'level': 'Class / level'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from assessment.models import SkillPath
+
         # topic_create/topic_edit already gate on can_manage_topics (admin/office only), so
         # everyone who reaches this form may freely scope a topic to any course — fix: "add
         # topic per course in /admin" so a course's structure can be pre-built before any
@@ -423,3 +433,6 @@ class LmsTopicForm(forms.ModelForm):
         self.fields['course'].queryset = LmsCourse.objects.select_related('owner').order_by('name')
         self.fields['course'].required = False
         self.fields['course'].empty_label = 'Platform-wide (no single course)'
+        self.fields['level'].queryset = SkillPath.objects.filter(is_active=True).order_by('level_order', 'name')
+        self.fields['level'].required = False
+        self.fields['level'].empty_label = 'General (all levels)'

@@ -29,6 +29,14 @@ class LmsCourse(models.Model):
         default=False,
         help_text='If multiple batches deliver the same catalog course, new buyers auto-enroll into the one marked default.',
     )
+    level = models.ForeignKey(
+        'assessment.SkillPath',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_courses',
+        help_text='Class/track this course is for (e.g. Class 10th, Digital Skills Mastery). Empty = general/all levels.',
+    )
     is_active = models.BooleanField(default=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -99,6 +107,18 @@ class LmsTopic(models.Model):
             'Optional: scope this topic to one course so it appears in that course\'s LMS '
             'sidebar right away, even before any assignment exists under it yet. Empty = '
             'platform-wide topic (only appears once an assignment under it exists).'
+        ),
+    )
+    level = models.ForeignKey(
+        'assessment.SkillPath',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lms_topics',
+        help_text=(
+            'Class/track this topic is for (e.g. Class 10th, Digital Skills Mastery). Matters most '
+            'for platform-wide topics (no course above): only students on this level see them — '
+            'empty = general/visible to everyone, same as before.'
         ),
     )
     created_at = models.DateTimeField(auto_now_add=True)

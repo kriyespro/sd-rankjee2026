@@ -49,6 +49,10 @@
             {{ course_form.owner }}
         </div>
         {% endif %}
+        <div class="min-w-[12rem] flex-1">
+            <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Class / level</label>
+            {{ course_form.level }}
+        </div>
         {% if is_admin_lms and course_form.catalog_course %}
         <div class="min-w-[12rem] flex-1">
             <label class="mb-1 block text-xs font-black uppercase tracking-wider text-slate-500">Paid course (/courses/)</label>

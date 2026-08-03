@@ -132,6 +132,24 @@ def user_course_ids(user) -> set[int]:
     )
 
 
+def student_level_id(user) -> int | None:
+    """Resolve a student's active level (SkillPath) from their profile class_level.
+
+    Same match dashboard/views.py uses for "Continue learning" personalization —
+    class_level=10 -> a SkillPath whose name contains "class 10" (e.g. "Class 10th").
+    Returns None if the student hasn't set a class yet, or no matching path exists.
+    """
+    class_level = getattr(user, 'class_level', None)
+    if not class_level:
+        return None
+    from assessment.models import SkillPath
+
+    path = (
+        SkillPath.objects.filter(is_active=True, name__icontains=f'class {class_level}').first()
+    )
+    return path.id if path else None
+
+
 def drip_unlocked_assignment_ids(user, course_ids=None) -> set[int]:
     """Google-Classroom-style sequential release, per enrolled course.
 
@@ -179,7 +197,14 @@ def assignments_for_user(user) -> QuerySet[LmsAssignment]:
     course_ids = user_course_ids(user)
     qs = qs.filter(is_published=True).filter(Q(course__isnull=True) | Q(course_id__in=course_ids))
     unlocked_ids = drip_unlocked_assignment_ids(user, course_ids)
-    return qs.filter(Q(course__isnull=True) | Q(id__in=unlocked_ids))
+    # Fix: a Class 10 student was seeing platform-wide (course=None) content built for other
+    # levels entirely (e.g. Digital Marketing assignments) — platform-wide content now only
+    # reaches a student if its topic is level-tagged to match their class, or untagged/general.
+    level_id = student_level_id(user)
+    platform_wide_visible = Q(course__isnull=True) & (
+        Q(topic__level__isnull=True) | Q(topic__level_id=level_id)
+    )
+    return qs.filter(platform_wide_visible | Q(id__in=unlocked_ids))
 
 
 def can_view_assignment(user, assignment: LmsAssignment) -> bool:
@@ -192,7 +217,11 @@ def can_view_assignment(user, assignment: LmsAssignment) -> bool:
     if not assignment.is_published:
         return False
     if assignment.course_id is None:
-        return is_lms_student(user)
+        # Matches assignments_for_user's platform-wide level gate.
+        topic_level_id = assignment.topic.level_id if assignment.topic_id else None
+        if topic_level_id is None:
+            return is_lms_student(user)
+        return is_lms_student(user) and topic_level_id == student_level_id(user)
     if assignment.course_id in user_course_ids(user):
         # Sequential release: enrolled isn't enough on its own — this assignment must actually
         # be unlocked yet (matches assignments_for_user), otherwise a student could jump ahead

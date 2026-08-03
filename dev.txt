@@ -848,3 +848,23 @@
 - Mobile bottom nav: restored Learn tab for logged-in students (was gated to logged-out visitors only)
 - Verified via Django test client + manual drip-unlock scenario (submit A0 -> A1 unlocks, A2 stays locked)
 - Full core+lms+dashboard suite: 83/83 passing throughout
+
+[DONE] LMS level/class targeting — fixes cross-level content leak (Class 10 seeing Digital Marketing)
+- Root cause: platform-wide (course=None) LmsAssignment/LmsTopic content was broadcast to every
+  student regardless of class or interest — found 2 live examples ("Meta Ads Poster", "create
+  ecommerce website") reachable by any student, any class, zero enrollments
+- Added LmsCourse.level and LmsTopic.level (FK to assessment.SkillPath, nullable — migration 0016).
+  Reuses the same taxonomy that already drives dashboard "Continue learning" personalization
+  (Class 10th, Class 11th, Digital Skills Mastery, etc.) instead of inventing a second one
+- lms/services.py: student_level_id(user) resolves a student's class_level -> matching SkillPath.
+  assignments_for_user() + can_view_assignment() now only let platform-wide content through to a
+  student if its topic is level-tagged to match them, or untagged/general (backward compatible —
+  existing unleveled content keeps showing to everyone, nothing silently disappeared)
+- LmsCourseForm + LmsTopicForm: new "Class / level" dropdown (admin_dashboard_v2.jinja course quick
+  setup tab, lms/courses.jinja create form, lms/topic_form.jinja generic field loop)
+- Verified: Class 10 student blocked from Digital-Skills-tagged content, sees Class-10-tagged
+  content, still sees untagged/general content (all 3 scenarios + direct-URL can_view_assignment
+  checked). Full core+lms+dashboard suite: 83/83 passing
+- NOT done: the 2 existing leaked assignments are still untagged/general by default (safe,
+  no data silently hidden) — admin needs to open them (or their topic) and set a Level via the
+  new field to actually stop them reaching every class

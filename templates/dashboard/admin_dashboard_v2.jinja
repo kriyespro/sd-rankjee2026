@@ -361,6 +361,11 @@
                     <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Faculty / tutor</label>
                     {{ lms_course_form.owner }}
                 </div>
+                <div>
+                    <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Class / level</label>
+                    {{ lms_course_form.level }}
+                    <p class="mt-1 text-[10px] text-slate-500">Only students on this level see it if it has no course assigned yet — e.g. Class 10th, Digital Skills Mastery.</p>
+                </div>
                 {% if lms_course_form.catalog_course %}
                 <div>
                     <label class="mb-1 block text-[10px] font-black uppercase tracking-wider text-slate-500">Link to paid course</label>
