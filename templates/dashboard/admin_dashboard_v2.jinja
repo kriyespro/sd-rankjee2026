@@ -272,7 +272,10 @@
                 <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-700">⚠ {{ lms_stats.needs_attention }} need setup</span>
                 {% endif %}
             </div>
-            <a href="{{ url('lms:courses') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Full LMS manager →</a>
+            <div class="flex items-center gap-3">
+                <a href="{{ url('lms:student_assign') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">🎯 Assign students →</a>
+                <a href="{{ url('lms:courses') }}" class="text-[11px] font-black uppercase tracking-wider text-indigo-700 hover:underline">Full LMS manager →</a>
+            </div>
         </div>
 
         {# LMS Pulse Bar #}

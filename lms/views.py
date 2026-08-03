@@ -3,6 +3,7 @@ import json
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -689,6 +690,73 @@ def bulk_enroll(request):
     if next_url and '/admin/' in next_url:
         return redirect(next_url)
     return redirect('lms:courses')
+
+
+@login_required
+def student_assign(request):
+    """Superadmin/office: pick any student, see every course (and faculty) they're in, add
+    them to any course, or remove them from one — one screen, no need to hunt per-course.
+
+    Complements the course-centric "Bulk enroll"/"Add one student" panels (pick a course, add
+    students) with the student-centric direction (pick a student, manage all their courses).
+    Enrollment is the only thing that ever grants a student a course's content — this page is
+    the deep-think "very easy" front end for that single source of truth.
+    """
+    if not services.is_lms_admin(request.user) and not services.is_lms_office(request.user):
+        return HttpResponseForbidden('Superadmin/office only.')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        student_id = request.POST.get('student_id')
+        student = get_object_or_404(User, pk=student_id, role='STUDENT')
+        if action == 'enroll':
+            course = get_object_or_404(LmsCourse, pk=request.POST.get('course_id'))
+            services.add_course_member(course, student)
+            messages.success(request, f'Added {student.username} to {course.name}.')
+        elif action == 'unenroll':
+            enrollment = get_object_or_404(LmsCourseEnrollment, pk=request.POST.get('enrollment_id'), user=student)
+            enrollment.delete()
+            messages.success(request, f'Removed {student.username} from that course.')
+        return redirect(f"{reverse('lms:student_assign')}?student_id={student.pk}")
+
+    q = (request.GET.get('q') or '').strip()
+    student_id = request.GET.get('student_id')
+    matches = []
+    if q:
+        matches = list(
+            User.objects.filter(role='STUDENT')
+            .filter(Q(username__icontains=q) | Q(email__icontains=q))
+            .order_by('username')[:20]
+        )
+
+    selected_student = None
+    enrollments = []
+    if student_id:
+        selected_student = User.objects.filter(pk=student_id, role='STUDENT').first()
+        if selected_student:
+            enrollments = list(
+                LmsCourseEnrollment.objects.filter(user=selected_student)
+                .select_related('course', 'course__owner', 'course__level')
+                .order_by('course__name')
+            )
+
+    all_courses = list(
+        LmsCourse.objects.filter(is_active=True)
+        .select_related('owner', 'level')
+        .order_by('name')
+    )
+    return render(
+        request,
+        'lms/student_assign.jinja',
+        {
+            'q': q,
+            'matches': matches,
+            'selected_student': selected_student,
+            'enrollments': enrollments,
+            'enrolled_course_ids': {e.course_id for e in enrollments},
+            'all_courses': all_courses,
+        },
+    )
 
 
 # ── Attendance views ──────────────────────────────────────────────────────────

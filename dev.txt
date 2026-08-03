@@ -868,3 +868,16 @@
 - NOT done: the 2 existing leaked assignments are still untagged/general by default (safe,
   no data silently hidden) — admin needs to open them (or their topic) and set a Level via the
   new field to actually stop them reaching every class
+
+[DONE] Superadmin "Assign students" page (/admin/lms/students/assign/)
+- New student-centric enrollment manager, complements the existing course-centric Bulk
+  enroll / Add one student panels: search any student, see every course (+ faculty) they're
+  in on one screen, remove any, add to any course (any faculty) — admin/office only, 403 for
+  everyone else (verified with faculty + plain student accounts)
+- lms/views.py::student_assign, lms/urls.py 'lms:student_assign', templates/lms/student_assign.jinja
+- Linked from superadmin Command Center Quick Setup header and lms/courses.jinja
+- Confirms design already in place: LMS visibility is enrollment-only — a student never sees a
+  course's content unless faculty/admin explicitly enrolled them (no auto-enrollment anywhere).
+  Level-tagging (previous fix) only gates platform-wide/unassigned content; an explicit
+  enrollment always grants full access to that course regardless of level tag, by design
+- Verified full enroll/unenroll round-trip via test client + permissions check. 83/83 tests pass
